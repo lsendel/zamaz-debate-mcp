@@ -12,10 +12,11 @@ import { MCPClient } from '@/lib/mcp-client';
 import { Debate } from '@/types/debate';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { useOrganization } from '@/hooks/use-organization';
-import { Users, MessageSquare, Brain, Settings, Plus, Clock, Activity, Zap, Globe, Cpu } from 'lucide-react';
+import { Users, MessageSquare, Brain, Settings, Plus, Clock, Activity, Zap, Globe, Cpu, FileText } from 'lucide-react';
 import { OnboardingWizard } from '@/components/onboarding-wizard';
 import { QuickActions } from '@/components/quick-actions';
 import { DebateTemplates } from '@/components/debate-templates';
+import { TemplateManager } from '@/components/template-manager';
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from '@/hooks/use-keyboard-shortcuts';
 import { useRouter } from 'next/navigation';
@@ -244,14 +245,18 @@ export default function HomePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="debates" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px] bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[700px] bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
             <TabsTrigger value="debates" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
               <MessageSquare className="h-4 w-4 mr-2" />
               Debates
             </TabsTrigger>
             <TabsTrigger value="templates" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
               <Brain className="h-4 w-4 mr-2" />
-              Templates
+              Gallery
+            </TabsTrigger>
+            <TabsTrigger value="library" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
+              <FileText className="h-4 w-4 mr-2" />
+              Library
             </TabsTrigger>
             <TabsTrigger value="active" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
               <Activity className="h-4 w-4 mr-2" />
@@ -364,6 +369,10 @@ export default function HomePage() {
 
           <TabsContent value="templates">
             <DebateTemplates onSelectTemplate={handleTemplateSelect} />
+          </TabsContent>
+
+          <TabsContent value="library">
+            <TemplateManager />
           </TabsContent>
 
           <TabsContent value="ollama">

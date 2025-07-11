@@ -151,6 +151,30 @@ services:
       - mcp-network
     restart: unless-stopped
 
+  # MCP Template Service
+  mcp-template:
+    build: ./mcp-template
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=template_db
+      - POSTGRES_USER=${POSTGRES_USER:-context_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}
+      - MCP_PORT=5006
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "5006:5006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mcp-organization:
+        condition: service_started
+    volumes:
+      - ./mcp-template/config:/app/config
+      - template-data:/app/data
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
   # Optional: Ollama for local Llama models
   ollama:
     image: ollama/ollama
@@ -209,3 +233,5 @@ volumes:
   ollama_data:
   prometheus_data:
   grafana_data:
+  organization-data:
+  template-data:
