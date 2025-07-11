@@ -1,0 +1,291 @@
+# MCP Debate System - Comprehensive Makefile
+# Multi-tenant AI debate platform with concurrency support
+
+.PHONY: help setup up down build rebuild logs clean test test-concurrency security-audit status health ui dev install lint format check-env docker-clean backup restore
+
+# Default target
+.DEFAULT_GOAL := help
+
+# Color codes for pretty output
+RED=\033[0;31m
+GREEN=\033[0;32m
+YELLOW=\033[1;33m
+BLUE=\033[0;34m
+PURPLE=\033[0;35m
+CYAN=\033[0;36m
+NC=\033[0m # No Color
+
+# Project configuration
+PROJECT_NAME=zamaz-debate-mcp
+DOCKER_COMPOSE=docker-compose
+NODE_VERSION=20
+PYTHON_VERSION=3.11
+
+## Help - Display available commands
+help:
+	@echo "$(CYAN)🤖 MCP Debate System - Available Commands$(NC)"
+	@echo "$(CYAN)================================================$(NC)"
+	@echo ""
+	@echo "$(GREEN)📦 Setup & Installation:$(NC)"
+	@echo "  setup           - Initial project setup (check deps, create .env, install)"
+	@echo "  install         - Install all dependencies"
+	@echo "  check-env       - Verify environment configuration"
+	@echo ""
+	@echo "$(GREEN)🚀 Development:$(NC)"
+	@echo "  up              - Start all services with Docker Compose"
+	@echo "  down            - Stop all services"
+	@echo "  build           - Build all Docker images"
+	@echo "  rebuild         - Rebuild and restart all services"
+	@echo "  ui              - Start UI development server"
+	@echo "  dev             - Start development environment (services + UI)"
+	@echo ""
+	@echo "$(GREEN)📊 Monitoring:$(NC)"
+	@echo "  status          - Show service status"
+	@echo "  health          - Check health of all services"
+	@echo "  logs            - Follow logs from all services"
+	@echo "  logs-service    - Follow logs from specific service (make logs-service SERVICE=debate)"
+	@echo ""
+	@echo "$(GREEN)🧪 Testing:$(NC)"
+	@echo "  test            - Run all tests (unit + e2e)"
+	@echo "  test-unit       - Run unit tests only"
+	@echo "  test-e2e        - Run end-to-end tests"
+	@echo "  test-concurrency - Run concurrency stress tests"
+	@echo ""
+	@echo "$(GREEN)🔒 Security:$(NC)"
+	@echo "  security-audit  - Run comprehensive security audit"
+	@echo "  check-secrets   - Check for accidentally committed secrets"
+	@echo ""
+	@echo "$(GREEN)🧹 Maintenance:$(NC)"
+	@echo "  clean           - Clean up containers, volumes, and cache"
+	@echo "  docker-clean    - Deep clean Docker system"
+	@echo "  lint            - Run linting on all code"
+	@echo "  format          - Format all code"
+	@echo ""
+	@echo "$(GREEN)💾 Data Management:$(NC)"
+	@echo "  backup          - Backup all data volumes"
+	@echo "  restore         - Restore data from backup"
+	@echo ""
+
+## Setup - Initial project setup
+setup: check-deps check-env install
+	@echo "$(GREEN)✅ Project setup complete!$(NC)"
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Edit .env with your API keys"
+	@echo "  2. Run 'make up' to start services"
+	@echo "  3. Run 'make test' to verify everything works"
+
+## Check dependencies
+check-deps:
+	@echo "$(BLUE)🔍 Checking dependencies...$(NC)"
+	@command -v docker >/dev/null 2>&1 || (echo "$(RED)❌ Docker is required but not installed$(NC)" && exit 1)
+	@command -v docker-compose >/dev/null 2>&1 || (echo "$(RED)❌ Docker Compose is required but not installed$(NC)" && exit 1)
+	@command -v node >/dev/null 2>&1 || (echo "$(RED)❌ Node.js is required but not installed$(NC)" && exit 1)
+	@command -v python3 >/dev/null 2>&1 || (echo "$(RED)❌ Python 3 is required but not installed$(NC)" && exit 1)
+	@echo "$(GREEN)✅ All dependencies found$(NC)"
+
+## Check environment configuration
+check-env:
+	@echo "$(BLUE)🔧 Checking environment configuration...$(NC)"
+	@if [ ! -f .env ]; then \
+		echo "$(YELLOW)⚠️  .env file not found, creating from template...$(NC)"; \
+		cp .env.example .env; \
+		echo "$(RED)🔒 IMPORTANT: Edit .env with your real API keys!$(NC)"; \
+	else \
+		echo "$(GREEN)✅ .env file exists$(NC)"; \
+	fi
+	@if grep -q "your-.*-key-here" .env 2>/dev/null; then \
+		echo "$(RED)❌ .env contains placeholder values - please add real API keys$(NC)"; \
+	else \
+		echo "$(GREEN)✅ .env appears to have real values$(NC)"; \
+	fi
+
+## Install all dependencies
+install: install-ui install-tests
+	@echo "$(GREEN)✅ All dependencies installed$(NC)"
+
+install-ui:
+	@echo "$(BLUE)📦 Installing UI dependencies...$(NC)"
+	@cd debate-ui && npm install
+
+install-tests:
+	@echo "$(BLUE)📦 Installing test dependencies...$(NC)"
+	@cd e2e-tests && npm install
+
+## Docker Compose Operations
+up:
+	@echo "$(BLUE)🚀 Starting all services...$(NC)"
+	@$(DOCKER_COMPOSE) up -d
+	@echo "$(GREEN)✅ Services started!$(NC)"
+	@echo "$(CYAN)Service URLs:$(NC)"
+	@echo "  UI:      http://localhost:3000"
+	@echo "  Context: http://localhost:8001"
+	@echo "  LLM:     http://localhost:8002"
+	@echo "  Debate:  http://localhost:8003"
+	@echo "  RAG:     http://localhost:8004"
+
+down:
+	@echo "$(BLUE)🛑 Stopping all services...$(NC)"
+	@$(DOCKER_COMPOSE) down
+	@echo "$(GREEN)✅ Services stopped$(NC)"
+
+build:
+	@echo "$(BLUE)🏗️  Building all Docker images...$(NC)"
+	@$(DOCKER_COMPOSE) build
+	@echo "$(GREEN)✅ Build complete$(NC)"
+
+rebuild: down build up
+	@echo "$(GREEN)✅ Rebuild complete$(NC)"
+
+## Development
+ui:
+	@echo "$(BLUE)🎨 Starting UI development server...$(NC)"
+	@cd debate-ui && npm run dev
+
+dev: up
+	@echo "$(BLUE)🔧 Starting development environment...$(NC)"
+	@echo "$(YELLOW)Services are running in background$(NC)"
+	@echo "$(YELLOW)Starting UI in foreground...$(NC)"
+	@$(MAKE) ui
+
+## Monitoring
+status:
+	@echo "$(BLUE)📊 Service Status:$(NC)"
+	@$(DOCKER_COMPOSE) ps
+
+health:
+	@echo "$(BLUE)🏥 Health Check:$(NC)"
+	@echo "Context Service:" && curl -f http://localhost:8001/health || echo "❌ Failed"
+	@echo "LLM Service:" && curl -f http://localhost:8002/health || echo "❌ Failed"  
+	@echo "Debate Service:" && curl -f http://localhost:8003/health || echo "❌ Failed"
+	@echo "RAG Service:" && curl -f http://localhost:8004/health || echo "❌ Failed"
+	@echo "UI Service:" && curl -f http://localhost:3000 || echo "❌ Failed"
+
+logs:
+	@echo "$(BLUE)📜 Following logs from all services...$(NC)"
+	@$(DOCKER_COMPOSE) logs -f
+
+logs-service:
+	@echo "$(BLUE)📜 Following logs from $(SERVICE)...$(NC)"
+	@$(DOCKER_COMPOSE) logs -f $(SERVICE)
+
+## Testing
+test: test-unit test-e2e
+	@echo "$(GREEN)✅ All tests completed$(NC)"
+
+test-unit:
+	@echo "$(BLUE)🧪 Running unit tests...$(NC)"
+	@echo "$(YELLOW)Unit tests for Python services...$(NC)"
+	@$(DOCKER_COMPOSE) exec mcp-context python -m pytest tests/ || true
+	@$(DOCKER_COMPOSE) exec mcp-llm python -m pytest tests/ || true
+	@$(DOCKER_COMPOSE) exec mcp-debate python -m pytest tests/ || true
+	@$(DOCKER_COMPOSE) exec mcp-rag python -m pytest tests/ || true
+
+test-e2e:
+	@echo "$(BLUE)🧪 Running E2E tests...$(NC)"
+	@cd e2e-tests && npm test
+
+test-concurrency:
+	@echo "$(BLUE)🧪 Running concurrency tests...$(NC)"
+	@node test-concurrency.js
+
+## Security
+security-audit: check-secrets check-deps-security
+	@echo "$(GREEN)🔒 Security audit complete$(NC)"
+
+check-secrets:
+	@echo "$(BLUE)🔍 Checking for committed secrets...$(NC)"
+	@if git ls-files | grep -E '\.env$$'; then \
+		echo "$(RED)❌ .env files found in git!$(NC)"; \
+		echo "$(RED)Run: git rm --cached .env$(NC)"; \
+		exit 1; \
+	else \
+		echo "$(GREEN)✅ No .env files in git$(NC)"; \
+	fi
+	@if git grep -l "sk-" 2>/dev/null | grep -v ".example"; then \
+		echo "$(RED)❌ Potential API keys found in git!$(NC)"; \
+		exit 1; \
+	else \
+		echo "$(GREEN)✅ No API keys found in git$(NC)"; \
+	fi
+
+check-deps-security:
+	@echo "$(BLUE)🔍 Checking dependency vulnerabilities...$(NC)"
+	@cd debate-ui && npm audit || true
+	@cd e2e-tests && npm audit || true
+
+## Code Quality
+lint:
+	@echo "$(BLUE)🧹 Linting code...$(NC)"
+	@cd debate-ui && npm run lint || true
+	@$(DOCKER_COMPOSE) exec mcp-context python -m flake8 src/ || true
+	@$(DOCKER_COMPOSE) exec mcp-llm python -m flake8 src/ || true
+	@$(DOCKER_COMPOSE) exec mcp-debate python -m flake8 src/ || true
+	@$(DOCKER_COMPOSE) exec mcp-rag python -m flake8 src/ || true
+
+format:
+	@echo "$(BLUE)✨ Formatting code...$(NC)"
+	@cd debate-ui && npm run format || true
+	@$(DOCKER_COMPOSE) exec mcp-context python -m black src/ || true
+	@$(DOCKER_COMPOSE) exec mcp-llm python -m black src/ || true
+	@$(DOCKER_COMPOSE) exec mcp-debate python -m black src/ || true
+	@$(DOCKER_COMPOSE) exec mcp-rag python -m black src/ || true
+
+## Cleanup
+clean: down
+	@echo "$(BLUE)🧹 Cleaning up...$(NC)"
+	@$(DOCKER_COMPOSE) down -v --remove-orphans
+	@docker system prune -f
+	@echo "$(GREEN)✅ Cleanup complete$(NC)"
+
+docker-clean:
+	@echo "$(BLUE)🧹 Deep cleaning Docker system...$(NC)"
+	@docker system prune -a -f --volumes
+	@echo "$(GREEN)✅ Deep cleanup complete$(NC)"
+
+## Data Management
+backup:
+	@echo "$(BLUE)💾 Backing up data volumes...$(NC)"
+	@mkdir -p backups
+	@docker run --rm \
+		-v $(PROJECT_NAME)_postgres_data:/data \
+		-v $(PWD)/backups:/backup \
+		alpine tar czf /backup/postgres_$(shell date +%Y%m%d_%H%M%S).tar.gz -C /data .
+	@echo "$(GREEN)✅ Backup complete$(NC)"
+
+restore:
+	@echo "$(BLUE)📥 Restoring data from backup...$(NC)"
+	@if [ -z "$(BACKUP_FILE)" ]; then \
+		echo "$(RED)❌ Please specify BACKUP_FILE=filename.tar.gz$(NC)"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) down
+	@docker run --rm \
+		-v $(PROJECT_NAME)_postgres_data:/data \
+		-v $(PWD)/backups:/backup \
+		alpine sh -c "rm -rf /data/* && tar xzf /backup/$(BACKUP_FILE) -C /data"
+	@echo "$(GREEN)✅ Restore complete$(NC)"
+
+## Environment shortcuts
+prod: export COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+prod: up
+
+staging: export COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml  
+staging: up
+
+## Quick development workflows
+quick-test: up test-concurrency down
+	@echo "$(GREEN)✅ Quick test complete$(NC)"
+
+reset: clean up
+	@echo "$(GREEN)✅ System reset complete$(NC)"
+
+## Show current configuration
+info:
+	@echo "$(CYAN)📋 Project Information:$(NC)"
+	@echo "Project: $(PROJECT_NAME)"
+	@echo "Docker Compose File: $(COMPOSE_FILE)"
+	@echo "Node Version Required: $(NODE_VERSION)"
+	@echo "Python Version Required: $(PYTHON_VERSION)"
+	@echo ""
+	@echo "$(CYAN)📊 Current Status:$(NC)"
+	@$(MAKE) status

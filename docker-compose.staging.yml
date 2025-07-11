@@ -1,0 +1,46 @@
+# Staging environment overrides
+services:
+  mcp-context:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - RATE_LIMIT_PER_MINUTE=200
+      - RATE_LIMIT_PER_HOUR=5000
+
+  mcp-llm:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - LLM_TIMEOUT_SECONDS=120
+      - LLM_MAX_RETRIES=2
+
+  mcp-debate:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - MAX_DEBATE_PARTICIPANTS=15
+      - MAX_DEBATE_ROUNDS=150
+
+  mcp-rag:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - MAX_DOCUMENT_SIZE_MB=75
+      - EMBEDDING_BATCH_SIZE=150
+
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  # Staging-specific services
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@staging.local
+      - PGADMIN_DEFAULT_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+volumes:
+  pgadmin_data:
