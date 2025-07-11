@@ -1,0 +1,98 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+
+# Model files
+models/
+*.bin
+*.pkl
+*.pth
+*.onnx
+
+# Cache
+.cache/
+*.cache
+redis-data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
+
+# Project specific
+mcp-llm/cache/
+mcp-debate/data/
+mcp-rag/data/
+mcp-context/data/
+postgres_data/
+redis_data/
+qdrant_data/
+llm_cache/
+rag_data/
+ollama_data/
+prometheus_data/
+grafana_data/

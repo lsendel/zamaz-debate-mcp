@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'mcp-context'
+    static_configs:
+      - targets: ['mcp-context:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'mcp-llm'
+    static_configs:
+      - targets: ['mcp-llm:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'mcp-debate'
+    static_configs:
+      - targets: ['mcp-debate:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'mcp-rag'
+    static_configs:
+      - targets: ['mcp-rag:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 60s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
