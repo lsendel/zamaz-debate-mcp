@@ -8,28 +8,39 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Participant, DebateRules } from '@/types/debate';
 import { ModelSelector } from '@/components/llm/model-selector';
 import { useLLM } from '@/hooks/use-llm';
-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
+
+// Constants
+const DEFAULT_MAX_ROUNDS = 5;
+const DEFAULT_MAX_TURN_LENGTH = 500;
+const DEFAULT_TEMPERATURE = 0.7;
+const MIN_PARTICIPANTS = 2;
 
 interface CreateDebateDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (debate: any) => void;
+  onOpenChange: (_open: boolean) => void;
+  onSubmit: (_debate: {
+    name: string;
+    topic: string;
+    description?: string;
+    participants: Participant[];
+    rules: DebateRules;
+  }) => void;
 }
 
 export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebateDialogProps) {
-  const { models, health, loading: llmLoading } = useLLM();
+  const { models, health } = useLLM();
   const [name, setName] = useState('');
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [rules, setRules] = useState<DebateRules>({
     format: 'round_robin',
-    maxRounds: 5,
-    maxTurnLength: 500
+    maxRounds: DEFAULT_MAX_ROUNDS,
+    maxTurnLength: DEFAULT_MAX_TURN_LENGTH
   });
 
   // Initialize default participants when models are loaded
@@ -42,9 +53,9 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
           role: 'debater',
           position: 'Pro-AI advancement',
           llm_config: {
-            provider: defaultModel.provider,
+            provider: defaultModel.provider as 'claude' | 'openai' | 'gemini' | 'llama',
             model: defaultModel.id,
-            temperature: 0.7,
+            temperature: DEFAULT_TEMPERATURE,
             systemPrompt: 'You are an optimistic AI advocate who believes in the positive potential of artificial intelligence.'
           }
         },
@@ -53,9 +64,9 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
           role: 'debater',
           position: 'Cautious about AI',
           llm_config: {
-            provider: defaultModel.provider,
+            provider: defaultModel.provider as 'claude' | 'openai' | 'gemini' | 'llama',
             model: defaultModel.id,
-            temperature: 0.7,
+            temperature: DEFAULT_TEMPERATURE,
             systemPrompt: 'You are a thoughtful AI skeptic who raises important concerns about artificial intelligence development.'
           }
         }
@@ -64,7 +75,7 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
   }, [models, participants.length]);
 
   const handleSubmit = () => {
-    if (!name || !topic || participants.length < 2) {
+    if (!name || !topic || participants.length < MIN_PARTICIPANTS) {
       alert('Please fill in all required fields and add at least 2 participants');
       return;
     }
@@ -90,7 +101,7 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
       name: `Participant ${participants.length + 1}`,
       role: 'debater',
       llm_config: {
-        provider: defaultModel.provider,
+        provider: defaultModel.provider as 'claude' | 'openai' | 'gemini' | 'llama',
         model: defaultModel.id,
         temperature: 0.7
       }
@@ -99,8 +110,12 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
 
   const updateParticipant = (index: number, updates: Partial<Participant>) => {
     const updated = [...participants];
-    updated[index] = { ...updated[index], ...updates };
-    setParticipants(updated);
+    // Validate index to prevent object injection
+    if (index >= 0 && index < updated.length) {
+      // eslint-disable-next-line security/detect-object-injection
+      updated[index] = { ...updated[index], ...updates };
+      setParticipants(updated);
+    }
   };
 
   const removeParticipant = (index: number) => {
@@ -253,7 +268,7 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
                           updateParticipant(index, {
                             llm_config: {
                               ...participant.llm_config,
-                              provider: model.provider,
+                              provider: model.provider as 'claude' | 'openai' | 'gemini' | 'llama',
                               model: modelId
                             }
                           });
@@ -314,7 +329,7 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
                         {participant.llm_config.provider}
                       </Badge>
                       <span>•</span>
-                      <span>{models.find(m => m.id === participant.llm_config.model)?.name || participant.llm_config.model}</span>
+                      <span>{models.find(m => m.id === participant.llm_config?.model)?.name || participant.llm_config?.model || 'Unknown'}</span>
                       <span>•</span>
                       <span>Temperature: {participant.llm_config.temperature}</span>
                     </div>

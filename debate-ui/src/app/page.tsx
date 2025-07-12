@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { CreateDebateDialog } from '@/components/create-debate-dialog';
 import { DebateView } from '@/components/debate-view';
 import { OllamaSetup } from '@/components/ollama-setup';
 import { MCPClient } from '@/lib/mcp-client';
-import { Debate } from '@/types/debate';
+import { Debate, Participant, DebateRules } from '@/types/debate';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { useOrganization } from '@/hooks/use-organization';
 import { Users, MessageSquare, Brain, Settings, Plus, Clock, Activity, Zap, Globe, Cpu, FileText } from 'lucide-react';
@@ -19,22 +19,21 @@ import { DebateTemplates } from '@/components/debate-templates';
 import { TemplateManager } from '@/components/template-manager';
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from '@/hooks/use-keyboard-shortcuts';
-import { useRouter } from 'next/navigation';
 import { LLMHealthMonitor } from '@/components/llm/health-monitor';
 import { LLMTestDialog } from '@/components/llm/llm-test-dialog';
 import { ConnectionStatus } from '@/components/connection-status';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { logger } from '@/lib/logger';
 
 export default function HomePage() {
   const [debates, setDebates] = useState<Debate[]>([]);
   const [selectedDebate, setSelectedDebate] = useState<Debate | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [showLLMTest, setShowLLMTest] = useState(false);
   const { currentOrg, addHistoryEntry } = useOrganization();
-  const router = useRouter();
 
-  const debateClient = new MCPClient('debate');
+  const debateClient = useMemo(() => new MCPClient('debate'), []);
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts([
@@ -47,25 +46,31 @@ export default function HomePage() {
     }
   ]);
 
-  useEffect(() => {
-    if (currentOrg) {
-      loadDebates();
-    }
-  }, [currentOrg]);
-
-  const loadDebates = async () => {
+  const loadDebates = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await debateClient.readResource('debate://debates');
       setDebates(response.debates || []);
     } catch (error) {
-      console.error('Failed to load debates:', error);
+      logger.error('Failed to load debates', error as Error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [debateClient]);
 
-  const handleCreateDebate = async (debate: any) => {
+  useEffect(() => {
+    if (currentOrg) {
+      loadDebates();
+    }
+  }, [currentOrg, loadDebates]);
+
+  const handleCreateDebate = async (debate: {
+    name: string;
+    topic: string;
+    description?: string;
+    participants: Participant[];
+    rules: DebateRules;
+  }) => {
     try {
       const response = await debateClient.callTool('create_debate', debate);
       await loadDebates();
@@ -81,14 +86,13 @@ export default function HomePage() {
         });
       }
     } catch (error) {
-      console.error('Failed to create debate:', error);
+      logger.error('Failed to create debate', error as Error);
       alert('Failed to create debate. Please check the services are running.');
     }
   };
 
-  const handleTemplateSelect = (template: any) => {
+  const handleTemplateSelect = (_template: any) => {
     setIsCreateOpen(true);
-    setShowTemplates(false);
     // TODO: Pre-fill the create debate dialog with template data
   };
 
@@ -333,7 +337,7 @@ export default function HomePage() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                         <div className="flex items-center gap-1.5">
                           <Users className="h-4 w-4" />
-                          <span>{debate.participants.length} participants</span>
+                          <span>{debate.participants?.length || 0} participants</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <MessageSquare className="h-4 w-4" />
@@ -361,10 +365,12 @@ export default function HomePage() {
 
           <TabsContent value="active">
             {selectedDebate ? (
-              <DebateView
-                debate={selectedDebate}
-                onUpdate={loadDebates}
-              />
+              <ErrorBoundary>
+                <DebateView
+                  debate={selectedDebate}
+                  onUpdate={loadDebates}
+                />
+              </ErrorBoundary>
             ) : (
               <Card className="border-0 shadow-lg">
                 <CardContent className="py-16 text-center">
@@ -396,16 +402,20 @@ export default function HomePage() {
           </TabsContent>
         </Tabs>
 
-        <CreateDebateDialog
-          open={isCreateOpen}
-          onOpenChange={setIsCreateOpen}
-          onSubmit={handleCreateDebate}
-        />
+        <ErrorBoundary>
+          <CreateDebateDialog
+            open={isCreateOpen}
+            onOpenChange={setIsCreateOpen}
+            onSubmit={handleCreateDebate}
+          />
+        </ErrorBoundary>
 
-        <LLMTestDialog
-          open={showLLMTest}
-          onOpenChange={setShowLLMTest}
-        />
+        <ErrorBoundary>
+          <LLMTestDialog
+            open={showLLMTest}
+            onOpenChange={setShowLLMTest}
+          />
+        </ErrorBoundary>
 
         <KeyboardShortcutsDialog />
       </main>

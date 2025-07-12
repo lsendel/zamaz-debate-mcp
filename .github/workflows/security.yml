@@ -1,0 +1,77 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: auto
+          # Optional: Upload findings to Semgrep Cloud Dashboard
+          # publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  eslint-security:
+    name: ESLint Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./debate-ui
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './debate-ui/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint security check
+        run: npx eslint src --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+        continue-on-error: true
+      
+      - name: Upload ESLint results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ./debate-ui/eslint-results.sarif
+          wait-for-processing: true
+
+  dependency-check:
+    name: Dependency Security Check  
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./debate-ui
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './debate-ui/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run npm audit
+        run: npm audit --audit-level moderate
+        continue-on-error: true
+      
+      - name: Run npm audit fix
+        run: npm audit fix --dry-run

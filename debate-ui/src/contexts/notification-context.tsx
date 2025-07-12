@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@/lib/logger';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'debate';
 
@@ -22,10 +23,10 @@ export interface Notification {
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
-  markAsRead: (id: string) => void;
+  addNotification: (_notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  markAsRead: (_id: string) => void;
   markAllAsRead: () => void;
-  removeNotification: (id: string) => void;
+  removeNotification: (_id: string) => void;
   clearAll: () => void;
 }
 
@@ -40,12 +41,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setNotifications(parsed.map((n: any) => ({
+        setNotifications(parsed.map((n: Omit<Notification, 'timestamp'> & { timestamp: string }) => ({
           ...n,
           timestamp: new Date(n.timestamp)
         })));
       } catch (error) {
-        console.error('Failed to load notifications:', error);
+        logger.error('Failed to load notifications', error as Error);
       }
     }
   }, []);
@@ -55,9 +56,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     localStorage.setItem('notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+  const addNotification = useCallback((_notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
-      ...notification,
+      ..._notification,
       id: uuidv4(),
       timestamp: new Date(),
       read: false
@@ -75,9 +76,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     // Auto-remove after 30 seconds for non-debate notifications
-    if (notification.type !== 'debate') {
+    if (_notification.type !== 'debate') {
       setTimeout(() => {
-        removeNotification(newNotification.id);
+        setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
       }, 30000);
     }
   }, []);

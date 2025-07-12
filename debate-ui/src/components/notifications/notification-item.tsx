@@ -2,7 +2,6 @@
 
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useNotifications, Notification, NotificationType } from '@/contexts/notification-context';
 import {
   Info,

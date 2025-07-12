@@ -12,9 +12,9 @@ interface Organization {
 
 interface OrganizationContextType {
   currentOrg: Organization | null;
-  setCurrentOrg: (org: Organization) => void;
+  setCurrentOrg: (_org: Organization) => void;
   organizationHistory: OrganizationHistoryEntry[];
-  addHistoryEntry: (entry: Omit<OrganizationHistoryEntry, 'id' | 'timestamp'>) => void;
+  addHistoryEntry: (_entry: Omit<OrganizationHistoryEntry, 'id' | 'timestamp'>) => void;
 }
 
 interface OrganizationHistoryEntry {

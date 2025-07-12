@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 interface ModelSelectorProps {
   value?: string;
-  onChange: (modelId: string) => void;
+  onChange: (_modelId: string) => void;
   label?: string;
   required?: boolean;
   className?: string;
@@ -94,7 +94,7 @@ export function ModelSelector({
                       {model.capabilities.includes('streaming') && (
                         <Badge variant="secondary" className="text-xs">Stream</Badge>
                       )}
-                      {model.type === 'local' && (
+                      {model.provider === 'llama' && (
                         <Badge variant="outline" className="text-xs">Local</Badge>
                       )}
                       {model.costPer1kTokens && (

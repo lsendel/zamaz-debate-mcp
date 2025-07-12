@@ -6,6 +6,7 @@ import { NotificationProvider } from '@/contexts/notification-context';
 import { WebSocketProvider } from '@/contexts/websocket-context';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Toaster } from '@/components/ui/toaster';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,19 +23,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <OrganizationProvider>
-          <NotificationProvider>
-            <WebSocketProvider>
-              <div className="min-h-screen bg-background">
-                <div className="fixed top-4 right-4 z-50">
-                  <NotificationBell />
+        <ErrorBoundary>
+          <OrganizationProvider>
+            <NotificationProvider>
+              <WebSocketProvider>
+                <div className="min-h-screen bg-background">
+                  <div className="fixed top-4 right-4 z-50">
+                    <NotificationBell />
+                  </div>
+                  {children}
+                  <Toaster />
                 </div>
-                {children}
-                <Toaster />
-              </div>
-            </WebSocketProvider>
-          </NotificationProvider>
-        </OrganizationProvider>
+              </WebSocketProvider>
+            </NotificationProvider>
+          </OrganizationProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

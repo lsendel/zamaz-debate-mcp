@@ -23,13 +23,13 @@ export function ParticipantCard({ participant, turnCount, isSpeaking, color }: P
             </div>
             <div>
               <h4 className="font-semibold">{participant.name}</h4>
-              <p className="text-sm text-muted-foreground">{participant.position}</p>
+              <p className="text-sm text-muted-foreground">{participant.position || 'No position stated'}</p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">{turnCount} turns</p>
             <Badge variant="outline" className="text-xs">
-              {participant.model}
+              {participant.llm_config?.model || 'Unknown model'}
             </Badge>
           </div>
         </div>

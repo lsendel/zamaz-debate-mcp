@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, History, Brain, FileText, Zap, Users, TrendingUp, Settings } from 'lucide-react';
+import { Plus, History, Zap, Users, TrendingUp } from 'lucide-react';
 
 interface QuickActionsProps {
   onNewDebate: () => void;

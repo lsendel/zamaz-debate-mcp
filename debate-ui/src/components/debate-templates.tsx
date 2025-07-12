@@ -22,7 +22,7 @@ interface DebateTemplate {
 }
 
 interface DebateTemplatesProps {
-  onSelectTemplate: (template: DebateTemplate) => void;
+  onSelectTemplate: (_template: DebateTemplate) => void;
 }
 
 export function DebateTemplates({ onSelectTemplate }: DebateTemplatesProps) {
@@ -107,7 +107,9 @@ export function DebateTemplates({ onSelectTemplate }: DebateTemplatesProps) {
       Healthcare: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
       Business: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
     };
-    return colors[category] || 'bg-gray-100 text-gray-800';
+    // Use Object.hasOwn to safely check property existence
+    // eslint-disable-next-line security/detect-object-injection
+    return Object.hasOwn(colors, category) ? colors[category] : 'bg-gray-100 text-gray-800';
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -116,7 +118,9 @@ export function DebateTemplates({ onSelectTemplate }: DebateTemplatesProps) {
       intermediate: 'bg-amber-500',
       advanced: 'bg-red-500'
     };
-    return colors[difficulty] || 'bg-gray-500';
+    // Use Object.hasOwn to safely check property existence
+    // eslint-disable-next-line security/detect-object-injection
+    return Object.hasOwn(colors, difficulty) ? colors[difficulty] : 'bg-gray-500';
   };
 
   return (
@@ -160,7 +164,7 @@ export function DebateTemplates({ onSelectTemplate }: DebateTemplatesProps) {
               </div>
               <CardTitle className="text-xl mb-2">{template.title}</CardTitle>
               <CardDescription className="mb-3">{template.description}</CardDescription>
-              <p className="text-sm font-medium mb-3">"{template.topic}"</p>
+              <p className="text-sm font-medium mb-3">&ldquo;{template.topic}&rdquo;</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiLogger } from '@/lib/api-logger';
 
 const DEBATE_SERVICE_URL = process.env.MCP_DEBATE_URL || 'http://localhost:5013';
 
@@ -42,7 +43,7 @@ async function proxyRequest(
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Debate API error:', error);
+    apiLogger.error('Debate API error', error as Error, { method, path });
     return NextResponse.json(
       { error: 'Failed to communicate with debate service' },
       { status: 502 }

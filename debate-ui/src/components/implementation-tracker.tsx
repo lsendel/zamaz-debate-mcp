@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Implementation, ImplementationTracking } from '@/types/implementation';
 import { useOrganization } from '@/hooks/use-organization';
+import { logger } from '@/lib/logger';
 import { 
   GitCommit, 
   GitBranch, 
-  FileCode, 
   Calendar, 
   User, 
   Plus,
@@ -26,7 +26,7 @@ import {
 
 interface ImplementationTrackerProps {
   debateId: string;
-  onImplementationAdded?: (implementation: Implementation) => void;
+  onImplementationAdded?: (_implementation: Implementation) => void;
 }
 
 export function ImplementationTracker({ debateId, onImplementationAdded }: ImplementationTrackerProps) {
@@ -43,11 +43,7 @@ export function ImplementationTracker({ debateId, onImplementationAdded }: Imple
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Implementation['status']>('planned');
 
-  useEffect(() => {
-    loadImplementations();
-  }, [debateId, currentOrg]);
-
-  const loadImplementations = async () => {
+  const loadImplementations = useCallback(async () => {
     if (!currentOrg) return;
     
     try {
@@ -70,11 +66,15 @@ export function ImplementationTracker({ debateId, onImplementationAdded }: Imple
         });
       }
     } catch (error) {
-      console.error('Failed to load implementations:', error);
+      logger.error('Failed to load implementations', error as Error, { debateId });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentOrg, debateId]);
+
+  useEffect(() => {
+    loadImplementations();
+  }, [loadImplementations]);
 
   const addImplementation = async () => {
     if (!currentOrg || !tracking) return;

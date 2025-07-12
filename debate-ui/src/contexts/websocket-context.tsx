@@ -7,27 +7,27 @@ import { useOrganization } from '@/hooks/use-organization';
 interface WebSocketContextType {
   isConnected: boolean;
   isReconnecting: boolean;
-  sendMessage: (message: any) => boolean;
+  sendMessage: (_message: any) => boolean;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { currentOrganization } = useOrganization();
+  const { currentOrg } = useOrganization();
   const { isConnected, isReconnecting, sendMessage } = useDebateWebSocket();
 
   // Subscribe to organization updates when connected
   useEffect(() => {
-    if (isConnected && currentOrganization) {
+    if (isConnected && currentOrg) {
       sendMessage({
         type: 'subscribe',
         payload: {
-          organizationId: currentOrganization.id,
+          organizationId: currentOrg.id,
           events: ['debate_updates', 'organization_updates']
         }
       });
     }
-  }, [isConnected, currentOrganization, sendMessage]);
+  }, [isConnected, currentOrg, sendMessage]);
 
   return (
     <WebSocketContext.Provider value={{ isConnected, isReconnecting, sendMessage }}>

@@ -17,7 +17,7 @@ interface HistoryEntry {
 
 interface OrganizationHistoryProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (_open: boolean) => void;
   organizationId: string;
   organizationName: string;
 }
