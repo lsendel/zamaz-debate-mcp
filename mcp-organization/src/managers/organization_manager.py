@@ -2,6 +2,7 @@
 Organization Management Business Logic
 """
 
+import os
 import re
 import httpx
 from typing import List, Optional, Dict, Any
@@ -472,8 +473,11 @@ class ProjectManager:
                     parsed = self._parse_github_url(str(request.github_repo))
                     project_db.github_owner = parsed["owner"]
                     project_db.github_repo_name = parsed["repo"]
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.warning("Failed to parse GitHub URL during update", 
+                                 url=str(request.github_repo), 
+                                 error=str(e),
+                                 project_id=project_id)
         
         if request.github_owner is not None:
             project_db.github_owner = request.github_owner

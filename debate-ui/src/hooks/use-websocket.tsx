@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNotifications } from '@/contexts/notification-context';
+import { logger } from '@/lib/logger';
 
 export interface WebSocketMessage {
   type: string;
@@ -44,7 +45,7 @@ export function useWebSocket({
       ws.current = new WebSocket(url);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
+        logger.info('WebSocket connected', { url });
         setIsConnected(true);
         setIsReconnecting(false);
         reconnectCount.current = 0;
@@ -65,12 +66,17 @@ export function useWebSocket({
           // Handle specific message types
           handleWebSocketMessage(message);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          logger.error('Failed to parse WebSocket message', error as Error, { 
+            eventData: event.data 
+          });
         }
       };
 
       ws.current.onclose = () => {
-        console.log('WebSocket disconnected');
+        logger.info('WebSocket disconnected', { 
+          reconnectCount: reconnectCount.current,
+          maxReconnectAttempts 
+        });
         setIsConnected(false);
         onClose?.();
         
@@ -91,11 +97,11 @@ export function useWebSocket({
       };
 
       ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        logger.error('WebSocket error', error as Error);
         onError?.(error);
       };
     } catch (error) {
-      console.error('Failed to create WebSocket:', error);
+      logger.error('Failed to create WebSocket', error as Error, { url });
     }
   }, [url, enabled, reconnectDelay, maxReconnectAttempts, onMessage, onOpen, onClose, onError, addNotification]);
 
@@ -207,7 +213,10 @@ export function useDebateWebSocket(debateId?: string) {
     url,
     enabled: true,
     onMessage: (message) => {
-      console.log('Debate WebSocket message:', message);
+      logger.debug('Debate WebSocket message received', { 
+        type: message.type, 
+        debateId 
+      });
     }
   });
 }

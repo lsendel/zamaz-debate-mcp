@@ -3,7 +3,7 @@ FastAPI server wrapper for LLM MCP service
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import os
 from datetime import datetime
 from dotenv import load_dotenv
@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     """Health check endpoint"""
     providers_status = {}
     
@@ -91,7 +91,7 @@ async def health_check():
     }
 
 @app.get("/providers")
-async def get_providers():
+async def get_providers() -> Dict[str, List[Dict[str, Any]]]:
     """Get available LLM providers and their models"""
     providers = []
     
@@ -157,7 +157,7 @@ async def get_providers():
     return {"providers": providers}
 
 @app.post("/completions")
-async def create_completion(request: Dict[str, Any]):
+async def create_completion(request: Dict[str, Any]) -> Dict[str, Any]:
     """Create a completion using specified provider and model"""
     try:
         provider_id = request.get("provider", "llama")
@@ -218,7 +218,7 @@ async def create_completion(request: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/models")
-async def get_all_models():
+async def get_all_models() -> List[Dict[str, Any]]:
     """Get all available models from all providers"""
     models = []
     
@@ -354,7 +354,7 @@ async def get_provider_models(provider: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def start_api_server():
+def start_api_server() -> None:
     """Start the FastAPI server"""
     port = int(os.getenv("LLM_SERVICE_PORT", "5002"))
     host = os.getenv("LLM_SERVICE_HOST", "0.0.0.0")
