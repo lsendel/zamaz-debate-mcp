@@ -15,7 +15,10 @@ from ..clients.mcp_client import ContextServiceClient, LLMServiceClient, RAGServ
 from ..db.debate_store import DebateStore
 from ..concurrency import (
     with_debate_lock, with_request_queue, with_rate_limit,
-    concurrency_metrics
+    concurrency_metrics, debate_lock_manager
+)
+from ..websocket_manager import (
+    notify_debate_started, notify_turn_added, notify_debate_completed
 )
 
 logger = structlog.get_logger()
@@ -104,7 +107,8 @@ class DebateOrchestrator:
             )
             debate.context_id = context_result.get("id")
         except Exception as e:
-            logger.error("Failed to create context", error=str(e))
+            logger.warning("Context service unavailable, debate will proceed without context tracking", error=str(e))
+            # Continue without context - the debate can still function
         
         # Save debate
         await self.debate_store.save_debate(debate)
@@ -112,7 +116,6 @@ class DebateOrchestrator:
         logger.info("Debate created", debate_id=debate.id)
         return debate
     
-    @with_debate_lock
     @with_request_queue("start_debate")
     async def start_debate(self, debate_id: str) -> Debate:
         """Start a debate"""
@@ -138,73 +141,87 @@ class DebateOrchestrator:
             )
         
         await self.debate_store.save_debate(debate)
+        
+        # Send WebSocket notification
+        await notify_debate_started(debate.id, debate.org_id, debate.topic)
+        
         return debate
     
-    @with_debate_lock
     @with_request_queue("add_turn")
     async def add_turn(self, request: AddTurnRequest) -> Turn:
         """Add a turn to the debate"""
-        debate = await self.debate_store.get_debate(request.debate_id)
-        if not debate:
-            raise ValueError(f"Debate {request.debate_id} not found")
+        # Get debate lock
+        lock = await debate_lock_manager.get_lock(request.debate_id)
         
-        if debate.status != DebateStatus.ACTIVE:
-            raise ValueError("Debate is not active")
+        async with lock:
+            debate = await self.debate_store.get_debate(request.debate_id)
+            if not debate:
+                raise ValueError(f"Debate {request.debate_id} not found")
         
-        # Determine participant
-        participant_id = request.participant_id or debate.next_participant_id
-        participant = debate.get_participant(participant_id)
-        if not participant:
-            raise ValueError(f"Participant {participant_id} not found")
+            if debate.status != DebateStatus.ACTIVE:
+                raise ValueError("Debate is not active")
         
-        # Generate content if not provided
-        content = request.content
-        if not content:
-            content = await self._generate_turn_content(
-                debate, participant, request.turn_type,
-                use_rag=request.use_rag, rag_query=request.rag_query
+            # Determine participant
+            participant_id = request.participant_id or debate.next_participant_id
+            participant = debate.get_participant(participant_id)
+            if not participant:
+                raise ValueError(f"Participant {participant_id} not found")
+        
+            # Generate content if not provided
+            content = request.content
+            if not content:
+                content = await self._generate_turn_content(
+                    debate, participant, request.turn_type,
+                    use_rag=request.use_rag, rag_query=request.rag_query
+                )
+        
+            # Create turn
+            turn = Turn(
+                debate_id=debate.id,
+                participant_id=participant.id,
+                turn_number=debate.current_turn + 1,
+                round_number=debate.current_round,
+                turn_type=request.turn_type,
+                content=content,
+                context_used=debate.context_id
             )
         
-        # Create turn
-        turn = Turn(
-            debate_id=debate.id,
-            participant_id=participant.id,
-            turn_number=debate.current_turn + 1,
-            round_number=debate.current_round,
-            turn_type=request.turn_type,
-            content=content,
-            context_used=debate.context_id
-        )
+            # Update debate state
+            debate.current_turn += 1
+            debate.next_participant_id = debate.get_next_participant().id
         
-        # Update debate state
-        debate.current_turn += 1
-        debate.next_participant_id = debate.get_next_participant().id
-        
-        # Check if round is complete
-        if debate.current_turn % len(debate.participants) == 0:
-            debate.current_round += 1
+            # Check if round is complete
+            if debate.current_turn % len(debate.participants) == 0:
+                debate.current_round += 1
             
-            # Check max rounds
-            if debate.rules.max_rounds and debate.current_round > debate.rules.max_rounds:
-                debate.status = DebateStatus.COMPLETED
-                debate.completed_at = datetime.utcnow()
+                # Check max rounds
+                if debate.rules.max_rounds and debate.current_round > debate.rules.max_rounds:
+                    debate.status = DebateStatus.COMPLETED
+                    debate.completed_at = datetime.utcnow()
         
-        # Save turn and update debate
-        await self.debate_store.save_turn(turn)
-        await self.debate_store.save_debate(debate)
+            # Save turn and update debate
+            await self.debate_store.save_turn(turn)
+            await self.debate_store.save_debate(debate)
         
-        # Update context
-        if debate.context_id:
-            await self.context_client.append_to_context(
-                debate.context_id,
-                [{
-                    "role": "assistant",
-                    "content": f"[{participant.name}]: {content}"
-                }]
-            )
+            # Update context
+            if debate.context_id:
+                await self.context_client.append_to_context(
+                    debate.context_id,
+                    [{
+                        "role": "assistant",
+                        "content": f"[{participant.name}]: {content}"
+                    }]
+                )
         
-        logger.info("Turn added", debate_id=debate.id, turn_id=turn.id)
-        return turn
+            # Send WebSocket notification for turn added
+            await notify_turn_added(debate.id, debate.org_id, participant.name, debate.current_turn)
+        
+            # If debate is completed, send completion notification
+            if debate.status == DebateStatus.COMPLETED:
+                await notify_debate_completed(debate.id, debate.org_id, debate.topic)
+        
+            logger.info("Turn added", debate_id=debate.id, turn_id=turn.id)
+            return turn
     
     @with_debate_lock
     @with_request_queue("get_next_turn")
@@ -301,7 +318,8 @@ class DebateOrchestrator:
                 if context_window and "messages" in context_window:
                     context_messages = context_window["messages"]
             except Exception as e:
-                logger.error("Failed to get context window", error=str(e))
+                logger.warning("Context service unavailable, proceeding without context", error=str(e))
+                # Continue without context - the debate can still function
         
         # Build prompt
         system_prompt = self._build_participant_prompt(debate, participant, turn_type)
@@ -498,3 +516,8 @@ class DebateOrchestrator:
                 disagreement_points.append(line.strip())
         
         return disagreement_points[:5]
+    
+    async def list_debates(self, org_id: str) -> List[dict]:
+        """List all debates for an organization"""
+        debates = await self.debate_store.list_debates(org_id)
+        return [debate.dict() for debate in debates]

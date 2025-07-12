@@ -51,6 +51,15 @@ class GeminiProvider(BaseLLMProvider):
             input_cost_per_1k=0.00025,
             output_cost_per_1k=0.00075,
             capabilities=["text", "vision", "audio", "video"]
+        ),
+        "gemini-2.0-flash-exp": ModelInfo(
+            name="gemini-2.0-flash-exp",
+            provider=LLMProvider.GEMINI,
+            context_window=1048576,  # 1M tokens
+            max_output_tokens=8192,
+            input_cost_per_1k=0.00025,  # Estimated
+            output_cost_per_1k=0.00075,  # Estimated
+            capabilities=["text", "vision", "audio", "video", "enhanced_reasoning"]
         )
     }
     

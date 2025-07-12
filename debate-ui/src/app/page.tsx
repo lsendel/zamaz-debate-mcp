@@ -20,6 +20,9 @@ import { TemplateManager } from '@/components/template-manager';
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from '@/hooks/use-keyboard-shortcuts';
 import { useRouter } from 'next/navigation';
+import { LLMHealthMonitor } from '@/components/llm/health-monitor';
+import { LLMTestDialog } from '@/components/llm/llm-test-dialog';
+import { ConnectionStatus } from '@/components/connection-status';
 
 export default function HomePage() {
   const [debates, setDebates] = useState<Debate[]>([]);
@@ -27,6 +30,7 @@ export default function HomePage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showLLMTest, setShowLLMTest] = useState(false);
   const { currentOrg, addHistoryEntry } = useOrganization();
   const router = useRouter();
 
@@ -141,7 +145,16 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <ConnectionStatus />
               <OrganizationSwitcher />
+              <Button
+                onClick={() => setShowLLMTest(true)}
+                variant="outline"
+                size="default"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Test LLM
+              </Button>
               <Button 
                 onClick={() => setIsCreateOpen(true)} 
                 size="lg"
@@ -375,8 +388,11 @@ export default function HomePage() {
             <TemplateManager />
           </TabsContent>
 
-          <TabsContent value="ollama">
-            <OllamaSetup />
+          <TabsContent value="ollama" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <LLMHealthMonitor />
+              <OllamaSetup />
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -384,6 +400,11 @@ export default function HomePage() {
           open={isCreateOpen}
           onOpenChange={setIsCreateOpen}
           onSubmit={handleCreateDebate}
+        />
+
+        <LLMTestDialog
+          open={showLLMTest}
+          onOpenChange={setShowLLMTest}
         />
 
         <KeyboardShortcutsDialog />

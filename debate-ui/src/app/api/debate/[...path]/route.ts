@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DEBATE_SERVICE_URL = process.env.MCP_DEBATE_URL || 'http://localhost:8003';
+const DEBATE_SERVICE_URL = process.env.MCP_DEBATE_URL || 'http://localhost:5013';
 
 // Common proxy handler
 async function proxyRequest(

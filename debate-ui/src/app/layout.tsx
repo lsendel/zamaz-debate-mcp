@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { OrganizationProvider } from '@/hooks/use-organization';
+import { NotificationProvider } from '@/contexts/notification-context';
+import { WebSocketProvider } from '@/contexts/websocket-context';
+import { NotificationBell } from '@/components/notifications/notification-bell';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,9 +23,17 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <OrganizationProvider>
-          <div className="min-h-screen bg-background">
-            {children}
-          </div>
+          <NotificationProvider>
+            <WebSocketProvider>
+              <div className="min-h-screen bg-background">
+                <div className="fixed top-4 right-4 z-50">
+                  <NotificationBell />
+                </div>
+                {children}
+                <Toaster />
+              </div>
+            </WebSocketProvider>
+          </NotificationProvider>
         </OrganizationProvider>
       </body>
     </html>
