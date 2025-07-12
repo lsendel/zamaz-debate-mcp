@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/
+COPY start_services.py .
 
 # Create data directory
 RUN mkdir -p /app/data
@@ -23,8 +24,8 @@ ENV PYTHONUNBUFFERED=1
 ENV LOG_LEVEL=INFO
 ENV DATABASE_PATH=/app/data/debates.db
 
-# Expose MCP server port
-EXPOSE 5003
+# Expose MCP server port and WebSocket port
+EXPOSE 5003 5013
 
 # Run MCP server
 CMD ["python", "-m", "src.mcp_server"]

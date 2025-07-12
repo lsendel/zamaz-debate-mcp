@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a multi-service MCP (Model Context Protocol) system for managing debates with multi-tenant support. The system consists of four separate services:
-1. **mcp-context**: Multi-tenant context management service
-2. **mcp-llm**: LLM provider gateway
-3. **mcp-debate**: Debate orchestration service  
-4. **mcp-rag**: Retrieval Augmented Generation service
+This is a multi-service MCP (Model Context Protocol) system for managing debates with multi-tenant support. The system consists of five separate services:
+1. **mcp-organization**: Organization management and multi-tenant setup
+2. **mcp-context**: Multi-tenant context management service
+3. **mcp-llm**: LLM provider gateway
+4. **mcp-debate**: Debate orchestration service  
+5. **mcp-rag**: Retrieval Augmented Generation service
 
 ## Technology Stack
 
@@ -23,6 +24,10 @@ This is a multi-service MCP (Model Context Protocol) system for managing debates
 
 ```
 zamaz-debate-mcp/
+├── mcp-organization/     # Organization management service
+│   ├── src/
+│   ├── Dockerfile
+│   └── requirements.txt
 ├── mcp-context/          # Context management service
 │   ├── src/
 │   ├── Dockerfile

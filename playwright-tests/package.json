@@ -1,0 +1,52 @@
+{
+  "name": "debate-system-playwright-tests",
+  "version": "1.0.0",
+  "description": "Playwright E2E tests for AI Debate System",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report test_probe/evidence/html-report",
+    "test:codegen": "playwright codegen http://localhost:3000",
+    "test:trace": "playwright show-trace",
+    "install": "playwright install --with-deps chromium",
+    "test:smoke": "playwright test tests/smoke.spec.ts",
+    "test:full": "playwright test tests/full.spec.ts",
+    "test:template": "playwright test tests/template.spec.ts",
+    "test:debate": "playwright test tests/debate.spec.ts",
+    "test:organization": "playwright test tests/organization.spec.ts",
+    "test:parallel": "playwright test --workers=4",
+    "test:serial": "playwright test --workers=1",
+    "test:comprehensive": "playwright test --project=comprehensive-debate-tests",
+    "test:llm": "playwright test --project=llm-integration",
+    "test:ui-components": "playwright test --project=ui-components",
+    "test:db": "playwright test --project=database-verification",
+    "test:perf": "playwright test --project=performance"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "debate",
+    "mcp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^20.10.5",
+    "@types/uuid": "^9.0.7",
+    "dotenv": "^17.2.0",
+    "typescript": "^5.3.3",
+    "uuid": "^9.0.1"
+  },
+  "dependencies": {
+    "puppeteer": "^24.12.1"
+  },
+  "main": "test-ui.js",
+  "directories": {
+    "test": "tests"
+  },
+  "type": "commonjs"
+}

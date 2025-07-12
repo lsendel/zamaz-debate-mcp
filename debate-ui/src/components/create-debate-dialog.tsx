@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Participant, DebateRules } from '@/types/debate';
-import { AI_MODELS, getModelsByProvider } from '@/types/models';
-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap } from 'lucide-react';
+import { ModelSelector } from '@/components/llm/model-selector';
+import { useLLM } from '@/hooks/use-llm';
+import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';
 
 interface CreateDebateDialogProps {
   open: boolean;
@@ -20,38 +21,47 @@ interface CreateDebateDialogProps {
 }
 
 export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebateDialogProps) {
+  const { models, health, loading: llmLoading } = useLLM();
   const [name, setName] = useState('');
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
-  const [participants, setParticipants] = useState<Participant[]>([
-    {
-      name: 'AI Optimist',
-      role: 'debater',
-      position: 'Pro-AI advancement',
-      llm_config: {
-        provider: 'llama',
-        model: 'llama3',
-        temperature: 0.7,
-        systemPrompt: 'You are an optimistic AI advocate who believes in the positive potential of artificial intelligence.'
-      }
-    },
-    {
-      name: 'AI Skeptic',
-      role: 'debater',
-      position: 'Cautious about AI',
-      llm_config: {
-        provider: 'llama',
-        model: 'mistral',
-        temperature: 0.7,
-        systemPrompt: 'You are a thoughtful AI skeptic who raises important concerns about artificial intelligence development.'
-      }
-    }
-  ]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [rules, setRules] = useState<DebateRules>({
     format: 'round_robin',
     maxRounds: 5,
     maxTurnLength: 500
   });
+
+  // Initialize default participants when models are loaded
+  useEffect(() => {
+    if (models.length > 0 && participants.length === 0) {
+      const defaultModel = models[0];
+      setParticipants([
+        {
+          name: 'AI Optimist',
+          role: 'debater',
+          position: 'Pro-AI advancement',
+          llm_config: {
+            provider: defaultModel.provider,
+            model: defaultModel.id,
+            temperature: 0.7,
+            systemPrompt: 'You are an optimistic AI advocate who believes in the positive potential of artificial intelligence.'
+          }
+        },
+        {
+          name: 'AI Skeptic',
+          role: 'debater',
+          position: 'Cautious about AI',
+          llm_config: {
+            provider: defaultModel.provider,
+            model: defaultModel.id,
+            temperature: 0.7,
+            systemPrompt: 'You are a thoughtful AI skeptic who raises important concerns about artificial intelligence development.'
+          }
+        }
+      ]);
+    }
+  }, [models, participants.length]);
 
   const handleSubmit = () => {
     if (!name || !topic || participants.length < 2) {
@@ -75,12 +85,13 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
   };
 
   const addParticipant = () => {
+    const defaultModel = models[0] || { provider: 'unknown', id: 'unknown' };
     setParticipants([...participants, {
       name: `Participant ${participants.length + 1}`,
       role: 'debater',
       llm_config: {
-        provider: 'llama',
-        model: 'llama3',
+        provider: defaultModel.provider,
+        model: defaultModel.id,
         temperature: 0.7
       }
     }]);
@@ -96,25 +107,6 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
     setParticipants(participants.filter((_, i) => i !== index));
   };
 
-  const getProviderIcon = (provider: string) => {
-    switch (provider) {
-      case 'claude': return <Brain className="h-4 w-4 text-purple-500" />;
-      case 'openai': return <Zap className="h-4 w-4 text-green-500" />;
-      case 'gemini': return <Sparkles className="h-4 w-4 text-blue-500" />;
-      case 'llama': return <Server className="h-4 w-4 text-orange-500" />;
-      default: return <Cloud className="h-4 w-4" />;
-    }
-  };
-
-  const getProviderColor = (provider: string) => {
-    switch (provider) {
-      case 'claude': return 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300';
-      case 'openai': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
-      case 'gemini': return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
-      case 'llama': return 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300';
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -253,77 +245,23 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
                       </Button>
                     </div>
 
-                    <div>
-                      <Label>AI Model</Label>
-                      <Tabs 
-                        value={participant.llm_config.provider} 
-                        onValueChange={(provider) => {
-                          const models = getModelsByProvider(provider);
+                    <ModelSelector
+                      value={participant.llm_config.model}
+                      onChange={(modelId) => {
+                        const model = models.find(m => m.id === modelId);
+                        if (model) {
                           updateParticipant(index, {
-                            llm_config: { 
-                              ...participant.llm_config, 
-                              provider: provider as any,
-                              model: models[0]?.name || ''
+                            llm_config: {
+                              ...participant.llm_config,
+                              provider: model.provider,
+                              model: modelId
                             }
                           });
-                        }}
-                        className="mt-1"
-                      >
-                        <TabsList className="grid grid-cols-4 w-full">
-                          <TabsTrigger value="llama" className="flex items-center gap-1">
-                            <Server className="h-3 w-3" />
-                            Local
-                          </TabsTrigger>
-                          <TabsTrigger value="claude" className="flex items-center gap-1">
-                            <Brain className="h-3 w-3" />
-                            Claude
-                          </TabsTrigger>
-                          <TabsTrigger value="openai" className="flex items-center gap-1">
-                            <Zap className="h-3 w-3" />
-                            OpenAI
-                          </TabsTrigger>
-                          <TabsTrigger value="gemini" className="flex items-center gap-1">
-                            <Sparkles className="h-3 w-3" />
-                            Gemini
-                          </TabsTrigger>
-                        </TabsList>
-
-                        {['llama', 'claude', 'openai', 'gemini'].map((provider) => (
-                          <TabsContent key={provider} value={provider} className="mt-3">
-                            <Select
-                              value={participant.llm_config.model}
-                              onValueChange={(value) => updateParticipant(index, {
-                                llm_config: { ...participant.llm_config, model: value }
-                              })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a model" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {getModelsByProvider(provider).map((model) => (
-                                  <SelectItem key={model.name} value={model.name}>
-                                    <div className="flex items-center justify-between w-full">
-                                      <div className="flex items-center gap-2">
-                                        {getProviderIcon(provider)}
-                                        <div>
-                                          <div className="font-medium">{model.displayName}</div>
-                                          <div className="text-xs text-muted-foreground">{model.description}</div>
-                                        </div>
-                                      </div>
-                                      {model.isLocal && (
-                                        <Badge variant="outline" className="ml-2 text-xs">
-                                          {model.size}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TabsContent>
-                        ))}
-                      </Tabs>
-                    </div>
+                        }
+                      }}
+                      participantName={participant.name}
+                      required
+                    />
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -372,11 +310,11 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge className={getProviderColor(participant.llm_config.provider)}>
+                      <Badge variant="outline">
                         {participant.llm_config.provider}
                       </Badge>
                       <span>•</span>
-                      <span>{participant.llm_config.model}</span>
+                      <span>{models.find(m => m.id === participant.llm_config.model)?.name || participant.llm_config.model}</span>
                       <span>•</span>
                       <span>Temperature: {participant.llm_config.temperature}</span>
                     </div>
@@ -385,6 +323,16 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
               ))}
             </div>
           </div>
+
+          {/* LLM Service Status */}
+          {health && health.status !== 'healthy' && (
+            <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 rounded-md">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">
+                LLM service is {health.status}. Some models may not be available.
+              </span>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

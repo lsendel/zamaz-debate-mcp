@@ -1,8 +1,9 @@
 from typing import List, Dict, Any, Optional, Literal
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from enum import Enum
 import uuid
+import os
 
 
 class DebateStatus(str, Enum):
@@ -59,15 +60,22 @@ class Participant(BaseModel):
 
 class DebateRules(BaseModel):
     format: DebateFormat = DebateFormat.ROUND_ROBIN
-    max_rounds: Optional[int] = None
+    max_rounds: Optional[int] = Field(default=None)
     max_turns_per_participant: Optional[int] = None
     turn_time_limit_seconds: Optional[int] = None
-    min_turn_length: Optional[int] = 50  # characters
-    max_turn_length: Optional[int] = 2000  # characters
+    min_turn_length: Optional[int] = Field(default_factory=lambda: int(os.getenv("MIN_TURN_LENGTH", "50")))
+    max_turn_length: Optional[int] = Field(default_factory=lambda: int(os.getenv("MAX_TURN_LENGTH", "2000")))
     allowed_turn_types: List[TurnType] = Field(default_factory=lambda: list(TurnType))
     enforce_citations: bool = False
     allow_interruptions: bool = False
     custom_rules: Dict[str, Any] = Field(default_factory=dict)
+    
+    @validator('max_rounds')
+    def validate_max_rounds(cls, v):
+        max_allowed = int(os.getenv("MAX_DEBATE_ROUNDS", "10"))
+        if v and v > max_allowed:
+            raise ValueError(f"Max rounds cannot exceed {max_allowed}")
+        return v or int(os.getenv("DEFAULT_DEBATE_ROUNDS", "5"))
 
 
 class Turn(BaseModel):

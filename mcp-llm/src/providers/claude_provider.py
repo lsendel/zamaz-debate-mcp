@@ -40,6 +40,15 @@ class ClaudeProvider(BaseLLMProvider):
             input_cost_per_1k=0.00025,
             output_cost_per_1k=0.00125,
             capabilities=["text", "vision"]
+        ),
+        "claude-3-5-sonnet-20241022": ModelInfo(
+            name="claude-3-5-sonnet-20241022",
+            provider=LLMProvider.CLAUDE,
+            context_window=200000,
+            max_output_tokens=8192,
+            input_cost_per_1k=0.003,
+            output_cost_per_1k=0.015,
+            capabilities=["text", "vision", "analysis", "enhanced_reasoning"]
         )
     }
     

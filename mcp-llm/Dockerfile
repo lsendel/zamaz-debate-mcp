@@ -24,7 +24,7 @@ ENV PYTHONUNBUFFERED=1
 ENV LOG_LEVEL=INFO
 
 # Expose MCP server port
-EXPOSE 5001
+EXPOSE 5002
 
 # Run MCP server
 CMD ["python", "-m", "src.mcp_server"]
