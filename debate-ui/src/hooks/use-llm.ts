@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface LLMProvider {
   id: string;
@@ -48,7 +49,7 @@ export function useLLM() {
       const data = await response.json();
       setProviders(data.providers || []);
     } catch (err) {
-      console.error('Error fetching providers:', err);
+      logger.error('Error fetching providers', err as Error);
       setError('Failed to load LLM providers');
     }
   }, []);
@@ -61,7 +62,7 @@ export function useLLM() {
       const data = await response.json();
       setModels(data.models || []);
     } catch (err) {
-      console.error('Error fetching models:', err);
+      logger.error('Error fetching models', err as Error);
       setError('Failed to load LLM models');
     }
   }, []);
@@ -74,7 +75,7 @@ export function useLLM() {
       const data = await response.json();
       setHealth(data);
     } catch (err) {
-      console.error('Error checking health:', err);
+      logger.error('Error checking health', err as Error);
       setHealth({
         status: 'unhealthy',
         providers: {},
@@ -113,7 +114,7 @@ export function useLLM() {
 
       return await response.json();
     } catch (err) {
-      console.error('Error generating completion:', err);
+      logger.error('Error generating completion', err as Error, { prompt: prompt.substring(0, 100) });
       throw err;
     }
   }, []);
@@ -170,13 +171,13 @@ export function useLLM() {
               const parsed = JSON.parse(data);
               yield parsed;
             } catch (e) {
-              console.error('Error parsing SSE data:', e);
+              logger.warn('Error parsing SSE data', { error: e, data });
             }
           }
         }
       }
     } catch (err) {
-      console.error('Error streaming completion:', err);
+      logger.error('Error streaming completion', err as Error, { prompt: prompt.substring(0, 100) });
       throw err;
     }
   }, []);
@@ -203,7 +204,7 @@ export function useLLM() {
       
       return await response.json();
     } catch (err) {
-      console.error('Error configuring provider:', err);
+      logger.error('Error configuring provider', err as Error, { provider });
       throw err;
     }
   }, [fetchProviders, checkHealth]);
