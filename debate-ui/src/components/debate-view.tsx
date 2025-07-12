@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -17,6 +17,17 @@ import { DebateControls } from './debate/debate-controls';
 import { ParticipantCard } from './debate/participant-card';
 import { TurnMessage } from './debate/turn-message';
 
+// Constants
+const NEXT_TURN_DELAY_MS = 2000;
+const PARTICIPANT_COLORS = [
+  'from-blue-500 to-blue-600',
+  'from-purple-500 to-purple-600',
+  'from-green-500 to-green-600',
+  'from-orange-500 to-orange-600',
+  'from-pink-500 to-pink-600',
+  'from-teal-500 to-teal-600'
+];
+
 interface DebateViewProps {
   debate: Debate;
   onUpdate: () => void;
@@ -27,15 +38,23 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
-  const [showImplementation, setShowImplementation] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { currentOrg, addHistoryEntry } = useOrganization();
   
-  const debateClient = new MCPClient('debate');
+  const debateClient = useMemo(() => new MCPClient('debate'), []);
+
+  const loadTurns = useCallback(async () => {
+    try {
+      const response = await debateClient.readResource(`debate://debates/${debate.id}/turns`);
+      setTurns(response.turns || []);
+    } catch (error) {
+      logger.error('Failed to load turns', error as Error, { debateId: debate.id });
+    }
+  }, [debate.id, debateClient]);
 
   useEffect(() => {
     loadTurns();
-  }, [debate.id]);
+  }, [loadTurns]);
 
   useEffect(() => {
     // Auto-scroll to bottom when new turns are added
@@ -43,15 +62,6 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [turns]);
-
-  const loadTurns = async () => {
-    try {
-      const response = await debateClient.readResource(`debate://debates/${debate.id}/turns`);
-      setTurns(response.turns || []);
-    } catch (error) {
-      logger.error('Failed to load turns', error as Error, { debateId: debate.id });
-    }
-  };
 
   const startDebate = async () => {
     try {
@@ -106,7 +116,9 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
     
     try {
       setIsLoading(true);
-      const participant = debate.participants.find(p => p.id === debate.nextParticipantId);
+      const participant = debate.nextParticipantId 
+        ? debate.participants.find(p => p.id === debate.nextParticipantId)
+        : undefined;
       setCurrentSpeaker(participant?.name || null);
       
       const response = await debateClient.callTool('get_next_turn', {
@@ -130,12 +142,12 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
       onUpdate();
       
       // Check if debate is complete
-      if (debate.rules.maxRounds && newTurn.roundNumber >= debate.rules.maxRounds) {
+      if (debate.rules?.maxRounds && newTurn.roundNumber >= debate.rules.maxRounds) {
         setIsRunning(false);
         setCurrentSpeaker(null);
       } else if (isRunning) {
         // Continue with next turn after a delay
-        setTimeout(() => getNextTurn(), 2000);
+        setTimeout(() => getNextTurn(), NEXT_TURN_DELAY_MS);
       }
     } catch (error) {
       logger.error('Failed to get next turn', error as Error, { 
@@ -157,15 +169,7 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
 
   const getParticipantColor = (participantId: string) => {
     const index = debate.participants.findIndex(p => p.id === participantId);
-    const colors = [
-      'from-blue-500 to-blue-600',
-      'from-purple-500 to-purple-600',
-      'from-green-500 to-green-600',
-      'from-orange-500 to-orange-600',
-      'from-pink-500 to-pink-600',
-      'from-teal-500 to-teal-600'
-    ];
-    return colors[index % colors.length];
+    return PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
   };
 
   const getParticipant = (participantId: string) => {
@@ -203,14 +207,16 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2">
             {debate.participants.map((participant) => {
-              const turnCount = turns.filter(t => t.participantId === participant.id).length;
+              const turnCount = participant.id 
+                ? turns.filter(t => t.participantId === participant.id).length
+                : 0;
               return (
                 <ParticipantCard
                   key={participant.id}
                   participant={participant}
                   turnCount={turnCount}
                   isSpeaking={currentSpeaker === participant.name}
-                  color={getParticipantColor(participant.id)}
+                  color={getParticipantColor(participant.id || '')}
                 />
               );
             })}
@@ -245,7 +251,7 @@ export function DebateView({ debate, onUpdate }: DebateViewProps) {
                       <TurnMessage
                         turn={turn}
                         participant={participant}
-                        color={getParticipantColor(turn.participantId)}
+                        color={getParticipantColor(turn.participantId || '')}
                         isLeft={isLeft}
                       />
                       {index < turns.length - 1 && <Separator className="my-4" />}

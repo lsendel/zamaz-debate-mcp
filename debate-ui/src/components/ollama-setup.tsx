@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OllamaClient } from '@/lib/mcp-client';
 import { OLLAMA_MODELS } from '@/types/debate';
+import { logger } from '@/lib/logger';
 import { 
   Download, 
   CheckCircle2, 
@@ -26,13 +27,9 @@ export function OllamaSetup() {
   const [pullingModel, setPullingModel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const ollamaClient = new OllamaClient();
+  const ollamaClient = useMemo(() => new OllamaClient(), []);
 
-  useEffect(() => {
-    checkConnection();
-  }, []);
-
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       setIsLoading(true);
       const models = await ollamaClient.listModels();
@@ -45,7 +42,11 @@ export function OllamaSetup() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [ollamaClient]);
+
+  useEffect(() => {
+    checkConnection();
+  }, [checkConnection]);
 
   const pullModel = async (modelName: string) => {
     try {
@@ -53,7 +54,7 @@ export function OllamaSetup() {
       await ollamaClient.pullModel(modelName);
       await checkConnection(); // Refresh the list
     } catch (error) {
-      console.error('Failed to pull model:', error);
+      logger.error('Failed to pull model', error as Error, { modelName });
       setError(`Failed to pull model ${modelName}`);
     } finally {
       setPullingModel(null);
@@ -64,7 +65,7 @@ export function OllamaSetup() {
     return installedModels.some(m => m.name === modelName || m.name.startsWith(modelName));
   };
 
-  const getModelSize = (model: any) => {
+  const getModelSize = (model: { size?: number }) => {
     if (!model.size) return 'Unknown';
     const gb = model.size / (1024 * 1024 * 1024);
     return `${gb.toFixed(1)} GB`;

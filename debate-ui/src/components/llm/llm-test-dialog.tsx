@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 
 interface LLMTestDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (_open: boolean) => void;
 }
 
 export function LLMTestDialog({ open, onOpenChange }: LLMTestDialogProps) {
@@ -68,8 +68,8 @@ export function LLMTestDialog({ open, onOpenChange }: LLMTestDialogProps) {
       }
 
       setResponse(data.choices[0].text);
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect to LLM service');
+    } catch (err) {
+      setError((err as Error).message || 'Failed to connect to LLM service');
     } finally {
       setLoading(false);
     }
@@ -107,11 +107,15 @@ export function LLMTestDialog({ open, onOpenChange }: LLMTestDialogProps) {
           <div className="space-y-2">
             <Label>Select Model</Label>
             <ModelSelector
-              models={models}
-              selectedProvider={selectedProvider}
-              selectedModel={selectedModel}
-              onProviderChange={setSelectedProvider}
-              onModelChange={setSelectedModel}
+              value={selectedModel}
+              onChange={(modelId) => {
+                setSelectedModel(modelId);
+                const model = models.find(m => m.id === modelId);
+                if (model) {
+                  setSelectedProvider(model.provider);
+                }
+              }}
+              required
             />
           </div>
 

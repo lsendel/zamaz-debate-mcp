@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiLogger } from '@/lib/api-logger';
 
 const TEMPLATE_SERVICE_URL = process.env.TEMPLATE_SERVICE_URL || 'http://localhost:5006';
 
@@ -19,7 +20,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Template service GET error:', error);
+    apiLogger.error('Template service GET error', error as Error, { path: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to fetch from template service' },
       { status: 500 }
@@ -110,7 +111,7 @@ export async function POST(
     
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Template service POST error:', error);
+    apiLogger.error('Template service POST error', error as Error, { operation: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to communicate with template service' },
       { status: 500 }
@@ -167,7 +168,7 @@ export async function PUT(
     
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Template service PUT error:', error);
+    apiLogger.error('Template service PUT error', error as Error, { operation: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to update template' },
       { status: 500 }
@@ -224,7 +225,7 @@ export async function DELETE(
     
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Template service DELETE error:', error);
+    apiLogger.error('Template service DELETE error', error as Error, { operation: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to delete template' },
       { status: 500 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiLogger } from '@/lib/api-logger';
 
 const LLM_SERVICE_URL = process.env.LLM_SERVICE_URL || 'http://localhost:5002';
 
@@ -31,7 +32,7 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('LLM service error:', error);
+    apiLogger.error('LLM service error', error as Error, { path: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to connect to LLM service' },
       { status: 500 }
@@ -70,7 +71,7 @@ export async function POST(
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('LLM service error:', error);
+    apiLogger.error('LLM service error', error as Error, { path: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to connect to LLM service' },
       { status: 500 }
@@ -109,7 +110,7 @@ export async function PUT(
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('LLM service error:', error);
+    apiLogger.error('LLM service error', error as Error, { path: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to connect to LLM service' },
       { status: 500 }
@@ -149,7 +150,7 @@ export async function DELETE(
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('LLM service error:', error);
+    apiLogger.error('LLM service error', error as Error, { path: params.path.join('/') });
     return NextResponse.json(
       { error: 'Failed to connect to LLM service' },
       { status: 500 }

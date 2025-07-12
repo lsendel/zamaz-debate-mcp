@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNotifications } from '@/contexts/notification-context';
 import { logger } from '@/lib/logger';
 
-export interface WebSocketMessage {
+export interface WebSocketMessage<T = unknown> {
   type: string;
-  payload: any;
+  payload: T;
   timestamp: string;
 }
 
@@ -15,10 +15,10 @@ interface UseWebSocketOptions {
   enabled?: boolean;
   reconnectDelay?: number;
   maxReconnectAttempts?: number;
-  onMessage?: (message: WebSocketMessage) => void;
+  onMessage?: (_message: WebSocketMessage<unknown>) => void;
   onOpen?: () => void;
   onClose?: () => void;
-  onError?: (error: Event) => void;
+  onError?: (_error: Event) => void;
 }
 
 export function useWebSocket({
@@ -37,6 +37,66 @@ export function useWebSocket({
   const [isConnected, setIsConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const { addNotification } = useNotifications();
+
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage<any>) => {
+    switch (message.type) {
+      case 'debate_started':
+        addNotification({
+          type: 'debate',
+          title: 'Debate Started',
+          message: `"${message.payload.topic}" has begun`,
+          action: {
+            label: 'View Debate',
+            onClick: () => {
+              // Navigate to debate
+              window.location.href = `/debate/${message.payload.debateId}`;
+            }
+          },
+          metadata: { debateId: message.payload.debateId }
+        });
+        break;
+        
+      case 'turn_added':
+        addNotification({
+          type: 'info',
+          title: 'New Turn',
+          message: `${message.payload.participantName} has responded`,
+          metadata: { debateId: message.payload.debateId }
+        });
+        break;
+        
+      case 'debate_completed':
+        addNotification({
+          type: 'success',
+          title: 'Debate Completed',
+          message: `"${message.payload.topic}" has finished`,
+          action: {
+            label: 'View Summary',
+            onClick: () => {
+              window.location.href = `/debate/${message.payload.debateId}/summary`;
+            }
+          },
+          metadata: { debateId: message.payload.debateId }
+        });
+        break;
+        
+      case 'participant_joined':
+        addNotification({
+          type: 'info',
+          title: 'Participant Joined',
+          message: `${message.payload.participantName} joined the debate`
+        });
+        break;
+        
+      case 'error':
+        addNotification({
+          type: 'error',
+          title: 'Error',
+          message: message.payload.message
+        });
+        break;
+    }
+  }, [addNotification]);
 
   const connect = useCallback(() => {
     if (!enabled || ws.current?.readyState === WebSocket.OPEN) return;
@@ -97,13 +157,13 @@ export function useWebSocket({
       };
 
       ws.current.onerror = (error) => {
-        logger.error('WebSocket error', error as Error);
+        logger.error('WebSocket error', new Error('WebSocket connection failed'));
         onError?.(error);
       };
     } catch (error) {
       logger.error('Failed to create WebSocket', error as Error, { url });
     }
-  }, [url, enabled, reconnectDelay, maxReconnectAttempts, onMessage, onOpen, onClose, onError, addNotification]);
+  }, [url, enabled, reconnectDelay, maxReconnectAttempts, onMessage, onOpen, onClose, onError, addNotification, handleWebSocketMessage]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeout.current) {
@@ -120,73 +180,13 @@ export function useWebSocket({
     setIsReconnecting(false);
   }, []);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback(<T = unknown>(message: T) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message));
       return true;
     }
     return false;
   }, []);
-
-  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
-    switch (message.type) {
-      case 'debate_started':
-        addNotification({
-          type: 'debate',
-          title: 'Debate Started',
-          message: `"${message.payload.topic}" has begun`,
-          action: {
-            label: 'View Debate',
-            onClick: () => {
-              // Navigate to debate
-              window.location.href = `/debate/${message.payload.debateId}`;
-            }
-          },
-          metadata: { debateId: message.payload.debateId }
-        });
-        break;
-        
-      case 'turn_added':
-        addNotification({
-          type: 'info',
-          title: 'New Turn',
-          message: `${message.payload.participantName} has responded`,
-          metadata: { debateId: message.payload.debateId }
-        });
-        break;
-        
-      case 'debate_completed':
-        addNotification({
-          type: 'success',
-          title: 'Debate Completed',
-          message: `"${message.payload.topic}" has finished`,
-          action: {
-            label: 'View Summary',
-            onClick: () => {
-              window.location.href = `/debate/${message.payload.debateId}/summary`;
-            }
-          },
-          metadata: { debateId: message.payload.debateId }
-        });
-        break;
-        
-      case 'participant_joined':
-        addNotification({
-          type: 'info',
-          title: 'Participant Joined',
-          message: `${message.payload.participantName} joined the debate`
-        });
-        break;
-        
-      case 'error':
-        addNotification({
-          type: 'error',
-          title: 'Error',
-          message: message.payload.message
-        });
-        break;
-    }
-  }, [addNotification]);
 
   useEffect(() => {
     connect();

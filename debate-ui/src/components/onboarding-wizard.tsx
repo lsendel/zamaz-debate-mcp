@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Brain, Building2, MessageSquare, Sparkles, ArrowRight, Check, Rocket } from 'lucide-react';
+import { Brain, Building2, MessageSquare, ArrowRight, Check, Rocket } from 'lucide-react';
 
 interface OnboardingStep {
   id: string;
@@ -95,7 +94,9 @@ export function OnboardingWizard({ onComplete, onCreateOrganization, onCreateDeb
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-  const currentStepData = steps[currentStep];
+  // Validate currentStep index before accessing array
+  // eslint-disable-next-line security/detect-object-injection
+  const currentStepData = (currentStep >= 0 && currentStep < steps.length) ? steps[currentStep] : steps[0];
   const isActionStep = currentStepData.action !== undefined;
   const isStepCompleted = completedSteps.has(currentStepData.id);
 
