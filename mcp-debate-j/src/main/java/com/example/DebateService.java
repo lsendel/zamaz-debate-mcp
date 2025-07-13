@@ -1,11 +1,16 @@
 package com.example;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class DebateService {
     private final DebateRepository debateRepository;
 
+    @Autowired
     public DebateService(DebateRepository debateRepository) {
         this.debateRepository = debateRepository;
     }
@@ -18,7 +23,7 @@ public class DebateService {
     }
 
     public Debate startDebate(String debateId) {
-        Debate debate = debateRepository.findById(debateId);
+        Debate debate = debateRepository.findById(debateId).orElse(null);
         if (debate != null) {
             debate.setStatus(DebateStatus.ACTIVE);
             debateRepository.save(debate);
@@ -27,6 +32,6 @@ public class DebateService {
     }
 
     public Debate getDebate(String debateId) {
-        return debateRepository.findById(debateId);
+        return debateRepository.findById(debateId).orElse(null);
     }
 }
