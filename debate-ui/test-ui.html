@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UI Test Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .screenshot {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debate UI Test Results</h1>
+    
+    <div class="test-section info">
+        <h2>UI Status</h2>
+        <p><strong>Development Server:</strong> Running on http://localhost:3001</p>
+        <p><strong>Build Status:</strong> ✅ Successful (0 warnings, 0 errors)</p>
+    </div>
+
+    <div class="test-section">
+        <h2>API Endpoints Test</h2>
+        <h3>1. Debate API</h3>
+        <p><strong>Status:</strong> ✅ Working</p>
+        <p><strong>Response:</strong> Returns 1 debate: "Final Test Debate"</p>
+        <pre>{
+  "id": "debate-0ec0207a5105",
+  "name": "Final Test Debate",
+  "topic": "The Future of AI Governance",
+  "participants": [
+    { "name": "AI Ethics Expert", "provider": "claude" },
+    { "name": "Tech Innovation Leader", "provider": "openai" }
+  ],
+  "status": "draft"
+}</pre>
+
+        <h3>2. LLM API</h3>
+        <p><strong>Status:</strong> ✅ Working</p>
+        <p><strong>Providers Available:</strong></p>
+        <ul>
+            <li>Claude (Anthropic) - 3 models</li>
+            <li>OpenAI - 3 models</li>
+            <li>Google Gemini - 3 models</li>
+            <li>Llama (Ollama) - 5 models</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Known Issues</h2>
+        
+        <div class="test-section error">
+            <h3>1. Organization Switcher Loading</h3>
+            <p>The organization switcher shows a skeleton loader indefinitely.</p>
+            <p><strong>Root Cause:</strong> The organization data is loaded from localStorage but the UI doesn't update properly.</p>
+            <p><strong>Fix:</strong> Check the useOrganization hook and ensure it properly initializes with default organization.</p>
+        </div>
+
+        <div class="test-section warning">
+            <h3>2. Debates Not Displaying</h3>
+            <p>The debates tab shows "Loading debates..." even though the API returns data.</p>
+            <p><strong>Root Cause:</strong> The debate list might not be updating after successful API response.</p>
+            <p><strong>Fix:</strong> Check the loadDebates function in HomePage component.</p>
+        </div>
+
+        <div class="test-section warning">
+            <h3>3. WebSocket Connection</h3>
+            <p>Shows "Disconnected" status because WebSocket service is not running.</p>
+            <p><strong>Fix:</strong> This is expected when backend services are not running.</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Component Status</h2>
+        <table border="1" cellpadding="5" style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <th>Component</th>
+                <th>Status</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td>Header</td>
+                <td>✅ Working</td>
+                <td>Logo, title, and buttons render correctly</td>
+            </tr>
+            <tr>
+                <td>Quick Actions</td>
+                <td>✅ Working</td>
+                <td>All 4 action cards display properly</td>
+            </tr>
+            <tr>
+                <td>Stats Cards</td>
+                <td>⚠️ Partial</td>
+                <td>Cards display but show 0 for debate counts</td>
+            </tr>
+            <tr>
+                <td>Tab Navigation</td>
+                <td>✅ Working</td>
+                <td>All 5 tabs are clickable</td>
+            </tr>
+            <tr>
+                <td>Create Debate Dialog</td>
+                <td>❓ Unknown</td>
+                <td>Button exists but dialog functionality not tested</td>
+            </tr>
+            <tr>
+                <td>LLM Test Dialog</td>
+                <td>❓ Unknown</td>
+                <td>Button exists but dialog functionality not tested</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Recommended Fixes</h2>
+        <ol>
+            <li>
+                <strong>Fix Organization Loading:</strong>
+                <pre>// In use-organization.tsx, ensure default org is set
+useEffect(() => {
+  if (!currentOrg && organizations.length === 0) {
+    const defaultOrg = {
+      id: 'default',
+      name: 'Default Organization',
+      createdAt: new Date().toISOString()
+    };
+    setOrganizations([defaultOrg]);
+    setCurrentOrg(defaultOrg);
+  }
+}, []);</pre>
+            </li>
+            <li>
+                <strong>Fix Debate Loading:</strong>
+                <pre>// In HomePage, check if debates are being set after API call
+const loadDebates = useCallback(async () => {
+  try {
+    setIsLoading(true);
+    const response = await debateClient.readResource('debate://debates');
+    console.log('Debates loaded:', response); // Add logging
+    setDebates(response.debates || []);
+  } catch (error) {
+    console.error('Failed to load debates', error);
+  } finally {
+    setIsLoading(false);
+  }
+}, [debateClient]);</pre>
+            </li>
+        </ol>
+    </div>
+
+    <script>
+        // Test the API endpoints from the browser
+        async function testAPIs() {
+            console.log('Testing APIs from browser...');
+            
+            // Test debate API
+            try {
+                const debateRes = await fetch('/api/debate/resources?uri=debate://debates');
+                const debates = await debateRes.json();
+                console.log('Debates:', debates);
+            } catch (e) {
+                console.error('Debate API error:', e);
+            }
+            
+            // Test LLM API
+            try {
+                const llmRes = await fetch('/api/llm/providers');
+                const providers = await llmRes.json();
+                console.log('LLM Providers:', providers);
+            } catch (e) {
+                console.error('LLM API error:', e);
+            }
+        }
+        
+        // Run tests when page loads
+        window.onload = testAPIs;
+    </script>
+</body>
+</html>

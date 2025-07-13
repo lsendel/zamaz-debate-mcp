@@ -27,6 +27,8 @@ export interface Debate {
   id: string;
   name: string;
   topic: string;
+  subject?: string;
+  externalContext?: string;
   description?: string;
   participants: Participant[];
   rules: DebateRules;
@@ -37,6 +39,8 @@ export interface Debate {
   createdAt: string;
   startedAt?: string;
   completedAt?: string;
+  resolution?: string;
+  conclusions?: Record<string, string>; // participantId -> conclusion
 }
 
 export interface Turn {

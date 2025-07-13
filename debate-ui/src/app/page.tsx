@@ -12,7 +12,7 @@ import { MCPClient } from '@/lib/mcp-client';
 import { Debate, Participant, DebateRules } from '@/types/debate';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { useOrganization } from '@/hooks/use-organization';
-import { Users, MessageSquare, Brain, Settings, Plus, Clock, Activity, Zap, Globe, Cpu, FileText } from 'lucide-react';
+import { Users, MessageSquare, Brain, Settings, Plus, Clock, Activity, Zap, Globe, Cpu, FileText, Sparkles } from 'lucide-react';
 import { OnboardingWizard } from '@/components/onboarding-wizard';
 import { QuickActions } from '@/components/quick-actions';
 import { DebateTemplates } from '@/components/debate-templates';
@@ -50,9 +50,15 @@ export default function HomePage() {
     try {
       setIsLoading(true);
       const response = await debateClient.readResource('debate://debates');
+      logger.debug('Debates loaded from API', { 
+        count: response.debates?.length || 0,
+        debates: response.debates,
+        rawResponse: response 
+      });
       setDebates(response.debates || []);
     } catch (error) {
       logger.error('Failed to load debates', error as Error);
+      setDebates([]);
     } finally {
       setIsLoading(false);
     }
@@ -60,24 +66,32 @@ export default function HomePage() {
 
   useEffect(() => {
     if (currentOrg) {
+      logger.debug('Current org set, loading debates', { orgId: currentOrg.id });
       loadDebates();
+    } else {
+      logger.debug('No current org, skipping debate load');
     }
   }, [currentOrg, loadDebates]);
 
   const handleCreateDebate = async (debate: {
     name: string;
     topic: string;
+    subject?: string;
+    externalContext?: string;
     description?: string;
     participants: Participant[];
     rules: DebateRules;
   }) => {
     try {
+      logger.info('Creating debate', { debateName: debate.name, topic: debate.topic });
       const response = await debateClient.callTool('create_debate', debate);
+      logger.info('Debate created successfully', { response });
+      
       await loadDebates();
       setIsCreateOpen(false);
       
       // Add history entry
-      if (currentOrg) {
+      if (currentOrg && response.debateId) {
         addHistoryEntry({
           organizationId: currentOrg.id,
           action: 'debate_created',
@@ -85,9 +99,12 @@ export default function HomePage() {
           metadata: { debateId: response.debateId, topic: debate.topic }
         });
       }
+      
+      // Show success message
+      alert(`Debate "${debate.name}" created successfully!`);
     } catch (error) {
       logger.error('Failed to create debate', error as Error);
-      alert('Failed to create debate. Please check the services are running.');
+      alert(`Failed to create debate: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -158,6 +175,47 @@ export default function HomePage() {
               >
                 <Zap className="h-4 w-4 mr-2" />
                 Test LLM
+              </Button>
+              <Button
+                onClick={async () => {
+                  // Quick debate with default values
+                  const quickDebate = {
+                    name: `Quick Debate ${new Date().toLocaleTimeString()}`,
+                    topic: 'Should AI development be regulated?',
+                    description: 'A quick debate on AI regulation',
+                    participants: [
+                      {
+                        name: 'Pro-Regulation',
+                        role: 'debater' as const,
+                        llm_config: {
+                          provider: 'claude' as const,
+                          model: 'claude-3-5-sonnet-20241022',
+                          temperature: 0.7
+                        }
+                      },
+                      {
+                        name: 'Anti-Regulation',
+                        role: 'debater' as const,
+                        llm_config: {
+                          provider: 'openai' as const,
+                          model: 'gpt-4o',
+                          temperature: 0.7
+                        }
+                      }
+                    ],
+                    rules: {
+                      format: 'round_robin' as const,
+                      maxRounds: 3,
+                      maxTurnLength: 300
+                    }
+                  };
+                  await handleCreateDebate(quickDebate);
+                }}
+                variant="outline"
+                size="default"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Quick Debate
               </Button>
               <Button 
                 onClick={() => setIsCreateOpen(true)} 
