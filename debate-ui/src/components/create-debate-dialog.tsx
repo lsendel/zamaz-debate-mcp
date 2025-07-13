@@ -25,6 +25,8 @@ interface CreateDebateDialogProps {
   onSubmit: (_debate: {
     name: string;
     topic: string;
+    subject?: string;
+    externalContext?: string;
     description?: string;
     participants: Participant[];
     rules: DebateRules;
@@ -35,6 +37,8 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
   const { models, health } = useLLM();
   const [name, setName] = useState('');
   const [topic, setTopic] = useState('');
+  const [subject, setSubject] = useState('');
+  const [externalContext, setExternalContext] = useState('');
   const [description, setDescription] = useState('');
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [rules, setRules] = useState<DebateRules>({
@@ -83,6 +87,8 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
     onSubmit({
       name,
       topic,
+      subject,
+      externalContext,
       description,
       participants,
       rules
@@ -91,6 +97,8 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
     // Reset form
     setName('');
     setTopic('');
+    setSubject('');
+    setExternalContext('');
     setDescription('');
     setParticipants([]);
   };
@@ -162,13 +170,35 @@ export function CreateDebateDialog({ open, onOpenChange, onSubmit }: CreateDebat
             </div>
 
             <div>
+              <Label htmlFor="subject">Subject (Optional)</Label>
+              <Input
+                id="subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g., AI Ethics, Technology Policy, etc."
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="externalContext">External Context (Optional)</Label>
+              <textarea
+                id="externalContext"
+                value={externalContext}
+                onChange={(e) => setExternalContext(e.target.value)}
+                placeholder="Provide relevant background information, facts, or context that participants should consider..."
+                className="mt-1 w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="description">Description (Optional)</Label>
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Provide additional context for the debate..."
-                className="mt-1 w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Additional notes about the debate..."
+                className="mt-1 w-full min-h-[60px] rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </div>
           </div>

@@ -44,6 +44,21 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       if (org) {
         setCurrentOrgState(org);
       }
+    } else {
+      // If no organization is saved, create a default one
+      const defaultOrg: Organization = {
+        id: 'default-org',
+        name: 'Default Organization',
+        createdAt: new Date().toISOString(),
+        debateCount: 0
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('organizations', JSON.stringify([defaultOrg]));
+      localStorage.setItem('currentOrganizationId', defaultOrg.id);
+      
+      // Set as current org
+      setCurrentOrgState(defaultOrg);
     }
 
     // Load history
