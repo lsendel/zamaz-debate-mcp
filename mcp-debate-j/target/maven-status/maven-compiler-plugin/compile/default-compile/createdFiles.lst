@@ -1,7 +1,8 @@
-com/example/Debate.class
 com/example/Participant.class
-com/example/InMemoryDebateRepository.class
+com/example/Debate.class
 com/example/DebateRepository.class
 com/example/DebateStatus.class
 com/example/DebateService.class
+com/example/DebateController.class
+com/example/DebateController$CreateDebateRequest.class
 com/example/Main.class

@@ -1,14 +1,22 @@
 package com.example;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import java.util.List;
 
+@Entity
 public class Debate {
+    @Id
     private String id;
     private String name;
     private String topic;
     private String description;
     private DebateStatus status;
+    @OneToMany
     private List<Participant> participants;
+
+    public Debate() {}
 
     public Debate(String id, String name, String topic, String description, List<Participant> participants) {
         this.id = id;
