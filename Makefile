@@ -6,7 +6,7 @@
 export
 
 # Default values
-UI_PORT ?= 3000
+UI_PORT ?= 3001
 DEBATE_API_PORT ?= 5013
 LLM_API_PORT ?= 5002
 
@@ -142,7 +142,7 @@ test: full-test ## Alias for full-test (backward compatibility)
 
 quick-test: ## Run quick UI tests
 	@echo "$(BLUE)🧪 Running quick UI tests...$(NC)"
-	@cd debate-ui && npm test -- --watchAll=false
+	@cd debate-ui && npm run test:e2e
 
 test-ui-only: ## Run UI tests without backend (for UI-only testing)
 	@echo "$(BLUE)🧪 Running UI-only tests...$(NC)"
