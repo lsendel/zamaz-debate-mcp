@@ -1,98 +1,35 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-.pytest_cache/
-.coverage
-.tox/
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Compiled class files
+*.class
 
-# Virtual Environment
-venv/
-ENV/
-env/
-.venv
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Environment files
-.env
-.env.local
-.env.*.local
-*.env
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-data/
-
-# Logs
-logs/
+# Log files
 *.log
 
-# Docker
-.dockerignore
+# BlueJ files
+*.ctxt
 
-# Model files
-models/
-*.bin
-*.pkl
-*.pth
-*.onnx
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
 
-# Cache
-.cache/
-*.cache
-redis-data/
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
-# Temporary files
-tmp/
-temp/
-*.tmp
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
 
-# Jupyter
-.ipynb_checkpoints/
-
-# OS
-Thumbs.db
-
-# Project specific
-mcp-llm/cache/
-mcp-debate/data/
-mcp-rag/data/
-mcp-context/data/
-postgres_data/
-redis_data/
-qdrant_data/
-llm_cache/
-rag_data/
-ollama_data/
-prometheus_data/
-grafana_data/
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
