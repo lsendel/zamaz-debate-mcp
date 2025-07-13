@@ -64,6 +64,11 @@ services:
     networks:
       - mcp-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # MCP LLM Service
   mcp-llm:
