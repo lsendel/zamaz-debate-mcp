@@ -1,0 +1,7 @@
+/app/mcp-debate-j/src/main/java/com/example/Debate.java
+/app/mcp-debate-j/src/main/java/com/example/DebateRepository.java
+/app/mcp-debate-j/src/main/java/com/example/DebateService.java
+/app/mcp-debate-j/src/main/java/com/example/DebateStatus.java
+/app/mcp-debate-j/src/main/java/com/example/InMemoryDebateRepository.java
+/app/mcp-debate-j/src/main/java/com/example/Main.java
+/app/mcp-debate-j/src/main/java/com/example/Participant.java
