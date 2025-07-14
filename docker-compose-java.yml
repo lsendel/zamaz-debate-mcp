@@ -5,18 +5,21 @@ services:
   mcp-organization-j:
     build: ./mcp-organization-j
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
       - DB_NAME=organization_db
       - DB_USER=${POSTGRES_USER:-postgres}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
-      - SERVER_PORT=5005
+      - SERVER_PORT=${MCP_ORGANIZATION_PORT:-5005}
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
+      - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
     ports:
-      - "${MCP_ORGANIZATION_J_PORT:-5005}:5005"
+      - "${MCP_ORGANIZATION_PORT:-5005}:${MCP_ORGANIZATION_PORT:-5005}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,16 +41,20 @@ services:
   mcp-llm-j:
     build: ./mcp-llm-j
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CLAUDE_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GEMINI_API_KEY=${GOOGLE_API_KEY}
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - SERVER_PORT=5002
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - CLAUDE_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GOOGLE_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_ENDPOINT:-http://ollama:11434}
+      - OLLAMA_ENABLED=${USE_LOCAL_LLM:-false}
+      - SERVER_PORT=${MCP_LLM_PORT:-5002}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
+      - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
     ports:
-      - "${MCP_LLM_J_PORT:-5002}:5002"
+      - "${MCP_LLM_PORT:-5002}:${MCP_LLM_PORT:-5002}"
     depends_on:
       redis:
         condition: service_healthy
@@ -67,19 +74,22 @@ services:
   mcp-controller-j:
     build: ./mcp-controller-j
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=debate_db
-      - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - ORGANIZATION_SERVICE_URL=http://mcp-organization-j:5005
-      - LLM_SERVICE_URL=http://mcp-llm-j:5002
-      - SERVER_PORT=5013
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-debate_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - ORGANIZATION_SERVICE_URL=${ORGANIZATION_SERVICE_URL:-http://mcp-organization-j:5005}
+      - LLM_SERVICE_URL=${LLM_SERVICE_URL:-http://mcp-llm-j:5002}
+      - SERVER_PORT=${MCP_CONTROLLER_PORT:-5013}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
+      - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
     ports:
-      - "${MCP_CONTROLLER_J_PORT:-5013}:5013"
+      - "${MCP_CONTROLLER_PORT:-5013}:${MCP_CONTROLLER_PORT:-5013}"
     depends_on:
       postgres:
         condition: service_healthy

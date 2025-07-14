@@ -21,7 +21,6 @@
     <properties>
         <java.version>17</java.version>
         <springdoc.version>2.3.0</springdoc.version>
-        <spring-statemachine.version>4.0.0</spring-statemachine.version>
     </properties>
 
     <dependencies>
@@ -59,7 +58,7 @@
         <dependency>
             <groupId>org.springframework.statemachine</groupId>
             <artifactId>spring-statemachine-starter</artifactId>
-            <version>${spring-statemachine.version}</version>
+            <version>3.2.1</version>
         </dependency>
 
         <!-- Database -->
@@ -95,6 +94,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.7.3</version>
         </dependency>
 
         <!-- HTTP Client for service integration -->
@@ -138,6 +142,20 @@
                     </excludes>
                 </configuration>
             </plugin>
-        </plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>        </plugins>
     </build>
 </project>

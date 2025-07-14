@@ -2,16 +2,17 @@ spring:
   application:
     name: mcp-llm-j
   
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 2
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
   
   webflux:
     base-path: /
@@ -39,8 +40,8 @@ llm:
   providers:
     claude:
       enabled: ${CLAUDE_ENABLED:true}
-      api-key: ${CLAUDE_API_KEY:}
-      base-url: https://api.anthropic.com
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: ${CLAUDE_ENDPOINT:https://api.anthropic.com}
       default-model: claude-3-opus-20240229
       max-tokens: 4096
       timeout: 30s
@@ -53,7 +54,7 @@ llm:
     openai:
       enabled: ${OPENAI_ENABLED:true}
       api-key: ${OPENAI_API_KEY:}
-      base-url: https://api.openai.com/v1
+      base-url: ${OPENAI_ENDPOINT:https://api.openai.com/v1}
       default-model: gpt-4-turbo-preview
       max-tokens: 4096
       timeout: 30s
@@ -65,8 +66,8 @@ llm:
     
     gemini:
       enabled: ${GEMINI_ENABLED:true}
-      api-key: ${GEMINI_API_KEY:}
-      base-url: https://generativelanguage.googleapis.com/v1beta
+      api-key: ${GOOGLE_API_KEY:}
+      base-url: ${GEMINI_ENDPOINT:https://generativelanguage.googleapis.com/v1beta}
       default-model: gemini-pro
       max-tokens: 2048
       timeout: 30s
@@ -77,8 +78,8 @@ llm:
         multiplier: 2
     
     ollama:
-      enabled: ${OLLAMA_ENABLED:false}
-      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      enabled: ${USE_LOCAL_LLM:false}
+      base-url: ${OLLAMA_ENDPOINT:http://localhost:11434}
       default-model: llama2
       max-tokens: 2048
       timeout: 60s
@@ -126,9 +127,9 @@ resilience4j:
 
 springdoc:
   api-docs:
-    path: /api-docs
+    path: ${API_DOCS_PATH:/api-docs}
   swagger-ui:
-    path: /swagger-ui.html
+    path: ${SWAGGER_UI_PATH:/swagger-ui.html}
     tags-sorter: alpha
     operations-sorter: alpha
 

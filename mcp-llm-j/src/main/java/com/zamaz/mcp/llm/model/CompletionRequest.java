@@ -30,12 +30,12 @@ public class CompletionRequest {
     @Max(8192)
     private Integer maxTokens;
     
-    @Min(0.0)
-    @Max(2.0)
+    @Min(0)
+    @Max(2)
     private Double temperature;
     
-    @Min(0.0)
-    @Max(1.0)
+    @Min(0)
+    @Max(1)
     private Double topP;
     
     private Integer topK;
