@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MCP LLM Service Detailed Test Script
+# MCP LLM Service (Java) Detailed Test Script
 # Tests all LLM providers and endpoints
 
 set -e
@@ -16,15 +16,15 @@ NC='\033[0m' # No Color
 BASE_URL="http://localhost:5002"
 TEST_PROMPT="Explain quantum computing in one sentence."
 
-echo -e "${BLUE}=== MCP LLM Service Detailed Test ===${NC}"
+echo -e "${BLUE}=== MCP LLM Service (Java) Detailed Test ===${NC}"
 echo -e "${BLUE}Testing service at: $BASE_URL${NC}"
 echo ""
 
 # Test 1: Health Check
 echo -e "${YELLOW}Test 1: Health Check${NC}"
-HEALTH_RESPONSE=$(curl -s "$BASE_URL/health")
+HEALTH_RESPONSE=$(curl -s "$BASE_URL/actuator/health")
 
-if echo "$HEALTH_RESPONSE" | jq -e '.status' | grep -q "healthy"; then
+if echo "$HEALTH_RESPONSE" | jq -e '.status' | grep -q "UP"; then
     echo -e "${GREEN}✓ Health check passed${NC}"
     
     # Check provider status
@@ -39,12 +39,12 @@ else
 fi
 echo ""
 
-# Test 2: List Providers (FastAPI endpoint)
+# Test 2: List Providers (Spring Boot endpoint)
 echo -e "${YELLOW}Test 2: List Providers (REST API)${NC}"
-PROVIDERS_RESPONSE=$(curl -s "$BASE_URL/providers")
+PROVIDERS_RESPONSE=$(curl -s "$BASE_URL/api/v1/providers")
 
-if echo "$PROVIDERS_RESPONSE" | jq -e '.providers' > /dev/null; then
-    PROVIDER_COUNT=$(echo "$PROVIDERS_RESPONSE" | jq '.providers | length')
+if echo "$PROVIDERS_RESPONSE" | jq -e '.' > /dev/null && [ "$PROVIDERS_RESPONSE" != "[]" ]; then
+    PROVIDER_COUNT=$(echo "$PROVIDERS_RESPONSE" | jq '. | length')
     echo -e "${GREEN}✓ Found $PROVIDER_COUNT providers${NC}"
     
     echo "Available Providers:"

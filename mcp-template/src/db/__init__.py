@@ -1,1 +1,0 @@
-# Database module for template service

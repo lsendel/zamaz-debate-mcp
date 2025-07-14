@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MCP RAG Service Detailed Test Script
+# MCP RAG Service (Java) Detailed Test Script
 # Tests Retrieval Augmented Generation functionality
 
 set -e
@@ -17,13 +17,13 @@ BASE_URL="http://localhost:5004"
 TEST_KB_NAME="Test Knowledge Base $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 
-echo -e "${BLUE}=== MCP RAG Service Detailed Test ===${NC}"
+echo -e "${BLUE}=== MCP RAG Service (Java) Detailed Test ===${NC}"
 echo -e "${BLUE}Testing service at: $BASE_URL${NC}"
 echo ""
 
 # Test 1: Health Check
 echo -e "${YELLOW}Test 1: Health Check${NC}"
-if curl -s "$BASE_URL/health" | grep -q "healthy"; then
+if curl -s "$BASE_URL/actuator/health" | grep -q "UP"; then
     echo -e "${GREEN}✓ Health check passed${NC}"
 else
     echo -e "${RED}✗ Health check failed${NC}"
@@ -31,9 +31,18 @@ else
 fi
 echo ""
 
-# Test 2: Create Knowledge Base
-echo -e "${YELLOW}Test 2: Create Knowledge Base${NC}"
-CREATE_KB_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_knowledge_base" \
+# Test 2: Check API Documentation
+echo -e "${YELLOW}Test 2: Check API Documentation${NC}"
+if curl -s "$BASE_URL/api-docs" | jq -e '.paths' > /dev/null; then
+    echo -e "${GREEN}✓ OpenAPI documentation available${NC}"
+else
+    echo -e "${YELLOW}⚠ OpenAPI documentation not available${NC}"
+fi
+echo ""
+
+# Test 3: Create Knowledge Base (if endpoint exists)
+echo -e "${YELLOW}Test 3: Create Knowledge Base${NC}"
+CREATE_KB_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/knowledge-bases" \
     -H "Content-Type: application/json" \
     -d "{
         \"arguments\": {

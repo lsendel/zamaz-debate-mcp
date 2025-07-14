@@ -1,22 +1,27 @@
+version: '3.8'
+
 services:
-  # PostgreSQL for context service
+  # PostgreSQL for all services
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-context_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-context_pass}
-      POSTGRES_DB: ${POSTGRES_DB:-context_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
       - mcp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U context_user"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command: >
+      postgres -c shared_preload_libraries=pg_stat_statements
 
   # Redis for caching
   redis:
@@ -44,41 +49,75 @@ services:
     networks:
       - mcp-network
 
-  # MCP Context Service
-  mcp-context:
-    build: ./mcp-context
+  # Initialize databases
+  postgres-init:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-context_user}:${POSTGRES_PASSWORD:-context_pass}@postgres:5432/${POSTGRES_DB:-context_db}
-      - REDIS_URL=redis://redis:6379
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ./init-scripts:/scripts
+    networks:
+      - mcp-network
+    command: >
+      sh -c "
+        echo 'Creating databases...' &&
+        psql -c 'CREATE DATABASE IF NOT EXISTS organization_db;' &&
+        psql -c 'CREATE DATABASE IF NOT EXISTS debate_db;' &&
+        psql -c 'CREATE DATABASE IF NOT EXISTS template_db;' &&
+        echo 'Databases created successfully!'
+      "
+    profiles:
+      - setup
+
+  # Java MCP Organization Service
+  mcp-organization-j:
+    build: ./mcp-organization-j
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=organization_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
+      - SERVER_PORT=5005
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
     ports:
-      - "${MCP_CONTEXT_PORT:-5001}:5001"
+      - "${MCP_ORGANIZATION_PORT:-5005}:5005"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ./mcp-context/config:/app/config
+      - ./mcp-organization-j/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:5005/actuator/health"]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 40s
 
-  # MCP LLM Service
-  mcp-llm:
-    build: ./mcp-llm
+  # Java MCP LLM Service
+  mcp-llm-j:
+    build: ./mcp-llm-j
     environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CLAUDE_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - LLAMA_ENDPOINT=${LLAMA_ENDPOINT:-http://localhost:11434}
-      - REDIS_URL=redis://redis:6379
+      - GEMINI_API_KEY=${GOOGLE_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - SERVER_PORT=5002
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "${MCP_LLM_PORT:-5002}:5002"
@@ -86,101 +125,113 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./mcp-llm/config:/app/config
+      - ./mcp-llm-j/config:/app/config
       - llm_cache:/app/cache
     networks:
       - mcp-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
-  # MCP Debate Service
-  mcp-debate:
-    build: ./mcp-debate
+  # Java MCP Controller Service (replaces debate)
+  mcp-controller-j:
+    build: ./mcp-controller-j
     environment:
-      - CONTEXT_SERVICE_URL=http://mcp-context:5001
-      - LLM_SERVICE_URL=http://mcp-llm:5002
-      - RAG_SERVICE_URL=http://mcp-rag:5004
-      - DATABASE_PATH=/app/data/debates.db
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=debate_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ORGANIZATION_SERVICE_URL=http://mcp-organization-j:5005
+      - LLM_SERVICE_URL=http://mcp-llm-j:5002
+      - SERVER_PORT=5013
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - DEBATE_SERVICE_WS_PORT=5013
     ports:
-      - "${MCP_DEBATE_PORT:-5003}:5003"
-      - "${MCP_DEBATE_WS_PORT:-5013}:5013"
+      - "${MCP_DEBATE_PORT:-5013}:5013"
     depends_on:
-      - mcp-context
-      - mcp-llm
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-organization-j:
+        condition: service_started
+      mcp-llm-j:
+        condition: service_started
     volumes:
-      - ./mcp-debate/data:/app/data
-      - ./mcp-debate/config:/app/config
+      - ./mcp-controller-j/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5013/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
-  # MCP RAG Service
-  mcp-rag:
-    build: ./mcp-rag
+  # Java MCP RAG Service
+  mcp-rag-j:
+    build: ./mcp-rag-j
     environment:
       - QDRANT_URL=http://qdrant:6333
-      - CONTEXT_SERVICE_URL=http://mcp-context:5001
-      - LLM_SERVICE_URL=http://mcp-llm:5002
-      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SERVER_PORT=5004
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "${MCP_RAG_PORT:-5004}:5004"
     depends_on:
       - qdrant
       - redis
-      - mcp-context
     volumes:
-      - ./mcp-rag/config:/app/config
+      - ./mcp-rag-j/config:/app/config
       - rag_data:/app/data
     networks:
       - mcp-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
-  # MCP Organization Service
-  mcp-organization:
-    build: ./mcp-organization
+  # Java MCP Template Service
+  mcp-template-j:
+    build: ./mcp-template-j
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=debate_org
-      - POSTGRES_USER=${POSTGRES_USER:-context_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}
-      - MCP_PORT=5005
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-    ports:
-      - "${MCP_ORGANIZATION_PORT:-5005}:5005"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./mcp-organization/config:/app/config
-    networks:
-      - mcp-network
-    restart: unless-stopped
-
-  # MCP Template Service
-  mcp-template:
-    build: ./mcp-template
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=template_db
-      - POSTGRES_USER=${POSTGRES_USER:-context_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}
-      - MCP_PORT=5006
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=template_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - SERVER_PORT=5006
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "${MCP_TEMPLATE_PORT:-5006}:5006"
     depends_on:
       postgres:
         condition: service_healthy
-      mcp-organization:
+      mcp-organization-j:
         condition: service_started
     volumes:
-      - ./mcp-template/config:/app/config
+      - ./mcp-template-j/config:/app/config
       - template-data:/app/data
     networks:
       - mcp-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5006/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   # Optional: Ollama for local Llama models
   ollama:
@@ -227,26 +278,6 @@ services:
     profiles:
       - monitoring
 
-  # Test Runner Service
-  test-runner:
-    build:
-      context: .
-      dockerfile: test-runner.dockerfile
-    volumes:
-      - ./test_probe:/test_probe
-      - ./e2e-tests:/tests/e2e-tests
-      - ./playwright-tests:/tests/playwright-tests
-    environment:
-      - HEADLESS=true
-      - NODE_ENV=test
-      - BASE_URL=http://host.docker.internal:3000
-    networks:
-      - mcp-network
-    profiles:
-      - test
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
 networks:
   mcp-network:
     driver: bridge
@@ -257,8 +288,7 @@ volumes:
   qdrant_data:
   llm_cache:
   rag_data:
+  template-data:
   ollama_data:
   prometheus_data:
   grafana_data:
-  organization-data:
-  template-data:

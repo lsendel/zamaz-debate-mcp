@@ -7,12 +7,13 @@ export class MCPClient {
   private ws: WebSocket | null = null;
   private organizationId?: string;
 
-  constructor(service: 'debate' | 'llm' | 'context' | 'rag') {
+  constructor(service: 'debate' | 'llm' | 'rag' | 'organization' | 'template') {
     const ports: Record<string, number> = {
       debate: 5013,
       llm: 5002,
-      context: 5001,
-      rag: 5004
+      rag: 5004,
+      organization: 5005,
+      template: 5006
     };
     
     // Validate service parameter to prevent object injection

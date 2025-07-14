@@ -27,20 +27,18 @@ mkdir -p "$REPORT_DIR"
 # Test configuration
 declare -A SERVICE_PORTS=(
     ["organization"]="5005"
-    ["context"]="5001"
     ["llm"]="5002"
-    ["debate"]="5013"
+    ["controller"]="5013"
     ["rag"]="5004"
     ["template"]="5006"
 )
 
 declare -A SERVICE_NAMES=(
-    ["organization"]="MCP Organization"
-    ["context"]="MCP Context"
-    ["llm"]="MCP LLM"
-    ["debate"]="MCP Debate"
-    ["rag"]="MCP RAG"
-    ["template"]="MCP Template"
+    ["organization"]="MCP Organization (Java)"
+    ["llm"]="MCP LLM (Java)"
+    ["controller"]="MCP Controller (Java)"
+    ["rag"]="MCP RAG (Java)"
+    ["template"]="MCP Template (Java)"
 )
 
 # Test results tracking
@@ -67,7 +65,7 @@ check_service_health() {
     local service=$1
     local port=${SERVICE_PORTS[$service]}
     
-    if curl -s "http://localhost:$port/health" | grep -q "healthy" 2>/dev/null; then
+    if curl -s "http://localhost:$port/actuator/health" 2>/dev/null | grep -q "UP" 2>/dev/null; then
         return 0
     else
         return 1
@@ -187,7 +185,7 @@ fi
 log_header "Running Service Tests"
 
 # Run tests in a specific order (dependencies first)
-for service in organization context llm rag template debate; do
+for service in organization llm controller rag template; do
     run_service_test "$service"
 done
 
@@ -199,7 +197,7 @@ log_header "Test Results Summary"
 
 log ""
 log "${BLUE}Service Test Results:${NC}"
-for service in organization context llm rag template debate; do
+for service in organization llm controller rag template; do
     if [ -n "${TEST_RESULTS[$service]}" ]; then
         local status_color=$GREEN
         local status_icon="✅"

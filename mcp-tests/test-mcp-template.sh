@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MCP Template Service Detailed Test Script
+# MCP Template Service (Java) Detailed Test Script
 # Tests template management and rendering
 
 set -e
@@ -17,13 +17,13 @@ BASE_URL="http://localhost:5006"
 TEST_TEMPLATE_NAME="Test Template $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 
-echo -e "${BLUE}=== MCP Template Service Detailed Test ===${NC}"
+echo -e "${BLUE}=== MCP Template Service (Java) Detailed Test ===${NC}"
 echo -e "${BLUE}Testing service at: $BASE_URL${NC}"
 echo ""
 
 # Test 1: Health Check
 echo -e "${YELLOW}Test 1: Health Check${NC}"
-if curl -s "$BASE_URL/health" | grep -q "healthy"; then
+if curl -s "$BASE_URL/actuator/health" | grep -q "UP"; then
     echo -e "${GREEN}✓ Health check passed${NC}"
 else
     echo -e "${RED}✗ Health check failed${NC}"
@@ -33,12 +33,11 @@ echo ""
 
 # Test 2: Create Template
 echo -e "${YELLOW}Test 2: Create Template${NC}"
-CREATE_TEMPLATE_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_template" \
+CREATE_TEMPLATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/templates" \
     -H "Content-Type: application/json" \
     -d "{
-        \"arguments\": {
-            \"name\": \"$TEST_TEMPLATE_NAME\",
-            \"organization_id\": \"$TEST_ORG_ID\",
+        \"name\": \"$TEST_TEMPLATE_NAME\",
+        \"organizationId\": \"$TEST_ORG_ID\",
             \"category\": \"debate\",
             \"description\": \"Template for debate opening statements\",
             \"content\": \"Hello {{ participant_name }},\\n\\nAs we begin this debate on {{ topic }}, I'd like to present my position:\\n\\n{{ opening_statement }}\\n\\nKey points to consider:\\n{% for point in key_points %}\\n- {{ point }}\\n{% endfor %}\\n\\nI look forward to a productive discussion.\",

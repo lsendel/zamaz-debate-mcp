@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# MCP Debate Service Detailed Test Script
-# Tests debate orchestration and management
+# MCP Controller Service Detailed Test Script
+# Tests debate orchestration and management via Java Controller
 
 set -e
 
@@ -17,13 +17,13 @@ BASE_URL="http://localhost:5013"
 TEST_DEBATE_NAME="Test Debate $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 
-echo -e "${BLUE}=== MCP Debate Service Detailed Test ===${NC}"
+echo -e "${BLUE}=== MCP Controller Service (Java) Detailed Test ===${NC}"
 echo -e "${BLUE}Testing service at: $BASE_URL${NC}"
 echo ""
 
 # Test 1: Health Check
 echo -e "${YELLOW}Test 1: Health Check${NC}"
-if curl -s "$BASE_URL/health" | grep -q "healthy"; then
+if curl -s "$BASE_URL/actuator/health" | grep -q "UP"; then
     echo -e "${GREEN}✓ Health check passed${NC}"
 else
     echo -e "${RED}✗ Health check failed${NC}"
@@ -31,29 +31,29 @@ else
 fi
 echo ""
 
-# Test 2: List Debate Formats
-echo -e "${YELLOW}Test 2: List Debate Formats${NC}"
-FORMATS_RESPONSE=$(curl -s "$BASE_URL/resources/debate://formats/read")
-
-if echo "$FORMATS_RESPONSE" | jq -e '.contents' > /dev/null; then
-    FORMAT_COUNT=$(echo "$FORMATS_RESPONSE" | jq '.contents | length')
-    echo -e "${GREEN}✓ Found $FORMAT_COUNT debate formats${NC}"
-    echo "Available formats:"
-    echo "$FORMATS_RESPONSE" | jq -r '.contents[] | "  - \(.name): \(.description // "No description")"' 2>/dev/null || echo "  (Format details not available)"
+# Test 2: Check API Documentation
+echo -e "${YELLOW}Test 2: Check API Documentation${NC}"
+if curl -s "$BASE_URL/swagger-ui.html" > /dev/null; then
+    echo -e "${GREEN}✓ Swagger UI available${NC}"
 else
-    echo -e "${YELLOW}⚠ Debate formats resource may not be implemented${NC}"
+    echo -e "${YELLOW}⚠ Swagger UI may not be available${NC}"
+fi
+
+if curl -s "$BASE_URL/api-docs" | jq -e '.paths' > /dev/null; then
+    echo -e "${GREEN}✓ OpenAPI documentation available${NC}"
+else
+    echo -e "${YELLOW}⚠ OpenAPI documentation not available${NC}"
 fi
 echo ""
 
 # Test 3: Create Debate
 echo -e "${YELLOW}Test 3: Create Debate${NC}"
-CREATE_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_debate" \
+CREATE_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/debates" \
     -H "Content-Type: application/json" \
     -d "{
-        \"arguments\": {
-            \"name\": \"$TEST_DEBATE_NAME\",
-            \"topic\": \"Should AI development be regulated?\",
-            \"organization_id\": \"$TEST_ORG_ID\",
+        \"organizationId\": \"$TEST_ORG_ID\",
+        \"title\": \"$TEST_DEBATE_NAME\",
+        \"topic\": \"Should AI development be regulated?\",
             \"participants\": [
                 {
                     \"id\": \"participant-1\",
@@ -85,8 +85,8 @@ CREATE_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_debate" \
         }
     }")
 
-if echo "$CREATE_DEBATE_RESPONSE" | jq -e '.result.debate_id' > /dev/null; then
-    DEBATE_ID=$(echo "$CREATE_DEBATE_RESPONSE" | jq -r '.result.debate_id')
+if echo "$CREATE_DEBATE_RESPONSE" | jq -e '.id' > /dev/null; then
+    DEBATE_ID=$(echo "$CREATE_DEBATE_RESPONSE" | jq -r '.id')
     echo -e "${GREEN}✓ Debate created with ID: $DEBATE_ID${NC}"
     echo "Response: $(echo "$CREATE_DEBATE_RESPONSE" | jq -c '.result')"
 else
@@ -98,12 +98,10 @@ echo ""
 
 # Test 4: Get Debate Status
 echo -e "${YELLOW}Test 4: Get Debate Status${NC}"
-STATUS_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/get_debate_status" \
-    -H "Content-Type: application/json" \
-    -d "{\"arguments\": {\"debate_id\": \"$DEBATE_ID\"}}")
+STATUS_RESPONSE=$(curl -s "$BASE_URL/api/v1/debates/$DEBATE_ID")
 
-if echo "$STATUS_RESPONSE" | jq -e '.result.status' > /dev/null; then
-    STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.result.status')
+if echo "$STATUS_RESPONSE" | jq -e '.status' > /dev/null; then
+    STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
     echo -e "${GREEN}✓ Debate status: $STATUS${NC}"
     echo "Details: $(echo "$STATUS_RESPONSE" | jq -c '.result')"
 else
@@ -171,25 +169,18 @@ echo ""
 
 # Test 8: List Debates
 echo -e "${YELLOW}Test 8: List Debates${NC}"
-LIST_DEBATES_RESPONSE=$(curl -s "$BASE_URL/resources/debate://debates/read")
+LIST_DEBATES_RESPONSE=$(curl -s "$BASE_URL/api/v1/debates")
 
-if echo "$LIST_DEBATES_RESPONSE" | jq -e '.contents' > /dev/null; then
-    DEBATE_COUNT=$(echo "$LIST_DEBATES_RESPONSE" | jq '.contents | length')
+if echo "$LIST_DEBATES_RESPONSE" | jq -e '.' > /dev/null && [ "$LIST_DEBATES_RESPONSE" != "[]" ]; then
+    DEBATE_COUNT=$(echo "$LIST_DEBATES_RESPONSE" | jq '. | length')
     echo -e "${GREEN}✓ Found $DEBATE_COUNT debates${NC}"
     
     # Check if our test debate is in the list
-    if echo "$LIST_DEBATES_RESPONSE" | jq -e ".contents[] | select(.id == \"$DEBATE_ID\")" > /dev/null; then
+    if echo "$LIST_DEBATES_RESPONSE" | jq -e ".[] | select(.id == \"$DEBATE_ID\")" > /dev/null; then
         echo -e "${GREEN}✓ Test debate found in list${NC}"
     fi
 else
-    # Try alternative endpoint
-    ALT_LIST_RESPONSE=$(curl -s "$BASE_URL/resources")
-    if echo "$ALT_LIST_RESPONSE" | jq -e '.resources' > /dev/null; then
-        echo -e "${GREEN}✓ Found debate resources${NC}"
-        echo "$ALT_LIST_RESPONSE" | jq -r '.resources[] | "  - \(.uri): \(.name)"'
-    else
-        echo -e "${YELLOW}⚠ Debate listing may use different format${NC}"
-    fi
+    echo -e "${YELLOW}⚠ No debates found or different format used${NC}"
 fi
 echo ""
 
@@ -336,9 +327,9 @@ echo ""
 # Summary
 echo -e "${BLUE}=== Test Summary ===${NC}"
 echo -e "${GREEN}✓ Health check${NC}"
-echo -e "${GREEN}✓ Debate creation and management${NC}"
-echo -e "${GREEN}✓ Turn management${NC}"
-echo -e "${GREEN}✓ Debate lifecycle (start/pause/resume)${NC}"
-echo -e "${GREEN}✓ Summary generation${NC}"
-echo -e "${GREEN}✓ Resource listing${NC}"
-echo -e "${BLUE}All critical tests passed!${NC}"
+echo -e "${GREEN}✓ API documentation${NC}"
+echo -e "${GREEN}✓ Debate creation via REST API${NC}"
+echo -e "${GREEN}✓ Debate status retrieval${NC}"
+echo -e "${GREEN}✓ Debate listing${NC}"
+echo -e "${YELLOW}⚠ Note: Some MCP protocol features may not be available in Java version${NC}"
+echo -e "${BLUE}Core functionality tests passed!${NC}"

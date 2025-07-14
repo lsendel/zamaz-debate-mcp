@@ -89,13 +89,13 @@ start: start-all ## Alias for start-all (backward compatibility)
 wait-for-services: ## Wait for all services to be healthy
 	@echo "$(BLUE)Waiting for services to be healthy...$(NC)"
 	@echo -n "PostgreSQL: "
-	@timeout 30 bash -c 'until docker-compose exec -T postgres pg_isready -U context_user > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@timeout 30 bash -c 'until docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
 	@echo -n "Redis: "
 	@timeout 30 bash -c 'until docker-compose exec -T redis redis-cli ping > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
 	@echo -n "LLM Service: "
-	@timeout 30 bash -c 'until curl -s http://localhost:$(LLM_API_PORT)/health > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@timeout 30 bash -c 'until curl -s http://localhost:$(LLM_API_PORT)/actuator/health > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
 	@echo -n "Debate Service: "
-	@timeout 30 bash -c 'until curl -s http://localhost:$(DEBATE_API_PORT)/health > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
+	@timeout 30 bash -c 'until curl -s http://localhost:$(DEBATE_API_PORT)/actuator/health > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
 
 stop-all: ## Stop all services including UI
 	@echo "$(BLUE)🛑 Stopping all services...$(NC)"
@@ -127,21 +127,19 @@ ui: start-ui ## Alias for start-ui (backward compatibility)
 check-health: ## Check health of all services
 	@echo "$(BLUE)🏥 Checking service health...$(NC)"
 	@echo -n "PostgreSQL: " && \
-		(docker-compose exec -T postgres pg_isready -U context_user > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+		(docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "Redis: " && \
 		(docker-compose exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "MCP Organization: " && \
-		(curl -s http://localhost:5005/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP Context: " && \
-		(curl -s http://localhost:5001/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+		(curl -s http://localhost:5005/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+	@echo -n "MCP Controller (Debate): " && \
+		(curl -s http://localhost:5013/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "MCP LLM: " && \
-		(curl -s http://localhost:$(LLM_API_PORT)/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP Debate: " && \
-		(curl -s http://localhost:$(DEBATE_API_PORT)/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+		(curl -s http://localhost:$(LLM_API_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "MCP RAG: " && \
-		(curl -s http://localhost:5004/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+		(curl -s http://localhost:5004/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "MCP Template: " && \
-		(curl -s http://localhost:5006/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+		(curl -s http://localhost:5006/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "UI (if running): " && \
 		(curl -s http://localhost:$(UI_PORT) > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠ Not running (run 'make ui')$(NC)")
 
@@ -196,50 +194,39 @@ test-debug: ## Run tests in debug mode
 test-mcp-all: ## Test all MCP services
 	@echo "$(BLUE)🧪 Testing all MCP services...$(NC)"
 	@$(MAKE) test-mcp-organization
-	@$(MAKE) test-mcp-context
 	@$(MAKE) test-mcp-llm
-	@$(MAKE) test-mcp-debate
+	@$(MAKE) test-mcp-controller
 	@$(MAKE) test-mcp-rag
 	@$(MAKE) test-mcp-template
 	@echo "$(GREEN)✅ All MCP service tests complete!$(NC)"
 
 test-mcp-organization: ## Test MCP Organization service
 	@echo "$(BLUE)🏢 Testing MCP Organization service...$(NC)"
-	@curl -s http://localhost:5005/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s -X POST http://localhost:5005/tools/create_organization \
-		-H "Content-Type: application/json" \
-		-d '{"name":"Test Org","description":"Test organization"}' \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ Create organization test passed$(NC)" || echo "$(RED)✗ Create organization test failed$(NC)"
+	@curl -s http://localhost:5005/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5005/api-docs > /dev/null 2>&1 && echo "$(GREEN)✓ API docs available$(NC)" || echo "$(RED)✗ API docs not available$(NC)"
 
-test-mcp-context: ## Test MCP Context service
-	@echo "$(BLUE)📝 Testing MCP Context service...$(NC)"
-	@curl -s http://localhost:5001/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5001/resources \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List resources test passed$(NC)" || echo "$(RED)✗ List resources test failed$(NC)"
+test-mcp-controller: ## Test MCP Controller service
+	@echo "$(BLUE)⚔️ Testing MCP Controller service...$(NC)"
+	@curl -s http://localhost:5013/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5013/api/v1/debates \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List debates test passed$(NC)" || echo "$(RED)✗ List debates test failed$(NC)"
 
 test-mcp-llm: ## Test MCP LLM service
 	@echo "$(BLUE)🤖 Testing MCP LLM service...$(NC)"
-	@curl -s http://localhost:5002/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5002/resources/providers \
+	@curl -s http://localhost:5002/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5002/api/v1/providers \
 		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List providers test passed$(NC)" || echo "$(RED)✗ List providers test failed$(NC)"
 
-test-mcp-debate: ## Test MCP Debate service
-	@echo "$(BLUE)⚔️ Testing MCP Debate service...$(NC)"
-	@curl -s http://localhost:5013/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5013/resources/debates \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List debates test passed$(NC)" || echo "$(RED)✗ List debates test failed$(NC)"
 
 test-mcp-rag: ## Test MCP RAG service
 	@echo "$(BLUE)🔍 Testing MCP RAG service...$(NC)"
-	@curl -s http://localhost:5004/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5004/resources \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List resources test passed$(NC)" || echo "$(RED)✗ List resources test failed$(NC)"
+	@curl -s http://localhost:5004/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5004/api-docs > /dev/null 2>&1 && echo "$(GREEN)✓ API docs available$(NC)" || echo "$(RED)✗ API docs not available$(NC)"
 
 test-mcp-template: ## Test MCP Template service
 	@echo "$(BLUE)📋 Testing MCP Template service...$(NC)"
-	@curl -s http://localhost:5006/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5006/resources/templates \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List templates test passed$(NC)" || echo "$(RED)✗ List templates test failed$(NC)"
+	@curl -s http://localhost:5006/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5006/api-docs > /dev/null 2>&1 && echo "$(GREEN)✓ API docs available$(NC)" || echo "$(RED)✗ API docs not available$(NC)"
 
 test-mcp-detail: ## Run detailed tests for all MCP services
 	@echo "$(BLUE)🧪 Running detailed MCP service tests...$(NC)"
@@ -349,62 +336,58 @@ stop-ollama: ## Stop all services including Ollama
 # Individual MCP Service Commands
 start-mcp-organization: ## Start only MCP Organization service
 	@echo "$(BLUE)🏢 Starting MCP Organization service...$(NC)"
-	docker-compose up -d mcp-organization
+	docker-compose up -d mcp-organization-j
 	@echo "$(GREEN)✅ MCP Organization service started$(NC)"
 
 stop-mcp-organization: ## Stop MCP Organization service
 	@echo "$(BLUE)🛑 Stopping MCP Organization service...$(NC)"
-	docker-compose stop mcp-organization
+	docker-compose stop mcp-organization-j
 	@echo "$(GREEN)✅ MCP Organization service stopped$(NC)"
 
-start-mcp-context: ## Start only MCP Context service
-	@echo "$(BLUE)📝 Starting MCP Context service...$(NC)"
-	docker-compose up -d postgres redis mcp-context
-	@echo "$(GREEN)✅ MCP Context service started$(NC)"
+start-mcp-controller: ## Start only MCP Controller service
+	@echo "$(BLUE)⚔️ Starting MCP Controller service...$(NC)"
+	docker-compose up -d postgres redis mcp-organization-j mcp-llm-j mcp-controller-j
+	@echo "$(GREEN)✅ MCP Controller service started$(NC)"
 
-stop-mcp-context: ## Stop MCP Context service
-	@echo "$(BLUE)🛑 Stopping MCP Context service...$(NC)"
-	docker-compose stop mcp-context
-	@echo "$(GREEN)✅ MCP Context service stopped$(NC)"
+stop-mcp-controller: ## Stop MCP Controller service
+	@echo "$(BLUE)🛑 Stopping MCP Controller service...$(NC)"
+	docker-compose stop mcp-controller-j
+	@echo "$(GREEN)✅ MCP Controller service stopped$(NC)"
 
 start-mcp-llm: ## Start only MCP LLM service
 	@echo "$(BLUE)🤖 Starting MCP LLM service...$(NC)"
-	docker-compose up -d redis mcp-llm
+	docker-compose up -d redis mcp-llm-j
 	@echo "$(GREEN)✅ MCP LLM service started$(NC)"
 
 stop-mcp-llm: ## Stop MCP LLM service
 	@echo "$(BLUE)🛑 Stopping MCP LLM service...$(NC)"
-	docker-compose stop mcp-llm
+	docker-compose stop mcp-llm-j
 	@echo "$(GREEN)✅ MCP LLM service stopped$(NC)"
 
-start-mcp-debate: ## Start only MCP Debate service
-	@echo "$(BLUE)⚔️ Starting MCP Debate service...$(NC)"
-	docker-compose up -d mcp-context mcp-llm mcp-debate
-	@echo "$(GREEN)✅ MCP Debate service started$(NC)"
+start-mcp-debate: ## Start only MCP Debate service (alias for controller)
+	@$(MAKE) start-mcp-controller
 
-stop-mcp-debate: ## Stop MCP Debate service
-	@echo "$(BLUE)🛑 Stopping MCP Debate service...$(NC)"
-	docker-compose stop mcp-debate
-	@echo "$(GREEN)✅ MCP Debate service stopped$(NC)"
+stop-mcp-debate: ## Stop MCP Debate service (alias for controller)
+	@$(MAKE) stop-mcp-controller
 
 start-mcp-rag: ## Start only MCP RAG service
 	@echo "$(BLUE)🔍 Starting MCP RAG service...$(NC)"
-	docker-compose up -d qdrant redis mcp-context mcp-rag
+	docker-compose up -d qdrant redis mcp-llm-j mcp-rag-j
 	@echo "$(GREEN)✅ MCP RAG service started$(NC)"
 
 stop-mcp-rag: ## Stop MCP RAG service
 	@echo "$(BLUE)🛑 Stopping MCP RAG service...$(NC)"
-	docker-compose stop mcp-rag
+	docker-compose stop mcp-rag-j
 	@echo "$(GREEN)✅ MCP RAG service stopped$(NC)"
 
 start-mcp-template: ## Start only MCP Template service
 	@echo "$(BLUE)📋 Starting MCP Template service...$(NC)"
-	docker-compose up -d postgres mcp-organization mcp-template
+	docker-compose up -d postgres mcp-organization-j mcp-template-j
 	@echo "$(GREEN)✅ MCP Template service started$(NC)"
 
 stop-mcp-template: ## Stop MCP Template service
 	@echo "$(BLUE)🛑 Stopping MCP Template service...$(NC)"
-	docker-compose stop mcp-template
+	docker-compose stop mcp-template-j
 	@echo "$(GREEN)✅ MCP Template service stopped$(NC)"
 
 restart-mcp-%: ## Restart specific MCP service (e.g., make restart-mcp-llm)
@@ -416,13 +399,13 @@ restart-mcp-%: ## Restart specific MCP service (e.g., make restart-mcp-llm)
 
 # Development helpers
 shell-postgres: ## Open PostgreSQL shell
-	docker-compose exec postgres psql -U context_user -d context_db
+	docker-compose exec postgres psql -U postgres
 
 shell-redis: ## Open Redis CLI
 	docker-compose exec redis redis-cli
 
 inspect-debates: ## Show debates in database
-	docker-compose exec mcp-debate sqlite3 /app/data/debates.db "SELECT * FROM debates;"
+	docker-compose exec postgres psql -U postgres -d debate_db -c "SELECT * FROM debates;"
 
 # Evidence collection for testing
 collect-evidence: ## Collect evidence of working system

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# MCP Organization Service Detailed Test Script
+# MCP Organization Service (Java) Detailed Test Script
 # Tests all endpoints and functionality
 
 set -e
@@ -17,13 +17,13 @@ BASE_URL="http://localhost:5005"
 TEST_ORG_NAME="Test Organization $(date +%s)"
 TEST_PROJECT_NAME="Test Project $(date +%s)"
 
-echo -e "${BLUE}=== MCP Organization Service Detailed Test ===${NC}"
+echo -e "${BLUE}=== MCP Organization Service (Java) Detailed Test ===${NC}"
 echo -e "${BLUE}Testing service at: $BASE_URL${NC}"
 echo ""
 
 # Test 1: Health Check
 echo -e "${YELLOW}Test 1: Health Check${NC}"
-if curl -s "$BASE_URL/health" | grep -q "healthy"; then
+if curl -s "$BASE_URL/actuator/health" | grep -q "UP"; then
     echo -e "${GREEN}✓ Health check passed${NC}"
 else
     echo -e "${RED}✗ Health check failed${NC}"
@@ -33,21 +33,19 @@ echo ""
 
 # Test 2: Create Organization
 echo -e "${YELLOW}Test 2: Create Organization${NC}"
-CREATE_ORG_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_organization" \
+CREATE_ORG_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/organizations" \
     -H "Content-Type: application/json" \
     -d "{
-        \"arguments\": {
-            \"name\": \"$TEST_ORG_NAME\",
-            \"description\": \"Test organization for automated testing\",
-            \"settings\": {
-                \"max_projects\": 10,
-                \"max_users\": 100
-            }
+        \"name\": \"$TEST_ORG_NAME\",
+        \"description\": \"Test organization for automated testing\",
+        \"settings\": {
+            \"max_projects\": 10,
+            \"max_users\": 100
         }
     }")
 
-if echo "$CREATE_ORG_RESPONSE" | jq -e '.result.organization_id' > /dev/null; then
-    ORG_ID=$(echo "$CREATE_ORG_RESPONSE" | jq -r '.result.organization_id')
+if echo "$CREATE_ORG_RESPONSE" | jq -e '.id' > /dev/null; then
+    ORG_ID=$(echo "$CREATE_ORG_RESPONSE" | jq -r '.id')
     echo -e "${GREEN}✓ Organization created with ID: $ORG_ID${NC}"
     echo "Response: $(echo "$CREATE_ORG_RESPONSE" | jq -c '.result')"
 else

@@ -1,1 +1,0 @@
-# MCP Organization Service
