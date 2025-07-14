@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # Java version of MCP Organization Service
+  mcp-organization-j:
+    build: ./mcp-organization-j
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=organization_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
+      - SERVER_PORT=5005
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+    ports:
+      - "${MCP_ORGANIZATION_J_PORT:-5005}:5005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./mcp-organization-j/config:/app/config
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Java version of MCP LLM Service
+  mcp-llm-j:
+    build: ./mcp-llm-j
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CLAUDE_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GOOGLE_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - SERVER_PORT=5002
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${MCP_LLM_J_PORT:-5002}:5002"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./mcp-llm-j/config:/app/config
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Java version of MCP Controller Service
+  mcp-controller-j:
+    build: ./mcp-controller-j
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=debate_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ORGANIZATION_SERVICE_URL=http://mcp-organization-j:5005
+      - LLM_SERVICE_URL=http://mcp-llm-j:5002
+      - SERVER_PORT=5013
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${MCP_CONTROLLER_J_PORT:-5013}:5013"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-organization-j:
+        condition: service_healthy
+      mcp-llm-j:
+        condition: service_healthy
+    volumes:
+      - ./mcp-controller-j/config:/app/config
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5013/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # PostgreSQL extended configuration for Java services
+  postgres-init:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    command: |
+      bash -c "
+        echo 'CREATE DATABASE organization_db;' > /docker-entrypoint-initdb.d/01-create-dbs.sql
+        echo 'CREATE DATABASE debate_db;' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
+        echo 'GRANT ALL PRIVILEGES ON DATABASE organization_db TO ${POSTGRES_USER:-postgres};' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
+        echo 'GRANT ALL PRIVILEGES ON DATABASE debate_db TO ${POSTGRES_USER:-postgres};' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
+      "
+    networks:
+      - mcp-network
+    profiles:
+      - setup
+
+# The networks and volumes are defined in the main docker-compose.yml
+# This file should be used with: docker-compose -f docker-compose.yml -f docker-compose-java.yml up

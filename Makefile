@@ -45,6 +45,14 @@ help: ## Show this help message
 	@echo '  make full-test          - Run comprehensive E2E tests'
 	@echo '  make test-ui-only       - Test UI without backend services'
 	@echo '  make test-playwright    - Run Playwright tests'
+	@echo '  make test-mcp-all       - Test all MCP services'
+	@echo '  make test-mcp-detail    - Run detailed MCP service tests'
+	@echo '  make test-services      - Quick test of all services'
+	@echo '  make test-services-detail - Enhanced quick test with details'
+	@echo ''
+	@echo '🧹 CLEANUP:'
+	@echo '  make clean              - Remove all Docker containers/volumes'
+	@echo '  make clean-all          - Complete Docker cleanup (ALL data)'
 	@echo ''
 	@echo '📋 ALL COMMANDS:'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
@@ -122,10 +130,18 @@ check-health: ## Check health of all services
 		(docker-compose exec -T postgres pg_isready -U context_user > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "Redis: " && \
 		(docker-compose exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "LLM Service: " && \
+	@echo -n "MCP Organization: " && \
+		(curl -s http://localhost:5005/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+	@echo -n "MCP Context: " && \
+		(curl -s http://localhost:5001/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+	@echo -n "MCP LLM: " && \
 		(curl -s http://localhost:$(LLM_API_PORT)/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "Debate Service: " && \
+	@echo -n "MCP Debate: " && \
 		(curl -s http://localhost:$(DEBATE_API_PORT)/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+	@echo -n "MCP RAG: " && \
+		(curl -s http://localhost:5004/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
+	@echo -n "MCP Template: " && \
+		(curl -s http://localhost:5006/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
 	@echo -n "UI (if running): " && \
 		(curl -s http://localhost:$(UI_PORT) > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠ Not running (run 'make ui')$(NC)")
 
@@ -176,6 +192,85 @@ test-debug: ## Run tests in debug mode
 	@echo "$(BLUE)🐛 Running tests in debug mode...$(NC)"
 	cd playwright-tests && npm run test:debug
 
+# MCP Service Testing Commands
+test-mcp-all: ## Test all MCP services
+	@echo "$(BLUE)🧪 Testing all MCP services...$(NC)"
+	@$(MAKE) test-mcp-organization
+	@$(MAKE) test-mcp-context
+	@$(MAKE) test-mcp-llm
+	@$(MAKE) test-mcp-debate
+	@$(MAKE) test-mcp-rag
+	@$(MAKE) test-mcp-template
+	@echo "$(GREEN)✅ All MCP service tests complete!$(NC)"
+
+test-mcp-organization: ## Test MCP Organization service
+	@echo "$(BLUE)🏢 Testing MCP Organization service...$(NC)"
+	@curl -s http://localhost:5005/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s -X POST http://localhost:5005/tools/create_organization \
+		-H "Content-Type: application/json" \
+		-d '{"name":"Test Org","description":"Test organization"}' \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ Create organization test passed$(NC)" || echo "$(RED)✗ Create organization test failed$(NC)"
+
+test-mcp-context: ## Test MCP Context service
+	@echo "$(BLUE)📝 Testing MCP Context service...$(NC)"
+	@curl -s http://localhost:5001/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5001/resources \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List resources test passed$(NC)" || echo "$(RED)✗ List resources test failed$(NC)"
+
+test-mcp-llm: ## Test MCP LLM service
+	@echo "$(BLUE)🤖 Testing MCP LLM service...$(NC)"
+	@curl -s http://localhost:5002/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5002/resources/providers \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List providers test passed$(NC)" || echo "$(RED)✗ List providers test failed$(NC)"
+
+test-mcp-debate: ## Test MCP Debate service
+	@echo "$(BLUE)⚔️ Testing MCP Debate service...$(NC)"
+	@curl -s http://localhost:5013/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5013/resources/debates \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List debates test passed$(NC)" || echo "$(RED)✗ List debates test failed$(NC)"
+
+test-mcp-rag: ## Test MCP RAG service
+	@echo "$(BLUE)🔍 Testing MCP RAG service...$(NC)"
+	@curl -s http://localhost:5004/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5004/resources \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List resources test passed$(NC)" || echo "$(RED)✗ List resources test failed$(NC)"
+
+test-mcp-template: ## Test MCP Template service
+	@echo "$(BLUE)📋 Testing MCP Template service...$(NC)"
+	@curl -s http://localhost:5006/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
+	@curl -s http://localhost:5006/resources/templates \
+		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List templates test passed$(NC)" || echo "$(RED)✗ List templates test failed$(NC)"
+
+test-mcp-detail: ## Run detailed tests for all MCP services
+	@echo "$(BLUE)🧪 Running detailed MCP service tests...$(NC)"
+	@if [ ! -f mcp-tests/test-all-mcp-detailed.sh ]; then \
+		echo "$(RED)✗ Test scripts not found. Please ensure mcp-tests directory exists.$(NC)"; \
+		exit 1; \
+	fi
+	@bash mcp-tests/test-all-mcp-detailed.sh
+
+test-mcp-detail-%: ## Run detailed test for specific MCP service (e.g., make test-mcp-detail-llm)
+	@echo "$(BLUE)🧪 Running detailed test for MCP $* service...$(NC)"
+	@if [ ! -f mcp-tests/test-mcp-$*.sh ]; then \
+		echo "$(RED)✗ Test script for $* not found.$(NC)"; \
+		exit 1; \
+	fi
+	@bash mcp-tests/test-mcp-$*.sh
+
+test-services: ## Quick test of all services
+	@echo "$(BLUE)🚀 Running quick service test...$(NC)"
+	@if [ ! -x mcp-tests/quick-test.sh ]; then \
+		chmod +x mcp-tests/quick-test.sh; \
+	fi
+	@./mcp-tests/quick-test.sh
+
+test-services-detail: ## Enhanced quick test with details
+	@echo "$(BLUE)🚀 Running enhanced quick service test...$(NC)"
+	@if [ ! -x mcp-tests/quick-test-enhanced.sh ]; then \
+		chmod +x mcp-tests/quick-test-enhanced.sh; \
+	fi
+	@./mcp-tests/quick-test-enhanced.sh
+
 logs: ## Show logs (use service=NAME to filter)
 	@if [ -z "$(service)" ]; then \
 		docker-compose logs -f --tail=100; \
@@ -195,6 +290,18 @@ clean: ## Clean up containers and volumes
 		docker-compose down -v; \
 		docker system prune -f; \
 		echo "$(GREEN)✅ Cleanup complete$(NC)"; \
+	else \
+		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
+	fi
+
+clean-all: ## Complete Docker cleanup (removes ALL Docker data)
+	@echo "$(RED)🚨 COMPLETE DOCKER CLEANUP$(NC)"
+	@echo "$(RED)This will remove ALL Docker containers, images, volumes, and networks!$(NC)"
+	@echo "$(RED)This affects ALL Docker projects on your system, not just this one!$(NC)"
+	@echo "$(RED)Type 'yes' to confirm: $(NC)"
+	@read -r response && \
+	if [ "$$response" = "yes" ]; then \
+		./docker-cleanup.sh; \
 	else \
 		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
 	fi
@@ -238,6 +345,74 @@ stop-ollama: ## Stop all services including Ollama
 	@echo "$(BLUE)🛑 Stopping all services...$(NC)"
 	docker-compose --profile llama down
 	@echo "$(GREEN)✅ All services stopped$(NC)"
+
+# Individual MCP Service Commands
+start-mcp-organization: ## Start only MCP Organization service
+	@echo "$(BLUE)🏢 Starting MCP Organization service...$(NC)"
+	docker-compose up -d mcp-organization
+	@echo "$(GREEN)✅ MCP Organization service started$(NC)"
+
+stop-mcp-organization: ## Stop MCP Organization service
+	@echo "$(BLUE)🛑 Stopping MCP Organization service...$(NC)"
+	docker-compose stop mcp-organization
+	@echo "$(GREEN)✅ MCP Organization service stopped$(NC)"
+
+start-mcp-context: ## Start only MCP Context service
+	@echo "$(BLUE)📝 Starting MCP Context service...$(NC)"
+	docker-compose up -d postgres redis mcp-context
+	@echo "$(GREEN)✅ MCP Context service started$(NC)"
+
+stop-mcp-context: ## Stop MCP Context service
+	@echo "$(BLUE)🛑 Stopping MCP Context service...$(NC)"
+	docker-compose stop mcp-context
+	@echo "$(GREEN)✅ MCP Context service stopped$(NC)"
+
+start-mcp-llm: ## Start only MCP LLM service
+	@echo "$(BLUE)🤖 Starting MCP LLM service...$(NC)"
+	docker-compose up -d redis mcp-llm
+	@echo "$(GREEN)✅ MCP LLM service started$(NC)"
+
+stop-mcp-llm: ## Stop MCP LLM service
+	@echo "$(BLUE)🛑 Stopping MCP LLM service...$(NC)"
+	docker-compose stop mcp-llm
+	@echo "$(GREEN)✅ MCP LLM service stopped$(NC)"
+
+start-mcp-debate: ## Start only MCP Debate service
+	@echo "$(BLUE)⚔️ Starting MCP Debate service...$(NC)"
+	docker-compose up -d mcp-context mcp-llm mcp-debate
+	@echo "$(GREEN)✅ MCP Debate service started$(NC)"
+
+stop-mcp-debate: ## Stop MCP Debate service
+	@echo "$(BLUE)🛑 Stopping MCP Debate service...$(NC)"
+	docker-compose stop mcp-debate
+	@echo "$(GREEN)✅ MCP Debate service stopped$(NC)"
+
+start-mcp-rag: ## Start only MCP RAG service
+	@echo "$(BLUE)🔍 Starting MCP RAG service...$(NC)"
+	docker-compose up -d qdrant redis mcp-context mcp-rag
+	@echo "$(GREEN)✅ MCP RAG service started$(NC)"
+
+stop-mcp-rag: ## Stop MCP RAG service
+	@echo "$(BLUE)🛑 Stopping MCP RAG service...$(NC)"
+	docker-compose stop mcp-rag
+	@echo "$(GREEN)✅ MCP RAG service stopped$(NC)"
+
+start-mcp-template: ## Start only MCP Template service
+	@echo "$(BLUE)📋 Starting MCP Template service...$(NC)"
+	docker-compose up -d postgres mcp-organization mcp-template
+	@echo "$(GREEN)✅ MCP Template service started$(NC)"
+
+stop-mcp-template: ## Stop MCP Template service
+	@echo "$(BLUE)🛑 Stopping MCP Template service...$(NC)"
+	docker-compose stop mcp-template
+	@echo "$(GREEN)✅ MCP Template service stopped$(NC)"
+
+restart-mcp-%: ## Restart specific MCP service (e.g., make restart-mcp-llm)
+	@echo "$(BLUE)🔄 Restarting MCP $* service...$(NC)"
+	@$(MAKE) stop-mcp-$*
+	@sleep 2
+	@$(MAKE) start-mcp-$*
+	@echo "$(GREEN)✅ MCP $* service restarted$(NC)"
 
 # Development helpers
 shell-postgres: ## Open PostgreSQL shell

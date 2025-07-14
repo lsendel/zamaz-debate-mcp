@@ -1,0 +1,592 @@
+{
+    "checksum": "c05e8ff1403b7bd8f64209fa5dfecc26e6e72c2abd31a7cb5ea47110ea015871",
+    "data": {
+    "id": "5792f70a-e080-4d15-8476-b7874ca19bcd",
+    "createdAt": 1752321665716,
+    "updatedAt": 1752322716268,
+    "title": "Code Review Guidance",
+    "messages": [
+        {
+            "id": "ba46b682-575d-43fe-aa10-e875a07a656a",
+            "role": "user",
+            "content": [
+                {
+                    "type": "command",
+                    "commandName": "review",
+                    "customAgentId": "fc8a6dbb-f6fc-4e23-ba1a-58f8f6e771af"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "docker-compose.yml",
+                    "fsPath": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/docker-compose.yml",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "services:\n  # PostgreSQL for context service\n  postgres:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-context_user}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-context_pass}\n      POSTGRES_DB: ${POSTGRES_DB:-context_db}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    ports:\n      - \"${POSTGRES_PORT:-5432}:5432\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U context_user\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Redis for caching\n  redis:\n    image: redis:7-alpine\n    command: redis-server --appendonly yes\n    volumes:\n      - redis_data:/data\n    ports:\n      - \"${REDIS_PORT:-6379}:6379\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Qdrant for RAG vector storage\n  qdrant:\n    image: qdrant/qdrant\n    ports:\n      - \"${QDRANT_PORT:-6333}:6333\"\n    volumes:\n      - qdrant_data:/qdrant/storage\n    networks:\n      - mcp-network\n\n  # MCP Context Service\n  mcp-context:\n    build: ./mcp-context\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-context_user}:${POSTGRES_PASSWORD:-context_pass}@postgres:5432/${POSTGRES_DB:-context_db}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - JWT_SECRET=${JWT_SECRET:-your-secret-key}\n    ports:\n      - \"${MCP_CONTEXT_PORT:-5001}:5001\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-context/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP LLM Service\n  mcp-llm:\n    build: ./mcp-llm\n    environment:\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}\n      - GOOGLE_API_KEY=${GOOGLE_API_KEY}\n      - LLAMA_ENDPOINT=${LLAMA_ENDPOINT:-http://localhost:11434}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_LLM_PORT:-5002}:5002\"\n    depends_on:\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-llm/config:/app/config\n      - llm_cache:/app/cache\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Debate Service\n  mcp-debate:\n    build: ./mcp-debate\n    environment:\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - RAG_SERVICE_URL=http://mcp-rag:5004\n      - DATABASE_PATH=/app/data/debates.db\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - DEBATE_SERVICE_WS_PORT=5013\n    ports:\n      - \"${MCP_DEBATE_PORT:-5003}:5003\"\n      - \"${MCP_DEBATE_WS_PORT:-5013}:5013\"\n    depends_on:\n      - mcp-context\n      - mcp-llm\n    volumes:\n      - ./mcp-debate/data:/app/data\n      - ./mcp-debate/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP RAG Service\n  mcp-rag:\n    build: ./mcp-rag\n    environment:\n      - QDRANT_URL=http://qdrant:6333\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_RAG_PORT:-5004}:5004\"\n    depends_on:\n      - qdrant\n      - redis\n      - mcp-context\n    volumes:\n      - ./mcp-rag/config:/app/config\n      - rag_data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Organization Service\n  mcp-organization:\n    build: ./mcp-organization\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=debate_org\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5005\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_ORGANIZATION_PORT:-5005}:5005\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n    volumes:\n      - ./mcp-organization/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Template Service\n  mcp-template:\n    build: ./mcp-template\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=template_db\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5006\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_TEMPLATE_PORT:-5006}:5006\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      mcp-organization:\n        condition: service_started\n    volumes:\n      - ./mcp-template/config:/app/config\n      - template-data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # Optional: Ollama for local Llama models\n  ollama:\n    image: ollama/ollama\n    ports:\n      - \"${OLLAMA_PORT:-11434}:11434\"\n    volumes:\n      - ollama_data:/root/.ollama\n    networks:\n      - mcp-network\n    profiles:\n      - llama\n\n  # Optional: Monitoring with Prometheus\n  prometheus:\n    image: prom/prometheus\n    command:\n      - '--config.file=/etc/prometheus/prometheus.yml'\n      - '--storage.tsdb.path=/prometheus'\n    ports:\n      - \"${PROMETHEUS_PORT:-9090}:9090\"\n    volumes:\n      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml\n      - prometheus_data:/prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Optional: Grafana for visualization\n  grafana:\n    image: grafana/grafana\n    ports:\n      - \"${GRAFANA_PORT:-3000}:3000\"\n    environment:\n      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}\n    volumes:\n      - grafana_data:/var/lib/grafana\n      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards\n    depends_on:\n      - prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Test Runner Service\n  test-runner:\n    build:\n      context: .\n      dockerfile: test-runner.dockerfile\n    volumes:\n      - ./test_probe:/test_probe\n      - ./e2e-tests:/tests/e2e-tests\n      - ./playwright-tests:/tests/playwright-tests\n    environment:\n      - HEADLESS=true\n      - NODE_ENV=test\n      - BASE_URL=http://host.docker.internal:3000\n    networks:\n      - mcp-network\n    profiles:\n      - test\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n\nnetworks:\n  mcp-network:\n    driver: bridge\n\nvolumes:\n  postgres_data:\n  redis_data:\n  qdrant_data:\n  llm_cache:\n  rag_data:\n  ollama_data:\n  prometheus_data:\n  grafana_data:\n  organization-data:\n  template-data:"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1752321665719,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "command",
+                                "attrs": {
+                                    "label": "review",
+                                    "customAgentId": "fc8a6dbb-f6fc-4e23-ba1a-58f8f6e771af",
+                                    "isZencoderAgent": false
+                                },
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "/review"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "21c214b0-c63d-4125-b953-11311057d2d5",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I'll help you review your code as a Code Review agent. Let me start by understanding what you'd like me to review."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01J5Dqm5bTMbwEw7FQR6AUCF",
+                    "statusText": "Collecting requirements...",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "1. What would you like me to review?\n   - Uncommitted changes in the directory\n   - Diff with main branch\n   - A certain commit\n   - Certain file(s)\n   - The currently open docker-compose.yml file\n   - Other (please specify)\n\n2. Are there specific areas or concerns you'd like me to focus on?\n   - Performance\n   - Readability\n   - Security\n   - Best practices\n   - All aspects (comprehensive review)\n   - Other (please specify)"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "40dad938-3103-426d-ae90-55f1ac7a10da"
+            },
+            "createdAt": 1752321667175,
+            "isInternal": false
+        },
+        {
+            "id": "f3535788-0aa1-44bd-b312-48a2ce8323c4",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Security"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "docker-compose.yml",
+                    "fsPath": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/docker-compose.yml",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "services:\n  # PostgreSQL for context service\n  postgres:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-context_user}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-context_pass}\n      POSTGRES_DB: ${POSTGRES_DB:-context_db}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    ports:\n      - \"${POSTGRES_PORT:-5432}:5432\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U context_user\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Redis for caching\n  redis:\n    image: redis:7-alpine\n    command: redis-server --appendonly yes\n    volumes:\n      - redis_data:/data\n    ports:\n      - \"${REDIS_PORT:-6379}:6379\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Qdrant for RAG vector storage\n  qdrant:\n    image: qdrant/qdrant\n    ports:\n      - \"${QDRANT_PORT:-6333}:6333\"\n    volumes:\n      - qdrant_data:/qdrant/storage\n    networks:\n      - mcp-network\n\n  # MCP Context Service\n  mcp-context:\n    build: ./mcp-context\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-context_user}:${POSTGRES_PASSWORD:-context_pass}@postgres:5432/${POSTGRES_DB:-context_db}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - JWT_SECRET=${JWT_SECRET:-your-secret-key}\n    ports:\n      - \"${MCP_CONTEXT_PORT:-5001}:5001\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-context/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP LLM Service\n  mcp-llm:\n    build: ./mcp-llm\n    environment:\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}\n      - GOOGLE_API_KEY=${GOOGLE_API_KEY}\n      - LLAMA_ENDPOINT=${LLAMA_ENDPOINT:-http://localhost:11434}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_LLM_PORT:-5002}:5002\"\n    depends_on:\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-llm/config:/app/config\n      - llm_cache:/app/cache\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Debate Service\n  mcp-debate:\n    build: ./mcp-debate\n    environment:\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - RAG_SERVICE_URL=http://mcp-rag:5004\n      - DATABASE_PATH=/app/data/debates.db\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - DEBATE_SERVICE_WS_PORT=5013\n    ports:\n      - \"${MCP_DEBATE_PORT:-5003}:5003\"\n      - \"${MCP_DEBATE_WS_PORT:-5013}:5013\"\n    depends_on:\n      - mcp-context\n      - mcp-llm\n    volumes:\n      - ./mcp-debate/data:/app/data\n      - ./mcp-debate/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP RAG Service\n  mcp-rag:\n    build: ./mcp-rag\n    environment:\n      - QDRANT_URL=http://qdrant:6333\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_RAG_PORT:-5004}:5004\"\n    depends_on:\n      - qdrant\n      - redis\n      - mcp-context\n    volumes:\n      - ./mcp-rag/config:/app/config\n      - rag_data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Organization Service\n  mcp-organization:\n    build: ./mcp-organization\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=debate_org\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5005\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_ORGANIZATION_PORT:-5005}:5005\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n    volumes:\n      - ./mcp-organization/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Template Service\n  mcp-template:\n    build: ./mcp-template\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=template_db\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5006\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_TEMPLATE_PORT:-5006}:5006\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      mcp-organization:\n        condition: service_started\n    volumes:\n      - ./mcp-template/config:/app/config\n      - template-data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # Optional: Ollama for local Llama models\n  ollama:\n    image: ollama/ollama\n    ports:\n      - \"${OLLAMA_PORT:-11434}:11434\"\n    volumes:\n      - ollama_data:/root/.ollama\n    networks:\n      - mcp-network\n    profiles:\n      - llama\n\n  # Optional: Monitoring with Prometheus\n  prometheus:\n    image: prom/prometheus\n    command:\n      - '--config.file=/etc/prometheus/prometheus.yml'\n      - '--storage.tsdb.path=/prometheus'\n    ports:\n      - \"${PROMETHEUS_PORT:-9090}:9090\"\n    volumes:\n      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml\n      - prometheus_data:/prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Optional: Grafana for visualization\n  grafana:\n    image: grafana/grafana\n    ports:\n      - \"${GRAFANA_PORT:-3000}:3000\"\n    environment:\n      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}\n    volumes:\n      - grafana_data:/var/lib/grafana\n      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards\n    depends_on:\n      - prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Test Runner Service\n  test-runner:\n    build:\n      context: .\n      dockerfile: test-runner.dockerfile\n    volumes:\n      - ./test_probe:/test_probe\n      - ./e2e-tests:/tests/e2e-tests\n      - ./playwright-tests:/tests/playwright-tests\n    environment:\n      - HEADLESS=true\n      - NODE_ENV=test\n      - BASE_URL=http://host.docker.internal:3000\n    networks:\n      - mcp-network\n    profiles:\n      - test\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n\nnetworks:\n  mcp-network:\n    driver: bridge\n\nvolumes:\n  postgres_data:\n  redis_data:\n  qdrant_data:\n  llm_cache:\n  rag_data:\n  ollama_data:\n  prometheus_data:\n  grafana_data:\n  organization-data:\n  template-data:"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1752321704942,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Security"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "a7bce54b-92be-47ee-abc7-77f8deb51b24",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I'll focus on reviewing the security aspects of your code. Before I proceed, I need to clarify what specific code you'd like me to review."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01TnD27EqL6tnc7e7Ub8X35u",
+                    "statusText": "Collecting requirements...",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "1. Which code would you like me to review for security concerns?\n   - The currently open docker-compose.yml file\n   - Uncommitted changes in the directory\n   - Diff with main branch\n   - A certain commit\n   - Certain file(s)\n   - Other (please specify)"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "51c2dcd5-6efb-433a-9818-4321f7d13aa9"
+            },
+            "createdAt": 1752321706090,
+            "isInternal": false
+        },
+        {
+            "id": "3a738f52-9d90-405c-8282-7c3439658e68",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "main branch"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "docker-compose.yml",
+                    "fsPath": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/docker-compose.yml",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "services:\n  # PostgreSQL for context service\n  postgres:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-context_user}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-context_pass}\n      POSTGRES_DB: ${POSTGRES_DB:-context_db}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    ports:\n      - \"${POSTGRES_PORT:-5432}:5432\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U context_user\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Redis for caching\n  redis:\n    image: redis:7-alpine\n    command: redis-server --appendonly yes\n    volumes:\n      - redis_data:/data\n    ports:\n      - \"${REDIS_PORT:-6379}:6379\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Qdrant for RAG vector storage\n  qdrant:\n    image: qdrant/qdrant\n    ports:\n      - \"${QDRANT_PORT:-6333}:6333\"\n    volumes:\n      - qdrant_data:/qdrant/storage\n    networks:\n      - mcp-network\n\n  # MCP Context Service\n  mcp-context:\n    build: ./mcp-context\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-context_user}:${POSTGRES_PASSWORD:-context_pass}@postgres:5432/${POSTGRES_DB:-context_db}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - JWT_SECRET=${JWT_SECRET:-your-secret-key}\n    ports:\n      - \"${MCP_CONTEXT_PORT:-5001}:5001\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-context/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP LLM Service\n  mcp-llm:\n    build: ./mcp-llm\n    environment:\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}\n      - GOOGLE_API_KEY=${GOOGLE_API_KEY}\n      - LLAMA_ENDPOINT=${LLAMA_ENDPOINT:-http://localhost:11434}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_LLM_PORT:-5002}:5002\"\n    depends_on:\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-llm/config:/app/config\n      - llm_cache:/app/cache\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Debate Service\n  mcp-debate:\n    build: ./mcp-debate\n    environment:\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - RAG_SERVICE_URL=http://mcp-rag:5004\n      - DATABASE_PATH=/app/data/debates.db\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - DEBATE_SERVICE_WS_PORT=5013\n    ports:\n      - \"${MCP_DEBATE_PORT:-5003}:5003\"\n      - \"${MCP_DEBATE_WS_PORT:-5013}:5013\"\n    depends_on:\n      - mcp-context\n      - mcp-llm\n    volumes:\n      - ./mcp-debate/data:/app/data\n      - ./mcp-debate/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP RAG Service\n  mcp-rag:\n    build: ./mcp-rag\n    environment:\n      - QDRANT_URL=http://qdrant:6333\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_RAG_PORT:-5004}:5004\"\n    depends_on:\n      - qdrant\n      - redis\n      - mcp-context\n    volumes:\n      - ./mcp-rag/config:/app/config\n      - rag_data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Organization Service\n  mcp-organization:\n    build: ./mcp-organization\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=debate_org\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5005\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_ORGANIZATION_PORT:-5005}:5005\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n    volumes:\n      - ./mcp-organization/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Template Service\n  mcp-template:\n    build: ./mcp-template\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=template_db\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5006\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_TEMPLATE_PORT:-5006}:5006\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      mcp-organization:\n        condition: service_started\n    volumes:\n      - ./mcp-template/config:/app/config\n      - template-data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # Optional: Ollama for local Llama models\n  ollama:\n    image: ollama/ollama\n    ports:\n      - \"${OLLAMA_PORT:-11434}:11434\"\n    volumes:\n      - ollama_data:/root/.ollama\n    networks:\n      - mcp-network\n    profiles:\n      - llama\n\n  # Optional: Monitoring with Prometheus\n  prometheus:\n    image: prom/prometheus\n    command:\n      - '--config.file=/etc/prometheus/prometheus.yml'\n      - '--storage.tsdb.path=/prometheus'\n    ports:\n      - \"${PROMETHEUS_PORT:-9090}:9090\"\n    volumes:\n      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml\n      - prometheus_data:/prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Optional: Grafana for visualization\n  grafana:\n    image: grafana/grafana\n    ports:\n      - \"${GRAFANA_PORT:-3000}:3000\"\n    environment:\n      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}\n    volumes:\n      - grafana_data:/var/lib/grafana\n      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards\n    depends_on:\n      - prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Test Runner Service\n  test-runner:\n    build:\n      context: .\n      dockerfile: test-runner.dockerfile\n    volumes:\n      - ./test_probe:/test_probe\n      - ./e2e-tests:/tests/e2e-tests\n      - ./playwright-tests:/tests/playwright-tests\n    environment:\n      - HEADLESS=true\n      - NODE_ENV=test\n      - BASE_URL=http://host.docker.internal:3000\n    networks:\n      - mcp-network\n    profiles:\n      - test\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n\nnetworks:\n  mcp-network:\n    driver: bridge\n\nvolumes:\n  postgres_data:\n  redis_data:\n  qdrant_data:\n  llm_cache:\n  rag_data:\n  ollama_data:\n  prometheus_data:\n  grafana_data:\n  organization-data:\n  template-data:"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1752321760049,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "main branch"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "2d5dae9f-f823-4439-adf5-8ec42144a770",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I'll review the security aspects of the diff with the main branch. Let me first check what branch we're currently on and then examine the differences between the current branch and main."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01H1UJn6UuX3K6KBrqoCTsjg",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true,
+                    "localResult": "{\"status\":\"SUCCESS\",\"exitCode\":0,\"output\":\"main\\r\\n\"}"
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "git branch --show-current",
+                    "id": "3288cd96-6bc2-4325-a1bc-579bcbf6fdab",
+                    "status": "SUCCESS",
+                    "toolCallId": "toolu_01H1UJn6UuX3K6KBrqoCTsjg",
+                    "commandsRequiringConfirmation": [],
+                    "exitCode": 0,
+                    "output": "main\r\n",
+                    "outputPath": ".zencoder/Zencoder-5df79421-51b6-4961-99c2-3b7199e53e1d.log"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "9328c1de-8bd9-4c6d-9a53-dde92d479c0e"
+            },
+            "createdAt": 1752321761094,
+            "isInternal": false
+        },
+        {
+            "id": "7a3d734f-c44f-498b-a22b-23b70c81bec1",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "It looks like we're currently on the main branch. Let me check if there are any other branches to compare with main."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_014r738dkJ6tV3JrLDuGiNhD",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true,
+                    "localResult": "{\"status\":\"SUCCESS\",\"exitCode\":0,\"output\":\"* \\u001b[32mmain\\u001b[m\\r\\n\"}"
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "git branch",
+                    "id": "137f3985-462b-4282-a15d-96d0e0e80cf6",
+                    "status": "SUCCESS",
+                    "toolCallId": "toolu_014r738dkJ6tV3JrLDuGiNhD",
+                    "commandsRequiringConfirmation": [],
+                    "exitCode": 0,
+                    "output": "* \u001b[32mmain\u001b[m\r\n",
+                    "outputPath": ".zencoder/Zencoder-abeccead-2ddb-4a42-892c-76b841eec699.log"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "24c6dc31-d100-40a5-9d66-588adfa91ff6"
+            },
+            "createdAt": 1752321766028,
+            "isInternal": false
+        },
+        {
+            "id": "0237d130-ef7b-4cb2-b44e-5374bf7278bc",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I see that we only have the main branch. Let me check if there are any uncommitted changes that we can review for security concerns."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01LhmyM2ZdP6kePuoQCuVkgR",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true,
+                    "localResult": "{\"status\":\"SUCCESS\",\"exitCode\":0,\"output\":\"On branch main\\r\\nYour branch is up to date with 'origin/main'.\\r\\n\\r\\nChanges not staged for commit:\\r\\n  (use \\\"git add <file>...\\\" to update what will be committed)\\r\\n  (use \\\"git restore <file>...\\\" to discard changes in working directory)\\r\\n\\t\\u001b[31mmodified:   debate-ui/src/components/create-debate-dialog.tsx\\u001b[m\\r\\n\\r\\nno changes added to commit (use \\\"git add\\\" and/or \\\"git commit -a\\\")\\r\\n\"}"
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "git status",
+                    "id": "d0dad591-b936-4f27-8ba5-427a81841f95",
+                    "status": "SUCCESS",
+                    "toolCallId": "toolu_01LhmyM2ZdP6kePuoQCuVkgR",
+                    "commandsRequiringConfirmation": [],
+                    "exitCode": 0,
+                    "output": "On branch main\r\nYour branch is up to date with 'origin/main'.\r\n\r\nChanges not staged for commit:\r\n  (use \"git add <file>...\" to update what will be committed)\r\n  (use \"git restore <file>...\" to discard changes in working directory)\r\n\t\u001b[31mmodified:   debate-ui/src/components/create-debate-dialog.tsx\u001b[m\r\n\r\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\r\n",
+                    "outputPath": ".zencoder/Zencoder-667576cd-93d1-4d04-bee7-48b8552ff2dc.log"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "4c689ae3-a21c-4cd1-9263-fe7db8751abe"
+            },
+            "createdAt": 1752321769935,
+            "isInternal": false
+        },
+        {
+            "id": "116d535a-1411-4ac8-a220-dd9f672873ac",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I see there's an uncommitted change to `debate-ui/src/components/create-debate-dialog.tsx`. Let's examine this file for security concerns."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01NUWJqoQMD9vC9UNmQV2jtF",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true,
+                    "localResult": "{\"status\":\"SUCCESS\",\"exitCode\":0,\"output\":\"\\u001b[1mdiff --git a/debate-ui/src/components/create-debate-dialog.tsx b/debate-ui/src/components/create-debate-dialog.tsx\\u001b[m\\r\\n\\u001b[1mindex 37091c9..bf878a3 100644\\u001b[m\\r\\n\\u001b[1m--- a/debate-ui/src/components/create-debate-dialog.tsx\\u001b[m\\r\\n\\u001b[1m+++ b/debate-ui/src/components/create-debate-dialog.tsx\\u001b[m\\r\\n\\u001b[36m@@ -12,7 +12,7 @@\\u001b[m \\u001b[mimport { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';\\u001b[m\\r\\n import { Participant, DebateRules } from '@/types/debate';\\u001b[m\\r\\n import { ModelSelector } from '@/components/llm/model-selector';\\u001b[m\\r\\n import { useLLM } from '@/hooks/use-llm';\\u001b[m\\r\\n\\u001b[31m-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';\\u001b[m\\r\\n\\u001b[32m+\\u001b[m\\u001b[32mimport { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';\\u001b[m\\r\\n \\u001b[m\\r\\n interface CreateDebateDialogProps {\\u001b[m\\r\\n   open: boolean;\\u001b[m\\r\\n\"}"
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "git diff debate-ui/src/components/create-debate-dialog.tsx",
+                    "id": "1d3f2357-3c81-4d0f-b601-e597393fa2c2",
+                    "status": "SUCCESS",
+                    "toolCallId": "toolu_01NUWJqoQMD9vC9UNmQV2jtF",
+                    "commandsRequiringConfirmation": [],
+                    "exitCode": 0,
+                    "output": "\u001b[1mdiff --git a/debate-ui/src/components/create-debate-dialog.tsx b/debate-ui/src/components/create-debate-dialog.tsx\u001b[m\r\n\u001b[1mindex 37091c9..bf878a3 100644\u001b[m\r\n\u001b[1m--- a/debate-ui/src/components/create-debate-dialog.tsx\u001b[m\r\n\u001b[1m+++ b/debate-ui/src/components/create-debate-dialog.tsx\u001b[m\r\n\u001b[36m@@ -12,7 +12,7 @@\u001b[m \u001b[mimport { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';\u001b[m\r\n import { Participant, DebateRules } from '@/types/debate';\u001b[m\r\n import { ModelSelector } from '@/components/llm/model-selector';\u001b[m\r\n import { useLLM } from '@/hooks/use-llm';\u001b[m\r\n\u001b[31m-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';\u001b[m\r\n\u001b[32m+\u001b[m\u001b[32mimport { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';\u001b[m\r\n \u001b[m\r\n interface CreateDebateDialogProps {\u001b[m\r\n   open: boolean;\u001b[m\r\n",
+                    "outputPath": ".zencoder/Zencoder-77c3e67d-90bb-49ed-82b1-3ebeeaa294f8.log"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "b39d85ec-c8e9-4b38-9cdf-a0aea4f107a7"
+            },
+            "createdAt": 1752321774545,
+            "isInternal": false
+        },
+        {
+            "id": "4ee03c95-61ea-4e57-9249-ecb65ef37bb6",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Let me also check if there are any recent commits that might be relevant for a security review."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01T5vmyNwHeh47oV9w4CLWUw",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true,
+                    "localResult": "{\"status\":\"SUCCESS\",\"exitCode\":0,\"output\":\"\\u001b[33m2d80754\\u001b[m\\u001b[33m (\\u001b[m\\u001b[1;36mHEAD\\u001b[m\\u001b[33m -> \\u001b[m\\u001b[1;32mmain\\u001b[m\\u001b[33m, \\u001b[m\\u001b[1;31morigin/main\\u001b[m\\u001b[33m, \\u001b[m\\u001b[1;31morigin/HEAD\\u001b[m\\u001b[33m)\\u001b[m last Updated version\\r\\n\\u001b[33m8213dbc\\u001b[m last Updated version\\r\\n\\u001b[33m38c1881\\u001b[m feat: Complete template service integration and documentation\\r\\n\\u001b[33m2b0f318\\u001b[m feat: Major UI flow improvements and organization features\\r\\n\\u001b[33m21234ae\\u001b[m Merge pull request #1 from lsendel/add-claude-github-actions-1752193177851\\r\\n\"}"
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "git log --oneline -n 5",
+                    "id": "dae5f3d3-7aaa-4a0f-b9d4-5ddbc5051870",
+                    "status": "SUCCESS",
+                    "toolCallId": "toolu_01T5vmyNwHeh47oV9w4CLWUw",
+                    "commandsRequiringConfirmation": [],
+                    "exitCode": 0,
+                    "output": "\u001b[33m2d80754\u001b[m\u001b[33m (\u001b[m\u001b[1;36mHEAD\u001b[m\u001b[33m -> \u001b[m\u001b[1;32mmain\u001b[m\u001b[33m, \u001b[m\u001b[1;31morigin/main\u001b[m\u001b[33m, \u001b[m\u001b[1;31morigin/HEAD\u001b[m\u001b[33m)\u001b[m last Updated version\r\n\u001b[33m8213dbc\u001b[m last Updated version\r\n\u001b[33m38c1881\u001b[m feat: Complete template service integration and documentation\r\n\u001b[33m2b0f318\u001b[m feat: Major UI flow improvements and organization features\r\n\u001b[33m21234ae\u001b[m Merge pull request #1 from lsendel/add-claude-github-actions-1752193177851\r\n",
+                    "outputPath": ".zencoder/Zencoder-b62cbb95-5f54-4d0d-81da-45cf6155baf4.log"
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "9e613ffe-fd28-4a68-8f5d-a533697ad15e"
+            },
+            "createdAt": 1752321778856,
+            "isInternal": false
+        },
+        {
+            "id": "8c9fb633-cf0f-40e4-9f3d-c29dc07b0eba",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Let me look at the docker-compose.yml file that's currently open to review it for security concerns."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01XDn6kiGn93nE7t6iwxjvNU",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "docker-compose.yml",
+                                "fsPath": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/docker-compose.yml"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Based on my review of the code, I'll now provide a security-focused code review of the docker-compose.yml file and the uncommitted changes in the debate-ui component.\n\n# Security Code Review\n\n## 1. Docker Compose Configuration Security Analysis\n\n### Critical Security Issues:\n\n1. **Default/Hardcoded Credentials**:\n   - **Line 54**: `JWT_SECRET=${JWT_SECRET:-your-secret-key}` - The JWT secret has a default value of \"your-secret-key\" which is extremely insecure. If the environment variable is not set, this predictable default will be used, potentially allowing attackers to forge authentication tokens.\n   - **Lines 6-7, 141-142, 162-163**: Default database credentials (`context_user`/`context_pass`) are used if environment variables are not set.\n   - **Line 214**: Default Grafana admin password is set to \"admin\" if not overridden.\n\n2. **API Keys Exposure**:\n   - **Lines 72-74**: The configuration references API keys for OpenAI, Anthropic, and Google as environment variables, but there's no validation to ensure these are actually set before the services start.\n\n3. **Insecure Communications**:\n   - **Lines 94-96, 117-119**: All internal service communications use HTTP instead of HTTPS, which means data is transmitted in plaintext within the Docker network.\n\n4. **Port Exposure**:\n   - Multiple services expose ports to the host machine without any access restrictions (PostgreSQL, Redis, Qdrant, etc.), potentially allowing unauthorized access if the host firewall is not properly configured.\n\n### Moderate Security Issues:\n\n1. **Container Resource Constraints**:\n   - No resource limits (CPU, memory) are defined for any containers, which could lead to resource exhaustion attacks.\n\n2. **Container Privileges**:\n   - No explicit user settings for containers, which means they might run as root by default, increasing the attack surface if a container is compromised.\n\n3. **Volume Security**:\n   - Multiple volumes are mounted without explicit permissions, potentially allowing unintended access to data.\n\n4. **Health Check Security**:\n   - **Line 16**: The PostgreSQL health check uses a hardcoded username (`context_user`) instead of using the environment variable.\n\n### Minor Security Issues:\n\n1. **Image Version Pinning**:\n   - Some images use specific versions (e.g., `postgres:16-alpine`), which is good, but others like `qdrant/qdrant` don't specify versions, potentially leading to unexpected changes when images are updated.\n\n2. **Network Configuration**:\n   - All services are on the same network (`mcp-network`), which might not provide sufficient network segmentation for security-critical components.\n\n## 2. Uncommitted Changes in debate-ui/src/components/create-debate-dialog.tsx\n\nThe uncommitted change is minimal and appears to be removing unused imports:\n```diff\n-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';\n+import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';\n```\n\nThis change has no security implications as it's simply removing unused icon imports (`Cloud`, `Server`, and `Zap`).\n\n## Recommendations:\n\n### High Priority:\n\n1. **Remove Default Secrets**:\n   - Replace `JWT_SECRET=${JWT_SECRET:-your-secret-key}` with a configuration that fails if no secret is provided, or generate a secure random secret at first startup.\n   - Consider using a secrets management solution like Docker Secrets, HashiCorp Vault, or AWS Secrets Manager.\n\n2. **Secure Database Credentials**:\n   - Remove default database credentials and require them to be explicitly set through environment variables or secrets.\n   - Implement a more secure way to handle database credentials, such as using Docker Secrets.\n\n3. **Implement TLS for Internal Communications**:\n   - Configure services to use HTTPS for internal communications to protect sensitive data in transit.\n\n4. **Restrict Port Exposure**:\n   - Only expose ports that are absolutely necessary for external access.\n   - Consider using a reverse proxy (like Nginx or Traefik) as the single entry point to your application.\n\n### Medium Priority:\n\n1. **Add Resource Constraints**:\n   - Define CPU and memory limits for all containers to prevent resource exhaustion attacks.\n\n2. **Run Containers with Non-Root Users**:\n   - Configure containers to run as non-root users to reduce the impact of container breakouts.\n\n3. **Implement Network Segmentation**:\n   - Create separate networks for different security domains (e.g., frontend, backend, database).\n\n4. **Pin All Image Versions**:\n   - Specify exact versions for all Docker images to ensure reproducibility and prevent unexpected changes.\n\n### Low Priority:\n\n1. **Improve Health Checks**:\n   - Use environment variables consistently in health checks to avoid hardcoded credentials.\n\n2. **Add Security-Related Labels**:\n   - Consider adding labels to containers to document security-related information.\n\n## Conclusion:\n\nThe docker-compose.yml file has several significant security issues that should be addressed, particularly around credential management and service communication. The uncommitted change to the UI component has no security implications.\n\nI recommend focusing first on removing default secrets and credentials, as these pose the most immediate security risk to your application."
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "c0bdd978-8e35-468d-af82-83586b2c31fd",
+                "usageStatistics": {
+                    "llmCallsUsedForAnswer": 7.0,
+                    "llmCallsUsedTotal": 9.0,
+                    "llmCallsLimit": 25.0,
+                    "limitRenewalMillisecondTimestamp": 1752362145979
+                }
+            },
+            "createdAt": 1752321783935,
+            "isInternal": false
+        },
+        {
+            "id": "44dfced4-9b07-42f2-8475-39e389b895df",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "/review Readability"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "docker-compose.yml",
+                    "fsPath": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/docker-compose.yml",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "services:\n  # PostgreSQL for context service\n  postgres:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-context_user}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-context_pass}\n      POSTGRES_DB: ${POSTGRES_DB:-context_db}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    ports:\n      - \"${POSTGRES_PORT:-5432}:5432\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U context_user\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Redis for caching\n  redis:\n    image: redis:7-alpine\n    command: redis-server --appendonly yes\n    volumes:\n      - redis_data:/data\n    ports:\n      - \"${REDIS_PORT:-6379}:6379\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Qdrant for RAG vector storage\n  qdrant:\n    image: qdrant/qdrant\n    ports:\n      - \"${QDRANT_PORT:-6333}:6333\"\n    volumes:\n      - qdrant_data:/qdrant/storage\n    networks:\n      - mcp-network\n\n  # MCP Context Service\n  mcp-context:\n    build: ./mcp-context\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-context_user}:${POSTGRES_PASSWORD:-context_pass}@postgres:5432/${POSTGRES_DB:-context_db}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - JWT_SECRET=${JWT_SECRET:-your-secret-key}\n    ports:\n      - \"${MCP_CONTEXT_PORT:-5001}:5001\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-context/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP LLM Service\n  mcp-llm:\n    build: ./mcp-llm\n    environment:\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}\n      - GOOGLE_API_KEY=${GOOGLE_API_KEY}\n      - LLAMA_ENDPOINT=${LLAMA_ENDPOINT:-http://localhost:11434}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_LLM_PORT:-5002}:5002\"\n    depends_on:\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-llm/config:/app/config\n      - llm_cache:/app/cache\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Debate Service\n  mcp-debate:\n    build: ./mcp-debate\n    environment:\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - RAG_SERVICE_URL=http://mcp-rag:5004\n      - DATABASE_PATH=/app/data/debates.db\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - DEBATE_SERVICE_WS_PORT=5013\n    ports:\n      - \"${MCP_DEBATE_PORT:-5003}:5003\"\n      - \"${MCP_DEBATE_WS_PORT:-5013}:5013\"\n    depends_on:\n      - mcp-context\n      - mcp-llm\n    volumes:\n      - ./mcp-debate/data:/app/data\n      - ./mcp-debate/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP RAG Service\n  mcp-rag:\n    build: ./mcp-rag\n    environment:\n      - QDRANT_URL=http://qdrant:6333\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_RAG_PORT:-5004}:5004\"\n    depends_on:\n      - qdrant\n      - redis\n      - mcp-context\n    volumes:\n      - ./mcp-rag/config:/app/config\n      - rag_data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Organization Service\n  mcp-organization:\n    build: ./mcp-organization\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=debate_org\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5005\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_ORGANIZATION_PORT:-5005}:5005\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n    volumes:\n      - ./mcp-organization/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Template Service\n  mcp-template:\n    build: ./mcp-template\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=template_db\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5006\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_TEMPLATE_PORT:-5006}:5006\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      mcp-organization:\n        condition: service_started\n    volumes:\n      - ./mcp-template/config:/app/config\n      - template-data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # Optional: Ollama for local Llama models\n  ollama:\n    image: ollama/ollama\n    ports:\n      - \"${OLLAMA_PORT:-11434}:11434\"\n    volumes:\n      - ollama_data:/root/.ollama\n    networks:\n      - mcp-network\n    profiles:\n      - llama\n\n  # Optional: Monitoring with Prometheus\n  prometheus:\n    image: prom/prometheus\n    command:\n      - '--config.file=/etc/prometheus/prometheus.yml'\n      - '--storage.tsdb.path=/prometheus'\n    ports:\n      - \"${PROMETHEUS_PORT:-9090}:9090\"\n    volumes:\n      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml\n      - prometheus_data:/prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Optional: Grafana for visualization\n  grafana:\n    image: grafana/grafana\n    ports:\n      - \"${GRAFANA_PORT:-3000}:3000\"\n    environment:\n      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}\n    volumes:\n      - grafana_data:/var/lib/grafana\n      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards\n    depends_on:\n      - prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Test Runner Service\n  test-runner:\n    build:\n      context: .\n      dockerfile: test-runner.dockerfile\n    volumes:\n      - ./test_probe:/test_probe\n      - ./e2e-tests:/tests/e2e-tests\n      - ./playwright-tests:/tests/playwright-tests\n    environment:\n      - HEADLESS=true\n      - NODE_ENV=test\n      - BASE_URL=http://host.docker.internal:3000\n    networks:\n      - mcp-network\n    profiles:\n      - test\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n\nnetworks:\n  mcp-network:\n    driver: bridge\n\nvolumes:\n  postgres_data:\n  redis_data:\n  qdrant_data:\n  llm_cache:\n  rag_data:\n  ollama_data:\n  prometheus_data:\n  grafana_data:\n  organization-data:\n  template-data:"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1752322014891,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "/review Readability"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "5c20c3c5-0e3f-4f63-bcd1-69f57cc33264",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I'll now review the code for readability. Let me examine the docker-compose.yml file and the uncommitted changes to provide feedback on readability aspects.\n\n# Readability Code Review\n\n## 1. Docker Compose Configuration Readability Analysis\n\n### Strengths:\n\n1. **Clear Service Organization**:\n   - Services are logically grouped and ordered in a way that makes the architecture easy to understand.\n   - Each service has a descriptive comment header (e.g., \"# PostgreSQL for context service\") that clearly indicates its purpose.\n\n2. **Consistent Formatting**:\n   - The file maintains consistent indentation and spacing throughout, making it easy to scan and read.\n   - Related configuration elements (environment variables, volumes, networks, etc.) are grouped together within each service.\n\n3. **Descriptive Service Names**:\n   - Service names like `mcp-context`, `mcp-llm`, and `mcp-debate` clearly indicate their purpose in the system.\n   - The naming convention is consistent across all services.\n\n4. **Well-Structured Environment Variables**:\n   - Environment variables use a consistent pattern with fallback values (e.g., `${POSTGRES_USER:-context_user}`).\n   - Variable names are descriptive and follow a consistent naming convention.\n\n5. **Logical Dependency Chain**:\n   - The `depends_on` sections clearly show the relationships between services, making the startup order and dependencies easy to understand.\n\n### Areas for Improvement:\n\n1. **Long Environment Variable Lists**:\n   - Some services have many environment variables listed one after another, which can be hard to scan quickly.\n   - Consider grouping related environment variables with comments or using a more structured format.\n\n2. **Inconsistent Port Mapping Format**:\n   - Some port mappings use the format `\"${PORT:-default}:port\"` while others use a hardcoded value like `\"5013:5013\"`.\n   - Standardizing this would improve readability.\n\n3. **Volume Naming Inconsistency**:\n   - Some volume names follow the pattern `service_data` (e.g., `postgres_data`), while others use a different format (e.g., `organization-data` with a hyphen).\n   - Consistent naming would make the file more readable.\n\n4. **Limited Documentation for Optional Services**:\n   - The \"Optional\" services (Ollama, Prometheus, Grafana) have minimal documentation about when and why they should be used.\n   - More context would help readers understand when to include these profiles.\n\n5. **Missing Documentation for Networks and Volumes**:\n   - The `networks` and `volumes` sections at the bottom lack comments explaining their purpose or configuration options.\n\n## 2. Uncommitted Changes in debate-ui/src/components/create-debate-dialog.tsx\n\nThe uncommitted change is removing unused imports:\n```diff\n-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';\n+import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';\n```\n\nThis change improves readability by:\n- Removing unused imports, which reduces clutter\n- Making it clearer which icons are actually used in the component\n- Potentially reducing the cognitive load when reading the import section\n\n## Recommendations for Improving Readability:\n\n### High Impact:\n\n1. **Add Section Dividers**:\n   - Consider adding comment dividers between major sections of services (e.g., \"# === Core Services ===\", \"# === Optional Services ===\").\n   - This would make it easier to navigate the file visually.\n\n2. **Group Related Environment Variables**:\n   - Add sub-comments to group related environment variables (e.g., \"# Database connection\", \"# API configuration\").\n   - This would make it easier to understand the purpose of each variable.\n\n3. **Standardize Port Mapping Format**:\n   - Use the same pattern for all port mappings, preferably with environment variables and defaults.\n   - For example: `\"${SERVICE_PORT:-default}:container_port\"`.\n\n### Medium Impact:\n\n1. **Add Service Documentation**:\n   - Expand service comments to include a brief description of what each service does, not just what it is.\n   - For example: \"# PostgreSQL for context service - Stores user contexts and conversation history\".\n\n2. **Document Volume Purpose**:\n   - Add comments to the volumes section explaining what data each volume stores.\n   - This would help readers understand the data persistence model.\n\n3. **Improve Network Documentation**:\n   - Add comments explaining the purpose of the network and any security considerations.\n\n### Low Impact:\n\n1. **Consistent Naming Conventions**:\n   - Standardize on either hyphen or underscore for multi-word names (e.g., `postgres_data` vs `organization-data`).\n\n2. **Add Version Comments**:\n   - Consider adding comments about why specific versions of services are used, especially for critical components.\n\n## Conclusion:\n\nThe docker-compose.yml file is generally well-structured and readable, with clear service organization and consistent formatting. The main areas for improvement are in documentation and standardization of naming and formatting patterns.\n\nThe uncommitted change to remove unused imports is a positive change for readability, as it reduces unnecessary code and makes the import section more focused.\n\nOverall, the codebase demonstrates good readability practices, but could benefit from additional documentation and standardization to make it even more maintainable and easier to understand for new developers."
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "4782ad40-23c4-408e-82f7-2d150d920a77",
+                "usageStatistics": {
+                    "llmCallsUsedForAnswer": 1.0,
+                    "llmCallsUsedTotal": 10.0,
+                    "llmCallsLimit": 25.0,
+                    "limitRenewalMillisecondTimestamp": 1752362146603
+                }
+            },
+            "createdAt": 1752322015966,
+            "isInternal": false
+        },
+        {
+            "id": "45c1390a-dc3d-428b-98c9-3d014afca9d1",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "/review Best practices"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "docker-compose.yml",
+                    "fsPath": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/docker-compose.yml",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "services:\n  # PostgreSQL for context service\n  postgres:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-context_user}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-context_pass}\n      POSTGRES_DB: ${POSTGRES_DB:-context_db}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    ports:\n      - \"${POSTGRES_PORT:-5432}:5432\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U context_user\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Redis for caching\n  redis:\n    image: redis:7-alpine\n    command: redis-server --appendonly yes\n    volumes:\n      - redis_data:/data\n    ports:\n      - \"${REDIS_PORT:-6379}:6379\"\n    networks:\n      - mcp-network\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\n  # Qdrant for RAG vector storage\n  qdrant:\n    image: qdrant/qdrant\n    ports:\n      - \"${QDRANT_PORT:-6333}:6333\"\n    volumes:\n      - qdrant_data:/qdrant/storage\n    networks:\n      - mcp-network\n\n  # MCP Context Service\n  mcp-context:\n    build: ./mcp-context\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-context_user}:${POSTGRES_PASSWORD:-context_pass}@postgres:5432/${POSTGRES_DB:-context_db}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - JWT_SECRET=${JWT_SECRET:-your-secret-key}\n    ports:\n      - \"${MCP_CONTEXT_PORT:-5001}:5001\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-context/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP LLM Service\n  mcp-llm:\n    build: ./mcp-llm\n    environment:\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}\n      - GOOGLE_API_KEY=${GOOGLE_API_KEY}\n      - LLAMA_ENDPOINT=${LLAMA_ENDPOINT:-http://localhost:11434}\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_LLM_PORT:-5002}:5002\"\n    depends_on:\n      redis:\n        condition: service_healthy\n    volumes:\n      - ./mcp-llm/config:/app/config\n      - llm_cache:/app/cache\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Debate Service\n  mcp-debate:\n    build: ./mcp-debate\n    environment:\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - RAG_SERVICE_URL=http://mcp-rag:5004\n      - DATABASE_PATH=/app/data/debates.db\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n      - DEBATE_SERVICE_WS_PORT=5013\n    ports:\n      - \"${MCP_DEBATE_PORT:-5003}:5003\"\n      - \"${MCP_DEBATE_WS_PORT:-5013}:5013\"\n    depends_on:\n      - mcp-context\n      - mcp-llm\n    volumes:\n      - ./mcp-debate/data:/app/data\n      - ./mcp-debate/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP RAG Service\n  mcp-rag:\n    build: ./mcp-rag\n    environment:\n      - QDRANT_URL=http://qdrant:6333\n      - CONTEXT_SERVICE_URL=http://mcp-context:5001\n      - LLM_SERVICE_URL=http://mcp-llm:5002\n      - REDIS_URL=redis://redis:6379\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_RAG_PORT:-5004}:5004\"\n    depends_on:\n      - qdrant\n      - redis\n      - mcp-context\n    volumes:\n      - ./mcp-rag/config:/app/config\n      - rag_data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Organization Service\n  mcp-organization:\n    build: ./mcp-organization\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=debate_org\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5005\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_ORGANIZATION_PORT:-5005}:5005\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n    volumes:\n      - ./mcp-organization/config:/app/config\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # MCP Template Service\n  mcp-template:\n    build: ./mcp-template\n    environment:\n      - POSTGRES_HOST=postgres\n      - POSTGRES_DB=template_db\n      - POSTGRES_USER=${POSTGRES_USER:-context_user}\n      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-context_pass}\n      - MCP_PORT=5006\n      - LOG_LEVEL=${LOG_LEVEL:-INFO}\n    ports:\n      - \"${MCP_TEMPLATE_PORT:-5006}:5006\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      mcp-organization:\n        condition: service_started\n    volumes:\n      - ./mcp-template/config:/app/config\n      - template-data:/app/data\n    networks:\n      - mcp-network\n    restart: unless-stopped\n\n  # Optional: Ollama for local Llama models\n  ollama:\n    image: ollama/ollama\n    ports:\n      - \"${OLLAMA_PORT:-11434}:11434\"\n    volumes:\n      - ollama_data:/root/.ollama\n    networks:\n      - mcp-network\n    profiles:\n      - llama\n\n  # Optional: Monitoring with Prometheus\n  prometheus:\n    image: prom/prometheus\n    command:\n      - '--config.file=/etc/prometheus/prometheus.yml'\n      - '--storage.tsdb.path=/prometheus'\n    ports:\n      - \"${PROMETHEUS_PORT:-9090}:9090\"\n    volumes:\n      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml\n      - prometheus_data:/prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Optional: Grafana for visualization\n  grafana:\n    image: grafana/grafana\n    ports:\n      - \"${GRAFANA_PORT:-3000}:3000\"\n    environment:\n      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}\n    volumes:\n      - grafana_data:/var/lib/grafana\n      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards\n    depends_on:\n      - prometheus\n    networks:\n      - mcp-network\n    profiles:\n      - monitoring\n\n  # Test Runner Service\n  test-runner:\n    build:\n      context: .\n      dockerfile: test-runner.dockerfile\n    volumes:\n      - ./test_probe:/test_probe\n      - ./e2e-tests:/tests/e2e-tests\n      - ./playwright-tests:/tests/playwright-tests\n    environment:\n      - HEADLESS=true\n      - NODE_ENV=test\n      - BASE_URL=http://host.docker.internal:3000\n    networks:\n      - mcp-network\n    profiles:\n      - test\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n\nnetworks:\n  mcp-network:\n    driver: bridge\n\nvolumes:\n  postgres_data:\n  redis_data:\n  qdrant_data:\n  llm_cache:\n  rag_data:\n  ollama_data:\n  prometheus_data:\n  grafana_data:\n  organization-data:\n  template-data:"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1752322685480,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "/review Best practices"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "2feefcde-7b05-43e5-bfa2-c1b62a208434",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I'll review the code for adherence to best practices, focusing on the docker-compose.yml file and the uncommitted changes.\n\n# Best Practices Code Review\n\n## 1. Docker Compose Configuration Best Practices Analysis\n\n### Strengths:\n\n1. **Service Health Checks**:\n   - Health checks are properly implemented for critical services like PostgreSQL and Redis (lines 15-19, 31-35).\n   - Services that depend on these databases use `condition: service_healthy` to ensure proper startup order.\n\n2. **Image Version Pinning**:\n   - Several images use specific versions (e.g., `postgres:16-alpine`, `redis:7-alpine`), which is a good practice for reproducibility.\n\n3. **Environment Variable Defaults**:\n   - The file uses the pattern `${VAR:-default}` to provide fallback values, which is a good practice for flexibility.\n\n4. **Volume Usage**:\n   - Persistent data is properly stored in named volumes rather than bind mounts for database services.\n   - Configuration is mounted from the host, allowing for easier updates.\n\n5. **Service Profiles**:\n   - Optional services are placed in profiles (lines 189-190, 205-206, 222-223, 240-241), allowing selective service startup.\n\n### Areas for Improvement:\n\n1. **Image Version Specificity**:\n   - Some images don't specify versions (e.g., `qdrant/qdrant`, line 39), which can lead to unexpected changes when images are updated.\n\n2. **Environment Variable Management**:\n   - Environment variables are scattered throughout the file with some duplication.\n   - No `.env` file is referenced explicitly, which is a common best practice.\n\n3. **Container Resource Limits**:\n   - No resource limits (CPU, memory) are defined for any containers, which is important for production deployments.\n\n4. **Container User Security**:\n   - No explicit user settings for containers, which means they might run as root by default.\n\n5. **Network Configuration**:\n   - All services are on the same network (`mcp-network`), which might not provide sufficient network segmentation.\n\n6. **Restart Policies**:\n   - Some services use `restart: unless-stopped`, but this isn't consistent across all services.\n\n7. **Configuration Management**:\n   - Configuration is mounted from host directories, but there's no clear pattern for configuration versioning or management.\n\n8. **Logging Configuration**:\n   - No explicit logging configuration (like log rotation or size limits) is defined.\n\n## 2. Uncommitted Changes in debate-ui/src/components/create-debate-dialog.tsx\n\nThe uncommitted change is removing unused imports:\n```diff\n-import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, Cloud, Server, Zap, AlertCircle } from 'lucide-react';\n+import { Plus, Trash2, Users, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';\n```\n\nThis change follows best practices by:\n- Removing unused imports, which reduces bundle size\n- Improving code clarity by only including what's actually used\n- Following the principle of least inclusion\n\n## Recommendations for Improving Best Practices:\n\n### High Priority:\n\n1. **Pin All Image Versions**:\n   ```yaml\n   # Before\n   qdrant:\n     image: qdrant/qdrant\n   \n   # After\n   qdrant:\n     image: qdrant/qdrant:v1.5.0  # Use specific version\n   ```\n\n2. **Add Resource Limits**:\n   ```yaml\n   # Add to each service\n   deploy:\n     resources:\n       limits:\n         cpus: '0.5'\n         memory: 512M\n       reservations:\n         cpus: '0.1'\n         memory: 128M\n   ```\n\n3. **Use Non-Root Users**:\n   ```yaml\n   # Add to services where possible\n   user: \"1000:1000\"  # Use non-root user\n   ```\n\n4. **Standardize Restart Policies**:\n   - Apply consistent restart policies to all services based on their criticality.\n\n### Medium Priority:\n\n1. **Implement Network Segmentation**:\n   ```yaml\n   # Create separate networks\n   networks:\n     frontend-network:\n       driver: bridge\n     backend-network:\n       driver: bridge\n     database-network:\n       driver: bridge\n   ```\n\n2. **Centralize Environment Variables**:\n   - Add an explicit reference to a `.env` file:\n   ```yaml\n   # At the top of the file\n   version: '3.8'\n   \n   # Add this line\n   env_file: .env\n   ```\n\n3. **Add Logging Configuration**:\n   ```yaml\n   # Add to each service\n   logging:\n     driver: \"json-file\"\n     options:\n       max-size: \"10m\"\n       max-file: \"3\"\n   ```\n\n4. **Implement Secrets Management**:\n   - For sensitive data like API keys and passwords, use Docker Secrets instead of environment variables:\n   ```yaml\n   secrets:\n     postgres_password:\n       file: ./secrets/postgres_password.txt\n     jwt_secret:\n       file: ./secrets/jwt_secret.txt\n   ```\n\n### Low Priority:\n\n1. **Add Labels for Documentation**:\n   ```yaml\n   # Add to each service\n   labels:\n     - \"com.example.description=Context Service for MCP\"\n     - \"com.example.maintainer=team@example.com\"\n     - \"com.example.version=1.0.0\"\n   ```\n\n2. **Implement Healthier Health Checks**:\n   - Add health checks to all services, not just databases.\n\n3. **Use Build Context with Specific Dockerfile**:\n   ```yaml\n   # Instead of just build: ./mcp-context\n   build:\n     context: ./mcp-context\n     dockerfile: Dockerfile\n     args:\n       BUILD_ENV: production\n   ```\n\n## Best Practices for Frontend Code (based on the uncommitted change):\n\n1. **Continue Removing Unused Imports**:\n   - The change to remove unused imports is good. Continue this practice throughout the codebase.\n\n2. **Consider Using Named Imports**:\n   - For large libraries like 'lucide-react', consider using named imports to enable better tree-shaking:\n   ```javascript\n   // Instead of\n   import { Plus, Trash2, ... } from 'lucide-react';\n   \n   // Consider\n   import Plus from 'lucide-react/icons/plus';\n   import Trash2 from 'lucide-react/icons/trash-2';\n   ```\n   (Note: Only if the library supports this pattern)\n\n## Conclusion:\n\nThe docker-compose.yml file follows several good practices but has room for improvement in areas like resource management, security configuration, and environment variable organization. The uncommitted change to remove unused imports is aligned with best practices and should be continued throughout the codebase.\n\nImplementing the high-priority recommendations would significantly improve the production-readiness and maintainability of the Docker configuration. The medium and low-priority recommendations would further enhance the configuration but may require more effort to implement.\n\nOverall, the codebase shows awareness of Docker Compose best practices but would benefit from a more comprehensive approach to container configuration, especially for production environments."
+                }
+            ],
+            "context": {
+                "author": "Review",
+                "operationId": "57f2a27b-eb81-42a3-a1f2-5bf5b2b92257",
+                "usageStatistics": {
+                    "llmCallsUsedForAnswer": 1.0,
+                    "llmCallsUsedTotal": 11.0,
+                    "llmCallsLimit": 25.0,
+                    "limitRenewalMillisecondTimestamp": 1752362146384
+                }
+            },
+            "createdAt": 1752322686947,
+            "isInternal": false
+        }
+    ],
+    "isAgent": true,
+    "isNameGenerated": true,
+    "isCustomAgent": true,
+    "customAgent": {
+        "id": "fc8a6dbb-f6fc-4e23-ba1a-58f8f6e771af",
+        "name": "Review",
+        "commandName": "review",
+        "command": "You are a Code Review agent. Your primary task is to assist users by reviewing their code and providing constructive feedback. Follow these steps to ensure an effective and thorough review:\n\n1. **Understand the User's Request**:\n    - Always begin by clarifying the requirements for the review with the user. For example:\n        - \"What would you like me to review?\"\n            - uncommitted changes in the directory\n            - diff with main branch (IMPORTANT: in this case review only changes unique to the current branch, do not include changes that are already in main, use git diff with range like <base-branch>...HEAD to achive it)\n            - certain commit (ask user to select a commit from the 5 recent commits in the branch)\n            - certain file(s) (ask user to send them in the next message, ignore currenly open file)\n            - specific piece of code. Ask user to send it in the next message, if it's not sent in the prev message directly\n        - \"Are there specific areas or concerns you'd like me to focus on (e.g., performance, readability, bugs)?\"\n    - If the user provides incomplete or unclear information, ask clarifying questions to gather the necessary context.\n2. **Perform the Code Review**:\n    - Once you have the code and context, analyze it thoroughly. Focus on the following key aspects during the review:\n\n        **a. Functionality**:\n\n        - Does the code work as intended? Are there any bugs or logical errors?\n        - Are edge cases and error handling properly addressed?\n\n        **b. Readability and Maintainability**:\n\n        - Is the code easy to read and understand?\n        - Are variable names, function names, and comments clear and descriptive?\n        - Is the code modular and well-organized?\n\n        **c. Performance**:\n\n        - Is the code efficient? Are there any unnecessary computations or bottlenecks?\n        - Are there opportunities to optimize the code for better performance?\n\n        **d. Security**:\n\n        - Are there any potential security vulnerabilities (e.g., SQL injection, unsafe input handling)?\n        - Is sensitive data handled securely?\n\n        **e. Adherence to Best Practices**:\n\n        - Does the code follow language-specific best practices and conventions?\n        - Are there any anti-patterns or bad practices that should be avoided?\n\n        **f. Testing**:\n\n        - Are there sufficient tests for the code (e.g., unit tests, integration tests)?\n        - Do the tests cover edge cases and potential failure points?\n\n        **g. Documentation**:\n\n        - Is the code adequately documented (e.g., docstrings, inline comments)?\n        - Are there clear instructions for how to use or run the code?\n3. **Provide Feedback**:\n    - Summarize your findings in a clear and constructive manner. Highlight both strengths and areas for improvement.\n    - For each issue or suggestion, explain why it matters and, if possible, provide examples or recommendations for improvement.\n    - If the code is excellent and requires no changes, acknowledge this and provide positive feedback.\n4. **Iterate if Needed**:\n    - If the user has follow-up questions or requests further clarification, respond accordingly.\n    - If the user provides updated code after making changes, review it again as needed.\n\nYour goal is to help the user improve their code while maintaining a positive and collaborative tone. Always be specific, actionable, and constructive in your feedback.",
+        "codeLens": true,
+        "repair": true,
+        "rag": true,
+        "creationDate": "2025-06-06T16:23:53.158577Z",
+        "lastModifiedDate": "2025-06-06T16:23:53.158577Z",
+        "tools": [
+            {
+                "id": "str_replace_editor",
+                "name": "File Editor",
+                "description": "Allows viewing, creating, and editing files with features like text replacement in existing files, inserting text at specific lines, and reverting edits",
+                "author": "ZENCODER_BACKEND",
+                "icon": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAANqSURBVHgB7Zs/b9NAGMaf91poCKQSUju0UydWkPIFykYprcRYMbCVFVH20J1/K526saLSCiQG8gGoVFYWOjUDSNAmRGlp7uXOaoRjxfHZ8bl27d+CfLapnp8v9vnuNVBQUJBnCBHg5alKS7aqUmJebd5QLRXBuAaiCmKCwQ3w2Mbkh/Z7WCS0gOa90jy6XIsz7DCYxbpNCaEEHC1MrBHRChLGpgRhemBzobR6HuE1RLJ2tFBeggWMeoC68ksqfM3dxowmCbwVELsYQ6ONcnN662cTI9K8W/rit89GTxg3Ooqw6t6UoMbJJXo0vdU++N/ahm3OegLilBD4E3CuPmjG3XYy7g2fHHH/HAIFMFHVvS2B7fMK3yNOCYECiNF39cdJWH0umxKXhOCnAPGse7OtbnhICXFICO4Bnt//eXd/L6NKMB4HpJlRJKRPgBpfIAJRJaROAAPfEBGCfIKQpE7A8alYj9oLlIHQL2ipEzD9qX3QORUPmLiOBDAbCieMlqD+eWpy7LB3BxMuxFNgFAoByDmFAOScQgByTiEAOSf7AlzvDXqyFiHJvACGeKmDO9P0TBsISSrfBcJwNkUeeZ6yuAcg5xQCkHNyLyDzTwE3unhDV61cvozNK+86+ybnXJgeoKbGaiz5M4Frf0/4e2ux9NDkvAshwAkPfuZuk8ybJhIyL2BQ+B4mEjItYFj4HlqCU9jlQ2YFmITvwRK+vSCTAsKE16hjD/32ZU5A+PDYl5Je++3PlICI4W9f/+g/JsiMABvhNZkQYCu8JliAZ6n6x/JUIjXCPWyG1xiUyXGrv6WdmADb4TXBRVJEfT2g3O0vm7NFEuE1gQIk95esSMgqLJNUeE2gACFQ72uQWPmzXJ6FJZIMrwkU0BGd3b4bIaHSPe2+sSUhyfAao3J552VC4rm3XdcNO6WzY2hcjaGAUv8d/U5vcmwc4TXGX4wcLU6sqYWHkT+YGPYt0OHixGNivAr+P+IJrzEeCE3uHL9QukKvvHjRpbd+9XxqNudm0PlxhteEGglWdjob+quNKGtwbiRRa1C7knNr2Hlxh9eEnhTtLUXpslQmWSXCDDPPCk9RtR/OGh4Gr+Ex6LcTc+A+7Knw9+MMr4n03aAtft0pzQmhJzYxp6+2GoTV1T3jqyDaq2x36igoKIibf1tovo7P+7AmAAAAAElFTkSuQmCC",
+                "tools": [
+                    "str_replace_editor"
+                ],
+                "status": {}
+            },
+            {
+                "id": "web_search",
+                "name": "Web Search",
+                "description": "Search the web for up-to-date technical information like latest releases, security advisories, migration guides, benchmarks, and community insights",
+                "author": "ZENCODER_MCP_BACKEND",
+                "icon": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAl9SURBVHgB7Vs/UxxHFn/ds8uMFhahqlNgRThZh6cqPoBQcFXHImEuFIlxAqF0JedC+eGTQkisC4xC65BAV3WBuA+wVUpvE3MJBLoqy8xq2WF2+vm9WRZmembn3y6yyuanUtVOT/dM9+v3fu9PDwCXuMQlfs8QcIHo1Ku1LjgzHsgv6LIGgFUJ4rNgHwV4KFAcgBRNid5BCcyGtWs34SNh5AL4MF+hBeOsUOoOCFGFAkASCoJomFDeumhhjEwA/sKVWhECZmCEUABNgfh88rXzEi4AQwvgohaug7XCKBmr49vtAxghCgsAF/5QtV2bFi7uZR4joGGA3Gwbleb17f/bLLwuqIcSmR8yPoO0wSlXN3k8jACFBPDhT5UbXtnbEBqhpbxps7rT2Yy7Zc9bK7TFK5ARo9QGCTnRqZs1VfK+j1s87zAK8TwyKGHxDP8e9YkbRxzwKtosPlOu+p69DAyJXAI4mqvcdUFs6eyuQBxKIVcndzqrgGo2eI+FkrT4PrgPIjQg/OB7J6WJdX42vyN0T0DVBXeL5wRDILMAeOeFUI/0dt7xk9L40vhOu3E0Z97VNcMx5GPICKdLfRHObZsWaXmte/zsk9LxEgqMaBfPaRhNyCQAtnkXYSNyg1R0cud4/YyQhGbHdP96Dju9/m/qKyG8SNIC/9422JM7znqcqbjobnxYqNyAAkgVALM9E14kqNHsOm73O4Z8BTnRMTrPdS1gb9G/jOUL6uN1vY13NFfIiVQB+K5OJ7w4UpPyVvCSyet6AZbmnUaJIcFxnBG8jhMCz9GkuUJOJAqAVV/382zz+uLfLUCVorXZ8ITKW1AQBhh74WdBTd9dnzQ1TuC5BrUlCxIF4Kt+AMzEjjEesUFLWTN6v8khYngmPfb1Zw1MhqoVWZhjOJshc4GotqRhoADibFoCkpq1Z/W+SkGojcLiPRgW2jMQRUQApluZZeFo757JowUDBSBkfIjLbsees0JSliIcyhog9mBI6GYgUYU4hucQ55YZebQgNhRmv8pBRtLAfjjahrZtda03ofGlidvDxurMK3HPrXjtWpbki4MnNiVIQawGOOAuBa9V0B5P4YejXbVtutbfwn2hOYpEhb0BvSTEI2Pd1oZCtRG3eD1S5JoEZECsAARg6AVSivhwFHo2F7rWSKkoOP6gosiBNtlIxEfhs81zKwmxFpqHwjuQARETiKg/vaD6unObf74jtzhWVis0kdSH+3H9aZlLiFLTQMM2S+ah0LSjH8EppWroYZWkXQOFNdqEWlpFiVLjPUqNH7PG+SbjWttBUkQoL6V5o5Le0IVuaEe5NNX/7YeqAGvEsi89IDvEwXboawbiDLLvQAX8z+26YNetUD8yo8AY4Uuuty2DM/V+XWF8l23c6c2NTOZoXjSC8YjsrSWfAJRQN6hIeXZNDB8hklNyWfWrQeit5aoLDANWdym/GURuVFih+OHcJRMPfJH2yCgHKBGyM9qVgRKMmwiOiAP8qWjkKwTaScxOIbTOUalZYkQDiMVuBNXPI9tNegBpy0RQW53yxAIct6uWqWq0YzVkWwZRJXtlzZoQWuDCAqOQtkWCPqDfVFeAA2Z/2ulmR3OxFAwlckLHkU2rfG5SBuAEpCAigEg+T8QFSZuqLejUBfJ/5os9GBJ2ffC7IrjStqF7zjHEX6kpcmo2OKri48eAHzvkRO6a4EdHgFPi4pBh+6cKoEiRYZQgN/otL4S5gjhkc9T9I872qG6+DPJApyQXkgoblJS8CdrmKPKAj4mIBhAbhyZvUYSWMB6YwcMt7V9VY/IiIgCF4ciJwtPErEsXmNk1Ul3Pp4SIACiX/2/wmstMFL5uDaq66gkLyJPU6OtTQinaUGpQMqQ31zj1/bluvSoJ+TIcjanDIJVIJUeuAbg4NXXkHi9T7nGLQt2b9LZpvx3gLf3ep/f/c3K38wwKIDbj0IktMiEOURE2jbLRwC7SpPBh/x5Xg6/udtZgRKCTn0WQ3e+IbKZSuu7Tch7nFUSsG9TL0jrYS5BpPGKtoExPLz8NfV7Xhz1v/h2E90OGxTOmaebf2fWxR5ADsRrAWR5XXqAgKGbfExKbqKhsJo0DrgV4Ja9VgYotMrpI4p1HpFlrUABUK3xS3XH/mqnvoBtHc1ao9NSLqrCRpRiSBT0zMjYnX7cjX34c1a1l3s1Qf4HvSTWfSgl71VedPW5r1cs3KVl7QFniV9EXGH+hZ7+AFAwUQJwWcOmpfQKHZokEI9WdpIJIJgSqTUFQMPYjnBJdrxvsKyVuX/tXZz/uMT/92ZqWEt+IwBjCe2/syufXXrx/DwkYGAr7hxPacTUXP+BKxeZd46NwjvroCd9waQoKQAnR0tt6ux9aCCQtnsH3uA+wlpxjSjrHy5CCxFzAkDLx/I1DXlZHp+w81k9omAfYI3D5SlF+rxc3BsbqEr8MN4hnSYvvg/sgmUh4aPjAJg6lpJv+mf+8+ZwmenZI4gdGcxar7tnk/XrcHDRJBc9NQsLh1Z3OOuQEmdU0Bq49MJ5mHcv8QOXHMy9A8/lj6pi0Dnz+FvN1xop+OhTRFipLF8kkSTNuBq+v7X54m3Eo9MkxgOm0MRkKImCfuGJVV3FdCH50GPN1B3ziyFQQ4XJ4WeBq5AYJgQ5RH57tdMzXHQW+3NgPXth3rFnIiNbieEh7yNWmak/mipC16zSJZCLf+zAnmF17i91m3NcdnqtyRWY0o9Ck6cBkFjJCue79cIv4X9qYXCUxdn9lwCXdHPxzQooZxrrWQ10LOJjS+SIJxAH/0Z59/3jRmk4b5/dBsayNLR4IJaF3RIYb/L1A5kGUPAU9xyD8tAhThjv2oxb/75fHxO0rL+LdIS/ePUEun0+fvw72r+46n0MKCn8qy2dxpmeuBF1kBjQpmlxPO7Y+uju2CJ74IXJD4DOJ5acTp57B5welblGs8UBPmEgAT0kADyAFQ38sXUgbIDkXYPxcN5/Q5O7DEJBCLE/sdP6R1Gdkn8vzF5so1b08Hz4PygX6oAIMnTtiPhLVkCaEkZ0L8E5S5LfEJMkhcJaafFwuEESvsCK+Rs01xoGzRVb7yDsQn7Xmra8GjbvgP5kxa12QM5QLUCyANT4f7P/JTO8QVX47yAR0nKbIX5K9T4vTaJEFQwt4yyUxb8x6wZlfXCrNGKQJFyqAXwt5hPDpH40VQK8uKL7W28kcnuhtv0kBMOKEQCYTKY78ZgXA6AuBuYJJkiLDzJ/uX+ISl/h94Be4RqBgAJF5JwAAAABJRU5ErkJggg==",
+                "tools": [
+                    "web_search"
+                ],
+                "status": {}
+            },
+            {
+                "id": "RequirementsTool",
+                "name": "Gather Requirements",
+                "description": "Asks clarifying questions to fully understand user needs before starting a task, ensuring precise and efficient solutions",
+                "author": "ZENCODER_CLIENT",
+                "icon": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAASaSURBVHgB7Zu9cttGEMd3jxQJ06KsIiysSpVfwA8QpchMRMkctXJjp5HqWOkt97EnrdhEVdRmJFkuUkR+AE96N05lFcqMMwRNUSRxm1vI8AAwyTuAh5FM4leQwAHEYf+43fvgAiAnJ2eWQbAMNb6ptvvtTQK4jwj3wQIS4C0SHSy8ujwCy1gV4OP3lSVvzttDwLuQAQR0VigWtm8fdt6DJQRYJEvjGb62N/D2zlUrA0tYE6C1Wn6QpfEBXIfjtTfBEqlcgP3c7bsrhKh8nHw/FzHjld8e94rzz2uH/7owAefKrUpzcks9qfX4savYgMod5Ou08SGxAO66swIePQXEsc2wWxSNmiVfPW9A1Rk4f407h+OD+mgmFSKRC6hmvqNk/0Vn/BWViZ585EoXFW197BqI+NRddbYgAcYC8IVVBca+Vxq0dz42KkswIexuA+UCxj9A2PIflPHpBvgBTqkbLiMCFwUcCBBvoABn0pPrqgkmUj8tROLZwqvOUbdevncJ+HBYfFCP9ufqcfdUdy0zAerlo3CEl4BnvSJuh32c/bQ0uPW7AMq0J+C675xcPAiXXQVK2ovUrR5Qd26+oQvCWhcY1r3FjWdqh+D2+rjNNwgZEQgfL6/92XnPdbPRnwsRqmXpruiuqY8BQnwbvQk4HhXd+Ub46XATlQhvwRKE8EYZ1OwVbz8cV7ey5iBS6EXvfRhF3QkIFAlkRRTabob9U31ZH7erznXsUY5Hkh9RsI/yHmjQtwAJkebfUQEPbiidQifS6ghQ2wvpBVC+FN6tWZyI2IbjECTE6mToayQXAGacXACYcXIBYMbJBYAZRzsXSEprtaJmj94Ts1Ujc66WvArNT/MMa9hvAeht2TbevywveYF8ApaxLoBapZ2HjJCIbbCMdQEIxIssFkX8JTjCJljGegzIbi0gG/JuEKaN0LqgiStOnQBBDDKNGdZjwHWTNAblMQBmnHwuAJZJOhfIaow/tK6NxUW3192YK8HprT+6/3DZtc8Fshrjx7nYcJbd3sXfSobf+j165+c5wA2ZC2Qxxg/DxiujOcFiOSgjCY/4+9rnAlmN8QOGGf+J1/wx1XOBUcaruPPszsnlPm9PbS8w3vjebrA/lQKYGs9MnQBJjGdunADtNedRa630oVUvv+PtJL9NajyjF4CifznbTFMdhiTaBcJFtbmstvdNRUhjPKMVgJBifXQnUwHUQGIxvGsiQlrjGa0AiBhpARUPss0HJvFTvGicCJMYz2gFkBRNdpIgrbwDMIqFk+6+kv1H+OI+aN+tlyK5ipMaz2gFEAJOo3cCmzYyQMcxSgQC3A1EsGE8o02U9BOV+85hOFcoixcXhtGqO4958hIvR4Rf1RB6AyY03r+WyUn+zImTpGNwzqCfNleAs6zEGCVCnDTGM8bp8q218o6atFh7USHAZD1AJ0Ja4xnjgdDCy8vnnK0JljFZD+CYgAK/U13kf/FjkxjPJBoJVl92m34arOW/vkzWAzjzWxBFRJjUeCb1W2O89EUo+dW4u0S0JFK+L0T+SFO8MF0S+/CDs6x6psfcO5mkw+fk5OSM439mq0xXi3gaPgAAAABJRU5ErkJggg==",
+                "tools": [
+                    "RequirementsTool"
+                ],
+                "status": {}
+            },
+            {
+                "id": "ExecuteShellCommand",
+                "name": "Execute Shell Command",
+                "description": "Run shell commands within the project's root directory",
+                "author": "ZENCODER_CLIENT",
+                "icon": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAP1SURBVHgB7ZoxUxNBFMff27tIVOJYmAIqq/gB/AI2zCgw9GLh2MTa8QMAH4AZWlJhIfYMoDM2fAE+gGmkIgXOyBCQRHL7fC+C3h2BvQsb2Az7a5Jdbsnuf9+73Z39A3g8Ho/H47mtIFwBmnlUOuocTEegniDBGCGNS70CHIMBoIEa8omEu6CwDlrXg0KwfX/t1y70SV8CHE3cG49CPYcIT8EBNMB6GKpaP0LkFuDw+d2XhLoKiCVwCYImR0Zt9MvxpzzNcgnQfFHkgUMVXIagVvrcqmV9PLMA3ZlX9P7c7yFsK8It/ltDKVWXuqvk5GUczdwbDzrRaIRBiYgqEcCsAjr3vkGNi1kjIZMAkvM6jD7Gw5445BRyyG3mCznbHE7yxBBJZP5PSelbQb3KMhEKMtApJHNeBs+v4rc3PXhB+lDgvsig/1WyGNGJnsvS3iiAzD4/NJ1oxDP/YLNdB0cocl+Q+xSvkxVqj5dpU1ujAFEYJZY6DdhwYebTSJ84MrfjdXc7R9OmduYUUFCJFwOAVXAUjsyteDkCemJsY3oANCYE4FBzJvTTyEoUL3MaGHekZgFOt7dnRBQ0wVFabZWYHEVkQYAU7TA67FV/OFV8fTB15+fB5Mh3+Q5DglEATB1syhesrZponndFD/nrY/6+chMilL8m+0aA46Y2uSPgQpAexos3JUJe7AlA6l26ahhEsCbAg83WCofBm3S96yLYiwAYThGsCiAMmwjWBRAuEWEJHGMgAnT/MfIqlIIr9sExBiKAhLqEfLqe9xQL4BjWBbho8JISf1PDLawKMGyDF0KwRL+D77YDvXS6jc7DDh9/50c3Wh/gCliLgO5Z4BzmmY+dIfLy2MaqMrCzQOawP9cuOzZWFatnAe7QDl+P7efK+dN2kBP5HRurirV3wOmAVyAn/bazxcA2QsOCFwBuOV4AuOV4AUwPECQvG/b4ihocZW8i2Tc+kdu5HR4WSoVgFHJiFkAMSTGKWlfAUSKMErfBGrFhamNOAYTkfZsejAPMBuIaSdaY7zGNAgSA3+JlPoE9A0fhY/VsssKCAMfh8Xq8LMYD8QuBY0if0td47ULSL9ALowDlNWimjQd8Equ2JkvOvAtakyOVrnUvhngHy7Y8Qu2OWkh7cE7oZNmFSJA+nBAspz1Mv0OVySqX3SYnbizoYZPjfYICWkUM6wEFzYivzwdpk5NPzSsRaj2mST3r5VblVFjMauPJZ5ScKlZ5xG4bJRFqpY0BGCXP6OnLc4B+fYt9maVly3mnoKtp+9xNIW7VdqAWytdhlo4jQoyEnINKNiBU4ci4Hrs84i7PeEP2KMfhfX7b/3DWt+TxeDwej8dd/gBP3cjdQfST7wAAAABJRU5ErkJggg==",
+                "tools": [
+                    "ExecuteShellCommand"
+                ],
+                "status": {}
+            },
+            {
+                "id": "fetch_webpage",
+                "name": "Fetch Webpage Content",
+                "description": "Retrieve webpage content from a specific URL",
+                "author": "ZENCODER_MCP_BACKEND",
+                "icon": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAQTSURBVHgB7Zq/ThtBEMZn9s7BAYwo4gIqKvMAeQEapAQQfUgRpXHqKA8APAASLa5IEdIjIJHS8AI8QNyEChdECsIQ7Ni3kxkC5O4w7Nm+PZ/gfg2+5RZ2vv036/0AMjIyMjIyMh4rCH1Ai88K5+3TBQ/UNBJMENKklCvACbCABqrJTyQ8AoVV0Lrq5JyDke3fR9AjPQlwPjs86bl6GRGeQwrQADuuqyq9CNG1AGcvnr4i1GVALECaIKjzyKiMfr343E21rgSov8xz4FCGNENQKXxpVKK+HlmAy55X9OHW/0M4UIT7/LuaUqoqZf3Myfs4XxyedNreqIdOgYhKHsCSArq13qDGtagjIZIAMue1633yD3viIaeQh9xed0Mubs7muGOIZGT+n5LStpx6HaUjFESgnQvOeQmel+J3gw5ekDbkuC0S9E0hi+G19HKU+kYBpPf5pYVAJe75sb1mFVJCntuC3CZ/mexQx7xNm+oaBfBcL7DVacBaHD1/Np9/czr/5Nfp3NAP+Qx9Im3ikXngL3vaPl8w1TNPAQUl/6MDsAUxoIlWeAUd549T/HkdYoBH5r7/2QOaNtYxvQAaAwLwUItr6E/5Po9DDMhO5H/maWDMSM0CXKW313jk1CGlNJoq0DmKKAYBQjRd7wweEEYBMHSwKVpKcuKg+C3YNgKcNNXpegQ8NDIB4JFjVYBek524k6T7sCpAKNnZjBKMvCPvxp0k3YXdKYAUSHBMItwE74MATsAidgUg9T5cdJcInYIXeBteBYtYFWBsr7HJIbwNl3cKtFOZ1P33N+xhfRe4SwQz9oMXEtkGuxchmeCFxPKA6CIkF7yQaCJkFiHZ4IXEM8G7RUg+eGEgqfC1CLzHH/J12smgghdcGBBXAW/CgMkOQ/DIefQCWFsDLnN70OtXp7p+OOSvu1dGdxsfwQLWRoDvKNwvVo/E9qZA6CjcDzaPxEYBCIKXDcd8RQ1R4KOw7PPQJ5InRD0SH88G24ZAxm+wra0Bg9jnCzlntCWGmS4wTwExJPnIa12ClOKhF7gN1og1Ux3zFEAI3rdpOw6wOBDXSLDEfI9pFMAB/O5/5hV5BlIKb7tLwYIYBLhwL3b8z2I8EL8QpAxpU/gar5kL+gU6YRSguA31sPGAV+ZyY66QmrWgMTdUurTu+RDvYDEuj1CzrVbDHpwWtTbSMBKkDS2CjbCH6Y+rIlnlotvkxI0FHWxynCcooC1Et+qQU/f4+tymTU5+at6JUOsJTWqmk1uVp8JaVBtPd0bJ+XyZI063URKhUti1YJS8pqMvLwX06lvsySwtKeeTnC6H7XODQtyqTUetFpMwS/sRIYZcnoNKEhAq8chIxi6PeMQ9XpMc5cId4dX+Z2p9SxkZGRkZGRnp5S+lzdnY4AK96gAAAABJRU5ErkJggg==",
+                "tools": [
+                    "fetch_webpage"
+                ],
+                "status": {}
+            }
+        ],
+        "author": "78874979-17d0-40d2-87fc-2cc63fa3eab5",
+        "isSharedWithOrganization": false
+    },
+    "isUnitTestsAgent": false,
+    "isE2EAgent": false,
+    "autoApply": false
+}
+}

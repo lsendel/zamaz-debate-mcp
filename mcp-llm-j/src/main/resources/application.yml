@@ -1,0 +1,141 @@
+spring:
+  application:
+    name: mcp-llm-j
+  
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+  
+  webflux:
+    base-path: /
+
+server:
+  port: ${SERVER_PORT:5002}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+llm:
+  providers:
+    claude:
+      enabled: ${CLAUDE_ENABLED:true}
+      api-key: ${CLAUDE_API_KEY:}
+      base-url: https://api.anthropic.com
+      default-model: claude-3-opus-20240229
+      max-tokens: 4096
+      timeout: 30s
+      retry:
+        max-attempts: 3
+        initial-interval: 1s
+        max-interval: 10s
+        multiplier: 2
+    
+    openai:
+      enabled: ${OPENAI_ENABLED:true}
+      api-key: ${OPENAI_API_KEY:}
+      base-url: https://api.openai.com/v1
+      default-model: gpt-4-turbo-preview
+      max-tokens: 4096
+      timeout: 30s
+      retry:
+        max-attempts: 3
+        initial-interval: 1s
+        max-interval: 10s
+        multiplier: 2
+    
+    gemini:
+      enabled: ${GEMINI_ENABLED:true}
+      api-key: ${GEMINI_API_KEY:}
+      base-url: https://generativelanguage.googleapis.com/v1beta
+      default-model: gemini-pro
+      max-tokens: 2048
+      timeout: 30s
+      retry:
+        max-attempts: 3
+        initial-interval: 1s
+        max-interval: 10s
+        multiplier: 2
+    
+    ollama:
+      enabled: ${OLLAMA_ENABLED:false}
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      default-model: llama2
+      max-tokens: 2048
+      timeout: 60s
+      retry:
+        max-attempts: 2
+        initial-interval: 1s
+  
+  cache:
+    enabled: true
+    ttl: 1h
+    max-size: 1000
+  
+  rate-limiting:
+    enabled: true
+    default-requests-per-minute: 60
+    provider-limits:
+      claude: 50
+      openai: 60
+      gemini: 60
+      ollama: 120
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      claude:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      openai:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      gemini:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      ollama:
+        sliding-window-size: 5
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 2
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+logging:
+  level:
+    root: INFO
+    com.zamaz.mcp.llm: DEBUG
+    reactor.netty.http.client: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

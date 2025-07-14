@@ -1,0 +1,29 @@
+{
+  "builder": {
+    "gc": {
+      "defaultKeepStorage": "20GB",
+      "enabled": true
+    }
+  },
+  "experimental": false,
+  "features": {
+    "buildkit": true
+  },
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "dns": ["8.8.8.8", "8.8.4.4"],
+  "default-address-pools": [
+    {
+      "base": "172.80.0.0/16",
+      "size": 24
+    }
+  ],
+  "insecure-registries": [],
+  "registry-mirrors": [],
+  "debug": false,
+  "hosts": ["unix:///var/run/docker.sock"],
+  "storage-driver": "overlay2"
+}

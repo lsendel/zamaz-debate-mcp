@@ -153,3 +153,91 @@ Other services should use this service's MCP tools to:
 - Retrieve project information for context
 - Get organization statistics for analytics
 - Ensure proper multi-tenant scoping
+
+## Additional Implementation Details
+
+### Slug Generation
+- Organizations and projects automatically generate URL-friendly slugs
+- Slugs are unique and used for lookups
+- Generation pattern: lowercase, alphanumeric with hyphens only
+- Example: "My Cool Org" becomes "my-cool-org"
+
+### Data Models - Extended Details
+
+#### Organizations Table
+- **id**: UUID v4, auto-generated primary key
+- **slug**: Unique, auto-generated from name
+- **metadata**: JSON field for extensible custom data
+- **is_active**: Soft delete flag (organizations are never hard deleted)
+- **Relationships**: One-to-many with projects (cascade delete)
+
+#### Projects Table  
+- **id**: UUID v4, auto-generated primary key
+- **slug**: Auto-generated from name, unique within organization
+- **priority**: Integer 1-10 scale for project importance
+- **archived_at**: Timestamp set when status changes to ARCHIVED
+- **metadata**: JSON field for extensible custom data
+- **GitHub fields**: Automatically parsed from github_repo URL
+- **tech_stack**: JSON array of technology strings
+- **tags**: JSON array for categorization
+
+### GitHub Integration Details
+- Supports multiple URL formats:
+  - HTTPS: `https://github.com/owner/repo`
+  - SSH: `git@github.com:owner/repo.git`
+  - Short: `github.com/owner/repo`
+- Automatic parsing extracts owner and repo name
+- Optional validation using GitHub API (requires GITHUB_TOKEN env var)
+- Stores parsed components separately for efficient querying
+- Default branch detection from GitHub API response
+
+### Database Configuration
+- Uses PostgreSQL with asyncpg driver
+- Connection pooling disabled (NullPool) for MCP server pattern
+- JIT disabled for better compatibility
+- Connection recycling every hour
+- Automatic table creation on startup
+- Health check endpoint available
+
+### Statistics Aggregation
+- Real-time calculation of organization metrics
+- Tech stack frequency analysis across projects
+- Project distribution by type and status
+- Efficient SQL aggregation queries
+
+### Error Handling Patterns
+- Structured logging with contextual information
+- Validation errors return descriptive messages
+- Database errors are caught and wrapped
+- MCP errors return isError=True with proper error types
+- All errors include timestamps and request context
+
+### Security Considerations
+- No built-in authentication at MCP level
+- GITHUB_TOKEN for API validation (optional)
+- Organization isolation enforced at query level
+- No cross-organization data access
+- Soft deletes preserve audit trail
+
+### Dependencies and Libraries
+- **mcp**: Core MCP SDK for protocol implementation
+- **pydantic**: Data validation with v2 features
+- **sqlalchemy[asyncio]**: Async ORM with PostgreSQL support
+- **structlog**: Structured JSON logging
+- **httpx**: Async HTTP client for GitHub API
+- **python-jose**: JWT support (for future auth)
+- **prometheus-client**: Metrics collection ready
+
+### Development Patterns
+- Managers pattern for business logic separation
+- Async/await throughout for non-blocking operations
+- Pydantic models for API contracts
+- SQLAlchemy models for database schema
+- Context managers for database sessions
+- Type hints for better IDE support
+
+### Future Extensibility Hooks
+- JWT token fields in requirements (not implemented)
+- Prometheus metrics client included
+- Metadata JSON fields on all entities
+- Modular manager classes for easy extension
