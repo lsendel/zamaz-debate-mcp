@@ -156,12 +156,11 @@ test: full-test ## Alias for full-test (backward compatibility)
 
 quick-test: ## Run quick UI tests
 	@echo "$(BLUE)🧪 Running quick UI tests...$(NC)"
-	@cd debate-ui && npm run test:e2e
+	cd playwright-tests && npm run test:smoke
 
 test-ui-only: ## Run UI tests without backend (for UI-only testing)
 	@echo "$(BLUE)🧪 Running UI-only tests...$(NC)"
-	cd debate-ui && npm test
-	cd debate-ui/playwright-tests && npm test
+	cd playwright-tests && npm test
 
 test-e2e: ## Run E2E tests locally (requires services running)
 	@echo "$(BLUE)🧪 Running E2E tests locally...$(NC)"
@@ -288,7 +287,7 @@ clean-all: ## Complete Docker cleanup (removes ALL Docker data)
 	@echo "$(RED)Type 'yes' to confirm: $(NC)"
 	@read -r response && \
 	if [ "$$response" = "yes" ]; then \
-		./docker-cleanup.sh; \
+		./scripts/docker-cleanup.sh; \
 	else \
 		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
 	fi
@@ -412,14 +411,17 @@ collect-evidence: ## Collect evidence of working system
 	@echo "$(BLUE)📸 Collecting evidence...$(NC)"
 	@mkdir -p evidence/$(shell date +%Y%m%d_%H%M%S)
 	@echo "$(YELLOW)Taking screenshots and collecting data...$(NC)"
-	cd debate-ui && node capture-screenshots.js
+	cd playwright-tests && npm run screenshots
 	@echo "$(GREEN)✅ Evidence collected in evidence/ directory$(NC)"
 
 # Troubleshooting commands
 fix-ui: ## Fix common UI issues
 	@echo "$(BLUE)🔧 Fixing common UI issues...$(NC)"
-	cd debate-ui && node fix-ui-issues.js
-	@echo "$(GREEN)✅ UI fixes applied$(NC)"
+	@echo "$(YELLOW)Restarting UI service...$(NC)"
+	@pkill -f "npm run dev" || true
+	@sleep 2
+	@$(MAKE) start-ui &
+	@echo "$(GREEN)✅ UI restarted$(NC)"
 
 reset-db: ## Reset all databases (WARNING: deletes all data)
 	@echo "$(RED)⚠️  This will delete all data! Continue? [y/N]$(NC)"

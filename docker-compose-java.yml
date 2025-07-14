@@ -19,7 +19,8 @@ services:
       - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
       - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
     ports:
-      - "${MCP_ORGANIZATION_PORT:-5005}:${MCP_ORGANIZATION_PORT:-5005}"
+      - "${MCP_ORGANIZATION_PORT:-5005}:5005"  # HTTP API
+      - "${MCP_ORGANIZATION_STDIO_PORT:-5105}:5105"  # MCP STDIO
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,7 +55,8 @@ services:
       - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
       - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
     ports:
-      - "${MCP_LLM_PORT:-5002}:${MCP_LLM_PORT:-5002}"
+      - "${MCP_LLM_PORT:-5002}:5002"  # HTTP API
+      - "${MCP_LLM_STDIO_PORT:-5102}:5102"  # MCP STDIO
     depends_on:
       redis:
         condition: service_healthy
@@ -89,7 +91,8 @@ services:
       - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
       - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
     ports:
-      - "${MCP_CONTROLLER_PORT:-5013}:${MCP_CONTROLLER_PORT:-5013}"
+      - "${MCP_CONTROLLER_PORT:-5013}:5013"  # HTTP API
+      - "${MCP_CONTROLLER_STDIO_PORT:-5113}:5113"  # MCP STDIO
     depends_on:
       postgres:
         condition: service_healthy
