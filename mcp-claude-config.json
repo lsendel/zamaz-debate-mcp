@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "mcp-organization": {
+      "command": "docker",
+      "args": ["exec", "-i", "zamaz-debate-mcp-mcp-organization-j-1", "java", "-jar", "/app/mcp-organization-j.jar", "--mcp"],
+      "env": {
+        "MCP_MODE": "stdio"
+      }
+    },
+    "mcp-llm": {
+      "command": "docker",
+      "args": ["exec", "-i", "zamaz-debate-mcp-mcp-llm-j-1", "java", "-jar", "/app/mcp-llm-j.jar", "--mcp"],
+      "env": {
+        "MCP_MODE": "stdio"
+      }
+    },
+    "mcp-controller": {
+      "command": "docker",
+      "args": ["exec", "-i", "zamaz-debate-mcp-mcp-controller-j-1", "java", "-jar", "/app/mcp-controller-j.jar", "--mcp"],
+      "env": {
+        "MCP_MODE": "stdio"
+      }
+    },
+    "mcp-organization-http": {
+      "url": "http://localhost:5005/mcp",
+      "transport": "http"
+    },
+    "mcp-llm-http": {
+      "url": "http://localhost:5002/mcp",
+      "transport": "http"
+    },
+    "mcp-controller-http": {
+      "url": "http://localhost:5013/mcp",
+      "transport": "http"
+    }
+  }
+}
