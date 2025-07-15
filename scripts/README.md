@@ -35,13 +35,13 @@ This directory contains general infrastructure, testing, and utility scripts for
 
 Service-specific scripts have been moved to their respective project directories:
 
-- **Debate/Controller Scripts**: `mcp-controller-j/scripts/`
+- **Debate/Controller Scripts**: `mcp-controller/scripts/`
   - `debate-demo-curl.sh`
   - `complete-debate-demo.sh`
   - `mcp-debate-client.sh`
   - `test-debate-flow.sh`
 
-- **LLM Scripts**: `mcp-llm-j/scripts/`
+- **LLM Scripts**: `mcp-llm/scripts/`
   - `llm-demo-curl.sh`
   - `simple-llm-example.sh`
   - `sky-color-example.sh`

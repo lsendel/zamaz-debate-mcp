@@ -6,11 +6,11 @@ echo "Fixing Lombok configuration in all Java services..."
 
 # List of Java services
 services=(
-    "mcp-organization-j"
-    "mcp-llm-j"
-    "mcp-controller-j"
-    "mcp-rag-j"
-    "mcp-template-j"
+    "mcp-organization"
+    "mcp-llm"
+    "mcp-controller"
+    "mcp-rag"
+    "mcp-template"
 )
 
 for service in "${services[@]}"; do

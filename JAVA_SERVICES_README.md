@@ -4,7 +4,7 @@ This document provides detailed information about the Java implementations of th
 
 ## Services Overview
 
-### 1. mcp-organization-j (Port 5005)
+### 1. mcp-organization (Port 5005)
 Organization management service with JWT authentication and multi-tenant support.
 
 **Key Features:**
@@ -50,7 +50,7 @@ GET    /swagger-ui.html              - Swagger UI
 GET    /api-docs                     - OpenAPI specification
 ```
 
-### 2. mcp-llm-j (Port 5002)
+### 2. mcp-llm (Port 5002)
 LLM provider gateway with support for multiple AI providers.
 
 **Key Features:**
@@ -93,7 +93,7 @@ GET    /swagger-ui.html              - Swagger UI
 GET    /api-docs                     - OpenAPI specification
 ```
 
-### 3. mcp-controller-j (Port 5013)
+### 3. mcp-controller (Port 5013)
 Central orchestration service for debate management.
 
 **Key Features:**
@@ -162,15 +162,15 @@ docker-compose -f docker-compose.yml -f docker-compose-java.yml up -d
 3. **Or run services locally:**
 ```bash
 # Terminal 1 - Organization Service
-cd mcp-organization-j
+cd mcp-organization
 mvn spring-boot:run
 
 # Terminal 2 - LLM Service
-cd mcp-llm-j
+cd mcp-llm
 mvn spring-boot:run
 
 # Terminal 3 - Controller Service
-cd mcp-controller-j
+cd mcp-controller
 mvn spring-boot:run
 ```
 
@@ -188,7 +188,7 @@ Environment variables override configuration properties.
 
 1. **Run unit tests:**
 ```bash
-cd mcp-organization-j
+cd mcp-organization
 mvn test
 ```
 
@@ -209,8 +209,8 @@ mvn verify
 docker-compose -f docker-compose-java.yml build
 
 # Build individual service
-cd mcp-organization-j
-docker build -t mcp-organization-j:latest .
+cd mcp-organization
+docker build -t mcp-organization:latest .
 ```
 
 ### Monitoring
@@ -266,7 +266,7 @@ java -Xmx2g -Xms1g -XX:+UseG1GC -jar app.jar
 1. **Service won't start:**
    - Check port availability
    - Verify database connectivity
-   - Check logs: `docker logs mcp-organization-j`
+   - Check logs: `docker logs mcp-organization`
 
 2. **Authentication issues:**
    - Verify JWT_SECRET matches across services

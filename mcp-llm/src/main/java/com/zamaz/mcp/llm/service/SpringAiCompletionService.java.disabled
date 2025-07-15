@@ -1,0 +1,309 @@
+package com.zamaz.mcp.llm.service;
+
+import com.zamaz.mcp.common.exception.BusinessException;
+import com.zamaz.mcp.llm.model.CompletionRequest;
+import com.zamaz.mcp.llm.model.CompletionResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+/**
+ * Spring AI-based implementation of the completion service.
+ * Provides a unified interface for multiple LLM providers using Spring AI.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class SpringAiCompletionService {
+    
+    private final Map<String, ChatModel> chatModels = new ConcurrentHashMap<>();
+    private final CacheService cacheService;
+    private final RateLimitService rateLimitService;
+    
+    @Autowired(required = false)
+    public void setAnthropicModel(@Qualifier("anthropicChatModel") AnthropicChatModel model) {
+        if (model != null) {
+            chatModels.put("claude", model);
+            log.info("Registered Anthropic Claude model");
+        }
+    }
+    
+    @Autowired(required = false)
+    public void setOpenAiModel(@Qualifier("openAiChatModel") OpenAiChatModel model) {
+        if (model != null) {
+            chatModels.put("openai", model);
+            log.info("Registered OpenAI model");
+        }
+    }
+    
+    @Autowired(required = false)
+    public void setGeminiModel(@Qualifier("vertexAiGeminiChatModel") VertexAiGeminiChatModel model) {
+        if (model != null) {
+            chatModels.put("gemini", model);
+            log.info("Registered Google Gemini model");
+        }
+    }
+    
+    @Autowired(required = false)
+    public void setOllamaModel(@Qualifier("ollamaChatModel") OllamaChatModel model) {
+        if (model != null) {
+            chatModels.put("ollama", model);
+            log.info("Registered Ollama model");
+        }
+    }
+    
+    /**
+     * Complete a chat request using Spring AI
+     */
+    @CircuitBreaker(name = "llm-service", fallbackMethod = "completeFallback")
+    @RateLimiter(name = "llm-service")
+    public Mono<CompletionResponse> complete(CompletionRequest request) {
+        return Mono.defer(() -> {
+            var startTime = System.currentTimeMillis();
+            
+            // Check cache first
+            return cacheService.get(request)
+                .switchIfEmpty(Mono.defer(() -> {
+                    // Rate limiting check
+                    return rateLimitService.checkLimit(request.getProvider())
+                        .flatMap(allowed -> {
+                            if (!allowed) {
+                                return Mono.error(new BusinessException("Rate limit exceeded", "RATE_LIMIT_EXCEEDED"));
+                            }
+                            
+                            // Get the appropriate chat model
+                            ChatModel chatModel = getChatModel(request.getProvider());
+                            
+                            // Convert request to Spring AI format
+                            Prompt prompt = buildPrompt(request);
+                            
+                            // Execute the request
+                            return Mono.fromCallable(() -> chatModel.call(prompt))
+                                .map(response -> mapToCompletionResponse(response, request, startTime))
+                                .doOnSuccess(response -> {
+                                    // Cache the response
+                                    cacheService.put(request, response).subscribe();
+                                })
+                                .doOnError(error -> log.error("Error calling LLM provider {}: {}", 
+                                    request.getProvider(), error.getMessage()));
+                        });
+                }));
+        });
+    }
+    
+    /**
+     * Stream completion using Spring AI
+     */
+    @CircuitBreaker(name = "llm-service")
+    @RateLimiter(name = "llm-service")
+    public Flux<String> streamComplete(CompletionRequest request) {
+        return Flux.defer(() -> {
+            // Rate limiting check
+            return rateLimitService.checkLimit(request.getProvider())
+                .flatMapMany(allowed -> {
+                    if (!allowed) {
+                        return Flux.error(new BusinessException("Rate limit exceeded", "RATE_LIMIT_EXCEEDED"));
+                    }
+                    
+                    // Get the appropriate chat model
+                    ChatModel chatModel = getChatModel(request.getProvider());
+                    
+                    // Convert request to Spring AI format
+                    Prompt prompt = buildPrompt(request);
+                    
+                    // Stream the response
+                    return Flux.from(chatModel.stream(prompt))
+                        .map(chatResponse -> {
+                            if (chatResponse.getResult() != null && 
+                                chatResponse.getResult().getOutput() != null) {
+                                return chatResponse.getResult().getOutput().getContent();
+                            }
+                            return "";
+                        })
+                        .filter(content -> !content.isEmpty())
+                        .doOnError(error -> log.error("Error streaming from LLM provider {}: {}", 
+                            request.getProvider(), error.getMessage()));
+                });
+        });
+    }
+    
+    /**
+     * Get available providers
+     */
+    public List<String> getAvailableProviders() {
+        return new ArrayList<>(chatModels.keySet());
+    }
+    
+    /**
+     * Check health of a specific provider
+     */
+    public Mono<Boolean> checkProviderHealth(String provider) {
+        return Mono.fromCallable(() -> {
+            ChatModel model = chatModels.get(provider);
+            if (model == null) {
+                return false;
+            }
+            
+            try {
+                // Simple health check - try to complete a minimal prompt
+                Prompt healthCheck = new Prompt("Hello");
+                model.call(healthCheck);
+                return true;
+            } catch (Exception e) {
+                log.warn("Health check failed for provider {}: {}", provider, e.getMessage());
+                return false;
+            }
+        });
+    }
+    
+    /**
+     * Get the appropriate chat model for the provider
+     */
+    private ChatModel getChatModel(String provider) {
+        ChatModel model = chatModels.get(provider);
+        if (model == null) {
+            throw new BusinessException("Provider not available: " + provider, "PROVIDER_NOT_AVAILABLE");
+        }
+        return model;
+    }
+    
+    /**
+     * Build Spring AI prompt from completion request
+     */
+    private Prompt buildPrompt(CompletionRequest request) {
+        List<Message> messages = new ArrayList<>();
+        
+        // Add system message if present
+        if (request.getSystemPrompt() != null) {
+            messages.add(new SystemMessage(request.getSystemPrompt()));
+        }
+        
+        // Convert messages
+        if (request.getMessages() != null) {
+            for (CompletionRequest.Message msg : request.getMessages()) {
+                switch (msg.getRole().toLowerCase()) {
+                    case "system":
+                        messages.add(new SystemMessage(msg.getContent()));
+                        break;
+                    case "user":
+                        messages.add(new UserMessage(msg.getContent()));
+                        break;
+                    case "assistant":
+                        messages.add(new AssistantMessage(msg.getContent()));
+                        break;
+                    default:
+                        log.warn("Unknown message role: {}", msg.getRole());
+                }
+            }
+        }
+        
+        // Build options
+        Map<String, Object> options = new HashMap<>();
+        if (request.getTemperature() != null) {
+            options.put("temperature", request.getTemperature());
+        }
+        if (request.getMaxTokens() != null) {
+            options.put("maxTokens", request.getMaxTokens());
+        }
+        if (request.getModel() != null) {
+            options.put("model", request.getModel());
+        }
+        if (request.getStopSequences() != null && !request.getStopSequences().isEmpty()) {
+            options.put("stop", request.getStopSequences());
+        }
+        
+        return new Prompt(messages, ModelOptionsUtils.toOpenAiChatOptions(options));
+    }
+    
+    /**
+     * Map Spring AI response to our completion response format
+     */
+    private CompletionResponse mapToCompletionResponse(ChatResponse chatResponse, 
+                                                      CompletionRequest request, 
+                                                      long startTime) {
+        Generation generation = chatResponse.getResult();
+        
+        CompletionResponse.Message message = CompletionResponse.Message.builder()
+            .role("assistant")
+            .content(generation.getOutput().getContent())
+            .build();
+        
+        CompletionResponse.Choice choice = CompletionResponse.Choice.builder()
+            .index(0)
+            .message(message)
+            .finishReason(generation.getMetadata().getFinishReason())
+            .build();
+        
+        // Extract usage information if available
+        CompletionResponse.Usage usage = null;
+        if (chatResponse.getMetadata() != null && chatResponse.getMetadata().getUsage() != null) {
+            var usageData = chatResponse.getMetadata().getUsage();
+            usage = CompletionResponse.Usage.builder()
+                .promptTokens(usageData.getPromptTokens().intValue())
+                .completionTokens(usageData.getGenerationTokens().intValue())
+                .totalTokens(usageData.getTotalTokens().intValue())
+                .build();
+        }
+        
+        return CompletionResponse.builder()
+            .id(UUID.randomUUID().toString())
+            .provider(request.getProvider())
+            .model(request.getModel())
+            .choices(Collections.singletonList(choice))
+            .usage(usage)
+            .createdAt(Instant.now())
+            .processingTimeMs(System.currentTimeMillis() - startTime)
+            .build();
+    }
+    
+    /**
+     * Fallback method for circuit breaker
+     */
+    public Mono<CompletionResponse> completeFallback(CompletionRequest request, Exception ex) {
+        log.error("Circuit breaker activated for provider {}: {}", request.getProvider(), ex.getMessage());
+        
+        return Mono.just(CompletionResponse.builder()
+            .id(UUID.randomUUID().toString())
+            .provider(request.getProvider())
+            .model(request.getModel())
+            .choices(Collections.singletonList(
+                CompletionResponse.Choice.builder()
+                    .index(0)
+                    .message(CompletionResponse.Message.builder()
+                        .role("assistant")
+                        .content("I apologize, but I'm currently unable to process your request due to technical difficulties. Please try again later.")
+                        .build())
+                    .finishReason("error")
+                    .build()
+            ))
+            .createdAt(Instant.now())
+            .processingTimeMs(0L)
+            .build());
+    }
+}

@@ -1,0 +1,71 @@
+
+======================================================================
+                MCP Services Comprehensive Test Suite                
+======================================================================
+
+Timestamp: Mon Jul 14 22:24:41 EDT 2025
+Report File: /Users/lsendel/IdeaProjects/zamaz-debate-mcp/mcp-tests/test-reports/mcp-test-report-20250714_222441.txt
+
+
+======================================================================
+                         Service Health Check                         
+======================================================================
+
+
+======================================================================
+                        Running Service Tests                        
+======================================================================
+
+\n--- Testing MCP Organization (Java) ---
+✅ organization tests passed (0s)
+[0;34m=== MCP Organization Service (Java) Detailed Test ===[0m
+[0;34mTesting service at: http://localhost:5005[0m
+
+[1;33mTest 1: Health Check[0m
+[0;32m✓ Health check passed[0m
+
+[1;33mTest 2: Create Organization[0m
+[0;32m✓ Organization created with ID: [0m
+Response: 
+
+[1;33mTest 3: List Organizations[0m
+[0;32m✓ Listed  organizations[0m
+[0;32m✓ Test organization found in list[0m
+
+[1;33mTest 4: Get Organization[0m
+[0;31m✗ Failed to get organization[0m
+Response: {"success":false,"error":"Cannot invoke \"String.length()\" because \"<parameter1>\" is null"}
+
+[1;33mTest 5: Update Organization[0m
+[0;31m✗ Failed to update organization[0m
+Response: {"success":false,"error":"Cannot invoke \"String.length()\" because \"<parameter1>\" is null"}
+
+[1;33mTest 6: Create Project[0m
+[0;32m✓ Project created with ID: [0m
+Response: 
+
+[1;33mTest 7: List Projects[0m
+[0;32m✓ Listed  projects for organization[0m
+[0;32m✓ Test project found in list[0m
+
+[1;33mTest 8: Get Organization Stats[0m
+[0;32m✓ Retrieved organization statistics[0m
+Stats: 
+
+[1;33mTest 9: Validate GitHub Repository[0m
+[0;32m✓ GitHub repository validation tested[0m
+Result: 
+
+[1;33mTest 10: List MCP Resources[0m
+[0;32m✓ Found  MCP resources[0m
+
+[1;33mTest 12: Delete Organization (Cleanup)[0m
+[1;33m⚠ Could not delete organization (soft delete or not implemented)[0m
+
+[0;34m=== Test Summary ===[0m
+[0;32m✓ Health check[0m
+[0;32m✓ Organization CRUD operations[0m
+[0;32m✓ Project CRUD operations[0m
+[0;32m✓ Resource listing[0m
+[0;34mAll critical tests passed![0m
+\n--- Testing MCP LLM (Java) ---

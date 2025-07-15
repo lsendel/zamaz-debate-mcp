@@ -61,40 +61,44 @@ Three separate MCP services with multi-tenant support:
 5. **Access Control**: Fine-grained permissions
 
 ### Data Model
-```python
-class Organization:
-    id: str
-    name: str
-    api_key: str  # For authentication
-    settings: Dict[str, Any]
-    created_at: datetime
+```java
+public class Organization {
+    private String id;
+    private String name;
+    private String apiKey;  // For authentication
+    private Map<String, Object> settings;
+    private LocalDateTime createdAt;
+}
     
-class ContextNamespace:
-    id: str
-    org_id: str
-    name: str  # e.g., "debates", "support", "research"
-    description: str
-    access_policy: AccessPolicy
+public class ContextNamespace {
+    private String id;
+    private String orgId;
+    private String name;  // e.g., "debates", "support", "research"
+    private String description;
+    private AccessPolicy accessPolicy;
+}
     
-class Context:
-    id: str
-    namespace_id: str
-    org_id: str
-    name: str
-    messages: List[Message]
-    metadata: Dict[str, Any]
-    version: int
-    created_at: datetime
-    updated_at: datetime
-    shared_with: List[str]  # Other org IDs
+public class Context {
+    private String id;
+    private String namespaceId;
+    private String orgId;
+    private String name;
+    private List<Message> messages;
+    private Map<String, Object> metadata;
+    private int version;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private List<String> sharedWith;  // Other org IDs
+}
     
-class ContextShare:
-    id: str
-    context_id: str
-    source_org_id: str
-    target_org_id: str
-    permissions: List[str]  # ["read", "append", "fork"]
-    expires_at: Optional[datetime]
+public class ContextShare {
+    private String id;
+    private String contextId;
+    private String sourceOrgId;
+    private String targetOrgId;
+    private List<String> permissions;  // ["read", "append", "fork"]
+    private LocalDateTime expiresAt;
+}
 ```
 
 ### MCP Resources
@@ -153,28 +157,31 @@ Enhance LLM responses with relevant information from knowledge bases.
 5. **Source Attribution**: Track information sources
 
 ### Data Model
-```python
-class KnowledgeBase:
-    id: str
-    org_id: str
-    name: str
-    description: str
-    index_config: IndexConfig
+```java
+public class KnowledgeBase {
+    private String id;
+    private String orgId;
+    private String name;
+    private String description;
+    private IndexConfig indexConfig;
+}
     
-class Document:
-    id: str
-    kb_id: str
-    source_url: str
-    content: str
-    metadata: Dict[str, Any]
-    embeddings: List[float]
-    created_at: datetime
+public class Document {
+    private String id;
+    private String kbId;
+    private String sourceUrl;
+    private String content;
+    private Map<String, Object> metadata;
+    private List<Float> embeddings;
+    private LocalDateTime createdAt;
+}
     
-class SearchResult:
-    document_id: str
-    content: str
-    score: float
-    metadata: Dict[str, Any]
+public class SearchResult {
+    private String documentId;
+    private String content;
+    private float score;
+    private Map<String, Object> metadata;
+}
 ```
 
 ### MCP Tools
@@ -196,57 +203,68 @@ class SearchResult:
 
 ### Example: Debate with RAG Enhancement
 
-```python
-# 1. mcp-debate creates debate context
-debate_context = await context_client.create_context(
-    org_id="org-123",
-    namespace="debates",
-    name="AI Ethics Debate"
-)
+```java
+// 1. mcp-debate creates debate context
+Context debateContext = contextClient.createContext(CreateContextRequest.builder()
+    .orgId("org-123")
+    .namespace("debates")
+    .name("AI Ethics Debate")
+    .build())
+    .block();
 
-# 2. When preparing participant turn, query RAG
-rag_results = await rag_client.search(
-    kb_id="ethics-kb",
-    query=last_message.content,
-    max_results=3
-)
+// 2. When preparing participant turn, query RAG
+List<SearchResult> ragResults = ragClient.search(SearchRequest.builder()
+    .kbId("ethics-kb")
+    .query(lastMessage.getContent())
+    .maxResults(3)
+    .build())
+    .collectList()
+    .block();
 
-# 3. Augment context with RAG results
-augmented_context = await context_client.append_to_context(
-    context_id=debate_context.id,
-    messages=[
-        Message(
-            role="system",
-            content=f"Relevant information:\n{format_rag_results(rag_results)}"
-        )
-    ]
-)
+// 3. Augment context with RAG results
+Context augmentedContext = contextClient.appendToContext(
+    debateContext.getId(),
+    AppendMessagesRequest.builder()
+        .messages(List.of(
+            Message.builder()
+                .role("system")
+                .content("Relevant information:\n" + formatRagResults(ragResults))
+                .build()
+        ))
+        .build())
+    .block();
 
-# 4. Get optimized context window
-context_window = await context_client.get_context_window(
-    context_id=debate_context.id,
-    max_tokens=8000,
-    strategy="sliding_window_with_summary"
-)
+// 4. Get optimized context window
+ContextWindow contextWindow = contextClient.getContextWindow(
+    GetContextWindowRequest.builder()
+        .contextId(debateContext.getId())
+        .maxTokens(8000)
+        .strategy("sliding_window_with_summary")
+        .build())
+    .block();
 
-# 5. Call LLM with augmented context
-response = await llm_client.complete(
-    provider="claude",
-    model="claude-3-opus",
-    messages=context_window.messages
-)
+// 5. Call LLM with augmented context
+CompletionResponse response = llmClient.complete(
+    CompletionRequest.builder()
+        .provider("claude")
+        .model("claude-3-opus")
+        .messages(contextWindow.getMessages())
+        .build())
+    .block();
 
-# 6. Store response back in context
-await context_client.append_to_context(
-    context_id=debate_context.id,
-    messages=[
-        Message(
-            role="assistant",
-            content=response.content,
-            metadata={"sources": rag_results}
-        )
-    ]
-)
+// 6. Store response back in context
+contextClient.appendToContext(
+    debateContext.getId(),
+    AppendMessagesRequest.builder()
+        .messages(List.of(
+            Message.builder()
+                .role("assistant")
+                .content(response.getContent())
+                .metadata(Map.of("sources", ragResults))
+                .build()
+        ))
+        .build())
+    .block();
 ```
 
 ## Security & Multi-Tenancy

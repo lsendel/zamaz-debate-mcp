@@ -3,7 +3,7 @@
 echo "Testing Redis connectivity from containers..."
 
 # Test from each container
-for service in mcp-organization-j mcp-llm-j mcp-controller-j; do
+for service in mcp-organization mcp-llm mcp-controller; do
     echo ""
     echo "=== Testing from $service ==="
     container_name="zamaz-debate-mcp-${service}-1"

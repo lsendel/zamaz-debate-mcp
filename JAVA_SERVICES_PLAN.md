@@ -3,7 +3,7 @@
 ## Overview
 This document outlines the comprehensive plan for implementing Java Spring Boot versions of the MCP services, maintaining feature parity with the Python implementations while leveraging Java's strengths.
 
-## 1. mcp-organization-j
+## 1. mcp-organization
 
 ### Purpose
 Organization management service for multi-tenant support with JWT authentication and role-based access control.
@@ -97,7 +97,7 @@ CREATE TABLE organization_users (
 );
 ```
 
-## 2. mcp-llm-j
+## 2. mcp-llm
 
 ### Purpose
 LLM provider gateway service supporting multiple AI providers with unified interface, caching, and rate limiting.
@@ -193,7 +193,7 @@ llm:
     default-requests-per-minute: 60
 ```
 
-## 3. mcp-controller-j
+## 3. mcp-controller
 
 ### Purpose
 Central orchestration service for managing debate workflows, coordinating between services, and handling business logic.
@@ -216,8 +216,8 @@ Central orchestration service for managing debate workflows, coordinating betwee
    - Result calculation
 
 2. **Service Orchestration**
-   - Coordinate with mcp-organization-j
-   - Manage LLM requests via mcp-llm-j
+   - Coordinate with mcp-organization
+   - Manage LLM requests via mcp-llm
    - Handle context management
    - Implement debate strategies
 
@@ -315,9 +315,9 @@ CREATE TABLE responses (
 
 ## Project Structure
 
-### mcp-organization-j
+### mcp-organization
 ```
-mcp-organization-j/
+mcp-organization/
 ├── pom.xml
 ├── Dockerfile
 ├── src/
@@ -361,9 +361,9 @@ mcp-organization-j/
 └── README.md
 ```
 
-### mcp-llm-j
+### mcp-llm
 ```
-mcp-llm-j/
+mcp-llm/
 ├── pom.xml
 ├── Dockerfile
 ├── src/
@@ -401,9 +401,9 @@ mcp-llm-j/
 └── README.md
 ```
 
-### mcp-controller-j
+### mcp-controller
 ```
-mcp-controller-j/
+mcp-controller/
 ├── pom.xml
 ├── Dockerfile
 ├── src/
@@ -445,9 +445,9 @@ mcp-controller-j/
 
 ## Implementation Timeline
 
-1. **Week 1**: Project setup and mcp-organization-j
-2. **Week 2**: mcp-llm-j implementation
-3. **Week 3**: mcp-controller-j implementation
+1. **Week 1**: Project setup and mcp-organization
+2. **Week 2**: mcp-llm implementation
+3. **Week 3**: mcp-controller implementation
 4. **Week 4**: Integration testing and deployment
 
 ## Testing Strategy

@@ -335,32 +335,32 @@ stop-ollama: ## Stop all services including Ollama
 # Individual MCP Service Commands
 start-mcp-organization: ## Start only MCP Organization service
 	@echo "$(BLUE)🏢 Starting MCP Organization service...$(NC)"
-	docker-compose up -d mcp-organization-j
+	docker-compose up -d mcp-organization
 	@echo "$(GREEN)✅ MCP Organization service started$(NC)"
 
 stop-mcp-organization: ## Stop MCP Organization service
 	@echo "$(BLUE)🛑 Stopping MCP Organization service...$(NC)"
-	docker-compose stop mcp-organization-j
+	docker-compose stop mcp-organization
 	@echo "$(GREEN)✅ MCP Organization service stopped$(NC)"
 
 start-mcp-controller: ## Start only MCP Controller service
 	@echo "$(BLUE)⚔️ Starting MCP Controller service...$(NC)"
-	docker-compose up -d postgres redis mcp-organization-j mcp-llm-j mcp-controller-j
+	docker-compose up -d postgres redis mcp-organization mcp-llm mcp-controller
 	@echo "$(GREEN)✅ MCP Controller service started$(NC)"
 
 stop-mcp-controller: ## Stop MCP Controller service
 	@echo "$(BLUE)🛑 Stopping MCP Controller service...$(NC)"
-	docker-compose stop mcp-controller-j
+	docker-compose stop mcp-controller
 	@echo "$(GREEN)✅ MCP Controller service stopped$(NC)"
 
 start-mcp-llm: ## Start only MCP LLM service
 	@echo "$(BLUE)🤖 Starting MCP LLM service...$(NC)"
-	docker-compose up -d redis mcp-llm-j
+	docker-compose up -d redis mcp-llm
 	@echo "$(GREEN)✅ MCP LLM service started$(NC)"
 
 stop-mcp-llm: ## Stop MCP LLM service
 	@echo "$(BLUE)🛑 Stopping MCP LLM service...$(NC)"
-	docker-compose stop mcp-llm-j
+	docker-compose stop mcp-llm
 	@echo "$(GREEN)✅ MCP LLM service stopped$(NC)"
 
 start-mcp-debate: ## Start only MCP Debate service (alias for controller)
@@ -371,22 +371,22 @@ stop-mcp-debate: ## Stop MCP Debate service (alias for controller)
 
 start-mcp-rag: ## Start only MCP RAG service
 	@echo "$(BLUE)🔍 Starting MCP RAG service...$(NC)"
-	docker-compose up -d qdrant redis mcp-llm-j mcp-rag-j
+	docker-compose up -d qdrant redis mcp-llm mcp-rag
 	@echo "$(GREEN)✅ MCP RAG service started$(NC)"
 
 stop-mcp-rag: ## Stop MCP RAG service
 	@echo "$(BLUE)🛑 Stopping MCP RAG service...$(NC)"
-	docker-compose stop mcp-rag-j
+	docker-compose stop mcp-rag
 	@echo "$(GREEN)✅ MCP RAG service stopped$(NC)"
 
 start-mcp-template: ## Start only MCP Template service
 	@echo "$(BLUE)📋 Starting MCP Template service...$(NC)"
-	docker-compose up -d postgres mcp-organization-j mcp-template-j
+	docker-compose up -d postgres mcp-organization mcp-template
 	@echo "$(GREEN)✅ MCP Template service started$(NC)"
 
 stop-mcp-template: ## Stop MCP Template service
 	@echo "$(BLUE)🛑 Stopping MCP Template service...$(NC)"
-	docker-compose stop mcp-template-j
+	docker-compose stop mcp-template
 	@echo "$(GREEN)✅ MCP Template service stopped$(NC)"
 
 restart-mcp-%: ## Restart specific MCP service (e.g., make restart-mcp-llm)

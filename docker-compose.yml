@@ -69,14 +69,15 @@ services:
         psql -c 'CREATE DATABASE IF NOT EXISTS organization_db;' &&
         psql -c 'CREATE DATABASE IF NOT EXISTS debate_db;' &&
         psql -c 'CREATE DATABASE IF NOT EXISTS template_db;' &&
+        psql -c 'CREATE DATABASE IF NOT EXISTS rag_db;' &&
         echo 'Databases created successfully!'
       "
     profiles:
       - setup
 
   # Java MCP Organization Service
-  mcp-organization-j:
-    build: ./mcp-organization-j
+  mcp-organization:
+    build: ./mcp-organization
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -96,7 +97,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./mcp-organization-j/config:/app/config
+      - ./mcp-organization/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped
@@ -108,8 +109,8 @@ services:
       start_period: 40s
 
   # Java MCP LLM Service
-  mcp-llm-j:
-    build: ./mcp-llm-j
+  mcp-llm:
+    build: ./mcp-llm
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -125,7 +126,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./mcp-llm-j/config:/app/config
+      - ./mcp-llm/config:/app/config
       - llm_cache:/app/cache
     networks:
       - mcp-network
@@ -138,8 +139,8 @@ services:
       start_period: 40s
 
   # Java MCP Controller Service (replaces debate)
-  mcp-controller-j:
-    build: ./mcp-controller-j
+  mcp-controller:
+    build: ./mcp-controller
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -148,8 +149,8 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - ORGANIZATION_SERVICE_URL=http://mcp-organization-j:5005
-      - LLM_SERVICE_URL=http://mcp-llm-j:5002
+      - ORGANIZATION_SERVICE_URL=http://mcp-organization:5005
+      - LLM_SERVICE_URL=http://mcp-llm:5002
       - SERVER_PORT=5013
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
@@ -159,12 +160,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mcp-organization-j:
+      mcp-organization:
         condition: service_started
-      mcp-llm-j:
+      mcp-llm:
         condition: service_started
     volumes:
-      - ./mcp-controller-j/config:/app/config
+      - ./mcp-controller/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped
@@ -176,9 +177,14 @@ services:
       start_period: 40s
 
   # Java MCP RAG Service
-  mcp-rag-j:
-    build: ./mcp-rag-j
+  mcp-rag:
+    build: ./mcp-rag
     environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=rag_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - QDRANT_URL=http://qdrant:6333
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -187,10 +193,14 @@ services:
     ports:
       - "${MCP_RAG_PORT:-5004}:5004"
     depends_on:
-      - qdrant
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
     volumes:
-      - ./mcp-rag-j/config:/app/config
+      - ./mcp-rag/config:/app/config
       - rag_data:/app/data
     networks:
       - mcp-network
@@ -203,8 +213,8 @@ services:
       start_period: 40s
 
   # Java MCP Template Service
-  mcp-template-j:
-    build: ./mcp-template-j
+  mcp-template:
+    build: ./mcp-template
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -218,10 +228,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mcp-organization-j:
+      mcp-organization:
         condition: service_started
     volumes:
-      - ./mcp-template-j/config:/app/config
+      - ./mcp-template/config:/app/config
       - template-data:/app/data
     networks:
       - mcp-network

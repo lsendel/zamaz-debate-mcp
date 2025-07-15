@@ -1,0 +1,118 @@
+
+======================================================================
+                MCP Services Comprehensive Test Suite                
+======================================================================
+
+Timestamp: Mon Jul 14 22:25:53 EDT 2025
+Report File: /Users/lsendel/IdeaProjects/zamaz-debate-mcp/mcp-tests/test-reports/mcp-test-report-20250714_222553.txt
+
+
+======================================================================
+                         Service Health Check                         
+======================================================================
+
+
+======================================================================
+                        Running Service Tests                        
+======================================================================
+
+\n--- Testing MCP Organization (Java) ---
+✅ organization tests passed (1s)
+[0;34m=== MCP Organization Service (Java) Detailed Test ===[0m
+[0;34mTesting service at: http://localhost:5005[0m
+
+[1;33mTest 1: Health Check[0m
+[0;32m✓ Health check passed[0m
+
+[1;33mTest 2: Create Organization[0m
+[0;32m✓ Organization created with ID: [0m
+Response: 
+
+[1;33mTest 3: List Organizations[0m
+[0;32m✓ Listed  organizations[0m
+[0;32m✓ Test organization found in list[0m
+
+[1;33mTest 4: Get Organization[0m
+[0;31m✗ Failed to get organization[0m
+Response: {"success":false,"error":"Cannot invoke \"String.length()\" because \"<parameter1>\" is null"}
+
+[1;33mTest 5: Update Organization[0m
+[0;31m✗ Failed to update organization[0m
+Response: {"success":false,"error":"Cannot invoke \"String.length()\" because \"<parameter1>\" is null"}
+
+[1;33mTest 6: Create Project[0m
+[0;32m✓ Project created with ID: [0m
+Response: 
+
+[1;33mTest 7: List Projects[0m
+[0;32m✓ Listed  projects for organization[0m
+[0;32m✓ Test project found in list[0m
+
+[1;33mTest 8: Get Organization Stats[0m
+[0;32m✓ Retrieved organization statistics[0m
+Stats: 
+
+[1;33mTest 9: Validate GitHub Repository[0m
+[0;32m✓ GitHub repository validation tested[0m
+Result: 
+
+[1;33mTest 10: List MCP Resources[0m
+[0;32m✓ Found  MCP resources[0m
+
+[1;33mTest 12: Delete Organization (Cleanup)[0m
+[1;33m⚠ Could not delete organization (soft delete or not implemented)[0m
+
+[0;34m=== Test Summary ===[0m
+[0;32m✓ Health check[0m
+[0;32m✓ Organization CRUD operations[0m
+[0;32m✓ Project CRUD operations[0m
+[0;32m✓ Resource listing[0m
+[0;34mAll critical tests passed![0m
+\n--- Testing MCP LLM (Java) ---
+✅ llm tests passed (0s)
+[0;34m=== MCP LLM Service (Java) Detailed Test ===[0m
+[0;34mTesting service at: http://localhost:5002[0m
+
+[1;33mTest 1: Health Check[0m
+[0;32m✓ Health check passed[0m
+
+[1;33mTest 2: List Providers (REST API)[0m
+[0;32m✓ Got provider response[0m
+Response format:
+{
+  "timestamp": "2025-07-15T02:25:54.566+00:00",
+  "path": "/api/v1/providers",
+  "status": 404,
+  "error": "Not Found",
+  "message": "No static resource api/v1/providers.",
+  "requestId": "9402cb04-778"
+}
+
+[1;33mTest 3: Test Completion Endpoint[0m
+[1;33m✓ Completion endpoint responded (may need API key)[0m
+
+[1;33mTest 4: MCP Info Endpoint[0m
+[1;33m✓ MCP endpoint exists[0m
+
+[1;33mTest 5: List MCP Tools[0m
+[1;33m✓ MCP tools endpoint exists[0m
+
+[0;34m=== Test Summary ===[0m
+[0;32m✓ Service is running and responsive[0m
+[0;32m✓ Basic endpoints are functional[0m
+[1;33mNote: Some features may require valid API keys[0m
+\n--- Testing MCP Controller (Java) ---
+❌ controller tests failed (0s)
+[0;34m=== MCP Controller Service (Java) Detailed Test ===[0m
+[0;34mTesting service at: http://localhost:5013[0m
+
+[1;33mTest 1: Health Check[0m
+[0;32m✓ Health check passed[0m
+
+[1;33mTest 2: Check API Documentation[0m
+[0;32m✓ Swagger UI available[0m
+[0;32m✓ OpenAPI documentation available[0m
+
+[1;33mTest 3: Create Debate[0m
+[0;31m✗ Failed to create debate[0m
+Response: {"timestamp":"2025-07-15T02:25:54.968+00:00","status":400,"error":"Bad Request","message":"JSON parse error: Cannot deserialize value of type `java.util.UUID` from String \"test-org-1752546354\": UUID has to be represented by standard 36-char representation","path":"/api/v1/debates"}

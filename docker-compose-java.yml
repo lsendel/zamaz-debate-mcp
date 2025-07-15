@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   # Java version of MCP Organization Service
-  mcp-organization-j:
-    build: ./mcp-organization-j
+  mcp-organization:
+    build: ./mcp-organization
     environment:
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
@@ -27,7 +27,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./mcp-organization-j/config:/app/config
+      - ./mcp-organization/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped
@@ -39,8 +39,8 @@ services:
       start_period: 40s
 
   # Java version of MCP LLM Service
-  mcp-llm-j:
-    build: ./mcp-llm-j
+  mcp-llm:
+    build: ./mcp-llm
     environment:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -61,7 +61,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./mcp-llm-j/config:/app/config
+      - ./mcp-llm/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped
@@ -73,8 +73,8 @@ services:
       start_period: 40s
 
   # Java version of MCP Controller Service
-  mcp-controller-j:
-    build: ./mcp-controller-j
+  mcp-controller:
+    build: ./mcp-controller
     environment:
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
@@ -84,8 +84,8 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - ORGANIZATION_SERVICE_URL=${ORGANIZATION_SERVICE_URL:-http://mcp-organization-j:5005}
-      - LLM_SERVICE_URL=${LLM_SERVICE_URL:-http://mcp-llm-j:5002}
+      - ORGANIZATION_SERVICE_URL=${ORGANIZATION_SERVICE_URL:-http://mcp-organization:5005}
+      - LLM_SERVICE_URL=${LLM_SERVICE_URL:-http://mcp-llm:5002}
       - SERVER_PORT=${MCP_CONTROLLER_PORT:-5013}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
@@ -98,12 +98,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mcp-organization-j:
+      mcp-organization:
         condition: service_healthy
-      mcp-llm-j:
+      mcp-llm:
         condition: service_healthy
     volumes:
-      - ./mcp-controller-j/config:/app/config
+      - ./mcp-controller/config:/app/config
     networks:
       - mcp-network
     restart: unless-stopped

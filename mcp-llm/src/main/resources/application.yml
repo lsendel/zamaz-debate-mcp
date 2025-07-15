@@ -1,0 +1,150 @@
+spring:
+  application:
+    name: mcp-llm
+  profiles:
+    active: development
+
+  # Redis Configuration
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 2000ms
+    
+  # Spring AI Configuration
+  ai:
+    # Anthropic Claude Configuration
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      chat:
+        options:
+          model: ${ANTHROPIC_DEFAULT_MODEL:claude-3-5-sonnet-20241022}
+          max-tokens: 1000
+          temperature: 0.7
+    
+    # OpenAI Configuration
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: ${OPENAI_DEFAULT_MODEL:gpt-4o}
+          max-tokens: 1000
+          temperature: 0.7
+    
+    # Google Vertex AI Gemini Configuration
+    vertex:
+      ai:
+        gemini:
+          project-id: ${GOOGLE_CLOUD_PROJECT_ID:}
+          location: ${GOOGLE_CLOUD_LOCATION:us-central1}
+          chat:
+            options:
+              model: ${GEMINI_DEFAULT_MODEL:gemini-1.5-pro}
+              max-tokens: 1000
+              temperature: 0.7
+    
+    # Ollama Configuration (for local models)
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_DEFAULT_MODEL:llama3.1}
+          temperature: 0.7
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      llm-service:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 5s
+        failure-rate-threshold: 50
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - com.zamaz.mcp.common.exception.BusinessException
+  
+  ratelimiter:
+    instances:
+      llm-service:
+        limit-for-period: 10
+        limit-refresh-period: 1s
+        timeout-duration: 1s
+
+# Cache Configuration
+cache:
+  enabled: true
+  default-ttl: 300 # 5 minutes
+  max-entries: 1000
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Server Configuration
+server:
+  port: ${PORT:8080}
+
+# Logging Configuration
+logging:
+  level:
+    com.zamaz.mcp.llm: ${LOG_LEVEL:INFO}
+    org.springframework.ai: DEBUG
+    root: ${ROOT_LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: development
+  
+# Enable all actuator endpoints for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    com.zamaz.mcp.llm: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: production
+
+# Stricter settings for production
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    com.zamaz.mcp.llm: INFO
+    root: WARN

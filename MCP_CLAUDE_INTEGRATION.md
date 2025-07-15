@@ -167,7 +167,7 @@ For production, consider using stdio transport with Docker:
   "mcpServers": {
     "zamaz-debate": {
       "command": "docker",
-      "args": ["exec", "-i", "zamaz-debate-mcp-mcp-controller-j-1", "java", "-jar", "/app/mcp-controller.jar", "--mcp-stdio"],
+      "args": ["exec", "-i", "zamaz-debate-mcp-mcp-controller-1", "java", "-jar", "/app/mcp-controller.jar", "--mcp-stdio"],
       "transport": "stdio"
     }
   }
