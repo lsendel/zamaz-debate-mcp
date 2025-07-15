@@ -1,0 +1,14 @@
+
+======================================================================
+                MCP Services Comprehensive Test Suite                
+======================================================================
+
+Timestamp: Mon Jul 14 23:09:39 EDT 2025
+Report File: /Users/lsendel/IdeaProjects/zamaz-debate-mcp/mcp-tests/test-reports/mcp-test-report-20250714_230939.txt
+
+
+======================================================================
+                         Service Health Check                         
+======================================================================
+
+ERROR: No services are available for testing
