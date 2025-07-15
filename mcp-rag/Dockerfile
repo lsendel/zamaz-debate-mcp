@@ -1,19 +1,35 @@
-# Build stage
-FROM maven:3.9-eclipse-temurin-17 AS builder
-WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline
-COPY src ./src
-RUN mvn clean package -DskipTests
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
-# Runtime stage
-FROM eclipse-temurin:17-jre-alpine
-WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
+WORKDIR /build
 
-# Add health check
+# Copy entire project structure
+COPY . .
+
+# Build the specific module and its dependencies
+RUN mvn clean package -pl mcp-rag -am -DskipTests
+
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create non-root user
+RUN addgroup -g 1000 spring && \
+    adduser -u 1000 -G spring -s /bin/sh -D spring
+
+# Copy JAR from builder
+COPY --from=builder /build/mcp-rag/target/mcp-rag-*.jar app.jar
+
+# Change ownership
+RUN chown -R spring:spring /app
+
+USER spring
+
+EXPOSE 5004
+
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5004/actuator/health || exit 1
+  CMD curl -f http://localhost:5004/actuator/health || exit 1
 
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

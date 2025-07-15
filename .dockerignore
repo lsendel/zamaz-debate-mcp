@@ -1,0 +1,53 @@
+# Ignore everything first
+**
+
+# Then explicitly include what we need
+!pom.xml
+!mcp-*/pom.xml
+!mcp-*/src/
+
+# But exclude build artifacts
+mcp-*/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Test files
+**/test/
+**/tests/
+
+# UI and Python services
+debate-ui/
+mcp-context/
+mcp-llm-python/
+mcp-debate-python/
+mcp-organization-python/
+mcp-rag-python/
+e2e-tests/
+playwright-tests/
+test_probe/
+
+# Scripts and config
+scripts/
+*.sh
+.env*
+Makefile
+
+# Logs and temp files
+*.log
+*.tmp
+.DS_Store

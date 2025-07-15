@@ -1,11 +1,35 @@
-# Build stage
-FROM maven:3.8.4-openjdk-17 AS build
-COPY src /app/src
-COPY pom.xml /app
-RUN mvn -f /app/pom.xml clean package
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
-# Package stage
-FROM openjdk:17-jdk-slim
-COPY --from=build /app/target/mcp-template-j-1.0-SNAPSHOT.jar /app/mcp-template-j.jar
-EXPOSE 8080
-ENTRYPOINT ["java","-jar","/app/mcp-template-j.jar"]
+WORKDIR /build
+
+# Copy entire project structure
+COPY . .
+
+# Build the specific module and its dependencies
+RUN mvn clean package -pl mcp-template -am -DskipTests
+
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create non-root user
+RUN addgroup -g 1000 spring && \
+    adduser -u 1000 -G spring -s /bin/sh -D spring
+
+# Copy JAR from builder
+COPY --from=builder /build/mcp-template/target/mcp-template-*.jar app.jar
+
+# Change ownership
+RUN chown -R spring:spring /app
+
+USER spring
+
+EXPOSE 5006
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5006/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

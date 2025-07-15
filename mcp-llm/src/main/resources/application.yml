@@ -101,7 +101,7 @@ management:
 
 # Server Configuration
 server:
-  port: ${PORT:8080}
+  port: ${SERVER_PORT:5002}
 
 # Logging Configuration
 logging:

@@ -1,16 +1,14 @@
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Copy pom.xml and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+# Copy entire project structure
+COPY . .
 
-# Copy source code and build
-COPY src ./src
-RUN mvn clean package -DskipTests
+# Build the specific module and its dependencies
+RUN mvn clean package -pl mcp-llm -am -DskipTests
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
@@ -22,7 +20,7 @@ RUN addgroup -g 1000 spring && \
     adduser -u 1000 -G spring -s /bin/sh -D spring
 
 # Copy JAR from builder
-COPY --from=builder /app/target/mcp-llm-j-*.jar app.jar
+COPY --from=builder /build/mcp-llm/target/mcp-llm-*.jar app.jar
 
 # Change ownership
 RUN chown -R spring:spring /app

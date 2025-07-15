@@ -6,12 +6,15 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zamaz.mcp.controller.service.DebateService;
 import com.zamaz.mcp.controller.dto.DebateDto;
+import com.zamaz.mcp.controller.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -195,11 +198,46 @@ public class McpEndpointController {
         UUID participantId = UUID.fromString(params.get("participantId").asText());
         String content = params.get("content").asText();
         
-        // TODO: Need to get current round ID for the debate
-        // For now, we'll need to implement a method to get the current round
-        ObjectNode response = objectMapper.createObjectNode();
-        response.put("error", "submitTurn not fully implemented - needs current round logic");
-        return Mono.just((JsonNode) response);
+        return Mono.fromCallable(() -> {
+            // Get the debate to find current round
+            DebateDto debate = debateService.getDebate(debateId);
+            
+            // Get the list of rounds
+            List<Object> rounds = debateService.listRounds(debateId);
+            
+            // Find the current active round
+            UUID currentRoundId = null;
+            for (Object roundObj : rounds) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> round = (Map<String, Object>) roundObj;
+                if ("IN_PROGRESS".equals(round.get("status"))) {
+                    currentRoundId = (UUID) round.get("id");
+                    break;
+                }
+            }
+            
+            if (currentRoundId == null) {
+                throw new IllegalStateException("No active round found for debate");
+            }
+            
+            // Submit the response
+            ResponseDto.CreateResponseRequest request = ResponseDto.CreateResponseRequest.builder()
+                .participantId(participantId)
+                .content(content)
+                .build();
+            
+            ResponseDto responseDto = debateService.submitResponse(debateId, currentRoundId, request);
+            
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("responseId", responseDto.getId().toString());
+            response.put("roundId", responseDto.getRoundId().toString());
+            response.put("status", "submitted");
+            return (JsonNode) response;
+        }).onErrorResume(error -> {
+            ObjectNode errorResponse = objectMapper.createObjectNode();
+            errorResponse.put("error", error.getMessage());
+            return Mono.just((JsonNode) errorResponse);
+        });
     }
 
     @GetMapping("/health")
