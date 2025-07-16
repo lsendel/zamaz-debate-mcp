@@ -19,15 +19,40 @@ import java.util.Collections;
 public class GatewayConfig {
     
     /**
-     * Configure CORS for the gateway
+     * Configure CORS for the gateway with security restrictions
      */
     @Bean
     public CorsWebFilter corsFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOriginPatterns(Collections.singletonList("*"));
+        
+        // Restrict to specific domains in production
+        String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
+        if (allowedOrigins != null && !allowedOrigins.trim().isEmpty()) {
+            corsConfig.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        } else {
+            // Development fallback - restrict in production
+            corsConfig.setAllowedOriginPatterns(Collections.singletonList("http://localhost:*"));
+        }
+        
         corsConfig.setMaxAge(3600L);
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        corsConfig.setAllowedHeaders(Collections.singletonList("*"));
+        
+        // Restrict headers for security
+        corsConfig.setAllowedHeaders(Arrays.asList(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With",
+            "X-Organization-ID",
+            "X-Request-ID"
+        ));
+        
+        // Expose necessary headers
+        corsConfig.setExposedHeaders(Arrays.asList(
+            "X-Total-Count",
+            "X-Rate-Limit-Remaining",
+            "X-Request-ID"
+        ));
+        
         corsConfig.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
