@@ -9,7 +9,7 @@ export SONAR_PROJECT_KEY="lsendel_zamaz-debate-mcp"
 export SONAR_ORGANIZATION="lsendel"
 export SONAR_BRANCH="main"
 export REPORT_AUTHOR="Zamaz Team"
-export SONAR_TOKEN="fe54520340673646c6fb61f941cb10fbf8471bfe"
+export SONAR_TOKEN="${SONAR_TOKEN:-}"
 
 # Alias for quick report generation
 alias sonar-report="cd /Users/lsendel/IdeaProjects/zamaz-debate-mcp && ./scripts/generate-sonarcloud-report.sh"

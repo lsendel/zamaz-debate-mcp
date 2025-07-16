@@ -75,13 +75,15 @@ class LLMClient extends BaseApiClient {
     onChunk: (chunk: string) => void,
     onComplete?: (response: CompletionResponse) => void
   ): Promise<void> {
+    const response = await this.makeStreamRequest(request);
+    const reader = this.getResponseReader(response);
+    await this.processStream(reader, onChunk, onComplete);
+  }
+
+  private async makeStreamRequest(request: CompletionRequest): Promise<Response> {
     const response = await fetch('/api/llm/tools/complete', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        'X-Organization-Id': localStorage.getItem('currentOrgId') || '',
-      },
+      headers: this.getStreamHeaders(),
       body: JSON.stringify({ ...request, stream: true }),
     });
 
@@ -89,11 +91,30 @@ class LLMClient extends BaseApiClient {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    return response;
+  }
+
+  private getStreamHeaders(): HeadersInit {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+      'X-Organization-Id': localStorage.getItem('currentOrgId') || '',
+    };
+  }
+
+  private getResponseReader(response: Response): ReadableStreamDefaultReader<Uint8Array> {
     const reader = response.body?.getReader();
     if (!reader) {
       throw new Error('No response body');
     }
+    return reader;
+  }
 
+  private async processStream(
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    onChunk: (chunk: string) => void,
+    onComplete?: (response: CompletionResponse) => void
+  ): Promise<void> {
     const decoder = new TextDecoder();
     let buffer = '';
 
@@ -101,29 +122,60 @@ class LLMClient extends BaseApiClient {
       const { done, value } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      buffer = await this.processChunk(
+        decoder.decode(value, { stream: true }),
+        buffer,
+        onChunk,
+        onComplete
+      );
+    }
+  }
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') {
-            continue;
-          }
-          try {
-            const chunk = JSON.parse(data);
-            if (chunk.content) {
-              onChunk(chunk.content);
-            }
-            if (chunk.done && onComplete) {
-              onComplete(chunk);
-            }
-          } catch (e) {
-            console.error('Failed to parse SSE chunk:', e);
-          }
-        }
-      }
+  private async processChunk(
+    decodedValue: string,
+    currentBuffer: string,
+    onChunk: (chunk: string) => void,
+    onComplete?: (response: CompletionResponse) => void
+  ): Promise<string> {
+    let buffer = currentBuffer + decodedValue;
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      await this.processLine(line, onChunk, onComplete);
+    }
+
+    return buffer;
+  }
+
+  private async processLine(
+    line: string,
+    onChunk: (chunk: string) => void,
+    onComplete?: (response: CompletionResponse) => void
+  ): Promise<void> {
+    if (!line.startsWith('data: ')) return;
+
+    const data = line.slice(6);
+    if (data === '[DONE]') return;
+
+    try {
+      const chunk = JSON.parse(data);
+      this.handleChunk(chunk, onChunk, onComplete);
+    } catch (e) {
+      console.error('Failed to parse SSE chunk:', e);
+    }
+  }
+
+  private handleChunk(
+    chunk: any,
+    onChunk: (chunk: string) => void,
+    onComplete?: (response: CompletionResponse) => void
+  ): void {
+    if (chunk.content) {
+      onChunk(chunk.content);
+    }
+    if (chunk.done && onComplete) {
+      onComplete(chunk);
     }
   }
 

@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import organizationClient, { User, AuthRequest } from '../../api/organizationClient';
 
 interface AuthState {

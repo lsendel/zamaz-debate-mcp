@@ -28,7 +28,6 @@ import {
 import { useAppSelector, useAppDispatch } from '../store';
 import {
   generateApiKey,
-  createOrganization,
 } from '../store/slices/organizationSlice';
 import { addNotification } from '../store/slices/uiSlice';
 import organizationClient from '../api/organizationClient';
