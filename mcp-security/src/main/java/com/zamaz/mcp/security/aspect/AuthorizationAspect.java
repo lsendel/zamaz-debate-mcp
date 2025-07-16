@@ -43,25 +43,47 @@ public class AuthorizationAspect {
             throw new AuthorizationException("User not authenticated");
         }
         
-        String organizationId = extractOrganizationId(joinPoint, requiresPermission.organizationAccess());
+        String organizationId = extractOrganizationId(joinPoint, requiresPermission.requireOrganization());
         
         // Check organization access if required
-        if (requiresPermission.organizationAccess() && organizationId != null) {
+        if (requiresPermission.requireOrganization() && organizationId != null) {
             if (!authorizationService.hasOrganizationAccess(user, organizationId)) {
                 throw new AuthorizationException("User does not have access to organization: " + organizationId);
             }
         }
         
-        // Check permission
-        if (!authorizationService.hasPermission(user, requiresPermission.value(), organizationId)) {
-            throw new AuthorizationException("User does not have required permission: " + requiresPermission.value());
+        // Check permissions
+        com.zamaz.mcp.security.rbac.Permission[] permissions = requiresPermission.value();
+        boolean hasPermission = false;
+        
+        if (requiresPermission.anyOf().length > 0) {
+            // Check if user has ANY of the specified permissions
+            for (com.zamaz.mcp.security.rbac.Permission permission : requiresPermission.anyOf()) {
+                if (authorizationService.hasPermission(user, permission.getPermission(), organizationId)) {
+                    hasPermission = true;
+                    break;
+                }
+            }
+        } else {
+            // Check if user has ALL the specified permissions
+            hasPermission = true;
+            for (com.zamaz.mcp.security.rbac.Permission permission : permissions) {
+                if (!authorizationService.hasPermission(user, permission.getPermission(), organizationId)) {
+                    hasPermission = false;
+                    break;
+                }
+            }
         }
         
-        // Check ownership if required
-        if (requiresPermission.requiresOwnership()) {
-            String resourceOwnerId = extractResourceOwnerId(joinPoint);
-            if (resourceOwnerId != null && !authorizationService.hasResourceOwnership(user, resourceOwnerId)) {
-                throw new AuthorizationException("User does not own the resource");
+        if (!hasPermission) {
+            throw new AuthorizationException(requiresPermission.message());
+        }
+        
+        // Check resource-specific permissions if needed
+        if (!requiresPermission.resourceParam().isEmpty()) {
+            String resourceId = extractResourceId(joinPoint, requiresPermission.resourceParam());
+            if (resourceId != null && !authorizationService.hasResourceAccess(user, resourceId, organizationId)) {
+                throw new AuthorizationException("User does not have access to the resource");
             }
         }
         
@@ -148,6 +170,24 @@ public class AuthorizationAspect {
             String paramName = paramNames[i];
             if (paramName.equals("userId") || paramName.equals("ownerId") || paramName.equals("createdBy")) {
                 return (String) args[i];
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extract resource ID from method parameters by parameter name.
+     */
+    private String extractResourceId(JoinPoint joinPoint, String paramName) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        String[] paramNames = signature.getParameterNames();
+        Object[] args = joinPoint.getArgs();
+        
+        for (int i = 0; i < paramNames.length; i++) {
+            if (paramNames[i].equals(paramName)) {
+                Object arg = args[i];
+                return arg != null ? arg.toString() : null;
             }
         }
         

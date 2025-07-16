@@ -170,4 +170,31 @@ public class AuthorizationService {
         
         return permissions;
     }
+    
+    /**
+     * Check if user has access to a specific resource.
+     * 
+     * @param user The authenticated user
+     * @param resourceId The resource ID
+     * @param organizationId The organization ID
+     * @return true if user has access to the resource
+     */
+    public boolean hasResourceAccess(McpUser user, String resourceId, String organizationId) {
+        log.debug("Checking resource access for user '{}' on resource '{}' in organization '{}'", 
+                user.getId(), resourceId, organizationId);
+        
+        // System admin has access to all resources
+        if (user.hasRole("SYSTEM_ADMIN")) {
+            return true;
+        }
+        
+        // Organization admin has access to all resources in their organization
+        if (organizationId != null && user.hasOrganizationRole(organizationId, "ORG_ADMIN")) {
+            return true;
+        }
+        
+        // Check specific resource permissions (would typically check a database)
+        // For now, we'll allow access if user belongs to the organization
+        return organizationId != null && user.getOrganizationIds().contains(organizationId);
+    }
 }
