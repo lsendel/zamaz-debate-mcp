@@ -72,6 +72,48 @@ services:
       retries: 5
       start_period: 40s
 
+  # Java version of MCP Context Service
+  mcp-context:
+    build: ./mcp-context
+    environment:
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=context_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
+      - SERVER_PORT=${MCP_CONTEXT_PORT:-5007}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5005,http://localhost:5006,http://localhost:5013
+      - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
+      - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/swagger-ui.html}
+      - CONTEXT_CACHE_TTL=${CONTEXT_CACHE_TTL:-3600}
+      - CONTEXT_WINDOW_SIZE=${CONTEXT_WINDOW_SIZE:-4096}
+      - CONTEXT_MAX_WINDOW_SIZE=${CONTEXT_MAX_WINDOW_SIZE:-32768}
+      - CONTEXT_VERSION_RETENTION=${CONTEXT_VERSION_RETENTION:-30}
+      - TOKEN_COUNT_MODEL=${TOKEN_COUNT_MODEL:-gpt-4}
+    ports:
+      - "${MCP_CONTEXT_PORT:-5007}:5007"  # HTTP API
+      - "${MCP_CONTEXT_STDIO_PORT:-5107}:5107"  # MCP STDIO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./mcp-context/config:/app/config
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5007/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
   # Java version of MCP Controller Service
   mcp-controller:
     build: ./mcp-controller
@@ -85,6 +127,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - ORGANIZATION_SERVICE_URL=${ORGANIZATION_SERVICE_URL:-http://mcp-organization:5005}
+      - CONTEXT_SERVICE_URL=${CONTEXT_SERVICE_URL:-http://mcp-context:5007}
       - LLM_SERVICE_URL=${LLM_SERVICE_URL:-http://mcp-llm:5002}
       - SERVER_PORT=${MCP_CONTROLLER_PORT:-5013}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -125,8 +168,10 @@ services:
     command: |
       bash -c "
         echo 'CREATE DATABASE organization_db;' > /docker-entrypoint-initdb.d/01-create-dbs.sql
+        echo 'CREATE DATABASE context_db;' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
         echo 'CREATE DATABASE debate_db;' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
         echo 'GRANT ALL PRIVILEGES ON DATABASE organization_db TO ${POSTGRES_USER:-postgres};' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
+        echo 'GRANT ALL PRIVILEGES ON DATABASE context_db TO ${POSTGRES_USER:-postgres};' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
         echo 'GRANT ALL PRIVILEGES ON DATABASE debate_db TO ${POSTGRES_USER:-postgres};' >> /docker-entrypoint-initdb.d/01-create-dbs.sql
       "
     networks:

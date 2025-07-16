@@ -1,0 +1,60 @@
+{
+  "name": "Environment Setup Validator",
+  "description": "Validate development environment setup for smooth developer onboarding",
+  "trigger": {
+    "type": "manual_button",
+    "button_text": "🛠️ Validate Dev Environment",
+    "icon": "settings"
+  },
+  "actions": [
+    {
+      "type": "shell_command",
+      "name": "check_prerequisites",
+      "command": "echo '🔍 Checking prerequisites...' && ./scripts/check-prerequisites.sh",
+      "timeout": 60
+    },
+    {
+      "type": "shell_command",
+      "name": "validate_java_maven",
+      "command": "echo '☕ Validating Java and Maven...' && java --version && mvn --version",
+      "timeout": 30
+    },
+    {
+      "type": "shell_command",
+      "name": "validate_docker",
+      "command": "echo '🐳 Validating Docker...' && docker --version && docker-compose --version",
+      "timeout": 30
+    },
+    {
+      "type": "shell_command",
+      "name": "validate_node_npm",
+      "command": "echo '📦 Validating Node.js and npm...' && node --version && npm --version",
+      "timeout": 30
+    },
+    {
+      "type": "shell_command",
+      "name": "check_env_file",
+      "command": "echo '🔐 Checking environment configuration...' && [ -f .env ] && echo '✅ .env file exists' || echo '⚠️ .env file missing - run: cp .env.example .env'",
+      "timeout": 10
+    },
+    {
+      "type": "shell_command",
+      "name": "validate_ports",
+      "command": "echo '🔌 Checking port availability...' && make check-ports",
+      "timeout": 30
+    },
+    {
+      "type": "shell_command",
+      "name": "setup_dependencies",
+      "command": "echo '📚 Setting up dependencies...' && make setup",
+      "timeout": 300,
+      "continue_on_error": true
+    }
+  ],
+  "notifications": {
+    "success": "✅ Development environment is properly configured and ready",
+    "failure": "❌ Environment setup issues detected - Check output for details",
+    "timeout": "⏰ Environment validation timed out"
+  },
+  "enabled": true
+}

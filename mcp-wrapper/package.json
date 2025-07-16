@@ -1,0 +1,14 @@
+{
+  "name": "mcp-debate-wrapper",
+  "version": "1.0.0",
+  "description": "MCP wrapper for debate system Java services",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "axios": "^1.6.0"
+  }
+}

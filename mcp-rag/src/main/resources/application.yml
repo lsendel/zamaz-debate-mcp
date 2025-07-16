@@ -31,6 +31,16 @@ spring:
     serialization:
       write-dates-as-timestamps: false
     default-property-inclusion: non_null
+    
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 10
+        queue-capacity: 100
+    scheduling:
+      pool:
+        size: 2
 
 # Actuator configuration
 management:
@@ -60,8 +70,31 @@ mcp:
     description: "Retrieval Augmented Generation service for MCP"
   
   vector:
-    type: in-memory  # For now, using in-memory storage
+    type: in-memory  # Options: in-memory, qdrant
     dimension: 1536
+    
+# Qdrant Configuration
+qdrant:
+  host: qdrant
+  port: 6334
+  
+# OpenAI Configuration
+openai:
+  api:
+    key: ${OPENAI_API_KEY:your-api-key-here}
+  embedding:
+    model: text-embedding-ada-002
+    dimension: 1536
+    
+# RAG Configuration
+rag:
+  chunking:
+    default-size: 1000
+    overlap: 200
+    max-size: 2000
+  processing:
+    batch-size: 10
+    max-retries: 3
     
 # Logging
 logging:

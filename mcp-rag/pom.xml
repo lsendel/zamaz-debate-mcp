@@ -61,8 +61,49 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
         
-        <!-- TODO: Add vector database dependencies (Pinecone/Qdrant/Weaviate) -->
-        <!-- TODO: Add embedding generation dependencies -->
+        <!-- Vector Database - Using in-memory implementation for now -->
+        <!-- Note: External vector DB clients have dependency issues -->
+        <!-- The application uses an in-memory vector store implementation -->
+        
+        <!-- Document Processing -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>5.2.3</version>
+        </dependency>
+        
+        <!-- OpenAI Client for embeddings -->
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>service</artifactId>
+            <version>0.18.2</version>
+        </dependency>
+        
+        <!-- Apache Commons -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.16.1</version>
+        </dependency>
+        
+        <!-- Lombok - already provided by parent pom -->
     </dependencies>
 
     <build>

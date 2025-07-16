@@ -71,6 +71,7 @@
         <module>mcp-common</module>
         <module>mcp-security</module>
         <module>mcp-organization</module>
+        <module>mcp-context</module>
         <module>mcp-controller</module>
         <module>mcp-llm</module>
         <module>mcp-debate</module>

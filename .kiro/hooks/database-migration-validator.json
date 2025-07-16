@@ -1,0 +1,47 @@
+{
+  "name": "Database Migration Validator",
+  "description": "Validate database migrations when Flyway files are modified to prevent DB issues",
+  "trigger": {
+    "type": "file_save",
+    "patterns": [
+      "mcp-*/src/main/resources/db/migration/*.sql",
+      "mcp-*/src/main/resources/db/migration/*.SQL"
+    ]
+  },
+  "conditions": [
+    {
+      "type": "file_extension",
+      "extensions": [".sql", ".SQL"]
+    },
+    {
+      "type": "path_contains",
+      "paths": ["db/migration"]
+    }
+  ],
+  "actions": [
+    {
+      "type": "shell_command",
+      "name": "validate_migration_syntax",
+      "command": "echo '🔍 Validating migration syntax for ${SERVICE_NAME}...' && cd ${SERVICE_DIR} && mvn flyway:validate -q",
+      "timeout": 60,
+      "variables": {
+        "SERVICE_DIR": "$(echo ${MODIFIED_FILE} | grep -o 'mcp-[^/]*')",
+        "SERVICE_NAME": "$(echo ${MODIFIED_FILE} | grep -o 'mcp-[^/]*' | sed 's/mcp-//')"
+      }
+    },
+    {
+      "type": "shell_command",
+      "name": "test_migration",
+      "command": "echo '🧪 Testing migration on test database...' && cd ${SERVICE_DIR} && mvn flyway:migrate -Dspring.profiles.active=test -q",
+      "timeout": 120,
+      "continue_on_error": true
+    }
+  ],
+  "notifications": {
+    "success": "✅ Database migration validated successfully for ${SERVICE_NAME}",
+    "failure": "❌ Database migration validation failed for ${SERVICE_NAME} - Check SQL syntax",
+    "timeout": "⏰ Migration validation timed out for ${SERVICE_NAME}"
+  },
+  "enabled": true,
+  "debounce": 2000
+}

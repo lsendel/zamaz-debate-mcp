@@ -1,0 +1,48 @@
+{
+  "name": "Full System Smoke Test",
+  "description": "Run comprehensive end-to-end tests across all services for complete system verification",
+  "trigger": {
+    "type": "manual_button",
+    "button_text": "🚀 Run Full System Test",
+    "icon": "test-tube"
+  },
+  "actions": [
+    {
+      "type": "shell_command",
+      "name": "start_services",
+      "command": "echo '🚀 Starting all services...' && make start-all",
+      "timeout": 180
+    },
+    {
+      "type": "shell_command",
+      "name": "wait_for_services",
+      "command": "echo '⏳ Waiting for services to be ready...' && make wait-for-services",
+      "timeout": 120
+    },
+    {
+      "type": "shell_command",
+      "name": "test_mcp_services",
+      "command": "echo '🧪 Testing all MCP services...' && make test-mcp-all",
+      "timeout": 300
+    },
+    {
+      "type": "shell_command",
+      "name": "test_service_integration",
+      "command": "echo '🔗 Testing service integration...' && make test-services-detail",
+      "timeout": 240
+    },
+    {
+      "type": "shell_command",
+      "name": "run_ui_smoke_tests",
+      "command": "echo '🎨 Running UI smoke tests...' && cd playwright-tests && npm run test:smoke",
+      "timeout": 180,
+      "continue_on_error": true
+    }
+  ],
+  "notifications": {
+    "success": "✅ Full system smoke test passed - All services working correctly",
+    "failure": "❌ System smoke test failed - Check individual service logs",
+    "timeout": "⏰ System smoke test timed out"
+  },
+  "enabled": true
+}

@@ -38,3 +38,35 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+
+# Node modules
+node_modules/
+package-lock.json
+
+# IDE files
+.idea/
+
+# Build files
+build/
+dist/
+
+# Temporary files
+*.tmp
+*~
+
+# Application-specific ignores
+add-to-claude-code.sh
+claude_mcp_config.json
+sample-debates.json
+quick-start.sh
+start-services.sh
+
+# Generated application config files
+mcp-organization/src/main/resources/application-simple.yml
+
+# SonarQube report configuration
+.sonarqube-report.env
+
+# Generated reports (keep docs directory for GitHub Pages)
+sonar-reports/
+tools/sonar-cnes-report*.jar

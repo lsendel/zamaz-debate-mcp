@@ -1,0 +1,41 @@
+{
+  "name": "Service Health Monitor",
+  "description": "Monitor all MCP services health and restart unhealthy ones for system reliability",
+  "trigger": {
+    "type": "manual_button",
+    "button_text": "🏥 Check Service Health",
+    "icon": "health"
+  },
+  "schedule": {
+    "type": "interval",
+    "minutes": 30,
+    "enabled": false
+  },
+  "actions": [
+    {
+      "type": "shell_command",
+      "name": "check_infrastructure",
+      "command": "echo '🔍 Checking infrastructure services...' && docker-compose ps postgres redis qdrant",
+      "timeout": 30
+    },
+    {
+      "type": "shell_command",
+      "name": "check_mcp_services",
+      "command": "echo '🏥 Checking MCP service health...' && make check-health",
+      "timeout": 60
+    },
+    {
+      "type": "shell_command",
+      "name": "restart_unhealthy",
+      "command": "echo '🔄 Restarting any unhealthy services...' && ./scripts/restart-unhealthy-services.sh",
+      "timeout": 120,
+      "continue_on_error": true
+    }
+  ],
+  "notifications": {
+    "success": "✅ All services are healthy and running",
+    "failure": "⚠️ Some services need attention - check logs",
+    "timeout": "⏰ Health check timed out"
+  },
+  "enabled": true
+}

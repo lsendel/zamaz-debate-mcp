@@ -1,0 +1,40 @@
+{
+  "name": "Auto Test Runner",
+  "description": "Automatically run unit tests when Java files are saved for immediate feedback",
+  "trigger": {
+    "type": "file_save",
+    "patterns": [
+      "mcp-*/src/main/java/**/*.java",
+      "mcp-*/src/test/java/**/*.java"
+    ]
+  },
+  "conditions": [
+    {
+      "type": "file_extension",
+      "extensions": [".java"]
+    },
+    {
+      "type": "path_contains",
+      "paths": ["mcp-organization", "mcp-llm", "mcp-controller", "mcp-rag", "mcp-template"]
+    }
+  ],
+  "actions": [
+    {
+      "type": "shell_command",
+      "name": "run_service_tests",
+      "command": "cd ${SERVICE_DIR} && echo '🧪 Running tests for ${SERVICE_NAME}...' && mvn test -q",
+      "timeout": 180,
+      "variables": {
+        "SERVICE_DIR": "$(echo ${MODIFIED_FILE} | grep -o 'mcp-[^/]*')",
+        "SERVICE_NAME": "$(echo ${MODIFIED_FILE} | grep -o 'mcp-[^/]*' | sed 's/mcp-//')"
+      }
+    }
+  ],
+  "notifications": {
+    "success": "✅ Tests passed for ${SERVICE_NAME} service",
+    "failure": "❌ Tests failed for ${SERVICE_NAME} service - Check output for details",
+    "timeout": "⏰ Tests timed out for ${SERVICE_NAME} service"
+  },
+  "enabled": true,
+  "debounce": 3000
+}
