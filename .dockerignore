@@ -5,13 +5,18 @@
 !pom.xml
 !mcp-*/pom.xml
 !mcp-*/src/
+!mcp-common/
 
-# But exclude build artifacts
+# But exclude build artifacts and test files
 mcp-*/target/
-*.class
-*.jar
-*.war
-*.ear
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+**/test/
+**/tests/
+**/*Test.java
+**/*Tests.java
 
 # IDE files
 .idea/

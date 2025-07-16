@@ -3,6 +3,7 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /build
 
 # Copy entire project structure
+# Security: .dockerignore ensures only necessary files are copied
 COPY . .
 
 # Build the specific module and its dependencies

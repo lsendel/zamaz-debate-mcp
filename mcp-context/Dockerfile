@@ -13,6 +13,7 @@ WORKDIR /app
 RUN mvn -f parent-pom.xml dependency:go-offline -pl mcp-context -am
 
 # Copy source code
+# Security: .dockerignore ensures only necessary files are copied
 COPY mcp-common/src /app/mcp-common/src
 COPY mcp-security/src /app/mcp-security/src
 COPY mcp-context/src /app/mcp-context/src
