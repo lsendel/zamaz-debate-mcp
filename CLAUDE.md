@@ -77,6 +77,17 @@ ruff check src/
 4. **Context Strategy**: Debate service manages context optimization before sending to LLM service
 5. **Security**: API key authentication, JWT for inter-service communication
 
+## CRITICAL Security Requirements
+
+**🚨 NEVER EMBED PASSWORDS, TOKENS, OR USER CREDENTIALS IN CODE**
+
+- **Always use .env file** for all sensitive configuration (passwords, API keys, tokens, usernames)
+- **Never hardcode secrets** in application.yml, application.properties, or any source code
+- **Use environment variables** with fallback defaults: `${VARIABLE_NAME:default_value}`
+- **Update .gitignore** to exclude .env* files from version control
+- **Use .env.example** files to document required environment variables without actual values
+- **Tools and scripts** should load from .env file, never hardcode credentials
+
 ## MCP Implementation Guidelines
 
 When implementing MCP handlers:
