@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password: 
@@ -11,11 +11,23 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
-    show-sql: false
+        format_sql: true
+    show-sql: true
+    defer-datasource-initialization: true
   
   h2:
     console:
-      enabled: false
+      enabled: true
+      
+  flyway:
+    enabled: false  # Disable Flyway for tests, let Hibernate create schema
+
+# JWT configuration for tests
+jwt:
+  secret: "ThisIsATestSecretKeyThatShouldBeAtLeast256BitsLongForHS256Algorithm"
+  access-token-validity: 3600
+  refresh-token-validity: 86400
+  issuer: "mcp-test"
 
 # Disable security for tests
 mcp:
@@ -25,3 +37,6 @@ mcp:
 logging:
   level:
     com.zamaz.mcp: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG

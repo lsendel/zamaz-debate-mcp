@@ -14,6 +14,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -27,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
  * - Channel routing based on event type
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class EventPublisher {
     
@@ -43,9 +44,9 @@ public class EventPublisher {
     public EventPublisher(RedisTemplate<String, Object> redisTemplate, 
                          ObjectMapper objectMapper, 
                          MeterRegistry meterRegistry) {
-        this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
-        this.meterRegistry = meterRegistry;
+        this.redisTemplate = Objects.requireNonNull(redisTemplate, "RedisTemplate cannot be null");
+        this.objectMapper = Objects.requireNonNull(objectMapper, "ObjectMapper cannot be null");
+        this.meterRegistry = Objects.requireNonNull(meterRegistry, "MeterRegistry cannot be null");
         
         // Initialize metrics
         this.publishedEvents = Counter.builder("mcp.events.published")
@@ -150,8 +151,8 @@ public class EventPublisher {
     
     private String buildChannelName(DomainEvent event) {
         // Channel naming convention: mcp.events.{aggregate_type}.{event_type}
-        String aggregateType = event.getAggregateType().toLowerCase();
-        String eventType = event.getEventType().toLowerCase().replace("_", ".");
+        String aggregateType = event.getAggregateType().toLowerCase(Locale.ROOT);
+        String eventType = event.getEventType().toLowerCase(Locale.ROOT).replace("_", ".");
         return String.format("mcp.events.%s.%s", aggregateType, eventType);
     }
     

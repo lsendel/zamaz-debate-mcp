@@ -35,6 +35,13 @@ public enum Permission {
     TEMPLATE_DELETE("template:delete"),
     TEMPLATE_SHARE("template:share"),
     
+    // Context permissions
+    CONTEXT_CREATE("context:create"),
+    CONTEXT_READ("context:read"),
+    CONTEXT_UPDATE("context:update"),
+    CONTEXT_DELETE("context:delete"),
+    CONTEXT_SHARE("context:share"),
+    
     // RAG permissions
     RAG_CREATE_KB("rag:create_kb"),
     RAG_QUERY("rag:query"),

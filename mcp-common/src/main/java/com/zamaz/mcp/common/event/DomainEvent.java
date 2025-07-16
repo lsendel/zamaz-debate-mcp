@@ -13,7 +13,6 @@ import java.util.Map;
  * Base class for all domain events in the MCP system
  * Uses Jackson polymorphic serialization for event type handling
  */
-@Data
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType")
 @JsonSubTypes({
@@ -48,6 +47,16 @@ public abstract class DomainEvent {
     // Additional metadata
     private Map<String, Object> metadata = new HashMap<>();
     
+    // Defensive getter for metadata
+    public Map<String, Object> getMetadata() {
+        return new HashMap<>(metadata);
+    }
+    
+    // Defensive setter for metadata
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata == null ? new HashMap<>() : new HashMap<>(metadata);
+    }
+    
     protected DomainEvent(String eventType, String aggregateId, String aggregateType) {
         this.eventType = eventType;
         this.aggregateId = aggregateId;
@@ -66,5 +75,94 @@ public abstract class DomainEvent {
      */
     public Object getMetadata(String key) {
         return this.metadata.get(key);
+    }
+    
+    // Standard getters and setters
+    public String getEventId() {
+        return eventId;
+    }
+    
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
+    }
+    
+    public String getEventType() {
+        return eventType;
+    }
+    
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
+    }
+    
+    public Instant getTimestamp() {
+        return timestamp;
+    }
+    
+    public void setTimestamp(Instant timestamp) {
+        this.timestamp = timestamp;
+    }
+    
+    public String getVersion() {
+        return version;
+    }
+    
+    public void setVersion(String version) {
+        this.version = version;
+    }
+    
+    public String getCorrelationId() {
+        return correlationId;
+    }
+    
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+    }
+    
+    public String getAggregateId() {
+        return aggregateId;
+    }
+    
+    public void setAggregateId(String aggregateId) {
+        this.aggregateId = aggregateId;
+    }
+    
+    public String getAggregateType() {
+        return aggregateType;
+    }
+    
+    public void setAggregateType(String aggregateType) {
+        this.aggregateType = aggregateType;
+    }
+    
+    public Long getAggregateVersion() {
+        return aggregateVersion;
+    }
+    
+    public void setAggregateVersion(Long aggregateVersion) {
+        this.aggregateVersion = aggregateVersion;
+    }
+    
+    public String getOrganizationId() {
+        return organizationId;
+    }
+    
+    public void setOrganizationId(String organizationId) {
+        this.organizationId = organizationId;
+    }
+    
+    public String getUserId() {
+        return userId;
+    }
+    
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+    
+    public String getSourceService() {
+        return sourceService;
+    }
+    
+    public void setSourceService(String sourceService) {
+        this.sourceService = sourceService;
     }
 }

@@ -9,7 +9,6 @@ import java.util.Map;
  * Base exception class for all MCP services.
  * Provides structured error information for API responses.
  */
-@Getter
 public abstract class BaseException extends RuntimeException {
     
     private final String errorCode;
@@ -53,5 +52,19 @@ public abstract class BaseException extends RuntimeException {
         if (details != null) {
             this.errorDetails.putAll(details);
         }
+    }
+    
+    /**
+     * Get error code
+     */
+    public String getErrorCode() {
+        return errorCode;
+    }
+    
+    /**
+     * Get error details with defensive copy
+     */
+    public Map<String, Object> getErrorDetails() {
+        return new HashMap<>(errorDetails);
     }
 }

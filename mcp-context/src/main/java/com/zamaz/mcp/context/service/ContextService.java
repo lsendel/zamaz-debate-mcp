@@ -12,6 +12,7 @@ import com.zamaz.mcp.context.repository.ContextRepository;
 import com.zamaz.mcp.context.repository.MessageRepository;
 import com.zamaz.mcp.security.annotation.RequiresPermission;
 import com.zamaz.mcp.security.annotation.RequiresRole;
+import com.zamaz.mcp.security.rbac.Permission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,7 +44,7 @@ public class ContextService {
     /**
      * Create a new context.
      */
-    @RequiresPermission("context:create")
+    @RequiresPermission(Permission.CONTEXT_CREATE)
     public ContextDto createContext(CreateContextRequest request) {
         log.info("Creating context for organization: {} and user: {}", 
                 request.getOrganizationId(), request.getUserId());
@@ -65,7 +66,7 @@ public class ContextService {
     /**
      * Get a context by ID with authorization check.
      */
-    @RequiresPermission("context:read")
+    @RequiresPermission(Permission.CONTEXT_READ)
     @Transactional(readOnly = true)
     public ContextDto getContext(UUID contextId, UUID organizationId) {
         log.debug("Retrieving context: {} for organization: {}", contextId, organizationId);
@@ -82,7 +83,7 @@ public class ContextService {
     /**
      * List contexts for an organization.
      */
-    @RequiresPermission("context:list")
+    @RequiresPermission(Permission.CONTEXT_READ)
     @Transactional(readOnly = true)
     public Page<ContextDto> listContexts(UUID organizationId, Pageable pageable) {
         log.debug("Listing contexts for organization: {}", organizationId);
@@ -96,7 +97,7 @@ public class ContextService {
     /**
      * Search contexts by name or description.
      */
-    @RequiresPermission("context:search")
+    @RequiresPermission(Permission.CONTEXT_READ)
     @Transactional(readOnly = true)
     public Page<ContextDto> searchContexts(UUID organizationId, String searchTerm, Pageable pageable) {
         log.debug("Searching contexts for organization: {} with term: {}", organizationId, searchTerm);
@@ -110,7 +111,7 @@ public class ContextService {
     /**
      * Append a message to a context.
      */
-    @RequiresPermission("context:write")
+    @RequiresPermission(Permission.CONTEXT_UPDATE)
     public MessageDto appendMessage(UUID contextId, UUID organizationId, AppendMessageRequest request) {
         log.info("Appending message to context: {}", contextId);
         

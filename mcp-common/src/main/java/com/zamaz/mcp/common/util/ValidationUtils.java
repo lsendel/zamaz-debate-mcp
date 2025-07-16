@@ -4,6 +4,7 @@ import com.zamaz.mcp.common.exception.BusinessException;
 import org.springframework.util.StringUtils;
 
 import java.util.Collection;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -99,7 +100,7 @@ public final class ValidationUtils {
         if (!EMAIL_PATTERN.matcher(value).matches()) {
             throw BusinessException.validationFailed(fieldName, "must be a valid email address");
         }
-        return value.toLowerCase();
+        return value.toLowerCase(Locale.ROOT);
     }
     
     /**
