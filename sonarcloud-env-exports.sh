@@ -1,7 +1,12 @@
 #!/bin/bash
 
 # SonarCloud environment variables for zamaz-debate-mcp
-# Add these lines to your ~/.zshrc file:
+# Loads configuration from .env file
+
+# Load environment variables from .env file
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
+fi
 
 export SONAR_URL="https://sonarcloud.io"
 export SONAR_PROJECT_KEY="lsendel_zamaz-debate-mcp"
@@ -9,9 +14,7 @@ export SONAR_ORGANIZATION="lsendel"
 export SONAR_BRANCH="main"
 export REPORT_AUTHOR="Zamaz Team"
 
-# Note: You'll need to add your SonarCloud token
-# Get it from: https://sonarcloud.io/account/security
-# export SONAR_TOKEN="your-sonarcloud-token-here"
+# SONAR_TOKEN is now loaded from .env file
 
 echo "SonarCloud environment variables:"
 echo "SONAR_URL=$SONAR_URL"
