@@ -34,6 +34,7 @@ public enum Permission {
     TEMPLATE_UPDATE("template:update"),
     TEMPLATE_DELETE("template:delete"),
     TEMPLATE_SHARE("template:share"),
+    TEMPLATE_LIST("template:list"),
     
     // Context permissions
     CONTEXT_CREATE("context:create"),

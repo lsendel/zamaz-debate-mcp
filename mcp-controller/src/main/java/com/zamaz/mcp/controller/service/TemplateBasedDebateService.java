@@ -6,6 +6,7 @@ import com.zamaz.mcp.controller.dto.TemplateDto;
 import com.zamaz.mcp.controller.dto.TemplateValidationResult;
 import com.zamaz.mcp.common.exception.BusinessException;
 import com.zamaz.mcp.security.annotation.RequiresPermission;
+import com.zamaz.mcp.security.rbac.Permission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class TemplateBasedDebateService {
      * @param organizationId The organization ID
      * @return List of debate templates
      */
-    @RequiresPermission("template:list")
+    @RequiresPermission(Permission.TEMPLATE_LIST)
     public List<TemplateDto> getDebateTemplates(String organizationId) {
         log.debug("Getting debate templates for organization: {}", organizationId);
         
@@ -53,7 +54,7 @@ public class TemplateBasedDebateService {
      * @param templateVariables Variables to populate the template
      * @return Created debate
      */
-    @RequiresPermission("debate:create")
+    @RequiresPermission(Permission.DEBATE_CREATE)
     public DebateDto createDebateFromTemplate(String organizationId, String templateId, 
                                             Map<String, Object> templateVariables) {
         log.info("Creating debate from template: {} for organization: {}", templateId, organizationId);
@@ -93,7 +94,7 @@ public class TemplateBasedDebateService {
      * @param templateVariables Variables to populate the template
      * @return Preview of the rendered template
      */
-    @RequiresPermission("template:read")
+    @RequiresPermission(Permission.TEMPLATE_READ)
     public Map<String, Object> previewTemplate(String organizationId, String templateId, 
                                              Map<String, Object> templateVariables) {
         log.debug("Previewing template: {} for organization: {}", templateId, organizationId);
@@ -123,7 +124,7 @@ public class TemplateBasedDebateService {
      * @param templateVariables Variables to validate
      * @return Validation result
      */
-    @RequiresPermission("template:read")
+    @RequiresPermission(Permission.TEMPLATE_READ)
     public TemplateValidationResult validateTemplateVariables(String organizationId, String templateId, 
                                                              Map<String, Object> templateVariables) {
         log.debug("Validating template variables for: {} in organization: {}", templateId, organizationId);

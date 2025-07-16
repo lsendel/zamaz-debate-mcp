@@ -17,8 +17,8 @@
         <module name="mcp-context-client" />
         <module name="mcp-rag" />
         <module name="mcp-security" />
-        <module name="mcp-template" />
         <module name="mcp-controller-j" />
+        <module name="mcp-template" />
         <module name="mcp-common" />
         <module name="mcp-organization" />
         <module name="mcp-llm" />
