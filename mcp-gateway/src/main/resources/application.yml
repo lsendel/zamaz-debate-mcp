@@ -1,0 +1,167 @@
+spring:
+  application:
+    name: mcp-gateway
+  
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        # Organization Service
+        - id: organization-service
+          uri: http://mcp-organization:5005
+          predicates:
+            - Path=/api/v1/organizations/**, /api/v1/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: organization-cb
+                fallbackUri: forward:/fallback/organization
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                methods: GET, POST
+                backoff:
+                  firstBackoff: 10ms
+                  maxBackoff: 50ms
+                  factor: 2
+                  basedOnPreviousValue: false
+        
+        # LLM Service
+        - id: llm-service
+          uri: http://mcp-llm:5002
+          predicates:
+            - Path=/api/v1/llm/**, /api/v1/completions/**, /api/v1/providers/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: llm-cb
+                fallbackUri: forward:/fallback/llm
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                redis-rate-limiter.requestedTokens: 1
+        
+        # Controller Service
+        - id: controller-service
+          uri: http://mcp-controller:5013
+          predicates:
+            - Path=/api/v1/debates/**, /api/v1/rounds/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: controller-cb
+                fallbackUri: forward:/fallback/controller
+        
+        # RAG Service
+        - id: rag-service
+          uri: http://mcp-rag:5004
+          predicates:
+            - Path=/api/v1/rag/**, /api/v1/knowledge/**, /api/v1/search/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: rag-cb
+                fallbackUri: forward:/fallback/rag
+        
+        # Template Service
+        - id: template-service
+          uri: http://mcp-template:5006
+          predicates:
+            - Path=/api/v1/templates/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: template-cb
+                fallbackUri: forward:/fallback/template
+
+  redis:
+    host: ${REDIS_HOST:redis}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+server:
+  port: ${SERVER_PORT:8080}
+  
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.filter: DEBUG
+    com.zamaz.mcp.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      organization-cb:
+        baseConfig: default
+      llm-cb:
+        baseConfig: default
+        waitDurationInOpenState: 10s
+      controller-cb:
+        baseConfig: default
+      rag-cb:
+        baseConfig: default
+      template-cb:
+        baseConfig: default
+
+# Rate Limiter Configuration
+resilience4j:
+  ratelimiter:
+    configs:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 5s
+    instances:
+      api-limiter:
+        baseConfig: default

@@ -1,33 +1,44 @@
 package com.zamaz.mcp.security.annotation;
 
+import com.zamaz.mcp.security.rbac.Permission;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to mark methods that require specific permissions.
- * Used for method-level authorization.
+ * Annotation for method-level permission checking
+ * Usage: @RequiresPermission(Permission.DEBATE_CREATE)
  */
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequiresPermission {
     
     /**
-     * The permission required to access this method.
-     * Format: "service:action" (e.g., "debate:create", "context:read")
+     * Required permission(s) - user must have ALL specified permissions
      */
-    String value();
+    Permission[] value();
     
     /**
-     * Whether organization-level access is required.
-     * If true, the user must have access to the organization in context.
+     * Alternative permissions - user must have ANY of these permissions
+     * Takes precedence over value() if specified
      */
-    boolean organizationAccess() default true;
+    Permission[] anyOf() default {};
     
     /**
-     * Whether the user must be the owner of the resource.
-     * If true, additional ownership checks will be performed.
+     * Resource ID parameter name for resource-specific authorization
+     * e.g., "debateId" for debate-specific permissions
      */
-    boolean requiresOwnership() default false;
+    String resourceParam() default "";
+    
+    /**
+     * Organization context required
+     */
+    boolean requireOrganization() default true;
+    
+    /**
+     * Custom error message when permission is denied
+     */
+    String message() default "Access denied: insufficient permissions";
 }

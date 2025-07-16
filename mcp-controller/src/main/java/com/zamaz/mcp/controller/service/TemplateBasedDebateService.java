@@ -1,11 +1,10 @@
 package com.zamaz.mcp.controller.service;
 
 import com.zamaz.mcp.controller.client.TemplateServiceClient;
-import com.zamaz.mcp.controller.dto.CreateDebateRequest;
 import com.zamaz.mcp.controller.dto.DebateDto;
 import com.zamaz.mcp.controller.dto.TemplateDto;
 import com.zamaz.mcp.controller.dto.TemplateValidationResult;
-import com.zamaz.mcp.controller.exception.BusinessException;
+import com.zamaz.mcp.common.exception.BusinessException;
 import com.zamaz.mcp.security.annotation.RequiresPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +60,7 @@ public class TemplateBasedDebateService {
         
         // Check if template service is available
         if (!templateServiceClient.isTemplateServiceAvailable()) {
-            throw BusinessException.serviceUnavailable("Template service is not available");
+            throw new BusinessException("Template service is not available", "SERVICE_UNAVAILABLE");
         }
         
         // Get and validate template
@@ -71,11 +70,11 @@ public class TemplateBasedDebateService {
         // Validate template
         TemplateValidationResult validationResult = templateServiceClient.validateTemplate(templateId, organizationId);
         if (!validationResult.isValid()) {
-            throw BusinessException.validationFailed("Template validation failed: " + validationResult.getMessage());
+            throw BusinessException.validationFailed("template", "Template validation failed: " + validationResult.getMessage());
         }
         
         // Create debate request from template
-        CreateDebateRequest debateRequest = createDebateRequestFromTemplate(template, templateVariables);
+        DebateDto.CreateDebateRequest debateRequest = createDebateRequestFromTemplate(template, templateVariables);
         
         // Create the debate
         DebateDto debate = debateService.createDebate(debateRequest);
@@ -156,33 +155,39 @@ public class TemplateBasedDebateService {
     /**
      * Create a debate request from template configuration.
      */
-    private CreateDebateRequest createDebateRequestFromTemplate(TemplateDto template, 
+    private DebateDto.CreateDebateRequest createDebateRequestFromTemplate(TemplateDto template, 
                                                                Map<String, Object> templateVariables) {
         
         // Extract debate configuration from template metadata
         Map<String, Object> metadata = template.getMetadata();
         
-        CreateDebateRequest request = new CreateDebateRequest();
-        request.setOrganizationId(template.getOrganizationId());
-        request.setTitle(getStringValue(templateVariables, "title", "Debate from " + template.getName()));
-        request.setDescription(getStringValue(templateVariables, "description", template.getDescription()));
-        request.setStatus(CreateDebateRequest.DebateStatus.DRAFT);
-        
-        // Set debate configuration from template
+        // Build settings JSON
+        Map<String, Object> settings = new HashMap<>();
         if (metadata != null) {
-            request.setMaxRounds(getIntValue(metadata, "maxRounds", 5));
-            request.setTurnTimeoutSeconds(getIntValue(metadata, "turnTimeoutSeconds", 300));
-            request.setRules(getStringValue(metadata, "rules", ""));
-            request.setIsPublic(getBooleanValue(metadata, "isPublic", false));
+            settings.put("turnTimeoutSeconds", getIntValue(metadata, "turnTimeoutSeconds", 300));
+            settings.put("rules", getStringValue(metadata, "rules", ""));
+            settings.put("isPublic", getBooleanValue(metadata, "isPublic", false));
         }
         
-        // Add template reference to metadata
-        Map<String, Object> requestMetadata = new HashMap<>();
-        requestMetadata.put("templateId", template.getId());
-        requestMetadata.put("templateName", template.getName());
-        requestMetadata.put("templateVersion", template.getVersion());
-        requestMetadata.put("templateVariables", templateVariables);
-        request.setMetadata(requestMetadata);
+        // Add template reference to settings
+        settings.put("templateId", template.getId());
+        settings.put("templateName", template.getName());
+        settings.put("templateVersion", template.getVersion());
+        settings.put("templateVariables", templateVariables);
+        
+        // Convert settings to JsonNode
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode settingsJson = mapper.valueToTree(settings);
+        
+        DebateDto.CreateDebateRequest request = DebateDto.CreateDebateRequest.builder()
+                .organizationId(java.util.UUID.fromString(template.getOrganizationId()))
+                .title(getStringValue(templateVariables, "title", "Debate from " + template.getName()))
+                .description(getStringValue(templateVariables, "description", template.getDescription()))
+                .topic(getStringValue(templateVariables, "topic", template.getName()))
+                .format(getStringValue(metadata, "format", "standard"))
+                .maxRounds(getIntValue(metadata, "maxRounds", 5))
+                .settings(settingsJson)
+                .build();
         
         return request;
     }

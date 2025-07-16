@@ -23,6 +23,20 @@
     </properties>
 
     <dependencies>
+        <!-- MCP Common -->
+        <dependency>
+            <groupId>com.zamaz.mcp</groupId>
+            <artifactId>mcp-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <!-- MCP Security -->
+        <dependency>
+            <groupId>com.zamaz.mcp</groupId>
+            <artifactId>mcp-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
