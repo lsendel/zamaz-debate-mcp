@@ -118,13 +118,20 @@ const CreateDebateDialog: React.FC = () => {
 
     setLoading(true);
     try {
-      await dispatch(createDebate({
+      const resultAction = await dispatch(createDebate({
         topic,
         description,
         participants,
         maxRounds,
         turnTimeLimit,
-      })).unwrap();
+      }));
+      
+      // Ensure we have a successful result
+      if (createDebate.fulfilled.match(resultAction)) {
+        // Success case handled below
+      } else {
+        throw new Error('Failed to create debate');
+      }
       
       dispatch(addNotification({
         type: 'success',
