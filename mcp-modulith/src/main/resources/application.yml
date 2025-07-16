@@ -3,9 +3,9 @@ spring:
     name: mcp-modulith
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/mcp_modulith
-    username: mcp_user
-    password: ${DB_PASSWORD:changeme}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mcp_modulith}
+    username: ${DB_USER:mcp_user}
+    password: ${DB_PASSWORD:#{null}}
     driver-class-name: org.postgresql.Driver
   
   jpa:

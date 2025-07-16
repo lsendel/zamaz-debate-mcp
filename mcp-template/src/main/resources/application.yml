@@ -8,9 +8,9 @@ spring:
     name: mcp-template
   
   datasource:
-    url: jdbc:postgresql://postgres:5432/template_db
-    username: postgres
-    password: ${DB_PASSWORD:changeme}
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:template_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:#{null}}
     driver-class-name: org.postgresql.Driver
   
   jpa:

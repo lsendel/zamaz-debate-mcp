@@ -26,6 +26,17 @@ hs_err_pid*
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+.env.test
+
+# Security sensitive files
+**/application-secret.yml
+**/application-secret.properties
+**/*-secret.properties
+**/*-config.sh
+*sonar*config.sh
+sonarcloud-env-*.sh
 
 # Maven
 target/
