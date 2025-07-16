@@ -10,7 +10,7 @@ spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/rag_db
     username: postgres
-    password: postgres
+    password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
   
   jpa:

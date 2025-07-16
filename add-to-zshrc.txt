@@ -1,0 +1,14 @@
+# Add these lines to your ~/.zshrc file for SonarCloud integration
+# For zamaz-debate-mcp project
+
+# SonarCloud Configuration
+export SONAR_URL="https://sonarcloud.io"
+export SONAR_PROJECT_KEY="lsendel_zamaz-debate-mcp"
+export SONAR_ORGANIZATION="lsendel"
+export SONAR_BRANCH="main"
+export REPORT_AUTHOR="Zamaz Team"
+
+# IMPORTANT: You need to get your SonarCloud token from:
+# https://sonarcloud.io/account/security
+# Then add this line with your actual token:
+# export SONAR_TOKEN="your-sonarcloud-token-here"
