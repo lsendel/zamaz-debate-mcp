@@ -1,8 +1,12 @@
 package com.zamaz.mcp.controller.service;
 
 import com.zamaz.mcp.controller.dto.DebateDto;
+import com.zamaz.mcp.controller.dto.DebateResultDto;
+import com.zamaz.mcp.controller.dto.DebateWithParticipantCount;
 import com.zamaz.mcp.controller.dto.ParticipantDto;
+import com.zamaz.mcp.controller.dto.ParticipantResultDto;
 import com.zamaz.mcp.controller.dto.ResponseDto;
+import com.zamaz.mcp.controller.dto.RoundDto;
 import com.zamaz.mcp.controller.entity.Debate;
 import com.zamaz.mcp.controller.entity.Participant;
 import com.zamaz.mcp.controller.entity.Round;
@@ -13,10 +17,12 @@ import com.zamaz.mcp.controller.repository.DebateRepository;
 import com.zamaz.mcp.controller.repository.ParticipantRepository;
 import com.zamaz.mcp.controller.repository.RoundRepository;
 import com.zamaz.mcp.controller.repository.ResponseRepository;
+import com.zamaz.mcp.controller.repository.specification.DebateSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +41,26 @@ public class DebateService {
     private final RoundRepository roundRepository;
     private final ResponseRepository responseRepository;
     private final OrchestrationService orchestrationService;
+
+    public DebateDto createDebate(DebateDto.CreateDebateRequest request) {
+        log.debug("Creating new debate: {}", request.getTitle());
+        
+        Debate debate = Debate.builder()
+                .organizationId(request.getOrganizationId())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .topic(request.getTopic())
+                .format(request.getFormat())
+                .maxRounds(request.getMaxRounds())
+                .status(DebateStatus.DRAFT)
+                .settings(request.getSettings())
+                .build();
+        
+        debate = debateRepository.save(debate);
+        log.info("Created debate with ID: {}", debate.getId());
+        
+        return toDto(debate);
+    }
 
     public DebateDto getDebate(UUID id) {
         log.debug("Getting debate with ID: {}", id);

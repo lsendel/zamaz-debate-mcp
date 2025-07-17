@@ -1,8 +1,11 @@
 package com.zamaz.mcp.controller.controller;
 
 import com.zamaz.mcp.controller.dto.DebateDto;
+import com.zamaz.mcp.controller.dto.DebateResultDto;
 import com.zamaz.mcp.controller.dto.ParticipantDto;
 import com.zamaz.mcp.controller.dto.ResponseDto;
+import com.zamaz.mcp.controller.dto.RoundDto;
+import com.zamaz.mcp.controller.entity.DebateStatus;
 import com.zamaz.mcp.controller.service.DebateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,7 +48,8 @@ public class DebateController {
             @RequestParam(required = false) UUID organizationId,
             @RequestParam(required = false) String status,
             Pageable pageable) {
-        Page<DebateDto> debates = debateService.listDebates(organizationId, status, pageable);
+        DebateStatus debateStatus = status != null ? DebateStatus.valueOf(status) : null;
+        Page<DebateDto> debates = debateService.listDebates(organizationId, debateStatus, pageable);
         return ResponseEntity.ok(debates);
     }
     
