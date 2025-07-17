@@ -287,7 +287,7 @@ clean-all: ## Complete Docker cleanup (removes ALL Docker data)
 	@echo "$(RED)Type 'yes' to confirm: $(NC)"
 	@read -r response && \
 	if [ "$$response" = "yes" ]; then \
-		./scripts/docker-cleanup.sh; \
+		./scripts/deployment/docker-cleanup.sh; \
 	else \
 		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
 	fi
