@@ -126,22 +126,22 @@ const CreateDebateDialog: React.FC = () => {
         turnTimeLimit,
       }));
       
-      // Ensure we have a successful result
+      // Check if the action was fulfilled successfully
       if (createDebate.fulfilled.match(resultAction)) {
-        // Success case handled below
+        dispatch(addNotification({
+          type: 'success',
+          message: 'Debate created successfully',
+        }));
+        handleClose();
       } else {
-        throw new Error('Failed to create debate');
+        // Handle rejected case
+        const errorMessage = resultAction.error?.message || 'Failed to create debate';
+        throw new Error(errorMessage);
       }
-      
-      dispatch(addNotification({
-        type: 'success',
-        message: 'Debate created successfully',
-      }));
-      handleClose();
     } catch (error) {
       dispatch(addNotification({
         type: 'error',
-        message: 'Failed to create debate',
+        message: error instanceof Error ? error.message : 'Failed to create debate',
       }));
     } finally {
       setLoading(false);
