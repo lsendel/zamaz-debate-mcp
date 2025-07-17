@@ -1,0 +1,414 @@
+# Advanced Traffic Management for MCP Services
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-canary-deployment
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-organization
+  http:
+  # Canary deployment: 90% to stable, 10% to canary
+  - match:
+    - headers:
+        x-canary-user:
+          exact: "true"
+    route:
+    - destination:
+        host: mcp-organization
+        subset: canary
+      weight: 100
+  - route:
+    - destination:
+        host: mcp-organization
+        subset: stable
+      weight: 90
+    - destination:
+        host: mcp-organization
+        subset: canary
+      weight: 10
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-organization-canary-dr
+  namespace: mcp-system
+spec:
+  host: mcp-organization
+  subsets:
+  - name: stable
+    labels:
+      version: stable
+    trafficPolicy:
+      loadBalancer:
+        simple: LEAST_REQUEST
+  - name: canary
+    labels:
+      version: canary
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+---
+# A/B Testing Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-ab-testing
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-llm
+  http:
+  # A/B testing based on user agent
+  - match:
+    - headers:
+        user-agent:
+          regex: ".*Mobile.*"
+    route:
+    - destination:
+        host: mcp-llm
+        subset: mobile-optimized
+      weight: 100
+  # Default route for desktop users
+  - route:
+    - destination:
+        host: mcp-llm
+        subset: standard
+      weight: 100
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-llm-ab-dr
+  namespace: mcp-system
+spec:
+  host: mcp-llm
+  subsets:
+  - name: standard
+    labels:
+      optimization: standard
+  - name: mobile-optimized
+    labels:
+      optimization: mobile
+---
+# Traffic Mirroring for Testing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-traffic-mirroring
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-controller
+  http:
+  - match:
+    - uri:
+        prefix: "/api/v2/debates"
+    route:
+    - destination:
+        host: mcp-controller
+        subset: production
+      weight: 100
+    mirror:
+      host: mcp-controller
+      subset: testing
+    mirrorPercentage:
+      value: 10.0
+---
+# Rate Limiting Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: EnvoyFilter
+metadata:
+  name: mcp-rate-limit
+  namespace: mcp-system
+spec:
+  workloadSelector:
+    labels:
+      app: mcp-gateway
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: local_rate_limiter
+            token_bucket:
+              max_tokens: 1000
+              tokens_per_fill: 1000
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: local_rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: local_rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            response_headers_to_add:
+            - append: false
+              header:
+                key: x-local-rate-limit
+                value: 'true'
+---
+# Fault Injection for Chaos Engineering
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-chaos-engineering
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-rag
+  http:
+  - match:
+    - headers:
+        x-chaos-test:
+          exact: "true"
+    fault:
+      delay:
+        percentage:
+          value: 50
+        fixedDelay: 5s
+      abort:
+        percentage:
+          value: 10
+        httpStatus: 503
+    route:
+    - destination:
+        host: mcp-rag
+        port:
+          number: 5004
+  - route:
+    - destination:
+        host: mcp-rag
+        port:
+          number: 5004
+---
+# Blue-Green Deployment Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-blue-green
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-template
+  http:
+  - match:
+    - headers:
+        x-deployment-stage:
+          exact: "green"
+    route:
+    - destination:
+        host: mcp-template
+        subset: green
+      weight: 100
+  - route:
+    - destination:
+        host: mcp-template
+        subset: blue
+      weight: 100
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-template-blue-green-dr
+  namespace: mcp-system
+spec:
+  host: mcp-template
+  subsets:
+  - name: blue
+    labels:
+      deployment: blue
+  - name: green
+    labels:
+      deployment: green
+---
+# Timeout and Retry Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-timeout-retry
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-organization
+  http:
+  - match:
+    - uri:
+        prefix: "/api/v1/organizations"
+    route:
+    - destination:
+        host: mcp-organization
+        port:
+          number: 5005
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: "5xx,reset,connect-failure,refused-stream"
+      retryRemoteLocalities: true
+---
+# Service Mesh Observability
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-custom-metrics
+  namespace: mcp-system
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        destination_service_name:
+          value: "%{CLUSTER_NAME}"
+        source_app:
+          value: "%{SOURCE_APP}"
+        destination_app:
+          value: "%{DESTINATION_APP}"
+  - providers:
+    - name: stackdriver
+    overrides:
+    - match:
+        metric: requests_total
+      disabled: false
+    - match:
+        metric: request_duration_milliseconds
+      disabled: false
+---
+# Wasm Extensions for Custom Logic
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: mcp-request-logger
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  url: oci://registry.example.com/wasm/request-logger:latest
+  configuration:
+    log_level: "info"
+    include_headers: true
+    include_body: false
+  phase: AUTHN
+---
+# Multi-cluster Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: mcp-cross-cluster-gateway
+  namespace: mcp-system
+spec:
+  selector:
+    istio: eastwestgateway
+  servers:
+  - port:
+      number: 15443
+      name: tls
+      protocol: TLS
+    tls:
+      mode: ISTIO_MUTUAL
+    hosts:
+    - "*.local"
+---
+# Locality Load Balancing
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-locality-lb
+  namespace: mcp-system
+spec:
+  host: mcp-organization
+  trafficPolicy:
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        distribute:
+        - from: "region1/zone1/*"
+          to:
+            "region1/zone1/*": 80
+            "region1/zone2/*": 20
+        - from: "region1/zone2/*"
+          to:
+            "region1/zone2/*": 80
+            "region1/zone1/*": 20
+        failover:
+        - from: region1
+          to: region2
+---
+# Header-based Routing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-header-routing
+  namespace: mcp-system
+spec:
+  hosts:
+  - mcp-controller
+  http:
+  # Route admin requests to dedicated instance
+  - match:
+    - headers:
+        x-user-role:
+          exact: "admin"
+    route:
+    - destination:
+        host: mcp-controller
+        subset: admin
+      weight: 100
+  # Route premium users to high-performance instance
+  - match:
+    - headers:
+        x-user-tier:
+          exact: "premium"
+    route:
+    - destination:
+        host: mcp-controller
+        subset: premium
+      weight: 100
+  # Default route for standard users
+  - route:
+    - destination:
+        host: mcp-controller
+        subset: standard
+      weight: 100
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-controller-header-dr
+  namespace: mcp-system
+spec:
+  host: mcp-controller
+  subsets:
+  - name: admin
+    labels:
+      tier: admin
+  - name: premium
+    labels:
+      tier: premium
+  - name: standard
+    labels:
+      tier: standard

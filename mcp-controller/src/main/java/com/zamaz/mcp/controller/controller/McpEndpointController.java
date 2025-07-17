@@ -4,9 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.zamaz.mcp.controller.dto.*;
 import com.zamaz.mcp.controller.service.DebateService;
-import com.zamaz.mcp.controller.dto.DebateDto;
-import com.zamaz.mcp.controller.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -105,16 +104,20 @@ public class McpEndpointController {
         
         switch (toolName) {
             case "create_debate":
-                return createDebate(params);
+                return createDebate(objectMapper.convertValue(params, CreateDebateToolRequest.class))
+                        .map(objectMapper::valueToTree);
                 
             case "get_debate":
-                return getDebate(params);
+                return getDebate(objectMapper.convertValue(params, GetDebateToolRequest.class))
+                        .map(objectMapper::valueToTree);
                 
             case "list_debates":
-                return listDebates(params);
+                return listDebates(objectMapper.convertValue(params, ListDebatesToolRequest.class))
+                        .map(objectMapper::valueToTree);
                 
             case "submit_turn":
-                return submitTurn(params);
+                return submitTurn(objectMapper.convertValue(params, SubmitTurnToolRequest.class))
+                        .map(objectMapper::valueToTree);
                 
             default:
                 ObjectNode error = objectMapper.createObjectNode();
@@ -123,120 +126,87 @@ public class McpEndpointController {
         }
     }
 
-    private Mono<JsonNode> createDebate(JsonNode params) {
-        DebateDto.CreateDebateRequest request = DebateDto.CreateDebateRequest.builder()
-            .topic(params.get("topic").asText())
-            .format(params.get("format").asText())
-            .organizationId(UUID.fromString(params.get("organizationId").asText()))
-            .title(params.has("title") ? params.get("title").asText() : params.get("topic").asText())
-            .description(params.has("description") ? params.get("description").asText() : null)
-            .maxRounds(params.has("maxRounds") ? params.get("maxRounds").asInt() : 3)
-            .settings(params.has("settings") ? params.get("settings") : null)
+    private Mono<CreateDebateToolResponse> createDebate(CreateDebateToolRequest request) {
+        DebateDto.CreateDebateRequest debateRequest = DebateDto.CreateDebateRequest.builder()
+            .topic(request.getTopic())
+            .format(request.getFormat())
+            .organizationId(request.getOrganizationId())
+            .title(request.getTitle() != null ? request.getTitle() : request.getTopic())
+            .description(request.getDescription())
+            .maxRounds(request.getMaxRounds())
+            .settings(request.getSettings())
             .build();
         
-        return Mono.fromCallable(() -> debateService.createDebate(request))
-            .map(debate -> {
-                ObjectNode response = objectMapper.createObjectNode();
-                response.put("debateId", debate.getId().toString());
-                response.put("status", debate.getStatus());
-                response.put("topic", debate.getTopic());
-                return (JsonNode) response;
-            });
+        return Mono.fromCallable(() -> debateService.createDebate(debateRequest))
+            .map(debate -> CreateDebateToolResponse.builder()
+                .debateId(debate.getId())
+                .status(debate.getStatus())
+                .topic(debate.getTopic())
+                .build());
     }
 
-    private Mono<JsonNode> getDebate(JsonNode params) {
-        UUID debateId = UUID.fromString(params.get("debateId").asText());
-        
-        return Mono.fromCallable(() -> debateService.getDebate(debateId))
-            .map(debate -> {
-                ObjectNode response = objectMapper.createObjectNode();
-                response.put("id", debate.getId().toString());
-                response.put("topic", debate.getTopic());
-                response.put("format", debate.getFormat());
-                response.put("status", debate.getStatus());
-                response.put("currentRound", debate.getCurrentRound());
-                response.put("maxRounds", debate.getMaxRounds());
-                
-                ArrayNode participants = response.putArray("participants");
-                if (debate.getParticipants() != null) {
-                    debate.getParticipants().forEach(p -> {
-                        ObjectNode participant = participants.addObject();
-                        participant.put("id", p.getId().toString());
-                        participant.put("name", p.getName());
-                        participant.put("type", p.getType());
-                    });
-                }
-                
-                return (JsonNode) response;
-            });
+    private Mono<GetDebateToolResponse> getDebate(GetDebateToolRequest request) {
+        return Mono.fromCallable(() -> debateService.getDebate(request.getDebateId()))
+            .map(debate -> GetDebateToolResponse.builder()
+                .id(debate.getId())
+                .topic(debate.getTopic())
+                .format(debate.getFormat())
+                .status(debate.getStatus())
+                .currentRound(debate.getCurrentRound())
+                .maxRounds(debate.getMaxRounds())
+                .participants(debate.getParticipants())
+                .build());
     }
 
-    private Mono<JsonNode> listDebates(JsonNode params) {
-        UUID organizationId = UUID.fromString(params.get("organizationId").asText());
-        String status = params.has("status") ? params.get("status").asText() : null;
-        
+    private Mono<ListDebatesToolResponse> listDebates(ListDebatesToolRequest request) {
         return Mono.fromCallable(() -> 
-            debateService.listDebates(organizationId, status, org.springframework.data.domain.Pageable.unpaged())
-        ).map(debatesPage -> {
-                ObjectNode response = objectMapper.createObjectNode();
-                ArrayNode debatesArray = response.putArray("debates");
-                
-                debatesPage.getContent().forEach(debate -> {
-                    ObjectNode debateNode = debatesArray.addObject();
-                    debateNode.put("id", debate.getId().toString());
-                    debateNode.put("topic", debate.getTopic());
-                    debateNode.put("status", debate.getStatus());
-                    debateNode.put("createdAt", debate.getCreatedAt().toString());
-                });
-                
-                return (JsonNode) response;
-            });
+            debateService.listDebates(request.getOrganizationId(), request.getStatus(), org.springframework.data.domain.Pageable.unpaged())
+        ).map(debatesPage -> ListDebatesToolResponse.builder()
+                .debates(debatesPage.getContent().stream().map(debate -> ListDebatesToolResponse.DebateInfo.builder()
+                    .id(debate.getId())
+                    .topic(debate.getTopic())
+                    .status(debate.getStatus())
+                    .createdAt(debate.getCreatedAt())
+                    .build())
+                    .collect(java.util.stream.Collectors.toList()))
+                .build());
     }
 
-    private Mono<JsonNode> submitTurn(JsonNode params) {
-        UUID debateId = UUID.fromString(params.get("debateId").asText());
-        UUID participantId = UUID.fromString(params.get("participantId").asText());
-        String content = params.get("content").asText();
-        
+    private Mono<SubmitTurnToolResponse> submitTurn(SubmitTurnToolRequest request) {
         return Mono.fromCallable(() -> {
             // Get the debate to find current round
-            DebateDto debate = debateService.getDebate(debateId);
+            DebateDto debate = debateService.getDebate(request.getDebateId());
             
             // Get the list of rounds
-            List<Object> rounds = debateService.listRounds(debateId);
+            List<RoundDto> rounds = debateService.listRounds(request.getDebateId());
             
             // Find the current active round
-            UUID currentRoundId = null;
-            for (Object roundObj : rounds) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> round = (Map<String, Object>) roundObj;
-                if ("IN_PROGRESS".equals(round.get("status"))) {
-                    currentRoundId = (UUID) round.get("id");
-                    break;
-                }
-            }
-            
-            if (currentRoundId == null) {
-                throw new IllegalStateException("No active round found for debate");
-            }
+            UUID currentRoundId = rounds.stream()
+                    .filter(round -> "IN_PROGRESS".equals(round.getStatus()))
+                    .map(RoundDto::getId)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No active round found for debate"));
             
             // Submit the response
-            ResponseDto.CreateResponseRequest request = ResponseDto.CreateResponseRequest.builder()
-                .participantId(participantId)
-                .content(content)
+            ResponseDto.CreateResponseRequest createResponseRequest = ResponseDto.CreateResponseRequest.builder()
+                .participantId(request.getParticipantId())
+                .content(request.getContent())
                 .build();
             
-            ResponseDto responseDto = debateService.submitResponse(debateId, currentRoundId, request);
+            ResponseDto responseDto = debateService.submitResponse(request.getDebateId(), currentRoundId, createResponseRequest);
             
-            ObjectNode response = objectMapper.createObjectNode();
-            response.put("responseId", responseDto.getId().toString());
-            response.put("roundId", responseDto.getRoundId().toString());
-            response.put("status", "submitted");
-            return (JsonNode) response;
+            return SubmitTurnToolResponse.builder()
+                .responseId(responseDto.getId())
+                .roundId(responseDto.getRoundId())
+                .status("submitted")
+                .build();
         }).onErrorResume(error -> {
-            ObjectNode errorResponse = objectMapper.createObjectNode();
-            errorResponse.put("error", error.getMessage());
-            return Mono.just((JsonNode) errorResponse);
+            // Handle errors and return a ProblemDetail-like response
+            ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, error.getMessage());
+            problemDetail.setTitle("Tool Call Error");
+            problemDetail.setType(URI.create("/errors/tool-call"));
+            problemDetail.setProperty("timestamp", Instant.now());
+            return Mono.error(new ToolCallException(problemDetail));
         });
     }
 

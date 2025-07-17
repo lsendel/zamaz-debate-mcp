@@ -1,0 +1,5 @@
+#!/bin/bash
+# Kiro Next - Claude Code command to process pending tasks
+
+cd "$(dirname "$0")"
+python3 .github/scripts/claude_kiro_next.py "$@"

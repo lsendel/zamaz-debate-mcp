@@ -1,0 +1,93 @@
+groups:
+- name: github-integration-slo-alerts
+  interval: 30s
+  rules:
+  
+  # Error Rate SLO (< 5% error rate)
+  - alert: GitHubIntegrationErrorRateSLOViolation
+    expr: |
+      (
+        sum(rate(http_server_requests_seconds_count{job="github-integration",status=~"5.."}[5m])) /
+        sum(rate(http_server_requests_seconds_count{job="github-integration"}[5m]))
+      ) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+      slo_type: error_rate
+      service: github-integration
+      alert_type: slo_violation
+    annotations:
+      summary: "Error rate SLO violation detected"
+      description: "GitHub Integration service error rate is {{ $value | humanizePercentage }} which exceeds the 5% SLO threshold"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/error-rate-slo"
+      dashboard_url: "http://localhost:3000/d/github-integration-comprehensive"
+      
+  # Latency SLO (P95 < 5 seconds)
+  - alert: GitHubIntegrationLatencySLOViolation
+    expr: |
+      histogram_quantile(0.95, sum(rate(github_integration_pr_processing_duration_seconds_bucket[5m])) by (le)) > 5
+    for: 2m
+    labels:
+      severity: critical
+      slo_type: latency_p95
+      service: github-integration
+      alert_type: slo_violation
+    annotations:
+      summary: "PR processing latency SLO violation detected"
+      description: "GitHub Integration service P95 PR processing latency is {{ $value }}s which exceeds the 5s SLO threshold"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/latency-slo"
+      dashboard_url: "http://localhost:3000/d/github-integration-comprehensive"
+      
+  # Availability SLO (> 99.5% uptime)
+  - alert: GitHubIntegrationAvailabilitySLOViolation
+    expr: |
+      (
+        sum(up{job="github-integration"}) /
+        count(up{job="github-integration"})
+      ) < 0.995
+    for: 1m
+    labels:
+      severity: critical
+      slo_type: availability
+      service: github-integration
+      alert_type: slo_violation
+    annotations:
+      summary: "Service availability SLO violation detected"
+      description: "GitHub Integration service availability is {{ $value | humanizePercentage }} which is below the 99.5% SLO threshold"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/availability-slo"
+      dashboard_url: "http://localhost:3000/d/github-integration-comprehensive"
+      
+  # GitHub API Response Time SLO (P95 < 2 seconds)
+  - alert: GitHubIntegrationGitHubAPILatencySLOViolation
+    expr: |
+      histogram_quantile(0.95, sum(rate(github_integration_github_api_response_time_seconds_bucket[5m])) by (le)) > 2
+    for: 5m
+    labels:
+      severity: warning
+      slo_type: github_api_latency
+      service: github-integration
+      alert_type: slo_violation
+    annotations:
+      summary: "GitHub API response time SLO violation detected"
+      description: "GitHub API P95 response time is {{ $value }}s which exceeds the 2s SLO threshold"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/github-api-latency-slo"
+      dashboard_url: "http://localhost:3000/d/github-integration-comprehensive"
+      
+  # PR Processing Success Rate SLO (> 95% success rate)
+  - alert: GitHubIntegrationPRSuccessRateSLOViolation
+    expr: |
+      (
+        sum(rate(github_integration_pr_processing_completed_total{success="true"}[5m])) /
+        sum(rate(github_integration_pr_processing_completed_total[5m]))
+      ) < 0.95
+    for: 5m
+    labels:
+      severity: warning
+      slo_type: pr_success_rate
+      service: github-integration
+      alert_type: slo_violation
+    annotations:
+      summary: "PR processing success rate SLO violation detected"
+      description: "PR processing success rate is {{ $value | humanizePercentage }} which is below the 95% SLO threshold"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/pr-success-rate-slo"
+      dashboard_url: "http://localhost:3000/d/github-integration-comprehensive"

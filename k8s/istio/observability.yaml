@@ -1,0 +1,483 @@
+# Istio Observability Configuration for MCP Services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: istio-observability-config
+  namespace: istio-system
+data:
+  mesh: |
+    defaultConfig:
+      discoveryRefreshDelay: 10s
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*_cx_.*"
+        - ".*_rq_.*"
+        - ".*_rbac_.*"
+        - ".*circuit_breakers.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*_ssl_.*"
+        exclusionRegexps:
+        - ".*osconfig_google_.*"
+      accessLogFile: "/dev/stdout"
+      accessLogFormat: |
+        [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% %REQUESTED_SERVER_NAME% %ROUTE_NAME%
+    defaultProviders:
+      metrics:
+      - prometheus
+      tracing:
+      - jaeger
+      - zipkin
+      - datadog
+      - stackdriver
+      - opentelemetry
+      accessLogging:
+      - envoy
+---
+# Telemetry v2 Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-metrics
+  namespace: istio-system
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        destination_service_name:
+          value: "%{DESTINATION_SERVICE_NAME}"
+        destination_service_namespace:
+          value: "%{DESTINATION_SERVICE_NAMESPACE}"
+        source_app:
+          value: "%{SOURCE_APP}"
+        destination_app:
+          value: "%{DESTINATION_APP}"
+        request_protocol:
+          value: "%{REQUEST_PROTOCOL}"
+        response_code:
+          value: "%{RESPONSE_CODE}"
+        grpc_response_status:
+          value: "%{GRPC_RESPONSE_STATUS}"
+        source_version:
+          value: "%{SOURCE_VERSION}"
+        destination_version:
+          value: "%{DESTINATION_VERSION}"
+---
+# Custom Metrics Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-custom-metrics
+  namespace: mcp-system
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: requests_total
+      tagOverrides:
+        organization_id:
+          value: "%{REQUEST_HEADERS['x-organization-id']}"
+        user_id:
+          value: "%{REQUEST_HEADERS['x-user-id']}"
+        api_version:
+          value: "%{REQUEST_HEADERS['x-api-version']}"
+        request_id:
+          value: "%{REQUEST_HEADERS['x-request-id']}"
+    - match:
+        metric: request_duration_milliseconds
+      tagOverrides:
+        organization_id:
+          value: "%{REQUEST_HEADERS['x-organization-id']}"
+        user_id:
+          value: "%{REQUEST_HEADERS['x-user-id']}"
+        api_version:
+          value: "%{REQUEST_HEADERS['x-api-version']}"
+        request_id:
+          value: "%{REQUEST_HEADERS['x-request-id']}"
+---
+# Distributed Tracing Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-tracing
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+    - name: jaeger
+  - customTags:
+      organization_id:
+        header:
+          name: x-organization-id
+      user_id:
+        header:
+          name: x-user-id
+      api_version:
+        header:
+          name: x-api-version
+      request_id:
+        header:
+          name: x-request-id
+      user_agent:
+        header:
+          name: user-agent
+      service_version:
+        literal:
+          value: "1.0.0"
+---
+# Access Logging Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-access-logging
+  namespace: istio-system
+spec:
+  accessLogging:
+  - providers:
+    - name: otel
+  - filter:
+      expression: 'response.code >= 400'
+---
+# Prometheus ServiceMonitor for Istio
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istio-mesh
+  namespace: istio-system
+  labels:
+    app: istiod
+spec:
+  selector:
+    matchLabels:
+      app: istiod
+  endpoints:
+  - port: http-monitoring
+    interval: 15s
+    path: /stats/prometheus
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istio-proxy
+  namespace: istio-system
+  labels:
+    app: istio-proxy
+spec:
+  selector:
+    matchLabels:
+      app: istio-proxy
+  endpoints:
+  - port: http-envoy-prom
+    interval: 15s
+    path: /stats/prometheus
+---
+# Kiali Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kiali
+  namespace: istio-system
+  labels:
+    app: kiali
+data:
+  config.yaml: |
+    server:
+      port: 20001
+      metrics_enabled: true
+      metrics_port: 9090
+    auth:
+      strategy: anonymous
+    external_services:
+      prometheus:
+        url: "http://prometheus:9090"
+      grafana:
+        url: "http://grafana:3000"
+        in_cluster_url: "http://grafana.istio-system:3000"
+      tracing:
+        in_cluster_url: "http://jaeger-query.istio-system:16686"
+        url: "http://jaeger-query:16686"
+        use_grpc: true
+      istio:
+        url_service_version: "http://istiod:15014/version"
+        component_namespaces:
+          istio: istio-system
+          prometheus: istio-system
+          grafana: istio-system
+          tracing: istio-system
+    deployment:
+      accessible_namespaces:
+      - "**"
+      cluster_wide_access: true
+---
+# Grafana Dashboards for MCP Services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-grafana-dashboards
+  namespace: istio-system
+  labels:
+    grafana_dashboard: "1"
+data:
+  mcp-service-mesh.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "MCP Service Mesh Dashboard",
+        "tags": ["mcp", "istio", "service-mesh"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(istio_requests_total{destination_service_namespace=\"mcp-system\"}[5m])) by (destination_service_name)",
+                "legendFormat": "{{destination_service_name}}"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Request Duration",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.99, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_namespace=\"mcp-system\"}[5m])) by (destination_service_name, le))",
+                "legendFormat": "{{destination_service_name}} p99"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(istio_requests_total{destination_service_namespace=\"mcp-system\",response_code!~\"2..\"}[5m])) by (destination_service_name)",
+                "legendFormat": "{{destination_service_name}}"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Circuit Breaker Status",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(envoy_cluster_circuit_breakers_default_rq_open{}) by (cluster_name)",
+                "legendFormat": "{{cluster_name}}"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+---
+# Jaeger Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: istio-system
+data:
+  jaeger.yaml: |
+    query:
+      base-path: /jaeger
+      static_files: /go/jaeger-ui/
+      ui_config: ui-config.json
+    sampling:
+      default_strategy:
+        type: probabilistic
+        param: 0.1
+      max_traces_per_second: 10000
+    storage:
+      type: elasticsearch
+      elasticsearch:
+        server_urls: http://elasticsearch:9200
+        index_prefix: jaeger
+        create_index_templates: true
+        username: elastic
+        password: changeme
+    collector:
+      zipkin:
+        host_port: 9411
+      grpc:
+        host_port: 14250
+      http:
+        host_port: 14268
+---
+# Prometheus Rules for MCP Services
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mcp-service-mesh-rules
+  namespace: istio-system
+spec:
+  groups:
+  - name: mcp.service_mesh.rules
+    rules:
+    - alert: MCPServiceDown
+      expr: up{job="kubernetes-pods", namespace="mcp-system"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "MCP service {{ $labels.app }} is down"
+        description: "MCP service {{ $labels.app }} in namespace {{ $labels.namespace }} has been down for more than 5 minutes."
+    
+    - alert: MCPHighErrorRate
+      expr: |
+        (
+          sum(rate(istio_requests_total{destination_service_namespace="mcp-system", response_code!~"2.."}[5m])) by (destination_service_name) /
+          sum(rate(istio_requests_total{destination_service_namespace="mcp-system"}[5m])) by (destination_service_name)
+        ) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High error rate for MCP service {{ $labels.destination_service_name }}"
+        description: "MCP service {{ $labels.destination_service_name }} has an error rate of {{ $value | humanizePercentage }} for more than 5 minutes."
+    
+    - alert: MCPHighLatency
+      expr: |
+        histogram_quantile(0.99,
+          sum(rate(istio_request_duration_milliseconds_bucket{destination_service_namespace="mcp-system"}[5m])) by (destination_service_name, le)
+        ) > 1000
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High latency for MCP service {{ $labels.destination_service_name }}"
+        description: "MCP service {{ $labels.destination_service_name }} has 99th percentile latency of {{ $value }}ms for more than 5 minutes."
+    
+    - alert: MCPCircuitBreakerOpen
+      expr: envoy_cluster_circuit_breakers_default_rq_open > 0
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Circuit breaker open for {{ $labels.cluster_name }}"
+        description: "Circuit breaker is open for cluster {{ $labels.cluster_name }}."
+---
+# OpenTelemetry Collector Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: istio-system
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 512
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 512
+      resource:
+        attributes:
+        - key: service.name
+          from_attribute: service_name
+          action: insert
+        - key: service.namespace
+          from_attribute: service_namespace
+          action: insert
+    
+    exporters:
+      jaeger:
+        endpoint: jaeger-collector:14250
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: istio
+        const_labels:
+          cluster: mcp-cluster
+      logging:
+        loglevel: info
+    
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch, resource]
+          exporters: [jaeger, logging]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus, logging]
+---
+# Service Mesh Visualization
+apiVersion: v1
+kind: Service
+metadata:
+  name: kiali
+  namespace: istio-system
+  labels:
+    app: kiali
+spec:
+  ports:
+  - name: http
+    port: 20001
+    protocol: TCP
+  selector:
+    app: kiali
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiali
+  namespace: istio-system
+  labels:
+    app: kiali
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiali
+  template:
+    metadata:
+      labels:
+        app: kiali
+    spec:
+      containers:
+      - name: kiali
+        image: quay.io/kiali/kiali:v1.73
+        ports:
+        - containerPort: 20001
+        env:
+        - name: ACTIVE_NAMESPACE
+          value: istio-system
+        - name: LOG_LEVEL
+          value: info
+        - name: LOG_FORMAT
+          value: text
+        volumeMounts:
+        - name: kiali-config
+          mountPath: /kiali-configuration
+          readOnly: true
+      volumes:
+      - name: kiali-config
+        configMap:
+          name: kiali

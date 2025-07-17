@@ -1,0 +1,226 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/mcp-debate/*.log
+  fields:
+    service: mcp-debate
+    service_type: core
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.max_lines: 500
+  multiline.timeout: 5s
+  scan_frequency: 10s
+  harvester_buffer_size: 65536
+  max_bytes: 10485760
+  close_inactive: 5m
+  close_renamed: true
+  close_removed: true
+  clean_inactive: 24h
+  clean_removed: true
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/mcp-organization/*.log
+  fields:
+    service: mcp-organization
+    service_type: tenant
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.max_lines: 500
+  multiline.timeout: 5s
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/mcp-llm/*.log
+  fields:
+    service: mcp-llm
+    service_type: ai
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.max_lines: 500
+  multiline.timeout: 5s
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/mcp-rag/*.log
+  fields:
+    service: mcp-rag
+    service_type: ai
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.max_lines: 500
+  multiline.timeout: 5s
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/mcp-context/*.log
+  fields:
+    service: mcp-context
+    service_type: data
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.max_lines: 500
+  multiline.timeout: 5s
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/mcp-gateway/*.log
+  fields:
+    service: mcp-gateway
+    service_type: gateway
+  fields_under_root: true
+  multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.max_lines: 500
+  multiline.timeout: 5s
+
+# Docker container logs
+- type: container
+  enabled: true
+  paths:
+    - /var/lib/docker/containers/*/*.log
+  processors:
+    - add_docker_metadata:
+        host: "unix:///var/run/docker.sock"
+    - decode_json_fields:
+        fields: ["message"]
+        target: ""
+        overwrite_keys: true
+  fields:
+    log_type: container
+  fields_under_root: true
+
+# Application performance logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/performance/*.log
+  fields:
+    log_type: performance
+  fields_under_root: true
+  json.keys_under_root: true
+  json.overwrite_keys: true
+  json.add_error_key: true
+  json.message_key: message
+
+# Security audit logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/security/*.log
+  fields:
+    log_type: security
+  fields_under_root: true
+  json.keys_under_root: true
+  json.overwrite_keys: true
+  json.add_error_key: true
+  json.message_key: message
+
+# System metrics logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/mcp/metrics/*.log
+  fields:
+    log_type: metrics
+  fields_under_root: true
+  json.keys_under_root: true
+  json.overwrite_keys: true
+  json.add_error_key: true
+  json.message_key: message
+
+# Global processors
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+  - timestamp:
+      field: timestamp
+      layouts:
+        - '2006-01-02T15:04:05.999Z'
+        - '2006-01-02T15:04:05.999-07:00'
+        - '2006-01-02 15:04:05.999'
+      test:
+        - '2023-05-15T09:30:00.123Z'
+        - '2023-05-15T09:30:00.123-07:00'
+        - '2023-05-15 09:30:00.123'
+  - drop_fields:
+      fields: ["beat", "input", "prospector", "agent.ephemeral_id", "agent.id", "agent.type", "agent.version", "ecs.version", "host.architecture", "host.containerized", "host.hostname", "host.id", "host.mac", "host.name", "host.os.build", "host.os.codename", "host.os.family", "host.os.kernel", "host.os.name", "host.os.platform", "host.os.version", "log.file.path", "log.offset"]
+      ignore_missing: true
+
+# Output configuration
+output.logstash:
+  hosts: ["logstash:5044"]
+  timeout: 30s
+  max_retries: 3
+  bulk_max_size: 2048
+  template.enabled: false
+  compression_level: 1
+  worker: 2
+  loadbalance: true
+  pipelining: 2
+
+# Monitoring
+monitoring:
+  enabled: true
+  elasticsearch:
+    hosts: ["http://elasticsearch:9200"]
+    username: ""
+    password: ""
+    
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+  interval: 24h
+  rotateeverybytes: 10485760
+
+# Queue settings
+queue.mem:
+  events: 4096
+  flush.min_events: 512
+  flush.timeout: 1s
+
+# General settings
+name: mcp-filebeat
+tags: ["mcp", "filebeat"]
+fields:
+  environment: ${ENVIRONMENT:development}
+  region: ${REGION:local}
+  datacenter: ${DATACENTER:local}
+fields_under_root: true
+
+# HTTP endpoint for health checks
+http.enabled: true
+http.host: 0.0.0.0
+http.port: 5066
+
+# Setup
+setup.template.enabled: false
+setup.ilm.enabled: false
+
+# Security
+ssl.verification_mode: none

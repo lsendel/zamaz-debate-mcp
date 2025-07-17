@@ -3,18 +3,8 @@ package com.zamaz.mcp.controller.controller;
 import com.zamaz.mcp.controller.service.PushNotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import java.util.Map;
-
-/**
- * Controller for push notification management
- */
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
@@ -30,11 +20,14 @@ public class PushNotificationController {
     @PostMapping("/register")
     @Operation(summary = "Register device token for push notifications")
     public ResponseEntity<Map<String, String>> registerDevice(
-            @RequestHeader("X-Organization-ID") String organizationId,
-            @RequestHeader("X-User-ID") String userId,
+            Authentication authentication,
             @Valid @RequestBody DeviceRegistrationRequest request) {
         
-        log.info("Registering device for user {} in organization {}", userId, organizationId);
+        String userId = authentication.getName();
+        String organizationId = authentication.getDetails() instanceof Map ? 
+                                ((Map<String, String>) authentication.getDetails()).get("organizationId") : null;
+
+        log.debug("Registering device for user {} in organization {}", userId, organizationId);
         
         pushNotificationService.registerDeviceToken(
             organizationId, 
@@ -107,11 +100,14 @@ public class PushNotificationController {
     @PostMapping("/send")
     @Operation(summary = "Send custom notification to specific user")
     public ResponseEntity<Map<String, String>> sendCustomNotification(
-            @RequestHeader("X-Organization-ID") String organizationId,
-            @RequestHeader("X-User-ID") String userId,
+            Authentication authentication,
             @Valid @RequestBody CustomNotificationRequest request) {
         
-        log.info("Sending custom notification to user {} in organization {}", userId, organizationId);
+        String userId = authentication.getName();
+        String organizationId = authentication.getDetails() instanceof Map ? 
+                                ((Map<String, String>) authentication.getDetails()).get("organizationId") : null;
+
+        log.debug("Sending custom notification to user {} in organization {}", userId, organizationId);
         
         pushNotificationService.sendNotificationToUser(
             organizationId,

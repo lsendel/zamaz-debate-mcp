@@ -86,7 +86,7 @@ public class JwtService {
                     .parseClaimsJws(token);
             return !isTokenExpired(token);
         } catch (Exception e) {
-            log.debug("Token validation failed: {}", e.getMessage());
+            log.debug("Token validation failed: {}", e.getClass().getSimpleName());
             return false;
         }
     }

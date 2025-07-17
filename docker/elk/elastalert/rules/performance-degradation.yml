@@ -1,0 +1,92 @@
+# Performance Degradation Alert Rule
+name: Performance Degradation Alert
+type: frequency
+index: mcp-performance-*
+
+num_events: 10
+timeframe:
+  minutes: 10
+
+filter:
+- terms:
+    tags: ["slow", "very_slow"]
+- range:
+    duration:
+      gte: 5000  # 5 seconds
+
+alert:
+- "email"
+- "slack"
+
+email:
+- "ops@zamaz.com"
+- "dev@zamaz.com"
+
+slack:
+webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+channel: "#performance-alerts"
+username: "MCP Performance Bot"
+icon_emoji: ":chart_with_downwards_trend:"
+
+alert_text: |
+  Performance Degradation Detected
+  
+  {0} slow operations detected in the last 10 minutes
+  
+  Affected Operations:
+  {1}
+  
+  Components:
+  {2}
+  
+  Average Duration: {3}ms
+  Max Duration: {4}ms
+  
+  Services:
+  {5}
+  
+  Environment: {6}
+  
+  Organizations Affected:
+  {7}
+  
+  This could indicate:
+  - Database performance issues
+  - Memory pressure
+  - Network latency
+  - Code performance regression
+  - Resource exhaustion
+  
+  Please investigate system performance.
+
+alert_text_args:
+  - num_matches
+  - operation
+  - component
+  - duration
+  - duration
+  - serviceName
+  - environment
+  - organizationId
+
+include:
+  - operation
+  - component
+  - duration
+  - serviceName
+  - environment
+  - organizationId
+  - timestamp
+  - tags
+
+realert:
+  minutes: 15
+
+query_delay:
+  minutes: 2
+
+summary_table_fields:
+  - operation
+  - component
+  - duration
+  - serviceName

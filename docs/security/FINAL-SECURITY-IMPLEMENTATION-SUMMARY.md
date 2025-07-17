@@ -380,7 +380,7 @@ DB_PASSWORD=secure_password_required
 POSTGRES_PASSWORD=secure_postgres_password
 
 # JWT Security
-JWT_SECRET=your-256-bit-secret-key-for-jwt-token-generation
+
 JWT_EXPIRATION=86400000
 
 # Gateway Security

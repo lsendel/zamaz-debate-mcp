@@ -4,10 +4,7 @@ import com.zamaz.mcp.controller.dto.DebateDto;
 import com.zamaz.mcp.controller.dto.TemplateDto;
 import com.zamaz.mcp.controller.dto.TemplateValidationResult;
 import com.zamaz.mcp.controller.service.TemplateBasedDebateService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.Map;
@@ -27,17 +24,19 @@ public class TemplateDebateController {
     /**
      * Get all debate templates for an organization.
      * 
-     * @param organizationId The organization ID
+     * @param authentication The authenticated user's information
      * @return List of debate templates
      */
     @GetMapping
     public ResponseEntity<List<TemplateDto>> getDebateTemplates(
-            @RequestParam String organizationId) {
+            Authentication authentication) {
         
-        log.info("Getting debate templates for organization: {}", organizationId);
+        String organizationId = (String) authentication.getDetails(); // Assuming organizationId is in details
+        log.debug("Getting debate templates for organization: {}", organizationId);
         
-        List<TemplateDto> templates = templateDebateService.getDebateTemplates(organizationId);
-        return ResponseEntity.ok(templates);
+        TemplateDto template = templateDebateService.getDebateTemplate(organizationId, templateId);
+        
+        return ResponseEntity.ok(template);
     }
     
     /**
@@ -50,15 +49,14 @@ public class TemplateDebateController {
      */
     @PostMapping("/{templateId}/create")
     public ResponseEntity<DebateDto> createDebateFromTemplate(
-            @RequestParam String organizationId,
+            Authentication authentication,
             @PathVariable String templateId,
-            @RequestBody Map<String, Object> request) {
+            @RequestBody TemplateVariablesRequest request) {
         
-        log.info("Creating debate from template: {} for organization: {}", templateId, organizationId);
+        String organizationId = (String) authentication.getDetails(); // Assuming organizationId is in details
+        log.debug("Creating debate from template: {} for organization: {}", templateId, organizationId);
         
-        // Extract template variables from request
-        @SuppressWarnings("unchecked")
-        Map<String, Object> templateVariables = (Map<String, Object>) request.getOrDefault("variables", Map.of());
+        Map<String, Object> templateVariables = request.getVariables();
         
         DebateDto debate = templateDebateService.createDebateFromTemplate(
                 organizationId, templateId, templateVariables);
@@ -69,22 +67,21 @@ public class TemplateDebateController {
     /**
      * Preview a debate template with variables.
      * 
-     * @param organizationId The organization ID
+     * @param authentication The authenticated user's information
      * @param templateId The template ID
      * @param request Request body containing template variables
      * @return Preview of the rendered template
      */
     @PostMapping("/{templateId}/preview")
     public ResponseEntity<Map<String, Object>> previewTemplate(
-            @RequestParam String organizationId,
+            Authentication authentication,
             @PathVariable String templateId,
-            @RequestBody Map<String, Object> request) {
+            @RequestBody TemplateVariablesRequest request) {
         
+        String organizationId = (String) authentication.getDetails();
         log.debug("Previewing template: {} for organization: {}", templateId, organizationId);
         
-        // Extract template variables from request
-        @SuppressWarnings("unchecked")
-        Map<String, Object> templateVariables = (Map<String, Object>) request.getOrDefault("variables", Map.of());
+        Map<String, Object> templateVariables = request.getVariables();
         
         Map<String, Object> preview = templateDebateService.previewTemplate(
                 organizationId, templateId, templateVariables);
@@ -95,22 +92,21 @@ public class TemplateDebateController {
     /**
      * Validate template variables for a debate template.
      * 
-     * @param organizationId The organization ID
+     * @param authentication The authenticated user's information
      * @param templateId The template ID
      * @param request Request body containing template variables
      * @return Validation result
      */
     @PostMapping("/{templateId}/validate")
     public ResponseEntity<TemplateValidationResult> validateTemplateVariables(
-            @RequestParam String organizationId,
+            Authentication authentication,
             @PathVariable String templateId,
-            @RequestBody Map<String, Object> request) {
+            @RequestBody TemplateVariablesRequest request) {
         
+        String organizationId = (String) authentication.getDetails();
         log.debug("Validating template variables for: {} in organization: {}", templateId, organizationId);
         
-        // Extract template variables from request
-        @SuppressWarnings("unchecked")
-        Map<String, Object> templateVariables = (Map<String, Object>) request.getOrDefault("variables", Map.of());
+        Map<String, Object> templateVariables = request.getVariables();
         
         TemplateValidationResult result = templateDebateService.validateTemplateVariables(
                 organizationId, templateId, templateVariables);
@@ -121,25 +117,21 @@ public class TemplateDebateController {
     /**
      * Get template information for a specific template.
      * 
-     * @param organizationId The organization ID
+     * @param authentication The authenticated user's information
      * @param templateId The template ID
      * @return Template information
      */
     @GetMapping("/{templateId}")
     public ResponseEntity<TemplateDto> getTemplate(
-            @RequestParam String organizationId,
+            Authentication authentication,
             @PathVariable String templateId) {
         
+        String organizationId = (String) authentication.getDetails();
         log.debug("Getting template: {} for organization: {}", templateId, organizationId);
         
-        // This endpoint delegates to the template service through the debate service
-        List<TemplateDto> templates = templateDebateService.getDebateTemplates(organizationId);
+        TemplateDto template = templateDebateService.getDebateTemplate(organizationId, templateId);
         
-        return templates.stream()
-                .filter(template -> template.getId().equals(templateId))
-                .findFirst()
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(template);
     }
     
     /**

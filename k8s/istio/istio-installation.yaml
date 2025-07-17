@@ -1,0 +1,150 @@
+# Istio Service Mesh Installation Configuration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  labels:
+    istio-injection: disabled
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp-system
+  labels:
+    istio-injection: enabled
+---
+# Istio Control Plane Configuration
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: mcp-istio-control-plane
+  namespace: istio-system
+spec:
+  values:
+    global:
+      meshID: mcp-mesh
+      multiCluster:
+        clusterName: mcp-cluster
+      network: mcp-network
+      proxy:
+        tracer: "opentelemetry"
+        accessLogFile: "/dev/stdout"
+        accessLogFormat: |
+          [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% %REQUESTED_SERVER_NAME% %ROUTE_NAME%
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+          scaleTargetRef:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: istiod
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 80
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+      k8s:
+        service:
+          type: LoadBalancer
+          ports:
+          - port: 15021
+            targetPort: 15021
+            name: status-port
+          - port: 80
+            targetPort: 8080
+            name: http2
+          - port: 443
+            targetPort: 8443
+            name: https
+          - port: 15443
+            targetPort: 15443
+            name: tls
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: true
+      k8s:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+  meshConfig:
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*_cx_.*"
+        - ".*_rq_.*"
+        - ".*_rbac_.*"
+        - ".*_circuit_breakers_.*"
+        - ".*_upstream_rq_retry.*"
+        - ".*_upstream_rq_pending.*"
+        - ".*key_cert.*"
+        - ".*_ssl_.*"
+        - ".*_tcp_.*"
+        - ".*_udp_.*"
+        - ".*_grpc_.*"
+        exclusionRegexps:
+        - ".*osconfig_google_.*"
+    accessLogFile: "/dev/stdout"
+    defaultProviders:
+      tracing:
+        - "opentelemetry"
+      metrics:
+        - "prometheus"
+    extensionProviders:
+    - name: otel
+      opentelemetry:
+        service: opentelemetry-collector.istio-system.svc.cluster.local
+        port: 4317
+    - name: jaeger
+      tracing:
+        service: jaeger-collector.istio-system.svc.cluster.local
+        port: 14268
+    - name: prometheus
+      prometheus:
+        service: prometheus.istio-system.svc.cluster.local
+        port: 9090
+---
+# Telemetry Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-telemetry
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+    - name: "otel"
+  metrics:
+  - providers:
+    - name: "prometheus"
+  accessLogging:
+  - providers:
+    - name: otel

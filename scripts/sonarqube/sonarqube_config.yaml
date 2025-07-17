@@ -1,0 +1,146 @@
+# SonarQube Automated Report Generator Configuration
+
+sonarqube:
+  url: "https://sonarcloud.io"
+  token: "${SONAR_TOKEN}"
+  project_key: "lsendel_zamaz-debate-mcp"
+  organization: "lsendel"
+  branch: "main"
+
+reporting:
+  output_dir: "sonar-reports"
+  formats:
+    - "markdown"
+    - "html"
+    - "json"
+  email_notifications: false
+  slack_notifications: false
+  include_trends: true
+  include_security_analysis: true
+  include_coverage_analysis: true
+  include_detailed_issues: true
+  max_issues_per_severity: 20
+  max_hotspots_per_category: 10
+
+notifications:
+  email_smtp_server: "smtp.gmail.com"
+  email_smtp_port: 587
+  email_username: ""
+  email_password: ""
+  email_recipients: []
+  slack_webhook_url: ""
+  slack_channel: "#development"
+
+issue_resolution:
+  enabled: true
+  auto_fix_rules:
+    - "typescript:S3776"  # Cognitive complexity
+    - "typescript:S2004"  # Function nesting
+    - "javascript:S3776"  # Cognitive complexity
+    - "javascript:S2004"  # Function nesting
+    - "typescript:S4123"  # Unnecessary await
+    - "typescript:S2871"  # Array sort without comparator
+    - "secrets:S6698"     # Hardcoded secrets
+    - "java:S6437"        # Compromised passwords
+    - "secrets:S6703"     # Database secrets
+    - "secrets:S6702"     # SonarQube tokens
+  create_pull_request: false
+  pr_title_template: "fix: Resolve SonarQube issues automatically"
+  pr_body_template: |
+    This PR automatically resolves the following SonarQube issues:
+    
+    {issue_list}
+    
+    Changes made:
+    - Fixed cognitive complexity issues by refactoring functions
+    - Resolved function nesting depth problems
+    - Replaced hardcoded secrets with environment variables
+    - Fixed other code quality issues
+    
+    Please review the changes before merging.
+
+scheduling:
+  enabled: false
+  daily_report_time: "09:00"
+  weekly_report_day: "monday"
+  weekly_report_time: "08:00"
+  monthly_report_day: 1
+  monthly_report_time: "07:00"
+
+quality_gates:
+  alert_on_failure: true
+  failure_notification_channels:
+    - "email"
+    - "slack"
+  conditions:
+    - metric: "new_bugs"
+      operator: "GT"
+      error_threshold: 0
+    - metric: "new_vulnerabilities"
+      operator: "GT"
+      error_threshold: 0
+    - metric: "new_security_hotspots"
+      operator: "GT"
+      error_threshold: 0
+    - metric: "new_code_smells"
+      operator: "GT"
+      error_threshold: 5
+    - metric: "new_coverage"
+      operator: "LT"
+      error_threshold: 80
+    - metric: "new_duplicated_lines_density"
+      operator: "GT"
+      error_threshold: 3
+
+security:
+  hotspot_review_required: true
+  vulnerability_alert_threshold: 1
+  security_rating_threshold: "A"
+  include_security_recommendations: true
+  generate_security_report: true
+
+coverage:
+  minimum_coverage: 80
+  coverage_trend_alert: true
+  uncovered_lines_threshold: 100
+  include_coverage_details: true
+
+technical_debt:
+  debt_ratio_threshold: 5
+  debt_trend_alert: true
+  include_debt_breakdown: true
+  debt_categories:
+    - "maintainability"
+    - "reliability"
+    - "security"
+
+integrations:
+  jira:
+    enabled: false
+    url: ""
+    username: ""
+    password: ""
+    project_key: ""
+  github:
+    enabled: false
+    token: ""
+    repository: ""
+    create_issues: false
+  slack:
+    enabled: false
+    webhook_url: ""
+    channel: "#sonarqube"
+  teams:
+    enabled: false
+    webhook_url: ""
+
+advanced:
+  parallel_processing: true
+  cache_enabled: true
+  cache_duration: 3600  # 1 hour
+  retry_attempts: 3
+  retry_delay: 5
+  request_timeout: 30
+  batch_size: 100
+  include_historical_comparison: true
+  historical_data_retention: 100  # Keep last 100 reports

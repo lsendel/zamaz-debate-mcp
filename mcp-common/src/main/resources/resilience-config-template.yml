@@ -1,0 +1,119 @@
+# Resilience4j Configuration Template
+# Copy this to your application.yml and adjust values as needed
+
+mcp:
+  resilience:
+    # Circuit Breaker Configuration
+    circuit-breaker:
+      metrics-enabled: true
+      event-logging-enabled: true
+      
+      # Global defaults for all circuit breakers
+      global:
+        failure-rate-threshold: 50.0  # Percentage
+        slow-call-rate-threshold: 100.0  # Percentage
+        slow-call-duration-threshold: PT2S  # Duration
+        permitted-calls-in-half-open-state: 10
+        sliding-window-type: TIME_BASED  # TIME_BASED or COUNT_BASED
+        sliding-window-size: 100  # seconds for TIME_BASED, count for COUNT_BASED
+        minimum-number-of-calls: 10
+        wait-duration-in-open-state: PT60S  # Duration
+        automatic-transition-enabled: true
+      
+      # Service-specific configurations
+      services:
+        llm-service:
+          failure-rate-threshold: 30.0
+          slow-call-duration-threshold: PT5S
+          wait-duration-in-open-state: PT30S
+        
+        database-service:
+          failure-rate-threshold: 60.0
+          slow-call-duration-threshold: PT1S
+          sliding-window-size: 50
+    
+    # Retry Configuration
+    retry:
+      global:
+        max-attempts: 3
+        wait-duration: PT1S
+        exponential-backoff-enabled: true
+        exponential-backoff-multiplier: 2.0
+        jitter-enabled: true
+        jitter-factor: 0.5
+        ignore-exceptions:
+          - java.lang.IllegalArgumentException
+          - java.lang.IllegalStateException
+      
+      services:
+        llm-service:
+          max-attempts: 5
+          wait-duration: PT2S
+          exponential-backoff-multiplier: 1.5
+        
+        external-api:
+          max-attempts: 3
+          wait-duration: PT500MS
+    
+    # Rate Limiter Configuration
+    rate-limiter:
+      global:
+        limit-for-period: 100
+        limit-refresh-period: PT1S
+        timeout-duration: PT5S
+      
+      services:
+        public-api:
+          limit-for-period: 50
+          limit-refresh-period: PT1S
+        
+        admin-api:
+          limit-for-period: 1000
+          limit-refresh-period: PT1S
+    
+    # Bulkhead Configuration
+    bulkhead:
+      use-thread-pool: false  # false for semaphore, true for thread pool
+      
+      global:
+        # Semaphore bulkhead
+        max-concurrent-calls: 25
+        max-wait-duration: PT0S
+        
+        # Thread pool bulkhead
+        max-thread-pool-size: 10
+        core-thread-pool-size: 5
+        queue-capacity: 100
+        keep-alive-duration: PT20MS
+      
+      services:
+        database-operations:
+          max-concurrent-calls: 10
+          max-wait-duration: PT1S
+        
+        file-operations:
+          max-concurrent-calls: 5
+          max-wait-duration: PT500MS
+    
+    # Metrics Configuration
+    metrics:
+      enabled: true
+
+# Spring Boot Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,circuitbreakers,retry,ratelimiters,bulkheads
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+      micrometer:
+        enabled: true

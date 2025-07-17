@@ -13,7 +13,7 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
+      - JWT_SECRET
       - SERVER_PORT=${MCP_ORGANIZATION_PORT:-5005}
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
       - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}
@@ -84,7 +84,7 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
+      - JWT_SECRET
       - SERVER_PORT=${MCP_CONTEXT_PORT:-5007}
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5005,http://localhost:5006,http://localhost:5013
       - API_DOCS_PATH=${API_DOCS_PATH:-/api-docs}

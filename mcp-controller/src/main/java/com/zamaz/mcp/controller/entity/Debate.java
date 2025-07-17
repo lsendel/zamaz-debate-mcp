@@ -51,7 +51,8 @@ public class Debate {
     
     @Column(nullable = false, length = 50)
     @Builder.Default
-    private String status = "CREATED";
+    @Enumerated(EnumType.STRING)
+    private DebateStatus status;
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

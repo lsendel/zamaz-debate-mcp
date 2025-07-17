@@ -1,65 +1,271 @@
 groups:
-- name: github-integration-alerts
+- name: github-integration-infrastructure-alerts
   rules:
-  - alert: HighCPUUsage
-    expr: process_cpu_usage > 0.8
+  # CPU and Memory Alerts
+  - alert: GitHubIntegrationHighCPUUsage
+    expr: process_cpu_usage{job="github-integration"} > 0.8
     for: 5m
     labels:
       severity: warning
+      service: github-integration
+      alert_type: infrastructure
     annotations:
       summary: "High CPU usage detected"
-      description: "GitHub Integration service is using more than 80% CPU for more than 5 minutes."
+      description: "GitHub Integration service is using more than 80% CPU for more than 5 minutes. Current usage: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/high-cpu-usage"
 
-  - alert: HighMemoryUsage
-    expr: sum(jvm_memory_used_bytes) / sum(jvm_memory_max_bytes) > 0.85
-    for: 5m
-    labels:
-      severity: warning
-    annotations:
-      summary: "High memory usage detected"
-      description: "GitHub Integration service is using more than 85% of its allocated memory for more than 5 minutes."
-
-  - alert: HighResponseTime
-    expr: http_server_requests_seconds_max{uri!~".*actuator.*"} > 2
-    for: 5m
-    labels:
-      severity: warning
-    annotations:
-      summary: "High response time detected"
-      description: "GitHub Integration service has response times greater than 2 seconds for more than 5 minutes."
-
-  - alert: HighErrorRate
-    expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+  - alert: GitHubIntegrationCriticalCPUUsage
+    expr: process_cpu_usage{job="github-integration"} > 0.95
     for: 2m
     labels:
       severity: critical
+      service: github-integration
+      alert_type: infrastructure
     annotations:
-      summary: "High error rate detected"
-      description: "GitHub Integration service has more than 5% error rate for more than 2 minutes."
+      summary: "Critical CPU usage detected"
+      description: "GitHub Integration service is using more than 95% CPU for more than 2 minutes. Current usage: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/critical-cpu-usage"
 
-  - alert: InstanceDown
+  - alert: GitHubIntegrationHighMemoryUsage
+    expr: sum(jvm_memory_used_bytes{job="github-integration"}) / sum(jvm_memory_max_bytes{job="github-integration"}) > 0.85
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: infrastructure
+    annotations:
+      summary: "High memory usage detected"
+      description: "GitHub Integration service is using more than 85% of its allocated memory for more than 5 minutes. Current usage: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/high-memory-usage"
+
+  - alert: GitHubIntegrationCriticalMemoryUsage
+    expr: sum(jvm_memory_used_bytes{job="github-integration"}) / sum(jvm_memory_max_bytes{job="github-integration"}) > 0.95
+    for: 2m
+    labels:
+      severity: critical
+      service: github-integration
+      alert_type: infrastructure
+    annotations:
+      summary: "Critical memory usage detected"
+      description: "GitHub Integration service is using more than 95% of its allocated memory for more than 2 minutes. Current usage: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/critical-memory-usage"
+
+  # Service Health Alerts
+  - alert: GitHubIntegrationInstanceDown
     expr: up{job="github-integration"} == 0
     for: 1m
     labels:
       severity: critical
+      service: github-integration
+      alert_type: availability
     annotations:
-      summary: "Instance down"
-      description: "GitHub Integration service is down."
+      summary: "GitHub Integration service is down"
+      description: "GitHub Integration service instance is not responding to health checks."
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/service-down"
 
-  - alert: DatabaseConnectionFailure
-    expr: hikaricp_connections_active == 0
+  - alert: GitHubIntegrationHighResponseTime
+    expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="github-integration",uri!~".*actuator.*"}[5m])) by (le)) > 2
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: performance
+    annotations:
+      summary: "High response time detected"
+      description: "GitHub Integration service has P95 response times greater than 2 seconds for more than 5 minutes. Current P95: {{ $value }}s"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/high-response-time"
+
+  - alert: GitHubIntegrationHighErrorRate
+    expr: sum(rate(http_server_requests_seconds_count{job="github-integration",status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count{job="github-integration"}[5m])) > 0.05
+    for: 2m
+    labels:
+      severity: critical
+      service: github-integration
+      alert_type: availability
+    annotations:
+      summary: "High error rate detected"
+      description: "GitHub Integration service has more than 5% error rate for more than 2 minutes. Current rate: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/high-error-rate"
+
+- name: github-integration-database-alerts
+  rules:
+  # Database Connection Alerts
+  - alert: GitHubIntegrationDatabaseConnectionFailure
+    expr: hikaricp_connections_active{job="github-integration"} == 0
     for: 1m
     labels:
       severity: critical
+      service: github-integration
+      alert_type: database
     annotations:
       summary: "Database connection failure"
       description: "GitHub Integration service has no active database connections."
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/database-connection-failure"
 
-  - alert: RedisConnectionFailure
-    expr: redis_connected_clients == 0
+  - alert: GitHubIntegrationDatabaseConnectionPoolExhausted
+    expr: hikaricp_connections_active{job="github-integration"} / hikaricp_connections_max{job="github-integration"} > 0.9
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: database
+    annotations:
+      summary: "Database connection pool nearly exhausted"
+      description: "GitHub Integration service is using more than 90% of its database connection pool. Current usage: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/database-connection-pool-exhausted"
+
+  - alert: GitHubIntegrationDatabaseSlowQueries
+    expr: histogram_quantile(0.95, sum(rate(github_integration_database_query_duration_seconds_bucket[5m])) by (le)) > 5
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: database
+    annotations:
+      summary: "Slow database queries detected"
+      description: "GitHub Integration service has P95 database query times greater than 5 seconds. Current P95: {{ $value }}s"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/slow-database-queries"
+
+- name: github-integration-redis-alerts
+  rules:
+  # Redis Connection Alerts
+  - alert: GitHubIntegrationRedisConnectionFailure
+    expr: github_integration_redis_connections_active == 0
     for: 1m
     labels:
       severity: critical
+      service: github-integration
+      alert_type: redis
     annotations:
       summary: "Redis connection failure"
       description: "GitHub Integration service has no active Redis connections."
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/redis-connection-failure"
+
+  - alert: GitHubIntegrationLowCacheHitRatio
+    expr: avg_over_time(github_integration_cache_hit_ratio[5m]) < 0.5
+    for: 10m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: redis
+    annotations:
+      summary: "Low cache hit ratio detected"
+      description: "GitHub Integration service has a cache hit ratio below 50% for more than 10 minutes. Current ratio: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/low-cache-hit-ratio"
+
+- name: github-integration-business-alerts
+  rules:
+  # PR Processing Alerts
+  - alert: GitHubIntegrationPRProcessingBacklog
+    expr: github_integration_pr_queue_size > 10
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: business
+    annotations:
+      summary: "PR processing backlog detected"
+      description: "GitHub Integration service has more than 10 PRs in the processing queue. Current queue size: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/pr-processing-backlog"
+
+  - alert: GitHubIntegrationPRProcessingFailures
+    expr: rate(github_integration_pr_failed_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: business
+    annotations:
+      summary: "High PR processing failure rate"
+      description: "GitHub Integration service has more than 0.1 PR failures per second. Current rate: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/pr-processing-failures"
+
+  - alert: GitHubIntegrationNoRecentPRActivity
+    expr: increase(github_integration_pr_processed_total[1h]) == 0
+    for: 1h
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: business
+    annotations:
+      summary: "No recent PR processing activity"
+      description: "GitHub Integration service has not processed any PRs in the last hour."
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/no-pr-activity"
+
+- name: github-integration-github-api-alerts
+  rules:
+  # GitHub API Alerts
+  - alert: GitHubIntegrationGitHubAPIErrors
+    expr: rate(github_integration_github_api_errors_total[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: github_api
+    annotations:
+      summary: "High GitHub API error rate"
+      description: "GitHub Integration service has more than 0.1 GitHub API errors per second. Current rate: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/github-api-errors"
+
+  - alert: GitHubIntegrationGitHubAPIRateLimitLow
+    expr: github_integration_github_api_rate_limit_remaining < 100
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: github_api
+    annotations:
+      summary: "GitHub API rate limit is low"
+      description: "GitHub Integration service has less than 100 GitHub API requests remaining. Current remaining: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/github-api-rate-limit"
+
+  - alert: GitHubIntegrationGitHubAPIRateLimitCritical
+    expr: github_integration_github_api_rate_limit_remaining < 50
+    for: 1m
+    labels:
+      severity: critical
+      service: github-integration
+      alert_type: github_api
+    annotations:
+      summary: "GitHub API rate limit is critically low"
+      description: "GitHub Integration service has less than 50 GitHub API requests remaining. Current remaining: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/github-api-rate-limit-critical"
+
+  - alert: GitHubIntegrationGitHubAPISlowResponses
+    expr: histogram_quantile(0.95, sum(rate(github_integration_github_api_response_time_seconds_bucket[5m])) by (le)) > 10
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: github_api
+    annotations:
+      summary: "Slow GitHub API responses detected"
+      description: "GitHub Integration service has P95 GitHub API response times greater than 10 seconds. Current P95: {{ $value }}s"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/github-api-slow-responses"
+
+- name: github-integration-jvm-alerts
+  rules:
+  # JVM Alerts
+  - alert: GitHubIntegrationHighGCOverhead
+    expr: sum(rate(jvm_gc_pause_seconds_sum{job="github-integration"}[5m])) / sum(rate(jvm_gc_pause_seconds_count{job="github-integration"}[5m])) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: jvm
+    annotations:
+      summary: "High JVM garbage collection overhead"
+      description: "GitHub Integration service is spending more than 10% of time in garbage collection. Current overhead: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/high-gc-overhead"
+
+  - alert: GitHubIntegrationJVMOldGenHigh
+    expr: jvm_memory_used_bytes{job="github-integration",area="heap",id="PS Old Gen"} / jvm_memory_max_bytes{job="github-integration",area="heap",id="PS Old Gen"} > 0.9
+    for: 5m
+    labels:
+      severity: warning
+      service: github-integration
+      alert_type: jvm
+    annotations:
+      summary: "JVM Old Generation memory usage is high"
+      description: "GitHub Integration service Old Generation memory usage is above 90%. Current usage: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/jvm-old-gen-high"

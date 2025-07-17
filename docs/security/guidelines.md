@@ -115,16 +115,7 @@ Authorization: Bearer your-jwt-token (if using auth)
 
 ### JWT Configuration
 
-Generate a strong JWT secret:
-```bash
-# Generate a 256-bit random key
-openssl rand -base64 32
-```
 
-Add to your `.env`:
-```
-JWT_SECRET=your-generated-secret-here
-```
 
 ### API Key Management
 

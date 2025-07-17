@@ -1,0 +1,275 @@
+{
+  "quality_gate": {
+    "name": "Zamaz Debate MCP Quality Gate",
+    "description": "Custom quality gate for zamaz-debate-mcp project with strict security and quality requirements",
+    "is_default": false,
+    "conditions": [
+      {
+        "metric": "new_bugs",
+        "operator": "GT",
+        "error_threshold": "0",
+        "description": "No new bugs allowed"
+      },
+      {
+        "metric": "new_vulnerabilities",
+        "operator": "GT",
+        "error_threshold": "0",
+        "description": "No new vulnerabilities allowed"
+      },
+      {
+        "metric": "new_security_hotspots",
+        "operator": "GT",
+        "error_threshold": "0",
+        "description": "All security hotspots must be reviewed"
+      },
+      {
+        "metric": "new_code_smells",
+        "operator": "GT",
+        "error_threshold": "5",
+        "description": "Maximum 5 new code smells allowed"
+      },
+      {
+        "metric": "new_coverage",
+        "operator": "LT",
+        "error_threshold": "80",
+        "description": "Minimum 80% coverage on new code"
+      },
+      {
+        "metric": "new_duplicated_lines_density",
+        "operator": "GT",
+        "error_threshold": "3",
+        "description": "Maximum 3% duplicated lines on new code"
+      },
+      {
+        "metric": "new_maintainability_rating",
+        "operator": "GT",
+        "error_threshold": "1",
+        "description": "Maintainability rating must be A"
+      },
+      {
+        "metric": "new_reliability_rating",
+        "operator": "GT",
+        "error_threshold": "1",
+        "description": "Reliability rating must be A"
+      },
+      {
+        "metric": "new_security_rating",
+        "operator": "GT",
+        "error_threshold": "1",
+        "description": "Security rating must be A"
+      },
+      {
+        "metric": "new_lines_to_cover",
+        "operator": "GT",
+        "error_threshold": "1000",
+        "description": "Alert if more than 1000 new lines to cover"
+      }
+    ],
+    "overall_conditions": [
+      {
+        "metric": "coverage",
+        "operator": "LT",
+        "error_threshold": "70",
+        "description": "Overall coverage must be at least 70%"
+      },
+      {
+        "metric": "duplicated_lines_density",
+        "operator": "GT",
+        "error_threshold": "5",
+        "description": "Overall duplication must be less than 5%"
+      },
+      {
+        "metric": "sqale_rating",
+        "operator": "GT",
+        "error_threshold": "2",
+        "description": "Overall maintainability rating must be A or B"
+      },
+      {
+        "metric": "reliability_rating",
+        "operator": "GT",
+        "error_threshold": "2",
+        "description": "Overall reliability rating must be A or B"
+      },
+      {
+        "metric": "security_rating",
+        "operator": "GT",
+        "error_threshold": "1",
+        "description": "Overall security rating must be A"
+      }
+    ]
+  },
+  "thresholds": {
+    "blocker_issues": {
+      "error": 0,
+      "warning": 1,
+      "description": "Blocker issues should be fixed immediately"
+    },
+    "critical_issues": {
+      "error": 3,
+      "warning": 1,
+      "description": "Critical issues should be addressed quickly"
+    },
+    "major_issues": {
+      "error": 20,
+      "warning": 10,
+      "description": "Major issues should be tracked and resolved"
+    },
+    "technical_debt": {
+      "error": "8h",
+      "warning": "4h",
+      "description": "Technical debt should be kept under control"
+    },
+    "security_hotspots": {
+      "error": 5,
+      "warning": 2,
+      "description": "Security hotspots require immediate review"
+    }
+  },
+  "notification_rules": {
+    "quality_gate_failed": {
+      "enabled": true,
+      "channels": ["email", "slack"],
+      "severity": "high",
+      "description": "Notify immediately when quality gate fails"
+    },
+    "security_issues": {
+      "enabled": true,
+      "channels": ["email", "slack", "teams"],
+      "severity": "critical",
+      "description": "Notify about any security issues"
+    },
+    "coverage_drop": {
+      "enabled": true,
+      "channels": ["slack"],
+      "severity": "medium",
+      "threshold": "5%",
+      "description": "Notify when coverage drops significantly"
+    },
+    "technical_debt_increase": {
+      "enabled": true,
+      "channels": ["slack"],
+      "severity": "medium",
+      "threshold": "2h",
+      "description": "Notify when technical debt increases significantly"
+    }
+  },
+  "remediation_suggestions": {
+    "bugs": {
+      "priority": "high",
+      "actions": [
+        "Fix immediately",
+        "Add unit tests to prevent regression",
+        "Review code for similar issues"
+      ]
+    },
+    "vulnerabilities": {
+      "priority": "critical",
+      "actions": [
+        "Fix immediately",
+        "Security review required",
+        "Update dependencies if needed",
+        "Add security tests"
+      ]
+    },
+    "security_hotspots": {
+      "priority": "high",
+      "actions": [
+        "Review security implications",
+        "Mark as safe if intentional",
+        "Fix if actual vulnerability",
+        "Add security documentation"
+      ]
+    },
+    "code_smells": {
+      "priority": "medium",
+      "actions": [
+        "Refactor when possible",
+        "Add to technical debt backlog",
+        "Consider in next sprint planning"
+      ]
+    },
+    "coverage_issues": {
+      "priority": "medium",
+      "actions": [
+        "Add unit tests",
+        "Add integration tests",
+        "Review test strategy",
+        "Consider test-driven development"
+      ]
+    },
+    "duplication": {
+      "priority": "medium",
+      "actions": [
+        "Extract common functions",
+        "Create reusable components",
+        "Refactor duplicated code"
+      ]
+    }
+  },
+  "project_specific_rules": {
+    "zamaz_debate_mcp": {
+      "description": "Custom rules for zamaz-debate-mcp project",
+      "rules": [
+        {
+          "category": "security",
+          "rule": "No hardcoded secrets in configuration files",
+          "severity": "blocker",
+          "pattern": "password\\s*=\\s*[\"'][^\"']+[\"']",
+          "suggestion": "Use environment variables instead"
+        },
+        {
+          "category": "maintainability",
+          "rule": "Functions should not be too complex",
+          "severity": "major",
+          "threshold": "cognitive_complexity > 15",
+          "suggestion": "Break down complex functions into smaller ones"
+        },
+        {
+          "category": "reliability",
+          "rule": "Error handling should be comprehensive",
+          "severity": "major",
+          "pattern": "try\\s*\\{[^}]*\\}\\s*catch\\s*\\(\\s*\\)\\s*\\{\\s*\\}",
+          "suggestion": "Add proper error handling in catch blocks"
+        },
+        {
+          "category": "performance",
+          "rule": "Async operations should be optimized",
+          "severity": "minor",
+          "pattern": "await.*await",
+          "suggestion": "Consider Promise.all for parallel operations"
+        }
+      ]
+    }
+  },
+  "integration_settings": {
+    "sonarcloud": {
+      "organization": "lsendel",
+      "project_key": "lsendel_zamaz-debate-mcp",
+      "quality_gate_webhook": "https://your-webhook-url.com/sonarqube",
+      "api_settings": {
+        "timeout": 30,
+        "retry_attempts": 3,
+        "rate_limit": 100
+      }
+    },
+    "github": {
+      "repository": "lsendel/zamaz-debate-mcp",
+      "create_issues": true,
+      "create_pr_comments": true,
+      "status_checks": true,
+      "labels": {
+        "bug": "sonarqube-bug",
+        "vulnerability": "security",
+        "code_smell": "code-quality",
+        "coverage": "test-coverage"
+      }
+    },
+    "slack": {
+      "webhook_url": "${SLACK_WEBHOOK_URL}",
+      "channel": "#development",
+      "username": "SonarQube Bot",
+      "icon_emoji": ":warning:",
+      "mention_on_failure": "@channel"
+    }
+  }
+}

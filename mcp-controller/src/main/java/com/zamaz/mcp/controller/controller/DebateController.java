@@ -64,12 +64,7 @@ public class DebateController {
         return ResponseEntity.noContent().build();
     }
     
-    @PostMapping("/{id}/start")
-    @Operation(summary = "Start debate")
-    public ResponseEntity<DebateDto> startDebate(@PathVariable UUID id) {
-        DebateDto debate = debateService.startDebate(id);
-        return ResponseEntity.ok(debate);
-    }
+    
     
     @PostMapping("/{id}/participants")
     @Operation(summary = "Add participant to debate")
@@ -101,13 +96,13 @@ public class DebateController {
     
     @GetMapping("/{id}/rounds")
     @Operation(summary = "List debate rounds")
-    public ResponseEntity<?> listRounds(@PathVariable UUID id) {
+    public ResponseEntity<List<RoundDto>> listRounds(@PathVariable UUID id) {
         return ResponseEntity.ok(debateService.listRounds(id));
     }
     
     @GetMapping("/{id}/results")
     @Operation(summary = "Get debate results")
-    public ResponseEntity<?> getResults(@PathVariable UUID id) {
+    public ResponseEntity<DebateResultDto> getResults(@PathVariable UUID id) {
         return ResponseEntity.ok(debateService.getResults(id));
     }
 }

@@ -1,6 +1,9 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: 'github-integration'
+    environment: 'production'
 
 alerting:
   alertmanagers:
@@ -10,20 +13,121 @@ alerting:
 
 rule_files:
   - "alert_rules.yml"
+  - "slo_rules.yml"
 
 scrape_configs:
+  # GitHub Integration Service
   - job_name: 'github-integration'
     metrics_path: '/actuator/prometheus'
     scrape_interval: 5s
+    scrape_timeout: 10s
+    honor_labels: true
     static_configs:
       - targets: ['github-integration:8080']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'github_integration_.*'
+        target_label: 'service'
+        replacement: 'github-integration'
+      - source_labels: [__name__]
+        regex: 'jvm_.*'
+        target_label: 'service'
+        replacement: 'github-integration'
+      - source_labels: [__name__]
+        regex: 'http_server_requests_.*'
+        target_label: 'service'
+        replacement: 'github-integration'
     
+  # GitHub Integration Health Checks
+  - job_name: 'github-integration-health'
+    metrics_path: '/actuator/health'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['github-integration:8080']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'github-integration'
+        
+  # Database metrics (PostgreSQL)
+  - job_name: 'postgres-exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'postgresql'
+        
+  # Redis metrics
+  - job_name: 'redis-exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'redis'
+    
+  # System metrics
+  - job_name: 'node-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node-exporter:9100']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'system'
+        
+  # Prometheus self-monitoring
   - job_name: 'prometheus'
     scrape_interval: 10s
     static_configs:
       - targets: ['localhost:9090']
-
-  - job_name: 'node-exporter'
-    scrape_interval: 5s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'prometheus'
+        
+  # Custom GitHub API monitoring
+  - job_name: 'github-api-health'
+    scrape_interval: 60s
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets:
+        - https://api.github.com/rate_limit
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'github-api'
+
+  # Kiro API monitoring
+  - job_name: 'kiro-api-health'
+    scrape_interval: 30s
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://kiro-api:5013/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: 'service'
+        replacement: 'kiro-api'

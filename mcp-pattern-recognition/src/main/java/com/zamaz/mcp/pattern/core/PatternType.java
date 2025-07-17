@@ -1,0 +1,154 @@
+package com.zamaz.mcp.pattern.core;
+
+/**
+ * Enumeration of different pattern types supported by the recognition system.
+ */
+public enum PatternType {
+    
+    // Design Patterns (GoF)
+    SINGLETON,
+    FACTORY,
+    ABSTRACT_FACTORY,
+    BUILDER,
+    PROTOTYPE,
+    ADAPTER,
+    BRIDGE,
+    COMPOSITE,
+    DECORATOR,
+    FACADE,
+    FLYWEIGHT,
+    PROXY,
+    CHAIN_OF_RESPONSIBILITY,
+    COMMAND,
+    INTERPRETER,
+    ITERATOR,
+    MEDIATOR,
+    MEMENTO,
+    OBSERVER,
+    STATE,
+    STRATEGY,
+    TEMPLATE_METHOD,
+    VISITOR,
+    
+    // Enterprise Patterns
+    MVC,
+    MVP,
+    MVVM,
+    REPOSITORY,
+    SERVICE_LAYER,
+    DATA_MAPPER,
+    ACTIVE_RECORD,
+    UNIT_OF_WORK,
+    IDENTITY_MAP,
+    LAZY_LOADING,
+    DOMAIN_MODEL,
+    TRANSACTION_SCRIPT,
+    TABLE_MODULE,
+    
+    // Architectural Patterns
+    LAYERED_ARCHITECTURE,
+    MICROSERVICES,
+    HEXAGONAL_ARCHITECTURE,
+    ONION_ARCHITECTURE,
+    CLEAN_ARCHITECTURE,
+    EVENT_DRIVEN,
+    CQRS,
+    SAGA,
+    CIRCUIT_BREAKER,
+    BULKHEAD,
+    
+    // Code Smells
+    LONG_METHOD,
+    LARGE_CLASS,
+    PARAMETER_LIST,
+    DIVERGENT_CHANGE,
+    SHOTGUN_SURGERY,
+    FEATURE_ENVY,
+    DATA_CLUMPS,
+    PRIMITIVE_OBSESSION,
+    SWITCH_STATEMENTS,
+    PARALLEL_INHERITANCE,
+    LAZY_CLASS,
+    SPECULATIVE_GENERALITY,
+    TEMPORARY_FIELD,
+    MESSAGE_CHAINS,
+    MIDDLE_MAN,
+    INAPPROPRIATE_INTIMACY,
+    ALTERNATIVE_CLASSES,
+    INCOMPLETE_LIBRARY,
+    DATA_CLASS,
+    REFUSED_BEQUEST,
+    COMMENTS,
+    DUPLICATE_CODE,
+    
+    // Anti-patterns
+    GOD_CLASS,
+    SPAGHETTI_CODE,
+    LAVA_FLOW,
+    GOLDEN_HAMMER,
+    COPY_PASTE_PROGRAMMING,
+    MAGIC_NUMBER,
+    HARD_CODING,
+    SWISS_ARMY_KNIFE,
+    POLTERGEIST,
+    BLOB,
+    FUNCTIONAL_DECOMPOSITION,
+    CONTINUOUS_OBSOLESCENCE,
+    DEAD_CODE,
+    BOAT_ANCHOR,
+    REINVENT_THE_WHEEL,
+    VENDOR_LOCK_IN,
+    
+    // Team-specific patterns (dynamically added)
+    TEAM_CUSTOM,
+    
+    // Spring Framework specific patterns
+    SPRING_BEAN,
+    SPRING_CONFIGURATION,
+    SPRING_CONTROLLER,
+    SPRING_SERVICE,
+    SPRING_REPOSITORY,
+    SPRING_COMPONENT,
+    SPRING_AOP,
+    SPRING_SECURITY,
+    SPRING_TRANSACTION,
+    
+    // JPA/Hibernate patterns
+    ENTITY_PATTERN,
+    DAO_PATTERN,
+    SPECIFICATION_PATTERN,
+    CRITERIA_PATTERN,
+    
+    // Testing patterns
+    ARRANGE_ACT_ASSERT,
+    GIVEN_WHEN_THEN,
+    TEST_BUILDER,
+    TEST_FIXTURE,
+    MOCK_OBJECT,
+    TEST_DOUBLE,
+    
+    // Performance patterns
+    CACHING,
+    LAZY_INITIALIZATION,
+    OBJECT_POOLING,
+    CONNECTION_POOLING,
+    BATCH_PROCESSING,
+    
+    // Security patterns
+    AUTHENTICATION,
+    AUTHORIZATION,
+    ENCRYPTION,
+    SECURE_COMMUNICATION,
+    INPUT_VALIDATION,
+    
+    // Concurrency patterns
+    THREAD_POOL,
+    PRODUCER_CONSUMER,
+    READER_WRITER,
+    MONITOR_OBJECT,
+    ACTIVE_OBJECT,
+    FUTURE,
+    
+    // Unknown or unclassified
+    UNKNOWN
+}

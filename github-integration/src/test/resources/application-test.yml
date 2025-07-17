@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: github-integration-test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  cache:
+    type: simple
+  
+  logging:
+    level:
+      com.zamaz.mcp.github: DEBUG
+      org.springframework.web.client: DEBUG
+      com.github.tomakehurst.wiremock: WARN
+
+# GitHub API configuration for tests
+github:
+  api:
+    base-url: http://localhost:8089
+    version: application/vnd.github.v3+json
+    timeout:
+      connect: 5000
+      read: 10000
+  
+  cache:
+    repos:
+      ttl: 300
+    prs:
+      ttl: 60
+
+# Test-specific configuration
+test:
+  wiremock:
+    port: 8089
+    delay:
+      min: 50
+      max: 200

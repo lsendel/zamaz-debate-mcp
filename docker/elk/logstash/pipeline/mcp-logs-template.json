@@ -1,0 +1,207 @@
+{
+  "index_patterns": ["mcp-logs-*"],
+  "settings": {
+    "index": {
+      "number_of_shards": 3,
+      "number_of_replicas": 1,
+      "refresh_interval": "5s",
+      "max_result_window": 50000,
+      "codec": "best_compression"
+    },
+    "analysis": {
+      "analyzer": {
+        "log_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "stop",
+            "snowball"
+          ]
+        },
+        "trace_analyzer": {
+          "type": "keyword"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "message": {
+        "type": "text",
+        "analyzer": "log_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 2048
+          }
+        }
+      },
+      "level": {
+        "type": "keyword"
+      },
+      "log_level": {
+        "type": "keyword"
+      },
+      "logger_name": {
+        "type": "keyword"
+      },
+      "thread_name": {
+        "type": "keyword"
+      },
+      "service": {
+        "type": "keyword"
+      },
+      "service_category": {
+        "type": "keyword"
+      },
+      "environment": {
+        "type": "keyword"
+      },
+      "region": {
+        "type": "keyword"
+      },
+      "datacenter": {
+        "type": "keyword"
+      },
+      "cluster": {
+        "type": "keyword"
+      },
+      "organization_id": {
+        "type": "keyword"
+      },
+      "user_id": {
+        "type": "keyword"
+      },
+      "session_id": {
+        "type": "keyword"
+      },
+      "request_id": {
+        "type": "keyword"
+      },
+      "correlation_id": {
+        "type": "keyword"
+      },
+      "trace_id": {
+        "type": "keyword",
+        "analyzer": "trace_analyzer"
+      },
+      "span_id": {
+        "type": "keyword",
+        "analyzer": "trace_analyzer"
+      },
+      "parent_span_id": {
+        "type": "keyword",
+        "analyzer": "trace_analyzer"
+      },
+      "component": {
+        "type": "keyword"
+      },
+      "operation": {
+        "type": "keyword"
+      },
+      "business_operation": {
+        "type": "keyword"
+      },
+      "duration": {
+        "type": "long"
+      },
+      "status_code": {
+        "type": "integer"
+      },
+      "http_method": {
+        "type": "keyword"
+      },
+      "http_path": {
+        "type": "keyword"
+      },
+      "http_params": {
+        "type": "text"
+      },
+      "http_version": {
+        "type": "keyword"
+      },
+      "exception_type": {
+        "type": "keyword"
+      },
+      "exception_message": {
+        "type": "text",
+        "analyzer": "log_analyzer"
+      },
+      "auth_user": {
+        "type": "keyword"
+      },
+      "client_ip": {
+        "type": "ip"
+      },
+      "user_agent": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "jvm": {
+        "type": "object",
+        "properties": {
+          "usedMemoryMB": {
+            "type": "long"
+          },
+          "totalMemoryMB": {
+            "type": "long"
+          },
+          "maxMemoryMB": {
+            "type": "long"
+          },
+          "freeMemoryMB": {
+            "type": "long"
+          },
+          "memoryUsagePercent": {
+            "type": "float"
+          },
+          "availableProcessors": {
+            "type": "integer"
+          }
+        }
+      },
+      "source": {
+        "type": "keyword"
+      },
+      "beat": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "keyword"
+          },
+          "hostname": {
+            "type": "keyword"
+          },
+          "version": {
+            "type": "keyword"
+          }
+        }
+      },
+      "fields": {
+        "type": "object",
+        "enabled": false
+      },
+      "metadata": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

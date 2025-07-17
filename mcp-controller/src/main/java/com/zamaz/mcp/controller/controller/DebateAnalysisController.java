@@ -3,6 +3,7 @@ package com.zamaz.mcp.controller.controller;
 import com.zamaz.mcp.controller.ai.DebateQualityScorer;
 import com.zamaz.mcp.controller.dto.DebateAnalysisDto;
 import com.zamaz.mcp.controller.entity.Debate;
+import com.zamaz.mcp.controller.dto.AnalysisStatus;
 import com.zamaz.mcp.controller.service.DebateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,16 +29,16 @@ public class DebateAnalysisController {
      * Trigger comprehensive debate quality analysis
      */
     @PostMapping("/quality")
-    @PreAuthorize("hasPermission(#debateId, 'Debate', 'READ')")
+    @PreAuthorize("hasPermission(#debateId.toString(), 'Debate', 'READ')")
     public CompletableFuture<ResponseEntity<DebateAnalysisDto>> analyzeDebateQuality(
-            @PathVariable Long debateId,
+            @PathVariable UUID debateId,
             @RequestHeader("X-Organization-ID") String organizationId) {
         
-        log.info("Starting debate quality analysis for debate: {} in organization: {}", debateId, organizationId);
+        log.debug("Starting debate quality analysis for debate: {} in organization: {}", debateId, organizationId);
         
         try {
             // Get the debate
-            Debate debate = debateService.findById(debateId);
+            Debate debate = debateService.getDebate(debateId);
             
             if (debate == null) {
                 return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
@@ -47,7 +48,7 @@ public class DebateAnalysisController {
             return debateQualityScorer.analyzeDebateQuality(debate)
                 .thenApply(analysis -> {
                     if (analysis != null) {
-                        log.info("Debate analysis completed for debate: {} with overall score: {}", 
+                        log.debug("Debate analysis completed for debate: {} with overall score: {}", 
                             debateId, analysis.getOverallQualityScore());
                         return ResponseEntity.ok(analysis);
                     } else {
@@ -70,9 +71,9 @@ public class DebateAnalysisController {
      * Get previous analysis results if available
      */
     @GetMapping("/quality/latest")
-    @PreAuthorize("hasPermission(#debateId, 'Debate', 'READ')")
+    @PreAuthorize("hasPermission(#debateId.toString(), 'Debate', 'READ')")
     public ResponseEntity<DebateAnalysisDto> getLatestAnalysis(
-            @PathVariable Long debateId,
+            @PathVariable UUID debateId,
             @RequestHeader("X-Organization-ID") String organizationId) {
         
         // This would retrieve stored analysis results from database
@@ -84,9 +85,9 @@ public class DebateAnalysisController {
      * Get analysis status for long-running analyses
      */
     @GetMapping("/status")
-    @PreAuthorize("hasPermission(#debateId, 'Debate', 'READ')")
+    @PreAuthorize("hasPermission(#debateId.toString(), 'Debate', 'READ')")
     public ResponseEntity<AnalysisStatus> getAnalysisStatus(
-            @PathVariable Long debateId,
+            @PathVariable UUID debateId,
             @RequestHeader("X-Organization-ID") String organizationId) {
         
         // This would check if analysis is in progress
@@ -98,17 +99,5 @@ public class DebateAnalysisController {
             .build();
             
         return ResponseEntity.ok(status);
-    }
-    
-    /**
-     * Simple status response for analysis operations
-     */
-    @lombok.Builder
-    @lombok.Data
-    public static class AnalysisStatus {
-        private String debateId;
-        private String status; // READY, IN_PROGRESS, COMPLETED, ERROR
-        private String message;
-        private Double progress; // 0.0 to 1.0
     }
 }

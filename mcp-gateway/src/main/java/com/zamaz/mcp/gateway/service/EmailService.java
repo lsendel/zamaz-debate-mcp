@@ -114,7 +114,7 @@ public class EmailService {
         // - Mailgun API
         // - Twilio SendGrid
         
-        log.info("Sending email to: {} with subject: {}", toEmail, subject);
+        log.debug("Sending email to: {} with subject: {}", toEmail, subject);
     }
 
     private String buildEmailVerificationTemplate(String firstName, String verificationUrl) {

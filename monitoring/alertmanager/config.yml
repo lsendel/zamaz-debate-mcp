@@ -1,68 +1,285 @@
 global:
+  smtp_smarthost: '${SMTP_SMARTHOST:localhost:587}'
+  smtp_from: '${SMTP_FROM:alertmanager@zamaz-debate-mcp.com}'
+  smtp_auth_username: '${SMTP_USERNAME:}'
+  smtp_auth_password: '${SMTP_PASSWORD:}'
+  smtp_require_tls: true
+  
+  slack_api_url: '${SLACK_API_URL:}'
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+  
   resolve_timeout: 5m
-  smtp_from: 'alertmanager@mcp.example.com'
-  smtp_smarthost: 'localhost:25'
-  smtp_require_tls: false
 
 # Templates for notifications
 templates:
   - '/etc/alertmanager/templates/*.tmpl'
 
-# Route tree
+# Routing configuration
 route:
   group_by: ['alertname', 'cluster', 'service']
   group_wait: 10s
-  group_interval: 10s
-  repeat_interval: 1h
+  group_interval: 5m
+  repeat_interval: 12h
   receiver: 'default'
   
   routes:
-    # Critical alerts
-    - match:
-        severity: critical
-      receiver: 'critical'
-      continue: true
+  # Critical alerts go to PagerDuty and Slack
+  - match:
+      severity: critical
+    group_wait: 10s
+    group_interval: 5m
+    repeat_interval: 1h
+    receiver: 'critical-alerts'
     
-    # Service-specific routing
-    - match:
-        service: gateway
-      receiver: 'gateway-team'
+  # SLO violations go to engineering team
+  - match_re:
+      alert_type: 'slo_violation'
+    group_wait: 30s
+    group_interval: 10m
+    repeat_interval: 6h
+    receiver: 'slo-violations'
     
-    - match:
-        service: llm
-      receiver: 'ai-team'
+  # Infrastructure alerts go to ops team
+  - match:
+      alert_type: infrastructure
+    group_wait: 30s
+    group_interval: 10m
+    repeat_interval: 4h
+    receiver: 'infrastructure-alerts'
+    
+  # Database alerts go to database team
+  - match:
+      alert_type: database
+    group_wait: 30s
+    group_interval: 10m
+    repeat_interval: 4h
+    receiver: 'database-alerts'
+    
+  # GitHub API alerts go to integration team
+  - match:
+      alert_type: github_api
+    group_wait: 1m
+    group_interval: 15m
+    repeat_interval: 8h
+    receiver: 'github-api-alerts'
+    
+  # Business logic alerts go to development team
+  - match:
+      alert_type: business
+    group_wait: 1m
+    group_interval: 15m
+    repeat_interval: 8h
+    receiver: 'business-alerts'
+    
+  # JVM alerts go to platform team
+  - match:
+      alert_type: jvm
+    group_wait: 1m
+    group_interval: 15m
+    repeat_interval: 8h
+    receiver: 'jvm-alerts'
 
-# Receivers
-receivers:
-  - name: 'default'
-    webhook_configs:
-      - url: 'http://mcp-notification-service:5050/webhook/alerts'
-        send_resolved: true
-
-  - name: 'critical'
-    webhook_configs:
-      - url: 'http://mcp-notification-service:5050/webhook/critical'
-        send_resolved: true
-    # Uncomment for email notifications
-    # email_configs:
-    #   - to: 'oncall@example.com'
-    #     headers:
-    #       Subject: 'Critical Alert: {{ .GroupLabels.alertname }}'
-
-  - name: 'gateway-team'
-    webhook_configs:
-      - url: 'http://mcp-notification-service:5050/webhook/gateway'
-        send_resolved: true
-
-  - name: 'ai-team'
-    webhook_configs:
-      - url: 'http://mcp-notification-service:5050/webhook/ai'
-        send_resolved: true
-
-# Inhibit rules
+# Inhibition rules to prevent alert storms
 inhibit_rules:
-  - source_match:
-      severity: 'critical'
-    target_match:
-      severity: 'warning'
-    equal: ['alertname', 'cluster', 'service']
+# If service is down, don't alert on high error rates
+- source_match:
+    alertname: 'GitHubIntegrationInstanceDown'
+  target_match:
+    alertname: 'GitHubIntegrationHighErrorRate'
+  equal: ['service']
+
+# If database is down, don't alert on connection failures
+- source_match:
+    alertname: 'GitHubIntegrationDatabaseConnectionFailure'
+  target_match:
+    alertname: 'GitHubIntegrationDatabaseConnectionPoolExhausted'
+  equal: ['service']
+
+# If high CPU, don't alert on high GC overhead
+- source_match:
+    alertname: 'GitHubIntegrationCriticalCPUUsage'
+  target_match:
+    alertname: 'GitHubIntegrationHighGCOverhead'
+  equal: ['service']
+
+# Receivers configuration
+receivers:
+- name: 'default'
+  email_configs:
+  - to: '${DEFAULT_EMAIL:ops@zamaz-debate-mcp.com}'
+    subject: 'GitHub Integration Alert: {{ .GroupLabels.alertname }}'
+    body: |
+      {{ range .Alerts }}
+      Alert: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Labels: {{ range .Labels.SortedPairs }}{{ .Name }}: {{ .Value }}{{ end }}
+      {{ end }}
+    html: |
+      <h2>GitHub Integration Alert</h2>
+      {{ range .Alerts }}
+      <h3>{{ .Annotations.summary }}</h3>
+      <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+      <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+      <p><strong>Service:</strong> {{ .Labels.service }}</p>
+      <p><strong>Alert Type:</strong> {{ .Labels.alert_type }}</p>
+      <p><strong>Runbook:</strong> <a href="{{ .Annotations.runbook_url }}">{{ .Annotations.runbook_url }}</a></p>
+      <hr>
+      {{ end }}
+
+- name: 'critical-alerts'
+  pagerduty_configs:
+  - service_key: '${PAGERDUTY_SERVICE_KEY:}'
+    description: 'Critical GitHub Integration Alert: {{ .GroupLabels.alertname }}'
+    details:
+      firing: '{{ .Alerts.Firing | len }}'
+      resolved: '{{ .Alerts.Resolved | len }}'
+      alerts: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    links:
+    - href: '${GRAFANA_URL:http://localhost:3000}/d/github-integration-comprehensive/github-integration-comprehensive-dashboard'
+      text: 'GitHub Integration Dashboard'
+    - href: '{{ range .Alerts }}{{ .Annotations.runbook_url }}{{ end }}'
+      text: 'Runbook'
+  
+  slack_configs:
+  - channel: '#alerts-critical'
+    title: 'Critical GitHub Integration Alert'
+    text: |
+      {{ range .Alerts }}
+      *Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Severity:* {{ .Labels.severity }}
+      *Service:* {{ .Labels.service }}
+      *Runbook:* <{{ .Annotations.runbook_url }}|View Runbook>
+      {{ end }}
+    actions:
+    - type: button
+      text: 'View Dashboard'
+      url: '${GRAFANA_URL:http://localhost:3000}/d/github-integration-comprehensive/github-integration-comprehensive-dashboard'
+    - type: button
+      text: 'View Runbook'
+      url: '{{ range .Alerts }}{{ .Annotations.runbook_url }}{{ end }}'
+  
+  email_configs:
+  - to: '${CRITICAL_EMAIL:oncall@zamaz-debate-mcp.com}'
+    subject: 'CRITICAL: GitHub Integration Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      CRITICAL ALERT - Immediate Action Required
+      
+      {{ range .Alerts }}
+      Alert: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Severity: {{ .Labels.severity }}
+      Service: {{ .Labels.service }}
+      Runbook: {{ .Annotations.runbook_url }}
+      
+      Dashboard: ${GRAFANA_URL:http://localhost:3000}/d/github-integration-comprehensive/github-integration-comprehensive-dashboard
+      {{ end }}
+
+- name: 'slo-violations'
+  slack_configs:
+  - channel: '#slo-violations'
+    title: 'SLO Violation Alert'
+    text: |
+      {{ range .Alerts }}
+      *SLO Violation:* {{ .Annotations.summary }}
+      *Details:* {{ .Annotations.description }}
+      *SLO Type:* {{ .Labels.slo_type }}
+      *Current Value:* {{ .Labels.current_value }}
+      {{ end }}
+    actions:
+    - type: button
+      text: 'View SLO Dashboard'
+      url: '${GRAFANA_URL:http://localhost:3000}/d/github-integration-comprehensive/github-integration-comprehensive-dashboard'
+    - type: button
+      text: 'SLO Runbook'
+      url: '{{ range .Alerts }}{{ .Annotations.runbook_url }}{{ end }}'
+  
+  email_configs:
+  - to: '${SLO_EMAIL:sre@zamaz-debate-mcp.com}'
+    subject: 'SLO Violation: {{ .GroupLabels.alertname }}'
+    body: |
+      SLO Violation Detected
+      
+      {{ range .Alerts }}
+      Alert: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      SLO Type: {{ .Labels.slo_type }}
+      Current Value: {{ .Labels.current_value }}
+      Runbook: {{ .Annotations.runbook_url }}
+      {{ end }}
+
+- name: 'infrastructure-alerts'
+  slack_configs:
+  - channel: '#infrastructure'
+    title: 'Infrastructure Alert'
+    text: |
+      {{ range .Alerts }}
+      *Infrastructure Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Service:* {{ .Labels.service }}
+      *Current Value:* {{ .Labels.current_value }}
+      {{ end }}
+  
+  email_configs:
+  - to: '${INFRA_EMAIL:infrastructure@zamaz-debate-mcp.com}'
+    subject: 'Infrastructure Alert: {{ .GroupLabels.alertname }}'
+
+- name: 'database-alerts'
+  slack_configs:
+  - channel: '#database'
+    title: 'Database Alert'
+    text: |
+      {{ range .Alerts }}
+      *Database Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Service:* {{ .Labels.service }}
+      {{ end }}
+  
+  email_configs:
+  - to: '${DATABASE_EMAIL:database@zamaz-debate-mcp.com}'
+    subject: 'Database Alert: {{ .GroupLabels.alertname }}'
+
+- name: 'github-api-alerts'
+  slack_configs:
+  - channel: '#github-integration'
+    title: 'GitHub API Alert'
+    text: |
+      {{ range .Alerts }}
+      *GitHub API Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Rate Limit Remaining:* {{ .Labels.rate_limit_remaining }}
+      {{ end }}
+  
+  email_configs:
+  - to: '${GITHUB_API_EMAIL:integrations@zamaz-debate-mcp.com}'
+    subject: 'GitHub API Alert: {{ .GroupLabels.alertname }}'
+
+- name: 'business-alerts'
+  slack_configs:
+  - channel: '#github-integration'
+    title: 'Business Logic Alert'
+    text: |
+      {{ range .Alerts }}
+      *Business Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Service:* {{ .Labels.service }}
+      {{ end }}
+  
+  email_configs:
+  - to: '${BUSINESS_EMAIL:development@zamaz-debate-mcp.com}'
+    subject: 'Business Logic Alert: {{ .GroupLabels.alertname }}'
+
+- name: 'jvm-alerts'
+  slack_configs:
+  - channel: '#platform'
+    title: 'JVM Alert'
+    text: |
+      {{ range .Alerts }}
+      *JVM Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Service:* {{ .Labels.service }}
+      {{ end }}
+  
+  email_configs:
+  - to: '${JVM_EMAIL:platform@zamaz-debate-mcp.com}'
+    subject: 'JVM Alert: {{ .GroupLabels.alertname }}'

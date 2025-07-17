@@ -1,0 +1,112 @@
+# Distributed Tracing Configuration
+mcp:
+  tracing:
+    enabled: true
+    instance-id: ${HOSTNAME:${random.uuid}}
+    
+    # Exporters configuration
+    exporters:
+      # OTLP (OpenTelemetry Protocol) - Recommended
+      otlp:
+        enabled: true
+        endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4317}
+        timeout: 10s
+        compression: gzip
+      
+      # Jaeger - For backward compatibility
+      jaeger:
+        enabled: ${JAEGER_ENABLED:false}
+        endpoint: ${JAEGER_ENDPOINT:http://jaeger:14250}
+        timeout: 10s
+      
+      # Prometheus metrics
+      prometheus:
+        enabled: true
+        host: 0.0.0.0
+        port: ${PROMETHEUS_PORT:9464}
+      
+      # Logging - For debugging
+      logging:
+        enabled: ${TRACE_LOGGING_ENABLED:false}
+        level: INFO
+      
+      # Batch processing configuration
+      use-batch-processor: true
+      batch-delay: 5s
+      max-queue-size: 2048
+      max-batch-size: 512
+      export-timeout: 30s
+    
+    # Sampling configuration
+    sampling:
+      strategy: ${SAMPLING_STRATEGY:parent_based} # always_on, always_off, trace_id_ratio, parent_based, rate_limiting
+      ratio: ${SAMPLING_RATIO:0.1} # For trace_id_ratio strategy
+      max-traces-per-second: ${MAX_TRACES_PER_SECOND:100} # For rate_limiting strategy
+    
+    # Context propagation
+    propagation:
+      w3c-trace-context: true
+      w3c-baggage: true
+      b3: true # Zipkin compatibility
+      jaeger: false
+    
+    # Baggage configuration
+    baggage:
+      enabled: true
+      allowed-keys:
+        - user.id
+        - organization.id
+        - request.id
+        - session.id
+      max-entries: 10
+      max-value-length: 256
+    
+    # Spring instrumentation
+    spring:
+      webmvc:
+        enabled: true
+      webflux:
+        enabled: false
+
+# Service-specific configurations
+---
+spring:
+  config:
+    activate:
+      on-profile: development
+
+mcp:
+  tracing:
+    sampling:
+      strategy: always_on
+      ratio: 1.0
+    exporters:
+      logging:
+        enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+mcp:
+  tracing:
+    sampling:
+      strategy: parent_based
+      ratio: 0.01 # 1% sampling in production
+    exporters:
+      logging:
+        enabled: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: staging
+
+mcp:
+  tracing:
+    sampling:
+      strategy: trace_id_ratio
+      ratio: 0.1 # 10% sampling in staging

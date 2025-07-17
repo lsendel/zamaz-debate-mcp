@@ -1,0 +1,88 @@
+# Security Violations Alert Rule
+name: Security Violations Alert
+type: any
+index: mcp-security-*
+
+filter:
+- terms:
+    tags: ["security_violation", "high_risk", "suspicious_activity"]
+
+alert:
+- "email"
+- "slack"
+- "webhook"
+
+email:
+- "security@zamaz.com"
+- "admin@zamaz.com"
+
+slack:
+webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+channel: "#security-alerts"
+username: "MCP Security Bot"
+icon_emoji: ":warning:"
+
+webhook:
+- url: "https://your-monitoring-system.com/api/alerts"
+  method: "POST"
+  headers:
+    Content-Type: "application/json"
+    Authorization: "Bearer YOUR_API_TOKEN"
+
+alert_text: |
+  Security Violation Detected in MCP System
+  
+  Event Type: {0}
+  Severity: {1}
+  Risk Score: {2}
+  User: {3}
+  Organization: {4}
+  Description: {5}
+  
+  Timestamp: {6}
+  Service: {7}
+  Environment: {8}
+  
+  IP Address: {9}
+  User Agent: {10}
+  
+  Raw Event: {11}
+
+alert_text_args:
+  - eventType
+  - severity
+  - riskScore
+  - actor.userId
+  - actor.organizationId
+  - description
+  - timestamp
+  - context.service
+  - context.environment
+  - actor.ipAddress
+  - actor.userAgent
+  - _source
+
+include:
+  - eventType
+  - severity
+  - riskScore
+  - actor
+  - context
+  - description
+  - timestamp
+  - outcome
+  - tags
+
+realert:
+  minutes: 5
+
+query_delay:
+  minutes: 2
+
+query_key:
+  - actor.userId
+  - actor.organizationId
+  - eventType
+
+exponential_realert:
+  hours: 1

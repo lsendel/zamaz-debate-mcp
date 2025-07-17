@@ -1,0 +1,109 @@
+# Historical Context Awareness System Configuration
+
+historical-context:
+  analytics:
+    default-analysis-months: 6
+    max-analysis-months: 24
+    enable-real-time-analysis: true
+    batch-size: 100
+    
+  machine-learning:
+    enable-ml-analysis: true
+    confidence-threshold: 0.7
+    training-data-retention-days: 365
+    model-update-interval-hours: 24
+    max-training-batch-size: 1000
+    
+  knowledge-base:
+    enable-auto-extraction: true
+    extraction-batch-size: 50
+    effectiveness-threshold: 0.6
+    approval-timeout-days: 30
+    max-similar-entries: 10
+    
+  suggestions:
+    enable-personalization: true
+    max-suggestions-per-request: 10
+    relevance-threshold: 0.3
+    suggestion-expiration-days: 30
+    enable-contextual-suggestions: true
+    
+  trends:
+    enable-trend-analysis: true
+    trend-calculation-interval-hours: 24
+    trend-data-retention-days: 730
+    significance-threshold: 0.05
+    prediction-accuracy-threshold: 80
+
+# Scheduling Configuration
+spring:
+  task:
+    scheduling:
+      pool:
+        size: 4
+    execution:
+      pool:
+        core-size: 8
+        max-size: 16
+        queue-capacity: 1000
+        
+# Cache Configuration for Historical Context
+spring.cache:
+  type: redis
+  redis:
+    time-to-live: 3600000 # 1 hour
+    cache-null-values: false
+    key-prefix: "historical-context:"
+    
+# Database Configuration for Historical Context
+spring.datasource:
+  hikari:
+    maximum-pool-size: 20
+    minimum-idle: 5
+    connection-timeout: 30000
+    idle-timeout: 300000
+    max-lifetime: 1800000
+    
+# JPA Configuration for Historical Context
+spring.jpa:
+  hibernate:
+    ddl-auto: validate
+  properties:
+    hibernate:
+      jdbc.batch_size: 20
+      order_inserts: true
+      order_updates: true
+      batch_versioned_data: true
+      generate_statistics: false
+      
+# Logging Configuration
+logging:
+  level:
+    com.zamaz.mcp.github.service: INFO
+    com.zamaz.mcp.github.controller: INFO
+    com.zamaz.mcp.github.repository: DEBUG
+    org.springframework.scheduling: INFO
+    
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        
+# Custom Metrics
+custom-metrics:
+  historical-context:
+    enabled: true
+    pr-analysis-metrics: true
+    learning-progress-metrics: true
+    knowledge-base-metrics: true
+    suggestion-metrics: true
+    trend-analysis-metrics: true

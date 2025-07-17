@@ -1,0 +1,215 @@
+groups:
+- name: github-integration-slo-rules
+  interval: 30s
+  rules:
+  
+  # SLO: PR Processing P95 Latency
+  - record: github_integration:pr_processing_p95_latency_seconds
+    expr: histogram_quantile(0.95, sum(rate(github_integration_pr_processing_duration_seconds_bucket[5m])) by (le))
+    
+  - record: github_integration:pr_processing_p95_slo_compliance
+    expr: github_integration:pr_processing_p95_latency_seconds < 5.0
+    
+  # SLO: GitHub API P95 Latency
+  - record: github_integration:github_api_p95_latency_seconds
+    expr: histogram_quantile(0.95, sum(rate(github_integration_github_api_response_time_seconds_bucket[5m])) by (le))
+    
+  - record: github_integration:github_api_p95_slo_compliance
+    expr: github_integration:github_api_p95_latency_seconds < 2.0
+    
+  # SLO: Error Rate
+  - record: github_integration:error_rate_5m
+    expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))
+    
+  - record: github_integration:error_rate_slo_compliance
+    expr: github_integration:error_rate_5m < 0.05
+    
+  # SLO: PR Processing Success Rate
+  - record: github_integration:pr_success_rate_5m
+    expr: sum(rate(github_integration_pr_processing_completed_total{success="true"}[5m])) / sum(rate(github_integration_pr_processing_completed_total[5m]))
+    
+  - record: github_integration:pr_success_rate_slo_compliance
+    expr: github_integration:pr_success_rate_5m > 0.95
+    
+  # SLO: Service Availability
+  - record: github_integration:availability_5m
+    expr: avg_over_time(up{job="github-integration"}[5m])
+    
+  - record: github_integration:availability_slo_compliance
+    expr: github_integration:availability_5m > 0.995
+    
+  # SLO: Database Health
+  - record: github_integration:database_health_5m
+    expr: avg_over_time(github_integration_slo_database_health[5m])
+    
+  - record: github_integration:database_health_slo_compliance
+    expr: github_integration:database_health_5m > 0.99
+    
+  # SLO: Redis Health
+  - record: github_integration:redis_health_5m
+    expr: avg_over_time(github_integration_slo_redis_health[5m])
+    
+  - record: github_integration:redis_health_slo_compliance
+    expr: github_integration:redis_health_5m > 0.99
+    
+  # SLO: GitHub API Health
+  - record: github_integration:github_api_health_5m
+    expr: avg_over_time(github_integration_slo_github_api_health[5m])
+    
+  - record: github_integration:github_api_health_slo_compliance
+    expr: github_integration:github_api_health_5m > 0.99
+    
+  # Aggregated SLO Compliance
+  - record: github_integration:overall_slo_compliance
+    expr: |
+      (
+        (github_integration:pr_processing_p95_slo_compliance * 0.25) +
+        (github_integration:github_api_p95_slo_compliance * 0.15) +
+        (github_integration:error_rate_slo_compliance * 0.20) +
+        (github_integration:pr_success_rate_slo_compliance * 0.25) +
+        (github_integration:availability_slo_compliance * 0.15)
+      )
+      
+  # Business Metrics
+  - record: github_integration:pr_processing_rate_5m
+    expr: sum(rate(github_integration_pr_processing_completed_total[5m]))
+    
+  - record: github_integration:github_api_call_rate_5m
+    expr: sum(rate(github_integration_github_api_calls_total[5m]))
+    
+  - record: github_integration:review_comment_generation_rate_5m
+    expr: sum(rate(github_integration_review_comments_generated_total[5m]))
+    
+  - record: github_integration:issue_detection_rate_5m
+    expr: sum(rate(github_integration_issues_detected_total[5m]))
+    
+  # Resource Utilization
+  - record: github_integration:cpu_usage_5m
+    expr: avg_over_time(process_cpu_usage{job="github-integration"}[5m])
+    
+  - record: github_integration:memory_usage_ratio_5m
+    expr: sum(jvm_memory_used_bytes{job="github-integration"}) / sum(jvm_memory_max_bytes{job="github-integration"})
+    
+  - record: github_integration:jvm_gc_overhead_5m
+    expr: sum(rate(jvm_gc_pause_seconds_sum{job="github-integration"}[5m])) / sum(rate(jvm_gc_pause_seconds_count{job="github-integration"}[5m]))
+    
+  # Database Performance
+  - record: github_integration:database_connection_utilization_5m
+    expr: avg_over_time(github_integration_database_connections_active[5m]) / avg_over_time(hikaricp_connections_max{job="github-integration"}[5m])
+    
+  - record: github_integration:database_query_p95_latency_seconds
+    expr: histogram_quantile(0.95, sum(rate(github_integration_database_query_duration_seconds_bucket[5m])) by (le))
+    
+  # Redis Performance
+  - record: github_integration:redis_connection_utilization_5m
+    expr: avg_over_time(github_integration_redis_connections_active[5m]) / 8
+    
+  - record: github_integration:cache_hit_ratio_5m
+    expr: avg_over_time(github_integration_cache_hit_ratio[5m])
+    
+  # GitHub API Rate Limiting
+  - record: github_integration:github_api_rate_limit_utilization_5m
+    expr: 1 - (avg_over_time(github_integration_github_api_rate_limit_remaining[5m]) / avg_over_time(github_integration_github_api_rate_limit_total[5m]))
+    
+  - record: github_integration:github_api_retry_rate_5m
+    expr: sum(rate(github_integration_github_api_retries_total[5m]))
+
+- name: github-integration-slo-alerting
+  interval: 30s
+  rules:
+  
+  # SLO Burn Rate Alerts (Multi-window, multi-burn-rate)
+  - alert: GitHubIntegrationErrorRateBurnRateTooHigh
+    expr: |
+      (
+        github_integration:error_rate_5m > (14.4 * 0.05)
+        and
+        github_integration:error_rate_5m > (6 * 0.05)
+      )
+      or
+      (
+        github_integration:error_rate_5m > (6 * 0.05)
+        and
+        github_integration:error_rate_5m > (3 * 0.05)
+      )
+    for: 2m
+    labels:
+      severity: critical
+      slo_type: error_rate
+    annotations:
+      summary: "Error rate SLO burn rate is too high"
+      description: "The error rate is burning through the SLO budget too quickly. Current rate: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/error-rate-slo"
+      
+  - alert: GitHubIntegrationLatencyBurnRateTooHigh
+    expr: |
+      (
+        github_integration:pr_processing_p95_latency_seconds > (14.4 * 5.0)
+        and
+        github_integration:pr_processing_p95_latency_seconds > (6 * 5.0)
+      )
+      or
+      (
+        github_integration:pr_processing_p95_latency_seconds > (6 * 5.0)
+        and
+        github_integration:pr_processing_p95_latency_seconds > (3 * 5.0)
+      )
+    for: 2m
+    labels:
+      severity: critical
+      slo_type: pr_processing_latency
+    annotations:
+      summary: "PR processing latency SLO burn rate is too high"
+      description: "The PR processing latency is burning through the SLO budget too quickly. Current P95: {{ $value }}s"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/latency-slo"
+      
+  - alert: GitHubIntegrationAvailabilityBurnRateTooHigh
+    expr: |
+      (
+        github_integration:availability_5m < (1 - 14.4 * (1 - 0.995))
+        and
+        github_integration:availability_5m < (1 - 6 * (1 - 0.995))
+      )
+      or
+      (
+        github_integration:availability_5m < (1 - 6 * (1 - 0.995))
+        and
+        github_integration:availability_5m < (1 - 3 * (1 - 0.995))
+      )
+    for: 2m
+    labels:
+      severity: critical
+      slo_type: availability
+    annotations:
+      summary: "Service availability SLO burn rate is too high"
+      description: "The service availability is burning through the SLO budget too quickly. Current availability: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/availability-slo"
+      
+  # Long-term SLO Budget Alerts
+  - alert: GitHubIntegrationSLOBudgetExhausted
+    expr: |
+      (
+        github_integration:overall_slo_compliance < 0.90
+      )
+    for: 5m
+    labels:
+      severity: warning
+      slo_type: overall
+    annotations:
+      summary: "SLO budget is being exhausted"
+      description: "Overall SLO compliance is below 90%. Current compliance: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/slo-budget-exhausted"
+      
+  - alert: GitHubIntegrationSLOBudgetCritical
+    expr: |
+      (
+        github_integration:overall_slo_compliance < 0.80
+      )
+    for: 2m
+    labels:
+      severity: critical
+      slo_type: overall
+    annotations:
+      summary: "SLO budget critically low"
+      description: "Overall SLO compliance is critically low. Current compliance: {{ $value }}"
+      runbook_url: "https://github.com/zamaz-debate-mcp/runbooks/slo-budget-critical"

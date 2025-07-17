@@ -1,0 +1,280 @@
+# Performance Monitoring Configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    endpoint: /metrics
+  application:
+    name: mcp-system
+    version: 1.0.0
+    environment: ${ENVIRONMENT:development}
+  metrics:
+    export:
+      interval: 30s
+    distribution:
+      percentiles: 0.5,0.75,0.95,0.99
+      sla:
+        enabled: true
+  jvm:
+    enabled: true
+  database:
+    enabled: true
+  custom:
+    enabled: true
+  alerting:
+    enabled: true
+    email:
+      enabled: false
+    slack:
+      enabled: false
+    webhook:
+      enabled: false
+    cooldown:
+      minutes: 15
+    batch:
+      size: 10
+      window:
+        seconds: 30
+  profiling:
+    enabled: false
+    sampling:
+      interval: 100
+    cpu:
+      enabled: true
+    memory:
+      enabled: true
+    thread:
+      enabled: true
+    method:
+      enabled: false
+    output:
+      dir: ./profiling
+    retention:
+      days: 7
+    max:
+      stack:
+        depth: 50
+    flame:
+      graph:
+        enabled: false
+
+# APM Configuration
+apm:
+  enabled: false
+  provider: elastic
+  service:
+    name: ${monitoring.application.name}
+    version: ${monitoring.application.version}
+  environment: ${monitoring.application.environment}
+  server:
+    url: http://localhost:8200
+  secret:
+    token: ""
+  api:
+    key: ""
+  sampling:
+    rate: 1.0
+  capture:
+    body: all
+    headers: true
+  stack:
+    trace:
+      limit: 50
+  span:
+    frames:
+      min:
+        duration: 5ms
+  transaction:
+    max:
+      spans: 500
+  log:
+    correlation:
+      enabled: true
+  metrics:
+    enabled: true
+  profiling:
+    enabled: false
+  disable:
+    instrumentations: ""
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule:
+    full:
+      cron: "0 0 2 * * *"
+    incremental:
+      cron: "0 0 */4 * * *"
+  retention:
+    days: 30
+  compression:
+    enabled: true
+  encryption:
+    enabled: false
+  cloud:
+    enabled: false
+    provider: aws
+    bucket: mcp-backups
+    region: us-east-1
+    storage:
+      class: STANDARD
+    encryption:
+      enabled: true
+    multipart:
+      threshold: 100MB
+    retry:
+      attempts: 3
+    timeout:
+      minutes: 120
+    lifecycle:
+      transition:
+        ia:
+          days: 30
+        glacier:
+          days: 90
+      expiration:
+        days: 365
+  notifications:
+    enabled: true
+    email:
+      enabled: false
+      from: backup@mcp.example.com
+      to: admin@mcp.example.com
+    slack:
+      enabled: false
+      webhook: ""
+    success:
+      enabled: true
+    failure:
+      enabled: true
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,performance-metrics
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+      simple:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+        spring:
+          data:
+            repository:
+              invocations: true
+      percentiles:
+        http:
+          server:
+            requests: 0.5,0.75,0.95,0.99
+        spring:
+          data:
+            repository:
+              invocations: 0.5,0.75,0.95,0.99
+    tags:
+      application: ${monitoring.application.name}
+      version: ${monitoring.application.version}
+      environment: ${monitoring.application.environment}
+    web:
+      server:
+        requests:
+          autotime:
+            enabled: true
+          metric-name: http_server_requests
+
+# Logging Configuration
+logging:
+  level:
+    com.zamaz.mcp.common.monitoring: DEBUG
+    com.zamaz.mcp.common.backup: INFO
+    com.zamaz.mcp.common.resilience: INFO
+    com.zamaz.mcp.common.observability: INFO
+    com.zamaz.mcp.common.api: INFO
+    com.zamaz.mcp.common.eventsourcing: INFO
+    io.micrometer: INFO
+    org.springframework.boot.actuate: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/mcp-monitoring.log
+    max-size: 10MB
+    max-history: 30
+
+# Spring Boot Configuration
+spring:
+  application:
+    name: ${monitoring.application.name}
+  profiles:
+    active: monitoring
+  jmx:
+    enabled: true
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        generate_statistics: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=10m
+  task:
+    scheduling:
+      pool:
+        size: 10
+    execution:
+      pool:
+        core-size: 5
+        max-size: 20
+        queue-capacity: 100
+        keep-alive: 60s
+        thread-name-prefix: monitoring-task-
+        shutdown:
+          await-termination: true
+          await-termination-period: 30s
+
+# Server Configuration
+server:
+  port: 8080
+  error:
+    include-exception: true
+    include-stacktrace: on_param
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 20000
+    max-connections: 8192
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024

@@ -1,0 +1,81 @@
+# Authentication Failures Alert Rule
+name: Authentication Failures Alert
+type: frequency
+index: mcp-security-*
+
+num_events: 5
+timeframe:
+  minutes: 5
+
+filter:
+- terms:
+    eventType: ["AUTHENTICATION_FAILURE", "AUTHORIZATION_FAILURE"]
+
+alert:
+- "email"
+- "slack"
+
+email:
+- "security@zamaz.com"
+
+slack:
+webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+channel: "#security-alerts"
+username: "MCP Security Bot"
+icon_emoji: ":no_entry_sign:"
+
+alert_text: |
+  Multiple Authentication Failures Detected
+  
+  {0} authentication failures detected in the last 5 minutes
+  
+  Affected Users:
+  {1}
+  
+  Source IPs:
+  {2}
+  
+  Organizations:
+  {3}
+  
+  Services:
+  {4}
+  
+  Environment: {5}
+  
+  This could indicate:
+  - Brute force attack
+  - Credential stuffing
+  - System misconfiguration
+  - User account issues
+  
+  Please investigate immediately.
+
+alert_text_args:
+  - num_matches
+  - actor.userId
+  - actor.ipAddress
+  - actor.organizationId
+  - context.service
+  - context.environment
+
+include:
+  - eventType
+  - actor
+  - context
+  - description
+  - timestamp
+  - outcome
+  - riskScore
+
+realert:
+  minutes: 10
+
+query_delay:
+  minutes: 1
+
+query_key:
+  - actor.ipAddress
+
+exponential_realert:
+  hours: 2

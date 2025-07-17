@@ -230,7 +230,7 @@ Each service provides:
 ### Security Considerations
 
 1. **JWT Configuration:**
-   - Set strong JWT_SECRET in production
+   - Set strong JWT_SECRET in production (via environment variable)
    - Tokens expire after 24 hours by default
    - Refresh tokens valid for 7 days
 
@@ -269,7 +269,6 @@ java -Xmx2g -Xms1g -XX:+UseG1GC -jar app.jar
    - Check logs: `docker logs mcp-organization`
 
 2. **Authentication issues:**
-   - Verify JWT_SECRET matches across services
    - Check token expiration
    - Validate CORS configuration
 

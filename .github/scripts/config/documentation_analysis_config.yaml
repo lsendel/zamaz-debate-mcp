@@ -1,0 +1,393 @@
+# Documentation Analysis Configuration
+# This file configures the comprehensive documentation analysis system
+
+# Analysis Settings
+analysis:
+  # Enable/disable specific analysis components
+  enable_documentation_parsing: true
+  enable_code_extraction: true
+  enable_quality_analysis: true
+  enable_coverage_analysis: true
+  enable_search_indexing: true
+  enable_outdated_detection: true
+  enable_github_integration: true
+  
+  # File patterns to include/exclude
+  include_patterns:
+    - "*.md"
+    - "*.rst"
+    - "*.adoc"
+    - "*.html"
+    - "*.java"
+    - "*.py"
+    - "*.js"
+    - "*.ts"
+    - "*.jsx"
+    - "*.tsx"
+  
+  exclude_patterns:
+    - "node_modules/**"
+    - "target/**"
+    - "build/**"
+    - ".git/**"
+    - "*.min.js"
+    - "*.bundle.js"
+    - "coverage/**"
+    - "*.log"
+  
+  # Directories to analyze
+  documentation_directories:
+    - "docs"
+    - "documentation"
+    - "wiki"
+    - "guides"
+    - "README*"
+    - "CHANGELOG*"
+    - "CONTRIBUTING*"
+  
+  code_directories:
+    - "src"
+    - "lib"
+    - "app"
+    - "components"
+    - "services"
+    - "controllers"
+    - "models"
+
+# Documentation Parsing Settings
+parsers:
+  markdown:
+    enabled: true
+    extensions:
+      - "meta"
+      - "toc"
+      - "tables"
+      - "fenced_code"
+      - "codehilite"
+      - "footnotes"
+      - "admonition"
+    
+  asciidoc:
+    enabled: true
+    backend: "html5"
+    
+  restructuredtext:
+    enabled: true
+    extensions:
+      - "sphinx.ext.autodoc"
+      - "sphinx.ext.viewcode"
+    
+  html:
+    enabled: true
+    parser: "html.parser"
+
+# Code Documentation Extraction Settings
+code_extraction:
+  java:
+    enabled: true
+    extract_javadoc: true
+    extract_annotations: true
+    extract_spring_annotations: true
+    extract_swagger_annotations: true
+    
+  python:
+    enabled: true
+    extract_docstrings: true
+    extract_type_hints: true
+    extract_flask_routes: true
+    extract_fastapi_routes: true
+    
+  javascript:
+    enabled: true
+    extract_jsdoc: true
+    extract_comments: true
+    extract_express_routes: true
+    
+  typescript:
+    enabled: true
+    extract_tsdoc: true
+    extract_interfaces: true
+    extract_types: true
+
+# Quality Analysis Settings
+quality_analysis:
+  readability:
+    enabled: true
+    max_sentence_length: 25
+    technical_term_penalty: 2
+    
+  completeness:
+    enabled: true
+    minimum_word_count: 50
+    optimal_word_count: 1000
+    max_word_count: 5000
+    
+  freshness:
+    enabled: true
+    fresh_threshold_days: 30
+    stale_threshold_days: 365
+    
+  scoring_weights:
+    readability: 0.25
+    completeness: 0.40
+    freshness: 0.35
+
+# Coverage Analysis Settings
+coverage_analysis:
+  enabled: true
+  minimum_coverage_threshold: 50
+  target_coverage_threshold: 80
+  
+  # What to consider as "documented"
+  documentation_indicators:
+    - "docstring"
+    - "javadoc"
+    - "jsdoc"
+    - "tsdoc"
+    - "inline_comment"
+    - "api_annotation"
+  
+  # Coverage calculation weights
+  coverage_weights:
+    classes: 0.4
+    functions: 0.4
+    api_endpoints: 0.2
+
+# Search and Indexing Settings
+search_indexing:
+  enabled: true
+  
+  # TF-IDF settings
+  tfidf:
+    max_features: 5000
+    stop_words: "english"
+    ngram_range: [1, 2]
+    
+  # Semantic search settings (if available)
+  semantic_search:
+    enabled: false  # Requires sentence-transformers
+    model: "all-MiniLM-L6-v2"
+    
+  # Index optimization
+  index_optimization:
+    remove_stopwords: true
+    stemming: true
+    lemmatization: true
+
+# Outdated Detection Settings
+outdated_detection:
+  enabled: true
+  
+  # Time-based detection
+  time_based:
+    enabled: true
+    threshold_days: 30
+    
+  # Git-based detection
+  git_based:
+    enabled: true
+    check_recent_commits: true
+    recent_threshold_days: 30
+    
+  # Link checking
+  link_checking:
+    enabled: true
+    check_internal_links: true
+    check_external_links: false  # Can be slow
+    
+  # API documentation checks
+  api_checks:
+    enabled: true
+    check_missing_endpoints: true
+    check_outdated_schemas: true
+
+# GitHub Integration Settings
+github_integration:
+  enabled: true
+  
+  # Rate limiting
+  rate_limiting:
+    requests_per_hour: 5000
+    retry_attempts: 3
+    retry_delay: 1
+    
+  # Data collection
+  collect_issues: true
+  collect_pull_requests: true
+  collect_contributors: true
+  collect_releases: true
+  
+  # Analysis settings
+  documentation_keywords:
+    - "documentation"
+    - "docs"
+    - "readme"
+    - "api doc"
+    - "javadoc"
+    - "comment"
+    - "guide"
+    - "tutorial"
+    - "example"
+
+# Recommendation Engine Settings
+recommendations:
+  enabled: true
+  
+  # Priority thresholds
+  priority_thresholds:
+    critical: 20
+    high: 40
+    medium: 60
+    low: 80
+    
+  # Recommendation categories
+  categories:
+    - "coverage"
+    - "quality"
+    - "freshness"
+    - "api_docs"
+    - "community"
+    - "maintenance"
+    - "tooling"
+    
+  # Template generation
+  generate_templates: true
+  template_types:
+    - "api_endpoint"
+    - "class_documentation"
+    - "readme"
+    - "contributing"
+    - "changelog"
+
+# Output Settings
+output:
+  formats:
+    - "json"
+    - "markdown"
+    - "csv"
+    - "html"
+    
+  # Report sections
+  report_sections:
+    - "executive_summary"
+    - "documentation_analysis"
+    - "code_analysis"
+    - "github_analysis"
+    - "integration_insights"
+    - "recommendations"
+    - "issues"
+    - "metrics"
+    
+  # Visualization settings
+  visualization:
+    enabled: true
+    generate_charts: true
+    chart_types:
+      - "coverage_pie"
+      - "quality_trend"
+      - "format_distribution"
+      - "issue_severity"
+
+# Logging Settings
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # File logging
+  file_logging:
+    enabled: true
+    filename: "documentation_analysis.log"
+    max_size: "10MB"
+    backup_count: 5
+    
+  # Console logging
+  console_logging:
+    enabled: true
+    colorize: true
+
+# Performance Settings
+performance:
+  # Parallel processing
+  parallel_processing:
+    enabled: true
+    max_workers: 4
+    
+  # Memory optimization
+  memory_optimization:
+    enabled: true
+    chunk_size: 1000
+    
+  # Caching
+  caching:
+    enabled: true
+    cache_dir: ".doc_analysis_cache"
+    cache_ttl: 3600  # 1 hour
+
+# Integration with existing tools
+tool_integration:
+  # Javadoc integration
+  javadoc:
+    enabled: true
+    executable: "javadoc"
+    output_dir: "javadoc-output"
+    
+  # Sphinx integration
+  sphinx:
+    enabled: true
+    executable: "sphinx-build"
+    source_dir: "docs"
+    build_dir: "docs/_build"
+    
+  # JSDoc integration
+  jsdoc:
+    enabled: true
+    executable: "jsdoc"
+    config_file: "jsdoc.conf.json"
+    
+  # GitBook integration
+  gitbook:
+    enabled: false
+    executable: "gitbook"
+    
+  # Docusaurus integration
+  docusaurus:
+    enabled: false
+    executable: "docusaurus"
+
+# Custom analysis rules
+custom_rules:
+  # Documentation standards
+  documentation_standards:
+    - name: "api_endpoint_documentation"
+      description: "All API endpoints should have documentation"
+      severity: "high"
+      pattern: "@(GetMapping|PostMapping|PutMapping|DeleteMapping|RequestMapping)"
+      
+    - name: "public_method_documentation"
+      description: "All public methods should have documentation"
+      severity: "medium"
+      pattern: "public\\s+\\w+\\s+\\w+"
+      
+    - name: "class_documentation"
+      description: "All classes should have documentation"
+      severity: "medium"
+      pattern: "class\\s+\\w+"
+  
+  # Quality checks
+  quality_checks:
+    - name: "minimum_examples"
+      description: "Documentation should include examples"
+      severity: "low"
+      check_type: "example_count"
+      minimum: 1
+      
+    - name: "maximum_line_length"
+      description: "Documentation lines should not be too long"
+      severity: "low"
+      check_type: "line_length"
+      maximum: 120
+      
+    - name: "heading_structure"
+      description: "Documentation should have proper heading structure"
+      severity: "medium"
+      check_type: "heading_hierarchy"

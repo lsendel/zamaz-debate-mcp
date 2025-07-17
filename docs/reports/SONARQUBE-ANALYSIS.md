@@ -112,7 +112,7 @@ DB_USER=your_username
 DB_PASSWORD=your_secure_password
 
 # Security
-JWT_SECRET=your-secure-jwt-secret-key-256-bits
+
 ```
 
 **Update application.yml files:**

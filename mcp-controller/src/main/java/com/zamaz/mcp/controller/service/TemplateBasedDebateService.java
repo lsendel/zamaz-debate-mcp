@@ -45,6 +45,25 @@ public class TemplateBasedDebateService {
         
         return templateServiceClient.getDebateTemplates(organizationId);
     }
+
+    /**
+     * Get a specific debate template by ID for an organization.
+     *
+     * @param organizationId The organization ID
+     * @param templateId The template ID
+     * @return The debate template, if found
+     */
+    @RequiresPermission(Permission.TEMPLATE_READ)
+    public TemplateDto getDebateTemplate(String organizationId, String templateId) {
+        log.debug("Getting debate template {} for organization: {}", templateId, organizationId);
+
+        if (!templateServiceClient.isTemplateServiceAvailable()) {
+            throw new BusinessException("Template service is not available", "SERVICE_UNAVAILABLE");
+        }
+
+        return templateServiceClient.getTemplate(templateId, organizationId)
+                .orElseThrow(() -> BusinessException.notFound("Template", templateId));
+    }
     
     /**
      * Create a debate using a template.

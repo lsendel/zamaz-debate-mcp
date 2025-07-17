@@ -4,7 +4,7 @@ WORKDIR /build
 
 # Copy only necessary files for build
 COPY pom.xml .
-COPY mcp-common/ mcp-common/
+COPY mcp-common/pom.xml mcp-common/
 COPY mcp-controller/pom.xml mcp-controller/
 COPY mcp-controller/src/ mcp-controller/src/
 
@@ -35,4 +35,4 @@ EXPOSE 5013
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:5013/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["runuser", "-u", "spring", "--", "java", "-jar", "app.jar"]

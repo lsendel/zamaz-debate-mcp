@@ -1,0 +1,228 @@
+# Resilience4j Configuration
+mcp:
+  resilience:
+    # Circuit Breaker Configuration
+    circuit-breaker:
+      metrics-enabled: true
+      event-logging-enabled: true
+      
+      # Global defaults
+      global:
+        failure-rate-threshold: 50.0
+        slow-call-rate-threshold: 100.0
+        slow-call-duration-threshold: 2s
+        permitted-calls-in-half-open-state: 10
+        sliding-window-type: TIME_BASED
+        sliding-window-size: 100
+        minimum-number-of-calls: 10
+        wait-duration-in-open-state: 60s
+        automatic-transition-enabled: true
+      
+      # Service-specific configurations
+      services:
+        organization-service:
+          failure-rate-threshold: 30.0
+          slow-call-duration-threshold: 1s
+          wait-duration-in-open-state: 30s
+          
+        llm-service:
+          failure-rate-threshold: 50.0
+          slow-call-duration-threshold: 30s
+          wait-duration-in-open-state: 120s
+          minimum-number-of-calls: 5
+          
+        external-api:
+          failure-rate-threshold: 60.0
+          slow-call-duration-threshold: 5s
+          wait-duration-in-open-state: 180s
+    
+    # Retry Configuration
+    retry:
+      metrics-enabled: true
+      
+      # Global defaults
+      global:
+        max-attempts: 3
+        wait-duration: 1s
+        max-wait-duration: 60s
+        exponential-backoff: true
+        exponential-multiplier: 2.0
+        use-jitter: true
+        jitter-factor: 0.5
+      
+      # Service-specific configurations
+      services:
+        organization-service:
+          max-attempts: 3
+          wait-duration: 500ms
+          max-wait-duration: 5s
+          
+        llm-service:
+          max-attempts: 5
+          wait-duration: 2s
+          max-wait-duration: 30s
+          exponential-multiplier: 1.5
+          
+        external-api:
+          max-attempts: 4
+          wait-duration: 1s
+          max-wait-duration: 10s
+    
+    # Rate Limiter Configuration
+    rate-limiter:
+      metrics-enabled: true
+      
+      # Global defaults
+      global:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
+      
+      # Service-specific configurations
+      services:
+        organization-service:
+          limit-for-period: 200
+          limit-refresh-period: 1s
+          
+        llm-service:
+          limit-for-period: 10
+          limit-refresh-period: 1s
+          timeout-duration: 60s
+          
+        external-api:
+          limit-for-period: 50
+          limit-refresh-period: 1s
+    
+    # Bulkhead Configuration
+    bulkhead:
+      metrics-enabled: true
+      
+      # Global defaults
+      global:
+        max-concurrent-calls: 25
+        max-wait-duration: 1s
+        core-thread-pool-size: 10
+        max-thread-pool-size: 20
+        queue-capacity: 100
+        keep-alive-duration: 500ms
+      
+      # Service-specific configurations
+      services:
+        organization-service:
+          use-thread-pool: false
+          max-concurrent-calls: 50
+          
+        llm-service:
+          use-thread-pool: true
+          core-thread-pool-size: 5
+          max-thread-pool-size: 10
+          queue-capacity: 50
+          
+        external-api:
+          use-thread-pool: false
+          max-concurrent-calls: 20
+
+# Spring Boot Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,circuitbreakers,retry,ratelimiter,bulkheads
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+    retries:
+      enabled: true
+    bulkheads:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active}
+    export:
+      prometheus:
+        enabled: true
+
+# Resilience4j Spring Boot Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        register-health-indicator: true
+        event-consumer-buffer-size: 100
+    instances:
+      default:
+        base-config: default
+  
+  retry:
+    configs:
+      default:
+        register-health-indicator: true
+        event-consumer-buffer-size: 100
+    instances:
+      default:
+        base-config: default
+  
+  ratelimiter:
+    configs:
+      default:
+        register-health-indicator: true
+        event-consumer-buffer-size: 100
+    instances:
+      default:
+        base-config: default
+  
+  bulkhead:
+    configs:
+      default:
+        register-health-indicator: true
+        event-consumer-buffer-size: 100
+    instances:
+      default:
+        base-config: default
+
+# Profile-specific configurations
+---
+spring:
+  config:
+    activate:
+      on-profile: development
+
+mcp:
+  resilience:
+    circuit-breaker:
+      global:
+        failure-rate-threshold: 80.0
+        wait-duration-in-open-state: 10s
+    retry:
+      global:
+        max-attempts: 5
+    rate-limiter:
+      global:
+        limit-for-period: 1000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+mcp:
+  resilience:
+    circuit-breaker:
+      global:
+        failure-rate-threshold: 30.0
+        wait-duration-in-open-state: 120s
+    retry:
+      global:
+        max-attempts: 2
+        use-jitter: true
+    rate-limiter:
+      global:
+        limit-for-period: 50

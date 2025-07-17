@@ -29,7 +29,7 @@ Comprehensive security improvements have been implemented across the entire zama
 # Multiple hardcoded passwords in configuration
 password: ${DB_PASSWORD:changeme}     # ❌ Insecure fallback
 postgres_password: postgres          # ❌ Hardcoded
-jwt_secret: my-secret-key            # ❌ Exposed
+
 ```
 
 #### After (🛡️ SECURE)

@@ -88,10 +88,12 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
+      - JWT_SECRET
       - SERVER_PORT=5005
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-      - JAEGER_ENDPOINT=http://jaeger:14250
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=mcp-organization
+      - OTEL_TRACES_EXPORTER=otlp
     ports:
       - "${MCP_ORGANIZATION_PORT:-5005}:5005"
     depends_on:
@@ -125,7 +127,9 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - SERVER_PORT=5002
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JAEGER_ENDPOINT=http://jaeger:14250
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=mcp-llm
+      - OTEL_TRACES_EXPORTER=otlp
     ports:
       - "${MCP_LLM_PORT:-5002}:5002"
     depends_on:
@@ -161,7 +165,9 @@ services:
       - LLM_SERVICE_URL=http://mcp-llm:5002
       - SERVER_PORT=5013
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JAEGER_ENDPOINT=http://jaeger:14250
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=mcp-controller
+      - OTEL_TRACES_EXPORTER=otlp
     ports:
       - "${MCP_DEBATE_PORT:-5013}:5013"
     depends_on:
@@ -201,7 +207,9 @@ services:
       - REDIS_PORT=6379
       - SERVER_PORT=5004
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JAEGER_ENDPOINT=http://jaeger:14250
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=mcp-rag
+      - OTEL_TRACES_EXPORTER=otlp
     ports:
       - "${MCP_RAG_PORT:-5004}:5004"
     depends_on:
@@ -237,7 +245,9 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - SERVER_PORT=5006
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - JAEGER_ENDPOINT=http://jaeger:14250
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=mcp-template
+      - OTEL_TRACES_EXPORTER=otlp
     ports:
       - "${MCP_TEMPLATE_PORT:-5006}:5006"
     depends_on:
@@ -270,6 +280,28 @@ services:
     profiles:
       - llama
 
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - otel_logs:/var/log/otel
+    ports:
+      - "${OTEL_GRPC_PORT:-4317}:4317"    # OTLP gRPC receiver
+      - "${OTEL_HTTP_PORT:-4318}:4318"    # OTLP HTTP receiver
+      - "${OTEL_METRICS_PORT:-8889}:8889" # Prometheus metrics
+      - "${OTEL_HEALTH_PORT:-13133}:13133" # Health check
+    depends_on:
+      - jaeger
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Jaeger for distributed tracing
   jaeger:
     image: jaegertracing/all-in-one:2.2.0
@@ -279,6 +311,12 @@ services:
       - "${JAEGER_AGENT_PORT:-6831}:6831/udp"  # agent
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=9411
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+    volumes:
+      - jaeger_data:/badger
     networks:
       - mcp-network
 
@@ -315,6 +353,38 @@ services:
     profiles:
       - monitoring
 
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:3.3.0
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./docker/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Promtail for log shipping
+  promtail:
+    image: grafana/promtail:3.3.0
+    volumes:
+      - ./docker/promtail-config.yaml:/etc/promtail/config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
 networks:
   mcp-network:
     driver: bridge
@@ -329,3 +399,6 @@ volumes:
   ollama_data:
   prometheus_data:
   grafana_data:
+  jaeger_data:
+  otel_logs:
+  loki_data:

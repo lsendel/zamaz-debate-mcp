@@ -57,7 +57,7 @@ cp .env.example .env.production
 Ensure these critical variables are set:
 
 - `POSTGRES_PASSWORD`: Strong database password
-- `JWT_SECRET`: Secure JWT secret
+- `JWT_SECRET`: Secure JWT secret (environment variable)
 - `ANTHROPIC_API_KEY`: Claude API key
 - `OPENAI_API_KEY`: OpenAI API key
 - `GOOGLE_API_KEY`: Google API key

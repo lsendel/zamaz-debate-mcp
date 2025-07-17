@@ -3,13 +3,20 @@ package com.zamaz.mcp.controller.repository;
 import com.zamaz.mcp.controller.entity.Debate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.zamaz.mcp.controller.dto.DebateWithParticipantCount;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.UUID;
 
-@Repository
-public interface DebateRepository extends JpaRepository<Debate, UUID> {
+public interface DebateRepository extends JpaRepository<Debate, UUID>, JpaSpecificationExecutor<Debate> {
+
+    @Query("SELECT d.id as id, d.organizationId as organizationId, d.title as title, d.description as description, d.topic as topic, d.format as format, d.maxRounds as maxRounds, d.currentRound as currentRound, d.status as status, d.settings as settings, d.createdAt as createdAt, d.updatedAt as updatedAt, d.startedAt as startedAt, d.completedAt as completedAt, count(p) as participantCount FROM Debate d LEFT JOIN d.participants p GROUP BY d.id")
+    Page<DebateWithParticipantCount> findAllWithParticipantCount(Pageable pageable);
+}
     
     Page<Debate> findByOrganizationId(UUID organizationId, Pageable pageable);
     

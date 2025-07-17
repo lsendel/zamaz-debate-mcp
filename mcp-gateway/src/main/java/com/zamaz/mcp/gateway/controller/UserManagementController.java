@@ -113,7 +113,7 @@ public class UserManagementController {
             HttpServletRequest httpRequest) {
         
         String clientIp = getClientIp(httpRequest);
-        log.info("User registration attempt for email: {} from IP: {}", request.getEmail(), clientIp);
+        log.debug("User registration attempt for email: {} from IP: {}", request.getEmail(), clientIp);
         
         try {
             UserRegistrationResponse response = userManagementService.registerUser(request);
@@ -173,7 +173,7 @@ public class UserManagementController {
             HttpServletRequest httpRequest) {
         
         String clientIp = getClientIp(httpRequest);
-        log.info("Email verification attempt from IP: {}", clientIp);
+        log.debug("Email verification attempt from IP: {}", clientIp);
         
         EmailVerificationResponse response = userManagementService.verifyEmail(token);
         return ResponseEntity.ok(response);
@@ -207,7 +207,7 @@ public class UserManagementController {
             HttpServletRequest httpRequest) {
         
         String clientIp = getClientIp(httpRequest);
-        log.info("Password reset request for email: {} from IP: {}", email, clientIp);
+        log.debug("Password reset request for email: {} from IP: {}", email, clientIp);
         
         PasswordResetResponse response = userManagementService.initiatePasswordReset(email);
         return ResponseEntity.ok(response);
@@ -243,7 +243,7 @@ public class UserManagementController {
             HttpServletRequest httpRequest) {
         
         String clientIp = getClientIp(httpRequest);
-        log.info("Password reset completion attempt from IP: {}", clientIp);
+        log.debug("Password reset completion attempt from IP: {}", clientIp);
         
         PasswordResetResponse response = userManagementService.resetPassword(token, newPassword);
         return ResponseEntity.ok(response);
@@ -527,31 +527,5 @@ public class UserManagementController {
         return request.getRemoteAddr();
     }
 
-    // Exception handler for user management exceptions
-    @ExceptionHandler(UserManagementException.class)
-    public ResponseEntity<Map<String, Object>> handleUserManagementException(
-            UserManagementException e,
-            HttpServletRequest request) {
-        
-        String clientIp = getClientIp(request);
-        
-        auditLogger.logSecurityEvent(
-            SecurityAuditLogger.SecurityEventType.USER_OPERATION_FAILED,
-            SecurityAuditLogger.RiskLevel.MEDIUM,
-            "User management operation failed",
-            Map.of(
-                "error", e.getMessage(),
-                "clientIp", clientIp,
-                "endpoint", request.getRequestURI()
-            )
-        );
-        
-        Map<String, Object> errorResponse = Map.of(
-            "error", "User Management Error",
-            "message", e.getMessage(),
-            "timestamp", System.currentTimeMillis()
-        );
-        
-        return ResponseEntity.badRequest().body(errorResponse);
-    }
+    
 }

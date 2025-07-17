@@ -41,6 +41,16 @@ help: ## Show this help message
 	@echo '  make stop-ollama        - Stop Ollama container'
 	@echo ''
 	@echo '🧪 TESTING:'
+	@echo '  make test-setup         - Set up test environment'
+	@echo '  make test-unit          - Run unit tests for GitHub integration'
+	@echo '  make test-integration   - Run integration tests'
+	@echo '  make test-api           - Test API endpoints with curl'
+	@echo '  make test-docker        - Test Docker containers and health'
+	@echo '  make test-e2e-full      - Run full end-to-end tests'
+	@echo '  make test-performance   - Run performance and load tests'
+	@echo '  make test-security      - Run security tests'
+	@echo '  make test-all-github    - Run all GitHub integration tests'
+	@echo '  make test-report        - Generate test report with evidence'
 	@echo '  make quick-test         - Run quick UI tests'
 	@echo '  make full-test          - Run comprehensive E2E tests'
 	@echo '  make test-ui-only       - Test UI without backend services'
@@ -433,3 +443,98 @@ reset-db: ## Reset all databases (WARNING: deletes all data)
 	else \
 		echo "$(YELLOW)Reset cancelled$(NC)"; \
 	fi
+
+# GitHub Integration Testing Commands
+test-setup: ## Set up test environment
+	@echo "$(BLUE)🔧 Setting up test environment...$(NC)"
+	@chmod +x .github/tests/setup_test_env.sh
+	@./.github/tests/setup_test_env.sh
+	@echo "$(GREEN)✅ Test environment ready$(NC)"
+
+test-unit: ## Run unit tests for GitHub integration
+	@echo "$(BLUE)🧪 Running unit tests...$(NC)"
+	@cd .github/tests && python -m pytest test_*.py -v --cov=../scripts --cov-report=html --html=../test-results/unit/report.html --self-contained-html
+	@echo "$(GREEN)✅ Unit tests complete. Report: test-results/unit/report.html$(NC)"
+
+test-integration: ## Run integration tests
+	@echo "$(BLUE)🔗 Running integration tests...$(NC)"
+	@cd .github/tests && python -m pytest integration/ -v -m integration --html=../test-results/integration/report.html --self-contained-html
+	@echo "$(GREEN)✅ Integration tests complete$(NC)"
+
+test-api: ## Test API endpoints with curl
+	@echo "$(BLUE)🌐 Testing API endpoints...$(NC)"
+	@chmod +x .github/tests/api_tests.sh
+	@./.github/tests/api_tests.sh
+	@echo "$(GREEN)✅ API tests complete$(NC)"
+
+test-docker: ## Test Docker containers and health
+	@echo "$(BLUE)🐳 Testing Docker containers...$(NC)"
+	@chmod +x .github/tests/test_docker.sh
+	@./.github/tests/test_docker.sh
+	@echo "$(GREEN)✅ Docker tests complete$(NC)"
+
+test-e2e-full: ## Run full end-to-end tests
+	@echo "$(BLUE)🚀 Running full E2E tests...$(NC)"
+	@cd .github/tests && python -m pytest e2e/ -v --html=../test-results/e2e/report.html --self-contained-html
+	@echo "$(GREEN)✅ E2E tests complete$(NC)"
+
+test-performance: ## Run performance and load tests
+	@echo "$(BLUE)⚡ Running performance tests...$(NC)"
+	@cd .github/tests && python -m pytest performance/ -v --benchmark-only --benchmark-autosave
+	@echo "$(GREEN)✅ Performance tests complete$(NC)"
+
+test-security: ## Run security tests
+	@echo "$(BLUE)🔒 Running security tests...$(NC)"
+	@bandit -r .github/scripts -f json -o test-results/security/bandit-report.json
+	@safety check --json > test-results/security/safety-report.json || true
+	@echo "$(GREEN)✅ Security tests complete$(NC)"
+
+test-all-github: test-setup test-unit test-integration test-api test-docker test-e2e-full test-performance test-security ## Run all GitHub integration tests
+	@echo "$(GREEN)✅ All GitHub integration tests complete!$(NC)"
+	@$(MAKE) test-report
+
+test-report: ## Generate test report with evidence
+	@echo "$(BLUE)📊 Generating test report...$(NC)"
+	@mkdir -p test-evidence/reports
+	@echo "# Test Report - $(shell date)" > test-evidence/reports/summary.md
+	@echo "" >> test-evidence/reports/summary.md
+	@echo "## Test Results Summary" >> test-evidence/reports/summary.md
+	@echo "" >> test-evidence/reports/summary.md
+	@if [ -f test-results/unit/report.html ]; then echo "- ✅ Unit Tests: [View Report](../test-results/unit/report.html)" >> test-evidence/reports/summary.md; fi
+	@if [ -f test-results/integration/report.html ]; then echo "- ✅ Integration Tests: [View Report](../test-results/integration/report.html)" >> test-evidence/reports/summary.md; fi
+	@if [ -f test-evidence/api/api_test_results_*.txt ]; then echo "- ✅ API Tests: Completed" >> test-evidence/reports/summary.md; fi
+	@if [ -f test-results/e2e/report.html ]; then echo "- ✅ E2E Tests: [View Report](../test-results/e2e/report.html)" >> test-evidence/reports/summary.md; fi
+	@echo "" >> test-evidence/reports/summary.md
+	@echo "## Evidence Location" >> test-evidence/reports/summary.md
+	@echo "- Screenshots: test-evidence/screenshots/" >> test-evidence/reports/summary.md
+	@echo "- Logs: test-evidence/logs/" >> test-evidence/reports/summary.md
+	@echo "- API Responses: test-evidence/api/" >> test-evidence/reports/summary.md
+	@echo "$(GREEN)✅ Test report generated: test-evidence/reports/summary.md$(NC)"
+
+test-github-quick: ## Quick smoke test for GitHub integration
+	@echo "$(BLUE)🚀 Running quick GitHub integration tests...$(NC)"
+	@# Check if test environment is set up
+	@if [ ! -f .env.test ]; then $(MAKE) test-setup; fi
+	@# Run basic health checks
+	@echo "Testing webhook handler..."
+	@curl -s -f http://localhost:8080/health || echo "$(YELLOW)⚠️  Webhook handler not running$(NC)"
+	@echo "Testing metrics..."
+	@curl -s -f http://localhost:9090/metrics || echo "$(YELLOW)⚠️  Metrics not available$(NC)"
+	@# Run quick unit tests
+	@cd .github/tests && python -m pytest test_webhook_handler.py -v -k "test_webhook_signature_validation"
+	@echo "$(GREEN)✅ Quick tests complete$(NC)"
+
+test-playwright-github: ## Run Playwright tests for GitHub UI
+	@echo "$(BLUE)🎭 Running Playwright tests for GitHub integration...$(NC)"
+	@cd .github/tests && npx playwright test --project=chromium
+	@echo "$(GREEN)✅ Playwright tests complete$(NC)"
+
+test-github-monitoring: ## Test monitoring stack (Prometheus, Grafana, Loki)
+	@echo "$(BLUE)📊 Testing monitoring stack...$(NC)"
+	@echo -n "Prometheus: "
+	@curl -s http://localhost:9091/api/v1/query?query=up > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
+	@echo -n "Grafana: "
+	@curl -s http://localhost:3000/api/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
+	@echo -n "Loki: "
+	@curl -s http://localhost:3100/ready > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
+	@echo "$(GREEN)✅ Monitoring stack test complete$(NC)"

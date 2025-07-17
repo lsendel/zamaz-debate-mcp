@@ -1,0 +1,111 @@
+# Error Rate Spike Alert Rule
+name: Error Rate Spike Alert
+type: spike
+index: mcp-logs-*
+
+spike_height: 5
+spike_type: "up"
+timeframe:
+  minutes: 10
+
+threshold_ref: 10
+threshold_cur: 50
+
+filter:
+- terms:
+    level: ["ERROR", "WARN"]
+- bool:
+    should:
+      - terms:
+          tags: ["exception", "server_error", "sla_violation"]
+      - range:
+          status_code:
+            gte: 500
+
+alert:
+- "email"
+- "slack"
+- "pagerduty"
+
+email:
+- "oncall@zamaz.com"
+- "ops@zamaz.com"
+
+slack:
+webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+channel: "#critical-alerts"
+username: "MCP Error Bot"
+icon_emoji: ":rotating_light:"
+
+pagerduty:
+service_key: "YOUR_PAGERDUTY_SERVICE_KEY"
+client_name: "MCP Error Monitoring"
+client_url: "https://kibana.zamaz.com"
+
+alert_text: |
+  🚨 CRITICAL: Error Rate Spike Detected 🚨
+  
+  Error rate increased by {0}x in the last 10 minutes
+  
+  Current Errors: {1}
+  Reference Errors: {2}
+  
+  Top Error Types:
+  {3}
+  
+  Affected Services:
+  {4}
+  
+  Top Error Messages:
+  {5}
+  
+  Environment: {6}
+  
+  Organizations Affected:
+  {7}
+  
+  Status Codes:
+  {8}
+  
+  This indicates a critical system issue requiring immediate attention.
+  
+  Kibana Dashboard: https://kibana.zamaz.com/app/kibana#/dashboard/mcp-errors
+  
+  Please investigate immediately!
+
+alert_text_args:
+  - spike_height
+  - num_matches
+  - threshold_ref
+  - exception_type
+  - service
+  - message
+  - environment
+  - organizationId
+  - status_code
+
+include:
+  - level
+  - service
+  - message
+  - exception_type
+  - status_code
+  - timestamp
+  - organizationId
+  - environment
+  - tags
+
+realert:
+  minutes: 5
+
+query_delay:
+  minutes: 1
+
+summary_table_fields:
+  - service
+  - exception_type
+  - status_code
+  - message
+
+exponential_realert:
+  hours: 1

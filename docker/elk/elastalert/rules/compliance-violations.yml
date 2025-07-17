@@ -1,0 +1,108 @@
+# Compliance Violations Alert Rule
+name: Compliance Violations Alert
+type: any
+index: mcp-security-*
+
+filter:
+- terms:
+    tags: ["compliance_event", "gdpr"]
+- bool:
+    should:
+      - terms:
+          eventType: ["GDPR_DATA_REQUEST", "GDPR_DATA_EXPORT", "GDPR_DATA_DELETION", "DATA_RETENTION_POLICY_APPLIED"]
+      - terms:
+          eventCategory: ["compliance"]
+      - range:
+          riskScore:
+            gte: 70
+
+alert:
+- "email"
+- "webhook"
+
+email:
+- "compliance@zamaz.com"
+- "legal@zamaz.com"
+- "dpo@zamaz.com"
+
+webhook:
+- url: "https://your-compliance-system.com/api/alerts"
+  method: "POST"
+  headers:
+    Content-Type: "application/json"
+    Authorization: "Bearer YOUR_API_TOKEN"
+
+alert_text: |
+  Compliance Event Detected
+  
+  Event Type: {0}
+  Category: {1}
+  Risk Score: {2}
+  
+  User: {3}
+  Organization: {4}
+  
+  Description: {5}
+  
+  Target Resource: {6}
+  Resource Type: {7}
+  Data Classification: {8}
+  
+  Timestamp: {9}
+  Service: {10}
+  Environment: {11}
+  
+  Compliance Flags: {12}
+  
+  Context:
+  - IP Address: {13}
+  - User Agent: {14}
+  - Request ID: {15}
+  
+  This event may require compliance reporting or follow-up actions.
+  
+  Please review and ensure proper compliance procedures are followed.
+
+alert_text_args:
+  - eventType
+  - eventCategory
+  - riskScore
+  - actor.userId
+  - actor.organizationId
+  - description
+  - target.resourceId
+  - target.resourceType
+  - target.dataClassification
+  - timestamp
+  - context.service
+  - context.environment
+  - complianceFlags
+  - actor.ipAddress
+  - actor.userAgent
+  - context.requestId
+
+include:
+  - eventType
+  - eventCategory
+  - riskScore
+  - actor
+  - target
+  - context
+  - description
+  - timestamp
+  - outcome
+  - tags
+  - complianceFlags
+
+realert:
+  minutes: 30
+
+query_delay:
+  minutes: 1
+
+query_key:
+  - actor.organizationId
+  - eventType
+
+exponential_realert:
+  hours: 4

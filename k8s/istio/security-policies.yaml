@@ -1,0 +1,344 @@
+# Istio Security Policies for MCP Services
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-peer-authentication
+  namespace: mcp-system
+spec:
+  mtls:
+    mode: STRICT
+---
+# Service-specific peer authentication
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-organization-peer-auth
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-organization
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-llm-peer-auth
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+  mtls:
+    mode: STRICT
+---
+# Request Authentication for JWT tokens
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: mcp-jwt-auth
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  jwtRules:
+  - issuer: "https://auth.mcp.example.com"
+    jwksUri: "https://auth.mcp.example.com/.well-known/jwks.json"
+    audiences:
+    - "mcp-api"
+    forwardOriginalToken: true
+  - issuer: "mcp-internal"
+    jwks: |
+      {
+        "keys": [
+          {
+            "kty": "RSA",
+            "use": "sig",
+            "kid": "mcp-internal-key",
+            "n": "example-modulus",
+            "e": "AQAB"
+          }
+        ]
+      }
+    audiences:
+    - "mcp-internal"
+---
+# Authorization Policies
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-organization-authz
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-organization
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-gateway"]
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-controller"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/organizations/*", "/api/v2/organizations/*"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/actuator/health"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-llm-authz
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-controller"]
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-rag"]
+    to:
+    - operation:
+        methods: ["POST"]
+        paths: ["/api/v1/llm/*", "/api/v2/llm/*"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/actuator/health"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-controller-authz
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-controller
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-gateway"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/debates/*", "/api/v2/debates/*"]
+    when:
+    - key: request.headers[authorization]
+      values: ["Bearer *"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/actuator/health"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-rag-authz
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-rag
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-controller"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/v1/rag/*", "/api/v2/rag/*"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/actuator/health"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-template-authz
+  namespace: mcp-system
+spec:
+  selector:
+    matchLabels:
+      app: mcp-template
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-controller"]
+    - source:
+        principals: ["cluster.local/ns/mcp-system/sa/mcp-organization"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/templates/*", "/api/v2/templates/*"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/actuator/health"]
+---
+# Network Policies for additional security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-organization-netpol
+  namespace: mcp-system
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-organization
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mcp-gateway
+    - podSelector:
+        matchLabels:
+          app: mcp-controller
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    ports:
+    - protocol: TCP
+      port: 5005
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-llm-netpol
+  namespace: mcp-system
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-llm
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mcp-controller
+    - podSelector:
+        matchLabels:
+          app: mcp-rag
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    ports:
+    - protocol: TCP
+      port: 5002
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+---
+# Service Mesh Security Configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcp-tls-secret
+  namespace: istio-system
+type: kubernetes.io/tls
+data:
+  tls.crt: # Base64 encoded certificate
+  tls.key: # Base64 encoded private key
+---
+# Istio Certificate Management
+apiVersion: security.istio.io/v1beta1
+kind: WorkloadEntry
+metadata:
+  name: mcp-external-service
+  namespace: mcp-system
+spec:
+  address: external-api.example.com
+  ports:
+    https: 443
+  labels:
+    app: external-service
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: mcp-external-service
+  namespace: mcp-system
+spec:
+  hosts:
+  - external-api.example.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-external-service-dr
+  namespace: mcp-system
+spec:
+  host: external-api.example.com
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      sni: external-api.example.com

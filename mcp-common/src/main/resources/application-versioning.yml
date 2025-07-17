@@ -1,0 +1,120 @@
+# API Versioning Configuration
+mcp:
+  api:
+    versioning:
+      enabled: true
+      
+      # Version configuration
+      default-version: "1"
+      current-version: "1"
+      supported-versions:
+        - "1"
+        - "2"
+      deprecated-versions: []
+      
+      # Versioning strategy
+      strategy: HEADER  # HEADER, PATH, QUERY_PARAMETER, CONTENT_TYPE, CUSTOM, MULTIPLE
+      version-header: "X-API-Version"
+      version-parameter: "version"
+      path-prefix: "/api/v"
+      media-type-template: "application/vnd.mcp.v{version}+json"
+      
+      # Response configuration
+      include-version-in-response: true
+      include-deprecation-warnings: true
+      
+      # Validation and behavior
+      enforce-version-validation: true
+      enable-version-metrics: true
+      default-version-behavior: USE_DEFAULT  # USE_DEFAULT, USE_LATEST, REJECT, REDIRECT
+
+# Service-specific versioning configurations
+---
+spring:
+  config:
+    activate:
+      on-profile: organization-service
+
+mcp:
+  api:
+    versioning:
+      supported-versions:
+        - "1"
+        - "2"
+      current-version: "2"
+      deprecated-versions: []
+
+---
+spring:
+  config:
+    activate:
+      on-profile: llm-service
+
+mcp:
+  api:
+    versioning:
+      supported-versions:
+        - "1"
+        - "2"
+        - "3"
+      current-version: "3"
+      deprecated-versions:
+        - "1"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: controller-service
+
+mcp:
+  api:
+    versioning:
+      supported-versions:
+        - "1"
+        - "2"
+      current-version: "2"
+      deprecated-versions: []
+
+---
+spring:
+  config:
+    activate:
+      on-profile: development
+
+mcp:
+  api:
+    versioning:
+      enforce-version-validation: false
+      include-deprecation-warnings: true
+      enable-version-metrics: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+mcp:
+  api:
+    versioning:
+      enforce-version-validation: true
+      include-deprecation-warnings: true
+      enable-version-metrics: true
+      default-version-behavior: REJECT
+
+# Actuator endpoints for version management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,versions
+  endpoint:
+    versions:
+      enabled: true
+  info:
+    api:
+      enabled: true
+      version: ${mcp.api.versioning.current-version}
+      supported-versions: ${mcp.api.versioning.supported-versions}
+      strategy: ${mcp.api.versioning.strategy}

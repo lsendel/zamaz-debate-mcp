@@ -1,0 +1,119 @@
+# System Health Alert Rule
+name: System Health Alert
+type: any
+index: mcp-logs-*
+
+filter:
+- bool:
+    should:
+      - terms:
+          tags: ["system_event", "service_health_failed"]
+      - terms:
+          eventType: ["SERVICE_HEALTH_CHECK_FAILED", "DATABASE_CONNECTION_FAILED", "SYSTEM_SHUTDOWN"]
+      - terms:
+          message: ["OutOfMemoryError", "Connection refused", "Service unavailable"]
+      - range:
+          jvm.memoryUsagePercent:
+            gte: 90
+      - range:
+          duration:
+            gte: 30000  # 30 seconds
+
+alert:
+- "email"
+- "slack"
+- "pagerduty"
+
+email:
+- "oncall@zamaz.com"
+- "ops@zamaz.com"
+
+slack:
+webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+channel: "#system-health"
+username: "MCP System Bot"
+icon_emoji: ":hospital:"
+
+pagerduty:
+service_key: "YOUR_PAGERDUTY_SERVICE_KEY"
+client_name: "MCP System Health"
+client_url: "https://kibana.zamaz.com"
+
+alert_text: |
+  System Health Issue Detected
+  
+  Issue Type: {0}
+  Service: {1}
+  Environment: {2}
+  
+  Description: {3}
+  
+  System Metrics:
+  - Memory Usage: {4}%
+  - JVM Max Memory: {5}MB
+  - JVM Used Memory: {6}MB
+  - Available Processors: {7}
+  
+  Performance:
+  - Operation Duration: {8}ms
+  - Thread Count: {9}
+  
+  Instance Info:
+  - Instance ID: {10}
+  - Service Version: {11}
+  - Build Version: {12}
+  
+  Timestamp: {13}
+  
+  This may indicate:
+  - Memory pressure
+  - Service degradation
+  - Infrastructure issues
+  - Resource exhaustion
+  - Network connectivity problems
+  
+  Please investigate system health and performance.
+  
+  Monitoring Dashboard: https://grafana.zamaz.com/d/mcp-system-health
+
+alert_text_args:
+  - eventType
+  - service
+  - environment
+  - description
+  - jvm.memoryUsagePercent
+  - jvm.maxMemoryMB
+  - jvm.usedMemoryMB
+  - jvm.availableProcessors
+  - duration
+  - threadCount
+  - instanceId
+  - serviceVersion
+  - buildVersion
+  - timestamp
+
+include:
+  - eventType
+  - service
+  - environment
+  - description
+  - jvm
+  - duration
+  - instanceId
+  - serviceVersion
+  - buildVersion
+  - timestamp
+  - tags
+
+realert:
+  minutes: 10
+
+query_delay:
+  minutes: 2
+
+query_key:
+  - service
+  - instanceId
+
+exponential_realert:
+  hours: 1

@@ -281,7 +281,7 @@ JWT_EXPIRATION=86400000
 1. **Set ALLOWED_ORIGINS** to specific production domains
 2. **Set ENVIRONMENT=production** to enable HSTS
 3. **Configure Redis SSL** with `REDIS_SSL=true`
-4. **Use strong JWT_SECRET** (256-bit minimum)
+4. **Use strong JWT_SECRET** (256-bit minimum, via environment variable)
 5. **Enable HTTPS** with proper TLS certificates
 6. **Configure rate limiting** appropriate for production load
 7. **Set up monitoring** for security events

@@ -71,5 +71,7 @@ public class DebateDto {
         private String topic;
         private Integer maxRounds;
         private JsonNode settings;
+        private String status;
+        private String status;
     }
 }

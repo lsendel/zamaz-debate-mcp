@@ -3,31 +3,25 @@ package com.zamaz.mcp.controller.service;
 import com.zamaz.mcp.controller.dto.DebateDto;
 import com.zamaz.mcp.controller.dto.ParticipantDto;
 import com.zamaz.mcp.controller.dto.ResponseDto;
-import com.zamaz.mcp.controller.entity.*;
+import com.zamaz.mcp.controller.entity.Debate;
+import com.zamaz.mcp.controller.entity.Participant;
+import com.zamaz.mcp.controller.entity.Round;
+import com.zamaz.mcp.controller.entity.Response;
+import com.zamaz.mcp.controller.entity.DebateStatus;
 import com.zamaz.mcp.controller.exception.ResourceNotFoundException;
 import com.zamaz.mcp.controller.repository.DebateRepository;
 import com.zamaz.mcp.controller.repository.ParticipantRepository;
 import com.zamaz.mcp.controller.repository.RoundRepository;
 import com.zamaz.mcp.controller.repository.ResponseRepository;
-import com.zamaz.mcp.controller.statemachine.DebateEvents;
-import com.zamaz.mcp.controller.statemachine.DebateStates;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.statemachine.StateMachine;
-import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,40 +34,8 @@ public class DebateService {
     private final ParticipantRepository participantRepository;
     private final RoundRepository roundRepository;
     private final ResponseRepository responseRepository;
-    private final StateMachineFactory<DebateStates, DebateEvents> stateMachineFactory;
     private final OrchestrationService orchestrationService;
-    
-    // Map to store event sinks for each debate
-    private final Map<String, Sinks.Many<Map<String, Object>>> debateEventSinks = new ConcurrentHashMap<>();
-    
-    public DebateDto createDebate(DebateDto.CreateDebateRequest request) {
-        log.debug("Creating debate with title: {}", request.getTitle());
-        
-        Debate debate = Debate.builder()
-                .organizationId(request.getOrganizationId())
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .topic(request.getTopic())
-                .format(request.getFormat())
-                .maxRounds(request.getMaxRounds() != null ? request.getMaxRounds() : 3)
-                .settings(request.getSettings())
-                .status(DebateStates.CREATED.name())
-                .build();
-        
-        debate = debateRepository.save(debate);
-        log.info("Created debate with ID: {}", debate.getId());
-        
-        // Initialize state machine
-        StateMachine<DebateStates, DebateEvents> stateMachine = stateMachineFactory.getStateMachine(debate.getId().toString());
-        stateMachine.start();
-        stateMachine.sendEvent(DebateEvents.INITIALIZE);
-        
-        debate.setStatus(DebateStates.INITIALIZED.name());
-        debate = debateRepository.save(debate);
-        
-        return toDto(debate);
-    }
-    
+
     public DebateDto getDebate(UUID id) {
         log.debug("Getting debate with ID: {}", id);
         Debate debate = debateRepository.findById(id)
@@ -81,21 +43,16 @@ public class DebateService {
         return toDto(debate);
     }
     
-    public Page<DebateDto> listDebates(UUID organizationId, String status, Pageable pageable) {
+    public Page<DebateDto> listDebates(UUID organizationId, DebateStatus status, Pageable pageable) {
         log.debug("Listing debates for organization: {}, status: {}", organizationId, status);
         
-        Page<Debate> debates;
-        if (organizationId != null && status != null) {
-            debates = debateRepository.findByOrganizationIdAndStatus(organizationId, status, pageable);
-        } else if (organizationId != null) {
-            debates = debateRepository.findByOrganizationId(organizationId, pageable);
-        } else if (status != null) {
-            debates = debateRepository.findByStatus(status, pageable);
-        } else {
-            debates = debateRepository.findAll(pageable);
-        }
+        Specification<Debate> spec = Specification.where(DebateSpecifications.hasOrganizationId(organizationId))
+                .and(DebateSpecifications.hasStatus(status));
         
-        return debates.map(this::toDto);
+        Page<DebateWithParticipantCount> debates = debateRepository.findAll(spec, pageable)
+                .map(this::toDtoFromProjection);
+        
+        return debates;
     }
     
     public DebateDto updateDebate(UUID id, DebateDto.UpdateDebateRequest request) {
@@ -119,6 +76,9 @@ public class DebateService {
         if (request.getSettings() != null) {
             debate.setSettings(request.getSettings());
         }
+        if (request.getStatus() != null) {
+            debate.setStatus(DebateStatus.valueOf(request.getStatus()));
+        }
         
         debate = debateRepository.save(debate);
         log.info("Updated debate with ID: {}", debate.getId());
@@ -135,41 +95,6 @@ public class DebateService {
         
         debateRepository.deleteById(id);
         log.info("Deleted debate with ID: {}", id);
-    }
-    
-    public DebateDto startDebate(UUID id) {
-        log.debug("Starting debate with ID: {}", id);
-        
-        Debate debate = debateRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + id));
-        
-        if (debate.getParticipants().size() < 2) {
-            throw new IllegalStateException("Debate must have at least 2 participants");
-        }
-        
-        StateMachine<DebateStates, DebateEvents> stateMachine = stateMachineFactory.getStateMachine(id.toString());
-        stateMachine.sendEvent(DebateEvents.START);
-        
-        debate.setStatus(DebateStates.IN_PROGRESS.name());
-        debate.setStartedAt(LocalDateTime.now());
-        debate.setCurrentRound(1);
-        
-        // Create first round
-        Round round = Round.builder()
-                .debate(debate)
-                .roundNumber(1)
-                .status("IN_PROGRESS")
-                .startedAt(LocalDateTime.now())
-                .build();
-        
-        roundRepository.save(round);
-        debate = debateRepository.save(debate);
-        
-        // Trigger AI responses if needed
-        orchestrationService.orchestrateRound(debate.getId(), round.getId());
-        
-        log.info("Started debate with ID: {}", debate.getId());
-        return toDto(debate);
     }
     
     public ParticipantDto addParticipant(UUID debateId, ParticipantDto.CreateParticipantRequest request) {
@@ -229,7 +154,7 @@ public class DebateService {
                 .round(round)
                 .participant(participant)
                 .content(request.getContent())
-                .tokenCount(request.getContent().split("\\s+").length) // Simple token count
+                .tokenCount(request.getContent().split("\s+").length) // Simple token count
                 .build();
         
         response = responseRepository.save(response);
@@ -241,47 +166,21 @@ public class DebateService {
         return toResponseDto(response);
     }
     
-    public List<Object> listRounds(UUID debateId) {
+    public List<RoundDto> listRounds(UUID debateId) {
         log.debug("Listing rounds for debate: {}", debateId);
         
         return roundRepository.findByDebateIdOrderByRoundNumber(debateId).stream()
-                .map(round -> {
-                    var roundData = new java.util.HashMap<String, Object>();
-                    roundData.put("id", round.getId());
-                    roundData.put("roundNumber", round.getRoundNumber());
-                    roundData.put("status", round.getStatus());
-                    roundData.put("startedAt", round.getStartedAt());
-                    roundData.put("completedAt", round.getCompletedAt());
-                    roundData.put("responses", round.getResponses().stream()
-                            .map(this::toResponseDto)
-                            .collect(Collectors.toList()));
-                    return roundData;
-                })
+                .map(this::toRoundDto)
                 .collect(Collectors.toList());
     }
     
-    public Object getResults(UUID debateId) {
+    public DebateResultDto getResults(UUID debateId) {
         log.debug("Getting results for debate: {}", debateId);
         
         Debate debate = debateRepository.findById(debateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + debateId));
         
-        // This would be enhanced with actual scoring logic
-        var results = new java.util.HashMap<String, Object>();
-        results.put("debateId", debateId);
-        results.put("status", debate.getStatus());
-        results.put("totalRounds", debate.getCurrentRound());
-        results.put("participants", debate.getParticipants().stream()
-                .map(p -> {
-                    var pData = new java.util.HashMap<String, Object>();
-                    pData.put("name", p.getName());
-                    pData.put("position", p.getPosition());
-                    pData.put("responseCount", p.getResponses().size());
-                    return pData;
-                })
-                .collect(Collectors.toList()));
-        
-        return results;
+        return toDebateResultDto(debate);
     }
     
     private DebateDto toDto(Debate debate) {
@@ -294,7 +193,7 @@ public class DebateService {
                 .format(debate.getFormat())
                 .maxRounds(debate.getMaxRounds())
                 .currentRound(debate.getCurrentRound())
-                .status(debate.getStatus())
+                .status(debate.getStatus().name())
                 .settings(debate.getSettings())
                 .createdAt(debate.getCreatedAt())
                 .updatedAt(debate.getUpdatedAt())
@@ -329,54 +228,52 @@ public class DebateService {
                 .createdAt(response.getCreatedAt())
                 .build();
     }
-    
-    /**
-     * Subscribe to debate events for WebSocket updates
-     */
-    public Flux<Map<String, Object>> subscribeToDebateEvents(String debateId) {
-        log.debug("Creating event subscription for debate: {}", debateId);
-        
-        Sinks.Many<Map<String, Object>> sink = debateEventSinks.computeIfAbsent(
-            debateId, 
-            k -> Sinks.many().multicast().onBackpressureBuffer()
-        );
-        
-        return sink.asFlux()
-            .doOnSubscribe(subscription -> 
-                log.info("New subscription created for debate: {}", debateId))
-            .doOnCancel(() -> 
-                log.info("Subscription cancelled for debate: {}", debateId))
-            .timeout(Duration.ofHours(1)) // Auto-cleanup after 1 hour
-            .doOnError(error -> 
-                log.error("Error in debate event stream for {}: {}", debateId, error.getMessage()));
+
+    private RoundDto toRoundDto(Round round) {
+        return RoundDto.builder()
+                .id(round.getId())
+                .roundNumber(round.getRoundNumber())
+                .status(round.getStatus())
+                .startedAt(round.getStartedAt())
+                .completedAt(round.getCompletedAt())
+                .responses(round.getResponses().stream().map(this::toResponseDto).collect(Collectors.toList()))
+                .build();
     }
-    
-    /**
-     * Publish event to debate subscribers
-     */
-    public void publishDebateEvent(String debateId, Map<String, Object> event) {
-        Sinks.Many<Map<String, Object>> sink = debateEventSinks.get(debateId);
-        if (sink != null) {
-            sink.tryEmitNext(event);
-            log.debug("Published event to debate {}: {}", debateId, event.get("type"));
-        }
+
+    private DebateResultDto toDebateResultDto(Debate debate) {
+        return DebateResultDto.builder()
+                .debateId(debate.getId())
+                .status(debate.getStatus().name())
+                .totalRounds(debate.getCurrentRound())
+                .participants(debate.getParticipants().stream().map(this::toParticipantResultDto).collect(Collectors.toList()))
+                .build();
     }
-    
-    /**
-     * Clean up event subscription when debate is complete
-     */
-    public void cleanupDebateEvents(String debateId) {
-        Sinks.Many<Map<String, Object>> sink = debateEventSinks.remove(debateId);
-        if (sink != null) {
-            sink.tryEmitComplete();
-            log.info("Cleaned up event subscription for debate: {}", debateId);
-        }
+
+    private ParticipantResultDto toParticipantResultDto(Participant participant) {
+        return ParticipantResultDto.builder()
+                .name(participant.getName())
+                .position(participant.getPosition())
+                .responseCount(participant.getResponses().size())
+                .build();
     }
-    
-    /**
-     * Get active subscription count for monitoring
-     */
-    public int getActiveSubscriptionCount() {
-        return debateEventSinks.size();
+
+    private DebateDto toDtoFromProjection(DebateWithParticipantCount projection) {
+        return DebateDto.builder()
+                .id(projection.getId())
+                .organizationId(projection.getOrganizationId())
+                .title(projection.getTitle())
+                .description(projection.getDescription())
+                .topic(projection.getTopic())
+                .format(projection.getFormat())
+                .maxRounds(projection.getMaxRounds())
+                .currentRound(projection.getCurrentRound())
+                .status(projection.getStatus())
+                .settings(projection.getSettings())
+                .createdAt(projection.getCreatedAt())
+                .updatedAt(projection.getUpdatedAt())
+                .startedAt(projection.getStartedAt())
+                .completedAt(projection.getCompletedAt())
+                .participantCount((int) projection.getParticipantCount())
+                .build();
     }
 }
