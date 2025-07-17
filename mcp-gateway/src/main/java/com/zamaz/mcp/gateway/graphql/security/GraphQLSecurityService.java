@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -28,7 +29,8 @@ public class GraphQLSecurityService {
             graphql.kickstart.servlet.context.GraphQLServletContext servletContext = 
                 (graphql.kickstart.servlet.context.GraphQLServletContext) context;
             
-            String authHeader = servletContext.getHttpServletRequest().getHeader("Authorization");
+            HttpServletRequest httpRequest = servletContext.getHttpServletRequest();
+            String authHeader = httpRequest.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
                 return validateToken(token);
@@ -56,7 +58,8 @@ public class GraphQLSecurityService {
             graphql.kickstart.servlet.context.GraphQLServletContext servletContext = 
                 (graphql.kickstart.servlet.context.GraphQLServletContext) context;
             
-            String authHeader = servletContext.getHttpServletRequest().getHeader("Authorization");
+            HttpServletRequest httpRequest = servletContext.getHttpServletRequest();
+            String authHeader = httpRequest.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
                 return extractRoleFromToken(token);
@@ -84,7 +87,8 @@ public class GraphQLSecurityService {
             graphql.kickstart.servlet.context.GraphQLServletContext servletContext = 
                 (graphql.kickstart.servlet.context.GraphQLServletContext) context;
             
-            String authHeader = servletContext.getHttpServletRequest().getHeader("Authorization");
+            HttpServletRequest httpRequest = servletContext.getHttpServletRequest();
+            String authHeader = httpRequest.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
                 return extractUserIdFromToken(token);

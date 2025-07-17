@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -252,6 +253,9 @@ public class SecurityAlertManager {
             case LOW:
                 // Only log for low priority
                 break;
+            case INFO:
+                // Only log for info priority
+                break;
         }
         
         // Update throttling
@@ -335,8 +339,13 @@ public class SecurityAlertManager {
      * Send email alert using Spring Mail
      */
     private void sendEmail(SecurityAlert alert) {
-        if (!emailAlertsEnabled || mailSender == null) {
-            log.debug("Email alerts disabled or mail sender not configured");
+        if (!emailAlertsEnabled) {
+            log.debug("Email alerts disabled");
+            return;
+        }
+        
+        if (mailSender == null) {
+            log.warn("Mail sender not configured. Email alerts cannot be sent.");
             return;
         }
         
@@ -395,6 +404,89 @@ public class SecurityAlertManager {
     }
     
     /**
+     * Send Slack notification
+     */
+    private void sendSlackNotification(SecurityAlert alert) {
+        if (slackWebhook == null || slackWebhook.trim().isEmpty()) {
+            log.debug("Slack webhook not configured");
+            return;
+        }
+        
+        try {
+            var slackMessage = Map.of(
+                "text", String.format("[%s] %s", alert.getSeverity(), alert.getTitle()),
+                "attachments", List.of(Map.of(
+                    "color", getSlackColor(alert.getSeverity()),
+                    "fields", List.of(
+                        Map.of("title", "Severity", "value", alert.getSeverity().name(), "short", true),
+                        Map.of("title", "Time", "value", alert.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), "short", true),
+                        Map.of("title", "Message", "value", alert.getMessage(), "short", false)
+                    )
+                ))
+            );
+            
+            restTemplate.postForEntity(slackWebhook, slackMessage, String.class);
+            log.debug("Alert sent to Slack: {}", alert.getTitle());
+        } catch (Exception e) {
+            log.error("Failed to send alert to Slack", e);
+        }
+    }
+    
+    /**
+     * Send Microsoft Teams notification
+     */
+    private void sendTeamsNotification(SecurityAlert alert) {
+        if (teamsWebhook == null || teamsWebhook.trim().isEmpty()) {
+            log.debug("Teams webhook not configured");
+            return;
+        }
+        
+        try {
+            var teamsMessage = Map.of(
+                "@type", "MessageCard",
+                "@context", "https://schema.org/extensions",
+                "themeColor", getTeamsColor(alert.getSeverity()),
+                "summary", alert.getTitle(),
+                "sections", List.of(Map.of(
+                    "activityTitle", alert.getTitle(),
+                    "activitySubtitle", "Security Alert - " + alert.getSeverity(),
+                    "facts", List.of(
+                        Map.of("name", "Severity", "value", alert.getSeverity().name()),
+                        Map.of("name", "Time", "value", alert.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)),
+                        Map.of("name", "Message", "value", alert.getMessage())
+                    ),
+                    "markdown", true
+                ))
+            );
+            
+            restTemplate.postForEntity(teamsWebhook, teamsMessage, String.class);
+            log.debug("Alert sent to Teams: {}", alert.getTitle());
+        } catch (Exception e) {
+            log.error("Failed to send alert to Teams", e);
+        }
+    }
+    
+    private String getSlackColor(AlertSeverity severity) {
+        return switch (severity) {
+            case CRITICAL -> "danger";
+            case HIGH -> "warning";
+            case MEDIUM -> "warning";
+            case LOW -> "good";
+            case INFO -> "#36a64f";
+        };
+    }
+    
+    private String getTeamsColor(AlertSeverity severity) {
+        return switch (severity) {
+            case CRITICAL -> "ff0000";
+            case HIGH -> "ff8c00";
+            case MEDIUM -> "ffd700";
+            case LOW -> "32cd32";
+            case INFO -> "0078d4";
+        };
+    }
+    
+    /**
      * Format message for Slack
      */
     private String formatSlackMessage(SecurityAlert alert) {
@@ -422,6 +514,7 @@ public class SecurityAlertManager {
             case HIGH -> ":warning:";
             case MEDIUM -> ":exclamation:";
             case LOW -> ":information_source:";
+            case INFO -> ":blue_book:";
         };
     }
     
@@ -434,11 +527,12 @@ public class SecurityAlertManager {
             case HIGH -> "FF8C00"; // Dark Orange
             case MEDIUM -> "FFD700"; // Gold
             case LOW -> "008000"; // Green
+            case INFO -> "0078D4"; // Blue
         };
     }
     
     public enum AlertSeverity {
-        CRITICAL, HIGH, MEDIUM, LOW
+        CRITICAL, HIGH, MEDIUM, LOW, INFO
     }
     
     @lombok.Data
