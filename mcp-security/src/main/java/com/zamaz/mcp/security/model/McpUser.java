@@ -33,6 +33,25 @@ public class McpUser implements UserDetails {
     private boolean accountNonLocked = true;
     private boolean credentialsNonExpired = true;
     
+    // Email verification fields
+    private boolean emailVerified = false;
+    private String emailVerificationToken;
+    private Date emailVerificationTokenExpiresAt;
+    
+    // Password reset fields
+    private String passwordResetToken;
+    private Date passwordResetTokenExpiresAt;
+    
+    // Account deactivation
+    private Date deactivatedAt;
+    private String deactivationReason;
+    
+    // Terms and privacy policy acceptance
+    private boolean acceptedTerms = false;
+    private boolean acceptedPrivacyPolicy = false;
+    private Date termsAcceptedAt;
+    private Date privacyPolicyAcceptedAt;
+    
     // Audit fields
     private Date createdAt;
     private Date updatedAt;
@@ -203,6 +222,73 @@ public class McpUser implements UserDetails {
     public boolean hasOrganizationPermission(String organizationId, String permission) {
         return getAllPermissions(organizationId).stream()
                 .anyMatch(p -> p.matches(permission));
+    }
+    
+    /**
+     * Check if the user account is deactivated.
+     */
+    public boolean isDeactivated() {
+        return deactivatedAt != null;
+    }
+    
+    /**
+     * Check if email verification token is valid (not expired).
+     */
+    public boolean isEmailVerificationTokenValid() {
+        return emailVerificationToken != null && 
+               emailVerificationTokenExpiresAt != null &&
+               new Date().before(emailVerificationTokenExpiresAt);
+    }
+    
+    /**
+     * Check if password reset token is valid (not expired).
+     */
+    public boolean isPasswordResetTokenValid() {
+        return passwordResetToken != null && 
+               passwordResetTokenExpiresAt != null &&
+               new Date().before(passwordResetTokenExpiresAt);
+    }
+    
+    /**
+     * Clear email verification token after successful verification.
+     */
+    public void clearEmailVerificationToken() {
+        this.emailVerificationToken = null;
+        this.emailVerificationTokenExpiresAt = null;
+        this.emailVerified = true;
+    }
+    
+    /**
+     * Clear password reset token after successful password reset.
+     */
+    public void clearPasswordResetToken() {
+        this.passwordResetToken = null;
+        this.passwordResetTokenExpiresAt = null;
+    }
+    
+    /**
+     * Mark account as deactivated.
+     */
+    public void deactivateAccount(String reason) {
+        this.deactivatedAt = new Date();
+        this.deactivationReason = reason;
+        this.enabled = false;
+    }
+    
+    /**
+     * Accept terms and conditions.
+     */
+    public void acceptTerms() {
+        this.acceptedTerms = true;
+        this.termsAcceptedAt = new Date();
+    }
+    
+    /**
+     * Accept privacy policy.
+     */
+    public void acceptPrivacyPolicy() {
+        this.acceptedPrivacyPolicy = true;
+        this.privacyPolicyAcceptedAt = new Date();
     }
     
     /**
