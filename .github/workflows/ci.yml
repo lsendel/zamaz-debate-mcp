@@ -496,7 +496,7 @@ jobs:
     name: 🐳 Prepare Docker Build
     runs-on: ubuntu-latest
     needs: [java-build-test, build-summary]
-    if: needs.java-build-test.outputs.should-build-images == 'true' && needs.build-summary.result == 'success'
+    if: needs.java-build-test.outputs.should-build-images == 'true' && needs.build-summary.result == 'success' || inputs.build_images
     
     outputs:
       services: ${{ steps.services.outputs.services }}
@@ -526,6 +526,10 @@ jobs:
           mkdir -p build-context
           cp -r mcp-* build-context/ || true
           find . -name "*.jar" -path "./mcp-*" -exec cp {} build-context/ \;
+          
+          # Copy templates for multi-stage builds
+          mkdir -p build-context/templates
+          cp -r templates/* build-context/templates/ || true
 
       - name: Upload build context
         uses: actions/upload-artifact@v4
@@ -533,6 +537,19 @@ jobs:
           name: docker-build-context
           path: build-context/
           retention-days: 1
+          
+  # Job 7: Build and Push Docker Images
+  docker-build:
+    name: 🐳 Docker Build & Push
+    needs: [prepare-docker]
+    if: needs.prepare-docker.outputs.services != ''
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      version: ${{ needs.prepare-docker.outputs.version }}
+      services: ${{ needs.prepare-docker.outputs.services }}
+    secrets:
+      REGISTRY_USERNAME: ${{ secrets.GITHUB_TOKEN }}
+      REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 7: Notify on Failure
   notify-failure:

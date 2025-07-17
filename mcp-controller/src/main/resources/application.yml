@@ -91,3 +91,15 @@ logging:
     org.springframework.statemachine: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Push Notification Configuration
+push:
+  notification:
+    enabled: ${PUSH_NOTIFICATIONS_ENABLED:false}
+    firebase:
+      api-key: ${FIREBASE_API_KEY:}
+      url: ${FIREBASE_URL:https://fcm.googleapis.com/fcm/send}
+    settings:
+      default-ttl: 3600  # 1 hour
+      batch-size: 1000
+      retry-attempts: 3

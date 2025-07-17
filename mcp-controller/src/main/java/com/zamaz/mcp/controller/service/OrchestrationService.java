@@ -29,6 +29,8 @@ public class OrchestrationService {
     private final ResponseRepository responseRepository;
     private final LlmServiceClient llmServiceClient;
     private final StateMachineFactory<DebateStates, DebateEvents> stateMachineFactory;
+    private final DebateService debateService;
+    private final PushNotificationService pushNotificationService;
     
     @Async
     public void orchestrateRound(UUID debateId, UUID roundId) {
@@ -78,6 +80,16 @@ public class OrchestrationService {
         StateMachine<DebateStates, DebateEvents> stateMachine = stateMachineFactory.getStateMachine(debate.getId().toString());
         stateMachine.sendEvent(DebateEvents.COMPLETE_ROUND);
         
+        // Publish round completion event
+        publishRoundCompletedEvent(debate, round);
+        
+        // Send push notification for round completion
+        pushNotificationService.sendRoundCompletedNotification(
+            debate.getId().toString(),
+            debate.getOrganizationId(),
+            round.getRoundNumber()
+        );
+        
         // Check if debate is complete
         if (round.getRoundNumber() >= debate.getMaxRounds()) {
             completeDebate(debate);
@@ -115,7 +127,17 @@ public class OrchestrationService {
         
         debate.setStatus(DebateStates.DEBATE_COMPLETE.name());
         debate.setCompletedAt(LocalDateTime.now());
-        debateRepository.save(debate);
+        debate = debateRepository.save(debate);
+        
+        // Publish debate completion event
+        publishDebateCompletedEvent(debate);
+        
+        // Send push notification for debate completion
+        pushNotificationService.sendDebateCompletedNotification(
+            debate.getId().toString(),
+            debate.getOrganizationId(),
+            "Debate completed with " + debate.getRounds().size() + " rounds"
+        );
         
         StateMachine<DebateStates, DebateEvents> stateMachine = stateMachineFactory.getStateMachine(debate.getId().toString());
         stateMachine.sendEvent(DebateEvents.END_DEBATE);
@@ -174,8 +196,19 @@ public class OrchestrationService {
                     .tokenCount(content.split("\\s+").length)
                     .build();
             
-            responseRepository.save(response);
+            response = responseRepository.save(response);
             log.info("Generated AI response for participant {} in round {}", participant.getName(), round.getRoundNumber());
+            
+            // Publish real-time event
+            publishNewResponseEvent(debate, response, participant, round);
+            
+            // Send push notification
+            pushNotificationService.sendNewResponseNotification(
+                debate.getId().toString(),
+                debate.getOrganizationId(),
+                participant.getName(),
+                participant.getPosition()
+            );
             
             // Check if round is complete
             checkRoundCompletion(debate.getId(), round.getId());
@@ -228,5 +261,69 @@ public class OrchestrationService {
         // In a real implementation, this would analyze responses,
         // potentially use an LLM to judge arguments, and determine a winner
         log.info("Calculating results for debate {}", debate.getId());
+    }
+    
+    /**
+     * Publish new response event for real-time updates
+     */
+    private void publishNewResponseEvent(Debate debate, Response response, Participant participant, Round round) {
+        Map<String, Object> event = Map.of(
+            "type", "new_response",
+            "debateId", debate.getId().toString(),
+            "responseId", response.getId().toString(),
+            "participantId", participant.getId().toString(),
+            "participantName", participant.getName(),
+            "position", participant.getPosition(),
+            "content", response.getContent(),
+            "roundNumber", round.getRoundNumber(),
+            "timestamp", System.currentTimeMillis()
+        );
+        
+        debateService.publishDebateEvent(debate.getId().toString(), event);
+        log.debug("Published new response event for debate {}", debate.getId());
+    }
+    
+    /**
+     * Publish round completed event
+     */
+    private void publishRoundCompletedEvent(Debate debate, Round round) {
+        List<Map<String, Object>> responses = round.getResponses().stream()
+            .map(response -> Map.of(
+                "id", response.getId().toString(),
+                "participantName", response.getParticipant().getName(),
+                "position", response.getParticipant().getPosition(),
+                "content", response.getContent(),
+                "timestamp", response.getCreatedAt().toString()
+            ))
+            .collect(Collectors.toList());
+        
+        Map<String, Object> event = Map.of(
+            "type", "round_completed",
+            "debateId", debate.getId().toString(),
+            "roundNumber", round.getRoundNumber(),
+            "responses", responses,
+            "timestamp", System.currentTimeMillis()
+        );
+        
+        debateService.publishDebateEvent(debate.getId().toString(), event);
+        log.debug("Published round completed event for debate {}", debate.getId());
+    }
+    
+    /**
+     * Publish debate completed event
+     */
+    private void publishDebateCompletedEvent(Debate debate) {
+        Map<String, Object> event = Map.of(
+            "type", "debate_completed",
+            "debateId", debate.getId().toString(),
+            "status", "COMPLETED",
+            "summary", "Debate completed with " + debate.getRounds().size() + " rounds",
+            "completedAt", debate.getCompletedAt().toString(),
+            "timestamp", System.currentTimeMillis()
+        );
+        
+        debateService.publishDebateEvent(debate.getId().toString(), event);
+        debateService.cleanupDebateEvents(debate.getId().toString());
+        log.debug("Published debate completed event for debate {}", debate.getId());
     }
 }

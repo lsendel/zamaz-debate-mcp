@@ -1,0 +1,166 @@
+name: Docker Image Build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      services:
+        required: true
+        type: string
+    secrets:
+      REGISTRY_USERNAME:
+        required: true
+      REGISTRY_PASSWORD:
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_BASE: ${{ github.repository_owner }}
+
+jobs:
+  build-images:
+    name: 🐳 Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    
+    strategy:
+      matrix:
+        service: ${{ fromJson(inputs.services) }}
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download build context
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-build-context
+          path: ./build-context
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${{ matrix.service }}
+          tags: |
+            type=raw,value=${{ inputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ github.sha }},enable=true
+            type=ref,event=branch
+            type=ref,event=pr
+      
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            MODULE_NAME=${{ matrix.service }}
+            VERSION=${{ inputs.version }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            VCS_URL=${{ github.server_url }}/${{ github.repository }}
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${{ matrix.service }}:${{ inputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-${{ matrix.service }}'
+      
+      - name: Sign the images with Cosign
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        uses: sigstore/cosign-installer@v3.3.0
+      
+      - name: Sign container image
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign sign --yes ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${{ matrix.service }}:${{ inputs.version }}
+      
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${{ matrix.service }}:${{ inputs.version }}
+          artifact-name: sbom-${{ matrix.service }}
+          output-file: ./sbom-${{ matrix.service }}.spdx.json
+      
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.service }}
+          path: ./sbom-${{ matrix.service }}.spdx.json
+          retention-days: 30
+
+  summary:
+    name: 📊 Docker Build Summary
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: always()
+    
+    steps:
+      - name: Generate build summary
+        run: |
+          echo "## 🐳 Docker Image Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 🏗️ Built Images" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse the services JSON array
+          SERVICES=$(echo '${{ inputs.services }}' | jq -r '.[]')
+          
+          echo "| Service | Status | Tags |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for SERVICE in $SERVICES; do
+            echo "| $SERVICE | ${{ needs.build-images.result == 'success' && '✅' || '❌' }} | ${{ inputs.version }}, ${{ github.sha }}, latest* |" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\\* latest tag only applied to main branch builds" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔒 Security Scanning" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy vulnerability scanning completed" >> $GITHUB_STEP_SUMMARY
+          echo "- SBOM generated for each image" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "- Images signed with Cosign" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Image signing skipped (only for main/develop branches)" >> $GITHUB_STEP_SUMMARY
+          fi

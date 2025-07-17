@@ -19,10 +19,15 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +42,9 @@ public class DebateService {
     private final ResponseRepository responseRepository;
     private final StateMachineFactory<DebateStates, DebateEvents> stateMachineFactory;
     private final OrchestrationService orchestrationService;
+    
+    // Map to store event sinks for each debate
+    private final Map<String, Sinks.Many<Map<String, Object>>> debateEventSinks = new ConcurrentHashMap<>();
     
     public DebateDto createDebate(DebateDto.CreateDebateRequest request) {
         log.debug("Creating debate with title: {}", request.getTitle());
@@ -320,5 +328,55 @@ public class DebateService {
                 .tokenCount(response.getTokenCount())
                 .createdAt(response.getCreatedAt())
                 .build();
+    }
+    
+    /**
+     * Subscribe to debate events for WebSocket updates
+     */
+    public Flux<Map<String, Object>> subscribeToDebateEvents(String debateId) {
+        log.debug("Creating event subscription for debate: {}", debateId);
+        
+        Sinks.Many<Map<String, Object>> sink = debateEventSinks.computeIfAbsent(
+            debateId, 
+            k -> Sinks.many().multicast().onBackpressureBuffer()
+        );
+        
+        return sink.asFlux()
+            .doOnSubscribe(subscription -> 
+                log.info("New subscription created for debate: {}", debateId))
+            .doOnCancel(() -> 
+                log.info("Subscription cancelled for debate: {}", debateId))
+            .timeout(Duration.ofHours(1)) // Auto-cleanup after 1 hour
+            .doOnError(error -> 
+                log.error("Error in debate event stream for {}: {}", debateId, error.getMessage()));
+    }
+    
+    /**
+     * Publish event to debate subscribers
+     */
+    public void publishDebateEvent(String debateId, Map<String, Object> event) {
+        Sinks.Many<Map<String, Object>> sink = debateEventSinks.get(debateId);
+        if (sink != null) {
+            sink.tryEmitNext(event);
+            log.debug("Published event to debate {}: {}", debateId, event.get("type"));
+        }
+    }
+    
+    /**
+     * Clean up event subscription when debate is complete
+     */
+    public void cleanupDebateEvents(String debateId) {
+        Sinks.Many<Map<String, Object>> sink = debateEventSinks.remove(debateId);
+        if (sink != null) {
+            sink.tryEmitComplete();
+            log.info("Cleaned up event subscription for debate: {}", debateId);
+        }
+    }
+    
+    /**
+     * Get active subscription count for monitoring
+     */
+    public int getActiveSubscriptionCount() {
+        return debateEventSinks.size();
     }
 }

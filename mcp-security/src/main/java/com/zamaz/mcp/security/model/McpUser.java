@@ -3,26 +3,41 @@ package com.zamaz.mcp.security.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents a user in the MCP system with organization-based permissions.
  * Supports multi-tenant architecture with organization-specific roles and permissions.
+ * Implements Spring Security's UserDetails for authentication integration.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class McpUser {
+public class McpUser implements UserDetails {
     
     private String id;
     private String username;
     private String email;
     private String firstName;
     private String lastName;
+    private String password;
+    
+    // Account status fields
+    private boolean enabled = true;
+    private boolean accountNonExpired = true;
+    private boolean accountNonLocked = true;
+    private boolean credentialsNonExpired = true;
+    
+    // Audit fields
+    private Date createdAt;
+    private Date updatedAt;
+    private Date lastLoginAt;
+    private String lastLoginIp;
     
     // Global roles and permissions
     private Set<Role> globalRoles = new HashSet<>();
@@ -38,10 +53,20 @@ public class McpUser {
     // Active organization context
     private String currentOrganizationId;
     
+    // Organization membership
+    private List<String> organizationIds = new ArrayList<>();
+    
+    // Simple string roles for compatibility
+    private List<String> roles = new ArrayList<>();
+    
     /**
      * Get all organization IDs this user belongs to.
      */
     public Set<String> getOrganizationIds() {
+        // Return from the list field if it's populated, otherwise from the roles map
+        if (organizationIds != null && !organizationIds.isEmpty()) {
+            return new HashSet<>(organizationIds);
+        }
         return organizationRoles.keySet();
     }
     
@@ -196,5 +221,60 @@ public class McpUser {
         public boolean isExpired() {
             return expiresAt != null && java.time.LocalDateTime.now().isAfter(expiresAt);
         }
+    }
+    
+    // Spring Security UserDetails implementation methods
+    
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        Set<GrantedAuthority> authorities = new HashSet<>();
+        
+        // Add role-based authorities
+        if (roles != null) {
+            roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+        }
+        
+        // Add global roles
+        globalRoles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName())));
+        
+        // Add permissions as authorities
+        getAllPermissions().forEach(permission -> 
+            authorities.add(new SimpleGrantedAuthority("PERM_" + permission.getName()))
+        );
+        
+        return authorities;
+    }
+    
+    @Override
+    public boolean isAccountNonExpired() {
+        return accountNonExpired;
+    }
+    
+    @Override
+    public boolean isAccountNonLocked() {
+        return accountNonLocked;
+    }
+    
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return credentialsNonExpired;
+    }
+    
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+    
+    /**
+     * Set organization IDs from a list (convenience method for tests).
+     */
+    public void setOrganizationIds(List<String> organizationIds) {
+        this.organizationIds = organizationIds;
+        // Also update the organization roles map to ensure consistency
+        organizationIds.forEach(orgId -> {
+            if (!organizationRoles.containsKey(orgId)) {
+                organizationRoles.put(orgId, new HashSet<>());
+            }
+        });
     }
 }
