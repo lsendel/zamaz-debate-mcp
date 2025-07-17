@@ -6,12 +6,14 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:debate_db}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
       minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 2000000
       connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      pool-name: ControllerHikariPool
   
   jpa:
     hibernate:
@@ -20,86 +22,96 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        query:
+          in_clause_parameter_padding: true
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+    open-in-view: false
   
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 2
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    timeout: 2000
+    connect-timeout: 2000
   
   flyway:
     enabled: true
-    locations: classpath:db/migration
     baseline-on-migrate: true
+    locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:5013}
-  error:
-    include-message: always
-    include-binding-errors: always
+  servlet:
+    context-path: /
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,prometheus
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-
-services:
-  organization:
-    url: ${ORGANIZATION_SERVICE_URL:http://localhost:5005}
-  llm:
-    url: ${LLM_SERVICE_URL:http://localhost:5002}
-
-debate:
-  defaults:
-    max-rounds: 3
-    max-response-length: 1000
-    response-timeout: 5m
-    allowed-formats:
-      - OXFORD
-      - LINCOLN_DOUGLAS
-      - POLICY
-      - PARLIAMENTARY
-      - PUBLIC_FORUM
-
-springdoc:
-  api-docs:
-    path: ${API_DOCS_PATH:/api-docs}
-  swagger-ui:
-    path: ${SWAGGER_UI_PATH:/swagger-ui.html}
-    tags-sorter: alpha
-    operations-sorter: alpha
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
 
 logging:
   level:
-    root: INFO
-    com.zamaz.mcp.controller: DEBUG
-    org.springframework.statemachine: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    root: ${LOG_LEVEL:INFO}
+    com.zamaz.mcp: ${LOG_LEVEL:INFO}
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
 
-# Push Notification Configuration
-push:
-  notification:
-    enabled: ${PUSH_NOTIFICATIONS_ENABLED:false}
-    firebase:
-      api-key: ${FIREBASE_API_KEY:}
-      url: ${FIREBASE_URL:https://fcm.googleapis.com/fcm/send}
-    settings:
-      default-ttl: 3600  # 1 hour
-      batch-size: 1000
-      retry-attempts: 3
+mcp:
+  cache:
+    enabled: true
+    default-ttl: PT30M
+    redis:
+      enabled: true
+      max-memory-policy: allkeys-lru
+      key-prefixes:
+        debate: dbt:
+  
+  controller:
+    organization-service-url: ${ORGANIZATION_SERVICE_URL:http://mcp-organization:5005}
+    llm-service-url: ${LLM_SERVICE_URL:http://mcp-llm:5002}
+    
+    debate:
+      formats:
+        standard:
+          max-rounds: 10
+          turn-timeout-seconds: 300
+          rules:
+            - "participants_alternate"
+            - "no_consecutive_turns"
+        oxford:
+          max-rounds: 6
+          turn-timeout-seconds: 600
+          rules:
+            - "proposition_first"
+            - "opposition_second"
+            - "alternating_rebuttals"
+        freestyle:
+          max-rounds: 20
+          turn-timeout-seconds: 180
+          rules:
+            - "free_participation"
+      
+      default-format: "standard"
+      
+      summarization:
+        default-strategy: "key_points"
+        strategies:
+          - "key_points"
+          - "pro_con"
+          - "chronological"
+          - "thematic"
