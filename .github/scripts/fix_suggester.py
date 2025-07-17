@@ -101,21 +101,43 @@ class FixSuggester:
         """Generate a fix suggestion for an issue."""
         # Check if issue already has a fix suggestion
         if issue.get('fix_suggestion'):
-            return self._create_suggestion_from_existing(issue, file_content)
+            suggestion = self._create_suggestion_from_existing(issue, file_content)
+        else:
+            # Generate fix based on issue type
+            category = issue.get('category')
+            rule_id = issue.get('rule_id')
+            
+            if category == 'style':
+                suggestion = self._generate_style_fix(issue, file_content, rule_id)
+            elif category == 'security':
+                suggestion = self._generate_security_fix(issue, file_content, rule_id)
+            elif category == 'performance':
+                suggestion = self._generate_performance_fix(issue, file_content, rule_id)
+            else:
+                suggestion = None
         
-        # Generate fix based on issue type
-        category = issue.get('category')
-        rule_id = issue.get('rule_id')
+        # Improve suggestion using learning system
+        if suggestion:
+            try:
+                from learning_system import improve_suggestion
+                
+                context = {
+                    'file_path': issue.get('file_path', ''),
+                    'category': issue.get('category', ''),
+                    'rule_id': issue.get('rule_id', '')
+                }
+                
+                original_text = suggestion.get('replacement_text', '')
+                improved_text = improve_suggestion(original_text, context)
+                
+                if improved_text != original_text:
+                    suggestion['replacement_text'] = improved_text
+                    suggestion['description'] += ' (improved by learning system)'
+            
+            except Exception as e:
+                logger.warning(f"Error improving suggestion: {str(e)}")
         
-        if category == 'style':
-            return self._generate_style_fix(issue, file_content, rule_id)
-        elif category == 'security':
-            return self._generate_security_fix(issue, file_content, rule_id)
-        elif category == 'performance':
-            return self._generate_performance_fix(issue, file_content, rule_id)
-        
-        # No fix suggestion could be generated
-        return None
+        return suggestion
     
     def _create_suggestion_from_existing(self, issue: Dict[str, Any], file_content: str) -> Dict[str, Any]:
         """Create a suggestion from an existing fix suggestion."""

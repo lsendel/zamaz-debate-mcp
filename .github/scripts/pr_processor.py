@@ -61,6 +61,10 @@ class PullRequestProcessor:
         try:
             logger.info(f"Processing PR #{self.pr_number} in {self.repo_full_name}")
             
+            # Start analytics tracking
+            from analytics_collector import start_review
+            self.review_id = start_review(self.repo_owner, self.repo_name, self.pr_number)
+            
             # Extract PR metadata
             self.extract_pr_metadata()
             
@@ -75,6 +79,17 @@ class PullRequestProcessor:
             
             # Generate review comments
             self.generate_review_comments()
+            
+            # Complete analytics tracking
+            if hasattr(self, 'review_id') and self.review_id:
+                from analytics_collector import complete_review
+                complete_review(
+                    self.review_id,
+                    getattr(self, 'issues', []),
+                    len(self.files),
+                    len(getattr(self, 'review_data', {}).get('comments', [])),
+                    sum(1 for issue in getattr(self, 'issues', []) if 'suggestion' in issue)
+                )
             
             logger.info(f"Completed processing PR #{self.pr_number}")
             return True

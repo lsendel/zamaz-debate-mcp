@@ -434,13 +434,84 @@ def process_review_feedback(review, pr, repository, installation_id):
     # Get PR details
     pr_number = pr.get('number')
     repo_full_name = repository.get('full_name')
+    repo_owner, repo_name = repo_full_name.split('/')
     review_body = review.get('body', '')
+    reviewer = review.get('user', {}).get('login', '')
     
     logger.info(f"Processing feedback in review on PR #{pr_number} in {repo_full_name}")
     
-    # In a real implementation, this would analyze the feedback and learn from it
-    # For now, we'll just log it
-    logger.info(f"Feedback received: {review_body[:100]}...")
+    try:
+        # Import analytics and learning systems
+        from analytics_collector import record_feedback
+        from learning_system import update_developer_preferences, update_rule_effectiveness
+        
+        # Analyze feedback sentiment
+        feedback_type, score = analyze_feedback_sentiment(review_body)
+        
+        # Record feedback in analytics
+        # Note: In a real implementation, we would need to track review_id
+        # For now, we'll create a mock review_id based on PR
+        review_id = f"pr-{pr_number}-feedback"
+        record_feedback(review_id, feedback_type, score, review_body)
+        
+        # Update learning system based on feedback
+        if feedback_type in ['positive', 'negative']:
+            # Extract mentioned rules from the review body
+            mentioned_rules = extract_mentioned_rules(review_body)
+            
+            for rule_id, category in mentioned_rules:
+                # Update rule effectiveness
+                update_rule_effectiveness(rule_id, category, feedback_type)
+                
+                # Update developer preferences
+                preference_score = 0.8 if feedback_type == 'positive' else 0.2
+                update_developer_preferences(reviewer, repo_owner, repo_name, rule_id, preference_score)
+        
+        logger.info(f"Processed {feedback_type} feedback from {reviewer}")
+    
+    except Exception as e:
+        logger.error(f"Error processing feedback: {str(e)}")
+
+def analyze_feedback_sentiment(text: str) -> Tuple[str, int]:
+    """Analyze the sentiment of feedback text."""
+    text_lower = text.lower()
+    
+    # Positive indicators
+    positive_words = ['good', 'great', 'helpful', 'useful', 'correct', 'right', 'thanks', 'thank you', 'excellent', 'perfect']
+    negative_words = ['bad', 'wrong', 'incorrect', 'unhelpful', 'useless', 'disagree', 'no', 'not helpful', 'false']
+    
+    positive_count = sum(1 for word in positive_words if word in text_lower)
+    negative_count = sum(1 for word in negative_words if word in text_lower)
+    
+    if positive_count > negative_count:
+        return 'positive', min(5, 3 + positive_count)
+    elif negative_count > positive_count:
+        return 'negative', max(1, 3 - negative_count)
+    else:
+        return 'neutral', 3
+
+def extract_mentioned_rules(text: str) -> List[Tuple[str, str]]:
+    """Extract mentioned rules from feedback text."""
+    # Look for rule patterns in the text
+    rule_patterns = [
+        (r'security[_-](\w+)', 'security'),
+        (r'style[_-](\w+)', 'style'),
+        (r'performance[_-](\w+)', 'performance'),
+        (r'(\w+)[_-]security', 'security'),
+        (r'(\w+)[_-]style', 'style'),
+        (r'(\w+)[_-]performance', 'performance'),
+    ]
+    
+    mentioned_rules = []
+    text_lower = text.lower()
+    
+    for pattern, category in rule_patterns:
+        matches = re.findall(pattern, text_lower)
+        for match in matches:
+            rule_id = f"{category}-{match}" if isinstance(match, str) else f"{category}-rule"
+            mentioned_rules.append((rule_id, category))
+    
+    return mentioned_rules
 
 def handle_push_event(payload):
     """Handle push events."""
