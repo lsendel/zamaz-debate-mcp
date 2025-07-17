@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiro Feedback Collection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #24292e;
+            background-color: #f6f8fa;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #0366d6, #0969da);
+            border-radius: 12px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #1f2328;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #656d76;
+            margin-bottom: 30px;
+        }
+        
+        .feedback-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            margin-bottom: 30px;
+        }
+        
+        .feedback-type {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .type-option {
+            padding: 20px;
+            border: 2px solid #d1d9e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .type-option:hover {
+            border-color: #0366d6;
+            background: #f1f8ff;
+        }
+        
+        .type-option.selected {
+            border-color: #0366d6;
+            background: #0366d6;
+            color: white;
+        }
+        
+        .type-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .type-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .type-description {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1f2328;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .rating-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .star-rating {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .star {
+            font-size: 24px;
+            color: #d1d9e0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .star.active {
+            color: #ffc107;
+        }
+        
+        .star:hover {
+            color: #ffc107;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .suggestion-context {
+            background: #f8f9fa;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .context-header {
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #1f2328;
+        }
+        
+        .code-snippet {
+            background: #f6f8fa;
+            border: 1px solid #d1d9e0;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-bottom: 10px;
+        }
+        
+        .suggestion-text {
+            background: #fff8dc;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .button {
+            background: #238636;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .button:hover {
+            background: #2da44e;
+        }
+        
+        .button.secondary {
+            background: #f6f8fa;
+            color: #24292e;
+            border: 1px solid #d1d9e0;
+        }
+        
+        .button.secondary:hover {
+            background: #f1f8ff;
+        }
+        
+        .success-message {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .quick-feedback {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-button {
+            padding: 10px;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .quick-button:hover {
+            background: #f1f8ff;
+            border-color: #0366d6;
+        }
+        
+        .quick-button.selected {
+            background: #0366d6;
+            color: white;
+            border-color: #0366d6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">K</div>
+            <h1>Share Your Feedback</h1>
+            <p class="subtitle">Help us improve Kiro by sharing your experience</p>
+        </div>
+        
+        <div class="success-message" id="successMessage">
+            ✅ Thank you for your feedback! Your input helps us make Kiro better for everyone.
+        </div>
+        
+        <div class="feedback-card">
+            <h2>What type of feedback would you like to share?</h2>
+            
+            <div class="feedback-type">
+                <div class="type-option" onclick="selectFeedbackType('suggestion')" id="type-suggestion">
+                    <div class="type-icon">💡</div>
+                    <div class="type-title">Suggestion Rating</div>
+                    <div class="type-description">Rate a specific code review suggestion</div>
+                </div>
+                <div class="type-option" onclick="selectFeedbackType('general')" id="type-general">
+                    <div class="type-icon">📝</div>
+                    <div class="type-title">General Feedback</div>
+                    <div class="type-description">Share overall experience and ideas</div>
+                </div>
+                <div class="type-option" onclick="selectFeedbackType('bug')" id="type-bug">
+                    <div class="type-icon">🐛</div>
+                    <div class="type-title">Bug Report</div>
+                    <div class="type-description">Report issues or unexpected behavior</div>
+                </div>
+                <div class="type-option" onclick="selectFeedbackType('feature')" id="type-feature">
+                    <div class="type-icon">✨</div>
+                    <div class="type-title">Feature Request</div>
+                    <div class="type-description">Suggest new features or improvements</div>
+                </div>
+            </div>
+            
+            <form id="feedbackForm" style="display: none;">
+                <!-- Suggestion Rating Form -->
+                <div id="suggestion-form" class="feedback-section" style="display: none;">
+                    <div class="suggestion-context">
+                        <div class="context-header">Code Context:</div>
+                        <div class="code-snippet">function getUserData(userId) {
+    return fetch('/api/users/' + userId)
+        .then(response => response.json());
+}</div>
+                        <div class="suggestion-text">
+                            <strong>Kiro's Suggestion:</strong> Consider adding error handling for failed API requests and using template literals for string concatenation.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>How helpful was this suggestion?</label>
+                        <div class="rating-group">
+                            <div class="star-rating" id="helpfulness-rating">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                            <span id="rating-text">Not rated</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Quick feedback:</label>
+                        <div class="quick-feedback">
+                            <div class="quick-button" onclick="toggleQuickFeedback(this)">Very helpful</div>
+                            <div class="quick-button" onclick="toggleQuickFeedback(this)">Somewhat helpful</div>
+                            <div class="quick-button" onclick="toggleQuickFeedback(this)">Not helpful</div>
+                            <div class="quick-button" onclick="toggleQuickFeedback(this)">Incorrect</div>
+                            <div class="quick-button" onclick="toggleQuickFeedback(this)">Too verbose</div>
+                            <div class="quick-button" onclick="toggleQuickFeedback(this)">Too brief</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Additional comments (optional):</label>
+                        <textarea placeholder="What made this suggestion helpful or unhelpful? How could it be improved?"></textarea>
+                    </div>
+                </div>
+                
+                <!-- General Feedback Form -->
+                <div id="general-form" class="feedback-section" style="display: none;">
+                    <div class="form-group">
+                        <label>Overall satisfaction with Kiro:</label>
+                        <div class="rating-group">
+                            <div class="star-rating" id="satisfaction-rating">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                            <span id="satisfaction-text">Not rated</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>What do you like most about Kiro?</label>
+                        <textarea placeholder="Share what's working well for you..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>What could be improved?</label>
+                        <textarea placeholder="Share your ideas for making Kiro better..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>How likely are you to recommend Kiro to a colleague?</label>
+                        <select>
+                            <option value="">Select...</option>
+                            <option value="10">Extremely likely (10)</option>
+                            <option value="9">Very likely (9)</option>
+                            <option value="8">Likely (8)</option>
+                            <option value="7">Somewhat likely (7)</option>
+                            <option value="6">Neutral (6)</option>
+                            <option value="5">Somewhat unlikely (5)</option>
+                            <option value="4">Unlikely (4)</option>
+                            <option value="3">Very unlikely (3)</option>
+                            <option value="2">Extremely unlikely (2)</option>
+                            <option value="1">Not at all likely (1)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Bug Report Form -->
+                <div id="bug-form" class="feedback-section" style="display: none;">
+                    <div class="form-group">
+                        <label>Bug Title:</label>
+                        <input type="text" placeholder="Brief description of the issue" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Severity:</label>
+                        <select required>
+                            <option value="">Select severity...</option>
+                            <option value="low">Low - Minor inconvenience</option>
+                            <option value="medium">Medium - Affects workflow</option>
+                            <option value="high">High - Blocks important tasks</option>
+                            <option value="critical">Critical - Completely broken</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>What happened?</label>
+                        <textarea placeholder="Describe the bug in detail..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Steps to reproduce:</label>
+                        <textarea placeholder="1. Go to...
+2. Click on...
+3. Expected result...
+4. Actual result..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Repository/Environment:</label>
+                        <input type="text" placeholder="Which repository or environment?">
+                    </div>
+                </div>
+                
+                <!-- Feature Request Form -->
+                <div id="feature-form" class="feedback-section" style="display: none;">
+                    <div class="form-group">
+                        <label>Feature Title:</label>
+                        <input type="text" placeholder="Brief title for your feature request" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Feature Category:</label>
+                        <select>
+                            <option value="">Select category...</option>
+                            <option value="analysis">Code Analysis</option>
+                            <option value="ui">User Interface</option>
+                            <option value="integration">Integration</option>
+                            <option value="reporting">Reporting & Analytics</option>
+                            <option value="performance">Performance</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Describe the feature:</label>
+                        <textarea placeholder="What feature would you like to see? How would it work?" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Why is this important?</label>
+                        <textarea placeholder="What problem would this solve? How would it benefit your team?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Priority for your team:</label>
+                        <select>
+                            <option value="">Select priority...</option>
+                            <option value="nice-to-have">Nice to have</option>
+                            <option value="important">Important for efficiency</option>
+                            <option value="critical">Critical for adoption</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Common fields for all forms -->
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="followUp">
+                        <label for="followUp">I'm willing to provide follow-up feedback if needed</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Your role (optional):</label>
+                    <select>
+                        <option value="">Select your role...</option>
+                        <option value="developer">Developer</option>
+                        <option value="team-lead">Team Lead</option>
+                        <option value="architect">Software Architect</option>
+                        <option value="manager">Engineering Manager</option>
+                        <option value="devops">DevOps Engineer</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="button secondary" onclick="resetForm()">Cancel</button>
+                    <button type="submit" class="button">Submit Feedback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let selectedType = null;
+        let currentRating = 0;
+        
+        function selectFeedbackType(type) {
+            // Clear previous selection
+            document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.feedback-section').forEach(el => el.style.display = 'none');
+            
+            // Select new type
+            document.getElementById(`type-${type}`).classList.add('selected');
+            document.getElementById(`${type}-form`).style.display = 'block';
+            document.getElementById('feedbackForm').style.display = 'block';
+            
+            selectedType = type;
+        }
+        
+        function setupStarRating(ratingId, textId) {
+            const stars = document.querySelectorAll(`#${ratingId} .star`);
+            const ratingText = document.getElementById(textId);
+            
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    currentRating = rating;
+                    
+                    // Update star display
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                    
+                    // Update text
+                    const ratingTexts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+                    ratingText.textContent = ratingTexts[rating];
+                });
+                
+                star.addEventListener('mouseover', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.style.color = '#ffc107';
+                        } else {
+                            s.style.color = '#d1d9e0';
+                        }
+                    });
+                });
+            });
+            
+            document.getElementById(ratingId).addEventListener('mouseleave', function() {
+                stars.forEach((s, index) => {
+                    if (index < currentRating) {
+                        s.style.color = '#ffc107';
+                    } else {
+                        s.style.color = '#d1d9e0';
+                    }
+                });
+            });
+        }
+        
+        function toggleQuickFeedback(button) {
+            // Toggle selection
+            if (button.classList.contains('selected')) {
+                button.classList.remove('selected');
+            } else {
+                // Allow multiple selections
+                button.classList.add('selected');
+            }
+        }
+        
+        function resetForm() {
+            selectedType = null;
+            currentRating = 0;
+            document.getElementById('feedbackForm').style.display = 'none';
+            document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.feedback-section').forEach(el => el.style.display = 'none');
+            document.getElementById('feedbackForm').reset();
+        }
+        
+        function submitFeedback() {
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+            
+            // Reset form after delay
+            setTimeout(() => {
+                resetForm();
+                document.getElementById('successMessage').style.display = 'none';
+            }, 3000);
+        }
+        
+        // Initialize event handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            setupStarRating('helpfulness-rating', 'rating-text');
+            setupStarRating('satisfaction-rating', 'satisfaction-text');
+            
+            document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitFeedback();
+            });
+        });
+    </script>
+</body>
+</html>

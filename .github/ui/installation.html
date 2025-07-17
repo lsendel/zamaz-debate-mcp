@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiro GitHub App Installation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #24292e;
+            background-color: #f6f8fa;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #0366d6, #0969da);
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #1f2328;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #656d76;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            margin-bottom: 30px;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature {
+            padding: 20px;
+            border: 1px solid #d1d9e0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: #f1f8ff;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .install-button {
+            display: inline-block;
+            background: #238636;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .install-button:hover {
+            background: #2da44e;
+        }
+        
+        .permissions {
+            background: #fff8dc;
+            border: 1px solid #d4af37;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .permissions h3 {
+            color: #8b7500;
+            margin-bottom: 10px;
+        }
+        
+        .permissions ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .permissions li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .permissions li:before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .status.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #0366d6;
+        }
+        
+        .step h3 {
+            margin-bottom: 10px;
+            color: #0366d6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">K</div>
+            <h1>Install Kiro GitHub App</h1>
+            <p class="subtitle">AI-powered code review assistant for better software quality</p>
+        </div>
+        
+        <div class="card">
+            <h2>What is Kiro?</h2>
+            <p>Kiro is an intelligent GitHub App that provides automated code review assistance, helping your team maintain high code quality standards through AI-powered analysis and suggestions.</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Smart Analysis</h3>
+                    <p>Advanced code analysis detecting bugs, security issues, and style violations</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💡</div>
+                    <h3>AI Suggestions</h3>
+                    <p>Intelligent fix recommendations with explanations and best practices</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast Reviews</h3>
+                    <p>Instant feedback on pull requests to accelerate development cycles</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Analytics</h3>
+                    <p>Detailed insights and metrics to track code quality improvements</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Installation Steps</h2>
+            
+            <div class="step">
+                <h3>Step 1: Install the App</h3>
+                <p>Click the install button below to add Kiro to your GitHub organization or personal account.</p>
+                <br>
+                <a href="#" class="install-button" onclick="installApp()">Install Kiro GitHub App</a>
+            </div>
+            
+            <div class="step">
+                <h3>Step 2: Configure Repositories</h3>
+                <p>Select which repositories you want Kiro to monitor. You can start with a test repository and expand later.</p>
+            </div>
+            
+            <div class="step">
+                <h3>Step 3: Set Preferences</h3>
+                <p>Customize Kiro's behavior through the configuration interface to match your team's coding standards.</p>
+            </div>
+        </div>
+        
+        <div class="permissions">
+            <h3>Required Permissions</h3>
+            <p>Kiro requires the following permissions to function properly:</p>
+            <ul>
+                <li>Read repository contents and metadata</li>
+                <li>Read and write pull request comments</li>
+                <li>Read issues and project boards</li>
+                <li>Receive webhook notifications for events</li>
+                <li>Access commit statuses for CI integration</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>Security & Privacy</h2>
+            <p>Kiro takes security seriously:</p>
+            <ul style="margin-top: 15px; padding-left: 20px;">
+                <li>All data is encrypted in transit and at rest</li>
+                <li>No code is stored permanently - only analyzed in memory</li>
+                <li>Compliant with GDPR and SOC 2 standards</li>
+                <li>Optional on-premises deployment available</li>
+            </ul>
+        </div>
+        
+        <div class="status" id="status"></div>
+    </div>
+    
+    <script>
+        function installApp() {
+            // In a real implementation, this would redirect to GitHub's app installation flow
+            const status = document.getElementById('status');
+            status.className = 'status success';
+            status.style.display = 'block';
+            status.innerHTML = '✅ Redirecting to GitHub installation page...';
+            
+            // Simulate redirect delay
+            setTimeout(() => {
+                // This would be the actual GitHub App installation URL
+                // window.location.href = 'https://github.com/apps/kiro/installations/new';
+                status.innerHTML = '✅ Installation completed! You can now configure Kiro in your repositories.';
+            }, 2000);
+        }
+        
+        // Handle URL parameters for post-installation flow
+        const urlParams = new URLSearchParams(window.location.search);
+        const installationId = urlParams.get('installation_id');
+        const setupAction = urlParams.get('setup_action');
+        
+        if (installationId && setupAction === 'install') {
+            const status = document.getElementById('status');
+            status.className = 'status success';
+            status.style.display = 'block';
+            status.innerHTML = `✅ Kiro has been successfully installed! Installation ID: ${installationId}`;
+        }
+    </script>
+</body>
+</html>
