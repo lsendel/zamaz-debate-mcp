@@ -83,13 +83,13 @@ jobs:
       
       - name: Generate SonarQube Report
         run: |
-          if [ ! -f scripts/generate-sonar-report.sh ]; then
+          if [ ! -f scripts/monitoring/generate-sonar-report.sh ]; then
             echo "❌ Report generation script not found"
             exit 1
           fi
           
-          chmod +x scripts/generate-sonar-report.sh
-          ./scripts/generate-sonar-report.sh \
+          chmod +x scripts/monitoring/generate-sonar-report.sh
+          ./scripts/monitoring/generate-sonar-report.sh \
             --project-key "${{ env.SONAR_PROJECT_KEY }}" \
             --branch "${{ env.BRANCH }}" \
             --organization "${{ env.SONAR_ORGANIZATION }}"

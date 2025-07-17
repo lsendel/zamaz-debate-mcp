@@ -1,0 +1,74 @@
+# Kiro GitHub Integration Configuration
+
+# Review settings
+review:
+  depth: standard  # Options: basic, standard, thorough
+  focus_areas:
+    - security     # Focus on security issues
+    - performance  # Focus on performance issues
+    - style        # Focus on code style and conventions
+    - documentation  # Focus on documentation quality
+  auto_fix: true   # Whether to suggest automated fixes
+  comment_style: educational  # Options: concise, educational, detailed
+
+# Rules configuration
+rules:
+  custom_rules_enabled: true
+  rule_sets:
+    - name: "Security Rules"
+      enabled: true
+      rules:
+        - id: "security-jwt-secret"
+          severity: critical
+          description: "JWT secrets should not be hardcoded"
+        - id: "security-sql-injection"
+          severity: critical
+          description: "Prevent SQL injection vulnerabilities"
+    
+    - name: "Performance Rules"
+      enabled: true
+      rules:
+        - id: "perf-n-plus-one"
+          severity: major
+          description: "Detect N+1 query patterns"
+        - id: "perf-large-payload"
+          severity: minor
+          description: "Identify large API payloads"
+    
+    - name: "Style Guide"
+      enabled: true
+      rules:
+        - id: "style-naming-convention"
+          severity: minor
+          description: "Follow project naming conventions"
+        - id: "style-method-length"
+          severity: minor
+          description: "Methods should not exceed 30 lines"
+
+# Notifications
+notifications:
+  channels:
+    - slack:
+        webhook_url: "https://hooks.slack.com/services/your/webhook/url"
+        channel: "#code-reviews"
+    - email:
+        recipients:
+          - "team@example.com"
+          - "lead@example.com"
+    - github:  # In-GitHub notifications
+        mention_users: true
+  
+  events:
+    - review_complete  # When a review is completed
+    - critical_issue   # When critical issues are found
+    - fix_applied      # When an automated fix is applied
+
+# Advanced settings
+advanced:
+  max_files_per_review: 50  # Maximum number of files to review in a PR
+  max_review_time_seconds: 300  # Maximum time to spend on a review
+  context_lines: 5  # Number of context lines to include in comments
+  ignore_patterns:
+    - "*.min.js"     # Ignore minified JavaScript files
+    - "*.generated.*"  # Ignore generated files
+    - "vendor/**"    # Ignore vendor directories

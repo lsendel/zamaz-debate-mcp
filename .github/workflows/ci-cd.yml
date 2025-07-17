@@ -202,7 +202,7 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
-          ./scripts/wait-for-services.sh
+          ./scripts/testing/wait-for-services.sh
 
       - name: Set up Node.js for E2E tests
         uses: actions/setup-node@v3
@@ -400,8 +400,7 @@ jobs:
 
       - name: Run smoke tests
         run: |
-          cd scripts
-          ./smoke-tests.sh staging
+          ./scripts/testing/smoke-tests.sh staging
 
       - name: Notify deployment status
         uses: 8398a7/action-slack@v3
@@ -442,8 +441,7 @@ jobs:
 
       - name: Run production smoke tests
         run: |
-          cd scripts
-          ./smoke-tests.sh production
+          ./scripts/testing/smoke-tests.sh production
 
       - name: Update deployment tracking
         run: |

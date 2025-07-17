@@ -607,31 +607,31 @@ jobs:
       - name: Generate comprehensive security report
         run: |
           # Make script executable
-          chmod +x ./scripts/generate-security-report.sh
+          chmod +x ./scripts/monitoring/generate-security-report.sh
           
           # Generate HTML report
-          ./scripts/generate-security-report.sh \
+          ./scripts/monitoring/generate-security-report.sh \
             --dir ${{ env.REPORT_DIR }} \
             --format html \
             --output ${{ env.REPORT_DIR }}/compliance/comprehensive-security-report.html \
             --title "Comprehensive Security Report - ${{ github.repository }}"
           
           # Generate markdown report
-          ./scripts/generate-security-report.sh \
+          ./scripts/monitoring/generate-security-report.sh \
             --dir ${{ env.REPORT_DIR }} \
             --format markdown \
             --output ${{ env.REPORT_DIR }}/compliance/comprehensive-security-report.md \
             --title "Comprehensive Security Report - ${{ github.repository }}"
           
           # Generate JSON report
-          ./scripts/generate-security-report.sh \
+          ./scripts/monitoring/generate-security-report.sh \
             --dir ${{ env.REPORT_DIR }} \
             --format json \
             --output ${{ env.REPORT_DIR }}/compliance/comprehensive-security-report.json \
             --title "Comprehensive Security Report - ${{ github.repository }}"
           
           # Generate summary report
-          ./scripts/generate-security-report.sh \
+          ./scripts/monitoring/generate-security-report.sh \
             --dir ${{ env.REPORT_DIR }} \
             --format markdown \
             --summary \

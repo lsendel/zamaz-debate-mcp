@@ -35,6 +35,7 @@ jobs:
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.repository }}
           KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+          CREATE_SUB_ISSUES: ${{ contains(github.event.issue.labels.*.name, 'create-sub-issues') }}
         run: |
           python .github/scripts/issue_to_spec.py
 
