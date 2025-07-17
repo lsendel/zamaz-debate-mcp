@@ -114,7 +114,15 @@ class CommentGenerator:
             
             # Add fix suggestion if available
             if fix_suggestion:
-                comment += f"**Suggested fix:**\n\n```{file_ext[1:] if file_ext else ''}\n{fix_suggestion}\n```\n\n"
+                # Format as GitHub suggestion block for easy application
+                comment += f"**Suggested fix:**\n\n```suggestion\n{fix_suggestion}\n```\n\n"
+                comment += "You can apply this suggestion directly by clicking the 'Add suggestion to batch' button above.\n\n"
+            elif 'suggestion' in issue:
+                # Use the suggestion from the issue if available
+                suggestion = issue.get('suggestion', {})
+                if suggestion.get('replacement_text'):
+                    comment += f"**Suggested fix:**\n\n```suggestion\n{suggestion.get('replacement_text')}\n```\n\n"
+                    comment += "You can apply this suggestion directly by clicking the 'Add suggestion to batch' button above.\n\n"
             
             # Add references if available
             if references:

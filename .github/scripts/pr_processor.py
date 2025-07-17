@@ -281,6 +281,39 @@ class PullRequestProcessor:
             )
             
             logger.info(f"Found {len(self.issues)} issues in PR #{self.pr_number}")
+            
+            # Generate fix suggestions
+            try:
+                from fix_suggester import generate_fix_suggestions
+                
+                # Generate suggestions
+                suggestions = generate_fix_suggestions(
+                    self.github,
+                    self.repo_full_name,
+                    self.pr_number,
+                    self.issues,
+                    file_data,
+                    self.config
+                )
+                
+                # Add suggestions to issues
+                for suggestion in suggestions:
+                    issue = suggestion.get('issue')
+                    issue_suggestion = suggestion.get('suggestion')
+                    
+                    # Find the corresponding issue in self.issues
+                    for i, existing_issue in enumerate(self.issues):
+                        if (existing_issue.get('file_path') == issue.get('file_path') and
+                            existing_issue.get('line_start') == issue.get('line_start') and
+                            existing_issue.get('message') == issue.get('message')):
+                            # Add suggestion to the issue
+                            self.issues[i]['suggestion'] = issue_suggestion
+                            break
+                
+                logger.info(f"Generated {len(suggestions)} fix suggestions for PR #{self.pr_number}")
+            
+            except Exception as e:
+                logger.error(f"Error generating fix suggestions: {str(e)}")
         
         except Exception as e:
             logger.error(f"Error analyzing code changes: {str(e)}")
