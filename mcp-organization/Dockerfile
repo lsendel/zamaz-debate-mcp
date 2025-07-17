@@ -12,8 +12,10 @@ RUN mkdir -p mcp-common/src/main/java mcp-security/src/main/java
 # Download dependencies (this layer will be cached if pom files don't change)
 RUN mvn dependency:go-offline -B
 
-# Copy source code
-COPY . .
+# Copy source code - only necessary directories
+COPY mcp-common/src/ mcp-common/src/
+COPY mcp-security/src/ mcp-security/src/
+COPY mcp-organization/src/ mcp-organization/src/
 
 # Build the specific module
 RUN mvn clean package -pl mcp-organization -am -DskipTests

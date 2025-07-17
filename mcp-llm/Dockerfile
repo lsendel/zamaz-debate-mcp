@@ -2,9 +2,11 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /build
 
-# Copy entire project structure
-# Security: .dockerignore ensures only necessary files are copied
-COPY . .
+# Copy only necessary files for build
+COPY pom.xml .
+COPY mcp-common/ mcp-common/
+COPY mcp-llm/pom.xml mcp-llm/
+COPY mcp-llm/src/ mcp-llm/src/
 
 # Build the specific module and its dependencies
 RUN mvn clean package -pl mcp-llm -am -DskipTests
