@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -91,5 +92,14 @@ public class GatewayConfig {
                 : "unknown";
             return Mono.just(ip);
         };
+    }
+    
+    /**
+     * WebClient builder for making HTTP calls to downstream services
+     */
+    @Bean
+    public WebClient.Builder webClientBuilder() {
+        return WebClient.builder()
+            .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)); // 1MB
     }
 }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    
+    <!-- CI/CD optimized Maven settings -->
+    <localRepository>${user.home}/.m2/repository</localRepository>
+    <interactiveMode>false</interactiveMode>
+    <offline>false</offline>
+    
+    <profiles>
+        <profile>
+            <id>ci-optimization</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <!-- Parallel downloads -->
+                <maven.artifact.threads>10</maven.artifact.threads>
+                <!-- Reduce verbosity -->
+                <maven.wagon.http.pool>false</maven.wagon.http.pool>
+                <maven.wagon.httpconnectionManager.ttlSeconds>120</maven.wagon.httpconnectionManager.ttlSeconds>
+                <!-- Performance tuning -->
+                <maven.resolver.transport>wagon</maven.resolver.transport>
+            </properties>
+        </profile>
+    </profiles>
+    
+    <mirrors>
+        <!-- Use Maven Central mirror for better performance -->
+        <mirror>
+            <id>central-mirror</id>
+            <name>Maven Central Mirror</name>
+            <url>https://repo1.maven.org/maven2</url>
+            <mirrorOf>central</mirrorOf>
+        </mirror>
+    </mirrors>
+</settings>
