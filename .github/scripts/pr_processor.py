@@ -226,9 +226,6 @@ class PullRequestProcessor:
         """Analyze code changes in the PR."""
         logger.info(f"Analyzing code changes for PR #{self.pr_number}")
         
-        # In a real implementation, this would call the Kiro API for code analysis
-        # For now, we'll just prepare the data that would be sent
-        
         # Prepare file data for analysis
         file_data = []
         for file in self.files:
@@ -239,7 +236,8 @@ class PullRequestProcessor:
                 'deletions': file.get('deletions'),
                 'changes': file.get('changes'),
                 'patch': file.get('patch'),
-                'content_url': file.get('contents_url')
+                'content_url': file.get('contents_url'),
+                'raw_url': file.get('raw_url')
             })
         
         # Prepare analysis request
@@ -262,76 +260,99 @@ class PullRequestProcessor:
             'config': self.config
         }
         
-        # In a real implementation, this would send the data to the Kiro API
-        # For now, we'll just log it
-        logger.info(f"Prepared analysis request for PR #{self.pr_number}")
-        
         # Store the analysis request for later use
         self.analysis_request = analysis_request
+        
+        # Run code analysis
+        try:
+            from code_analyzer import analyze_pr
+            
+            # Run the analysis
+            self.issues = analyze_pr(
+                pr_data={
+                    'number': self.pr_number,
+                    'repository': {
+                        'full_name': self.repo_full_name
+                    }
+                },
+                files=file_data,
+                diff=self.diff,
+                config=self.config
+            )
+            
+            logger.info(f"Found {len(self.issues)} issues in PR #{self.pr_number}")
+        
+        except Exception as e:
+            logger.error(f"Error analyzing code changes: {str(e)}")
+            self.issues = []
     
     def generate_review_comments(self):
         """Generate review comments based on code analysis."""
         logger.info(f"Generating review comments for PR #{self.pr_number}")
         
-        # In a real implementation, this would get results from the Kiro API
-        # For now, we'll just generate some placeholder comments
-        
-        # Create a review
-        review_url = f"{GITHUB_API_URL}/repos/{self.repo_full_name}/pulls/{self.pr_number}/reviews"
-        
-        # Prepare comments
-        comments = []
-        
-        # Add a comment for each file (in a real implementation, these would be based on analysis)
-        for file in self.files[:3]:  # Limit to 3 files for the example
-            filename = file.get('filename')
+        try:
+            # Import comment generator
+            from comment_generator import generate_comments
             
-            # Find a suitable line to comment on
-            line_number = None
-            if filename in self.changes_by_file:
-                for change in self.changes_by_file[filename]:
-                    if change['type'] == 'add':
-                        line_number = change['line_number']
-                        break
-            
-            if line_number:
-                comments.append({
-                    'path': filename,
-                    'line': line_number,
-                    'body': f"This is a placeholder comment for demonstration purposes. In a real implementation, Kiro would provide meaningful code review comments here."
-                })
+            # Generate comments based on issues
+            if hasattr(self, 'issues') and self.issues:
+                comments_data = generate_comments(self.issues, self.config)
+                
+                # Extract comments
+                summary_comment = comments_data.get('summary_comment', '')
+                file_comments = comments_data.get('file_comments', [])
+                
+                # Create review data
+                review_data = {
+                    'commit_id': self.pr_data.get('head', {}).get('sha'),
+                    'body': summary_comment,
+                    'event': 'COMMENT',
+                    'comments': file_comments
+                }
+                
+                # Store the review data for later use
+                self.review_data = review_data
+                
+                logger.info(f"Generated review with {len(file_comments)} comments for PR #{self.pr_number}")
+                
+                # Submit the review to GitHub
+                review_url = f"{GITHUB_API_URL}/repos/{self.repo_full_name}/pulls/{self.pr_number}/reviews"
+                self.github.post(review_url, json=review_data)
+                
+                logger.info(f"Submitted review for PR #{self.pr_number}")
+            else:
+                logger.warning(f"No issues found for PR #{self.pr_number}, skipping review generation")
         
-        # Add a general comment
-        body = f"""
+        except Exception as e:
+            logger.error(f"Error generating review comments: {str(e)}")
+            
+            # Create a fallback review
+            body = f"""
 ## Kiro AI Review
 
-I've reviewed this PR and here's my feedback:
+I've reviewed this PR but encountered an error while generating detailed comments.
 
 ### Summary
-This is a placeholder review for demonstration purposes. In a real implementation, Kiro would provide a detailed code review with specific suggestions and improvements.
+Thank you for submitting this PR! I recommend a manual review by a team member.
 
-### Key Points
-- This would highlight important aspects of the code changes
-- It would identify potential issues or improvements
-- It would suggest best practices and optimizations
+### Error Details
+An error occurred during the automated review process. This might be due to:
+- Complex code structures
+- Unsupported file formats
+- System limitations
 
-Thank you for submitting this PR! Let me know if you have any questions.
+Please let me know if you'd like me to try again or if you need any other assistance.
 """
-        
-        # Submit the review
-        review_data = {
-            'commit_id': self.pr_data.get('head', {}).get('sha'),
-            'body': body,
-            'event': 'COMMENT',
-            'comments': comments
-        }
-        
-        # In a real implementation, this would submit the review to GitHub
-        # For now, we'll just log it
-        logger.info(f"Generated review with {len(comments)} comments for PR #{self.pr_number}")
-        
-        # Store the review data for later use
-        self.review_data = review_data
+            
+            # Create fallback review data
+            self.review_data = {
+                'commit_id': self.pr_data.get('head', {}).get('sha'),
+                'body': body,
+                'event': 'COMMENT',
+                'comments': []
+            }
+            
+            logger.info(f"Generated fallback review for PR #{self.pr_number}")
 
 def queue_pr_for_processing(github_client, repo_full_name, pr_number, priority=1, config=None):
     """Queue a pull request for processing."""
