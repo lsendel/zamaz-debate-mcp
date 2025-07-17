@@ -7,8 +7,15 @@ Simulates the responses without requiring actual services to be running
 from flask import Flask, jsonify, request
 import uuid
 from datetime import datetime
+import os
 
 app = Flask(__name__)
+
+# Enable CSRF protection in production
+if os.environ.get('FLASK_ENV', 'production') != 'development':
+    # In production, you would use Flask-WTF for CSRF protection
+    # This is a placeholder to show the security consideration
+    app.config['WTF_CSRF_ENABLED'] = True
 
 # Storage for mock data
 organizations = {}
@@ -238,6 +245,9 @@ def get_prompts():
 
 if __name__ == '__main__':
     import sys
+    import os
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 5005
     print(f"Starting mock server on port {port}")
-    app.run(port=port, debug=True)
+    # Only enable debug mode in development
+    debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
+    app.run(port=port, debug=debug_mode)

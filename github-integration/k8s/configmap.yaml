@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-integration-config
+  namespace: github-integration
+data:
+  application.yml: |
+    spring:
+      application:
+        name: github-integration
+      datasource:
+        url: jdbc:postgresql://postgres:5432/github_integration
+        username: postgres
+        driver-class-name: org.postgresql.Driver
+      jpa:
+        hibernate:
+          ddl-auto: validate
+        show-sql: false
+        properties:
+          hibernate:
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+      redis:
+        host: redis
+        port: 6379
+        timeout: 2000ms
+        lettuce:
+          pool:
+            max-active: 8
+            max-idle: 8
+            min-idle: 0
+      cache:
+        type: redis
+        redis:
+          time-to-live: 600000
+    
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus
+      endpoint:
+        health:
+          show-details: when_authorized
+      metrics:
+        export:
+          prometheus:
+            enabled: true
+    
+    logging:
+      level:
+        com.zamaz: INFO
+        org.springframework.security: DEBUG
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      file:
+        name: /app/logs/github-integration.log
+    
+    github:
+      api:
+        base-url: https://api.github.com
+        timeout: 30000
+      webhook:
+        path: /webhooks/github
+    
+    kiro:
+      api:
+        timeout: 30000
+    
+    security:
+      jwt:
+        expiration: 86400
+      cors:
+        allowed-origins: "*"
+        allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+        allowed-headers: "*"
+        allow-credentials: true

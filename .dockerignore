@@ -1,90 +1,76 @@
-# Version control
+# Git
 .git
 .gitignore
-.github
 
-# Build artifacts
-**/target/
-!**/target/*.jar
-**/node_modules/
-**/build/
-**/dist/
+# Environment files
+.env
+.env.*
+*.env
 
-# IDE files
+# IDE
 .idea/
 .vscode/
 *.iml
-*.iws
 *.ipr
-.settings/
-.project
-.classpath
+*.iws
 
-# Logs
-logs/
+# Sensitive configuration
+*-secret.*
+*-config.sh
+sonarcloud-env-*.sh
+zshrc-sonarcloud-config.sh
+
+# Documentation (not needed in Docker)
+docs/
+*.md
+LICENSE
+
+# Build artifacts
+target/
+build/
+dist/
 *.log
 
 # Test files
 **/test/
 **/tests/
-**/src/test/
+**/*.test.*
+**/*.spec.*
 
-# Documentation
-docs/
-*.md
-LICENSE
+# Node modules (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
 
-# Docker files
-.dockerignore
-**/Dockerfile*
-docker-compose*.yml
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
 
 # Temporary files
-*~
+*.tmp
+*.temp
 *.swp
-*.swo
-.DS_Store
-Thumbs.db
+*.bak
+*~
 
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Debug files
-*.debug
-*.dump
-
-# Security files
-**/*.pem
-**/*.key
-**/*.p12
-**/*.jks
-**/*.keystore
-**/*.truststore
-
-# Large data files
-**/*.zip
-**/*.tar
-**/*.gz
-**/*.jar
-**/*.war
-**/*.ear
-**/*.db
-**/*.sqlite
-
-# Exclude specific directories
-.kiro/
-.mvn/wrapper/
-.sonarlint/
-.zencoder/
-test_probe/
-security-test-reports/
+# Security reports
 sonar-reports/
+security-reports/
 
-# Include specific files needed for build
-!pom.xml
-!**/pom.xml
-!.mvn/maven.config
-!.mvn/jvm.config
-!.mvn/settings.xml
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Scripts that shouldn't be in container
+scripts/
+tools/
+
+# Local development files
+docker-compose.override.yml
+*.local.*

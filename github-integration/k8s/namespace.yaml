@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: github-integration
+  labels:
+    name: github-integration
+    app.kubernetes.io/name: github-integration
+    app.kubernetes.io/part-of: kiro

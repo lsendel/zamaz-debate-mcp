@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  github-integration:
+    build:
+      context: .
+      dockerfile: github-integration/Dockerfile
+    container_name: kiro-github-integration
+    ports:
+      - "8080:8080"
+    environment:
+      # Database Configuration
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/github_integration
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      
+      # Redis Configuration
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      
+      # GitHub Configuration
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET:-default-secret-change-in-production}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400}
+      
+      # Kiro Core Integration
+      - KIRO_API_URL=${KIRO_API_URL:-http://mcp-controller:5013}
+      - KIRO_API_KEY=${KIRO_API_KEY}
+      
+      # Logging Configuration
+      - LOGGING_LEVEL_COM_ZAMAZ=DEBUG
+      - LOGGING_LEVEL_ROOT=INFO
+      
+      # Security Configuration
+      - SECURITY_REQUIRE_SSL=${SECURITY_REQUIRE_SSL:-false}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      
+      # Monitoring
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+      - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=when_authorized
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - github-integration-network
+    volumes:
+      - github-integration-logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: github-integration-postgres
+    environment:
+      - POSTGRES_DB=github_integration
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts/github-integration-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - github-integration-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d github_integration"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: github-integration-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - github-integration-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Monitoring stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: github-integration-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/github-integration/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/github-integration/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - github-integration-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: github-integration-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/github-integration/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/github-integration/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - github-integration-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+  github-integration-logs:
+
+networks:
+  github-integration-network:
+    driver: bridge

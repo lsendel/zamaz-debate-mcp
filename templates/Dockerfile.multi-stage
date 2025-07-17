@@ -12,8 +12,10 @@ RUN mkdir -p mcp-common/src/main/java mcp-security/src/main/java
 # Download dependencies (this layer will be cached if pom files don't change)
 RUN mvn dependency:go-offline -B
 
-# Copy source code
-COPY . .
+# Copy only necessary source code (exclude sensitive files)
+# Note: Use .dockerignore to exclude files like .env, .git, etc.
+COPY src/ src/
+COPY */src/ */src/
 
 # Build the specific module (ARG will be passed during build)
 ARG MODULE_NAME
