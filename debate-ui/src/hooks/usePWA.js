@@ -75,16 +75,22 @@ export const usePWA = () => {
           setCacheStatus('active');
 
           // Check for updates
-          registration.addEventListener('updatefound', () => {
+          const handleUpdateFound = () => {
             const newWorker = registration.installing;
-            
-            newWorker.addEventListener('statechange', () => {
+            handleWorkerStateChange(newWorker);
+          };
+          
+          const handleWorkerStateChange = (newWorker) => {
+            const onStateChange = () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 setUpdateAvailable(true);
                 console.log('New service worker available');
               }
-            });
-          });
+            };
+            newWorker.addEventListener('statechange', onStateChange);
+          };
+          
+          registration.addEventListener('updatefound', handleUpdateFound);
         })
         .catch(error => {
           console.error('Service worker registration failed:', error);

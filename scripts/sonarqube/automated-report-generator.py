@@ -16,9 +16,9 @@ from pathlib import Path
 import requests
 import schedule
 import smtplib
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
-from email.mime.base import MimeBase
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
 from email import encoders
 import yaml
 
@@ -52,6 +52,9 @@ class ReportConfig:
     include_trends: bool
     include_security_analysis: bool
     include_coverage_analysis: bool
+    include_detailed_issues: bool = True
+    max_issues_per_severity: int = 20
+    max_hotspots_per_category: int = 10
 
 @dataclass
 class NotificationConfig:
@@ -662,7 +665,7 @@ class SonarQubeReportGenerator:
             return
         
         try:
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = self.notification_config.email_username
             msg['To'] = ', '.join(self.notification_config.email_recipients)
             msg['Subject'] = f"SonarQube Report - {self.sonar_config.project_key} - {datetime.now().strftime('%Y-%m-%d')}"
@@ -679,12 +682,12 @@ class SonarQubeReportGenerator:
             Automated SonarQube Report Generator
             """
             
-            msg.attach(MimeText(body, 'plain'))
+            msg.attach(MIMEText(body, 'plain'))
             
             # Attach report files
             for file_path in report_files:
                 with open(file_path, 'rb') as attachment:
-                    part = MimeBase('application', 'octet-stream')
+                    part = MIMEBase('application', 'octet-stream')
                     part.set_payload(attachment.read())
                     encoders.encode_base64(part)
                     part.add_header(

@@ -14,8 +14,22 @@ import logging
 # Add the current directory to path to import our modules
 sys.path.append(str(Path(__file__).parent))
 
-from automated_report_generator import SonarQubeReportGenerator
-from issue_resolver import IssueResolver, Issue
+import importlib.util
+
+# Load modules with hyphenated names
+def load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+# Load our modules
+automated_report_generator = load_module("automated_report_generator", str(Path(__file__).parent / "automated-report-generator.py"))
+issue_resolver = load_module("issue_resolver", str(Path(__file__).parent / "issue-resolver.py"))
+
+SonarQubeReportGenerator = automated_report_generator.SonarQubeReportGenerator
+IssueResolver = issue_resolver.IssueResolver
+Issue = issue_resolver.Issue
 
 # Configure logging
 logging.basicConfig(
