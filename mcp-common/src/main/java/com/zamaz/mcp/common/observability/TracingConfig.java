@@ -1,105 +1,180 @@
 package com.zamaz.mcp.common.observability;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
-import io.opentelemetry.instrumentation.spring.webmvc.v5_3.SpringWebMvcTelemetry;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import javax.servlet.Filter;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * OpenTelemetry tracing configuration for distributed tracing
+ * Configuration for OpenTelemetry tracing and metrics.
  */
 @Configuration
-@ConditionalOnProperty(value = "tracing.enabled", havingValue = "true", matchIfMissing = true)
-public class TracingConfig implements WebMvcConfigurer {
+@ConfigurationProperties(prefix = "mcp.observability")
+@Data
+@Slf4j
+public class TracingConfig {
+
+    /**
+     * Whether to enable tracing.
+     */
+    private boolean enabled = true;
+
+    /**
+     * Jaeger configuration.
+     */
+    private JaegerConfig jaeger = new JaegerConfig();
+
+    /**
+     * Sampling configuration.
+     */
+    private SamplingConfig sampling = new SamplingConfig();
     
-    @Value("${spring.application.name}")
-    private String serviceName;
-    
-    @Value("${tracing.jaeger.endpoint:http://localhost:14250}")
-    private String jaegerEndpoint;
-    
-    @Value("${tracing.sampling.probability:1.0}")
-    private double samplingProbability;
-    
+    /**
+     * Metrics configuration.
+     */
+    private MetricsConfig metrics = new MetricsConfig();
+
+    /**
+     * Creates an OpenTelemetry instance.
+     *
+     * @param serviceName the service name
+     * @return the OpenTelemetry instance
+     */
     @Bean
-    public OpenTelemetry openTelemetry() {
-        // Create Jaeger exporter
-        SpanExporter jaegerExporter = JaegerGrpcSpanExporter.builder()
-            .setEndpoint(jaegerEndpoint)
-            .setTimeout(30, TimeUnit.SECONDS)
-            .build();
+    public OpenTelemetry openTelemetry(@Value("${spring.application.name}") String serviceName) {
+        if (!enabled) {
+            log.info("Tracing is disabled. Using OpenTelemetry noop implementation.");
+            return OpenTelemetry.noop();
+        }
         
-        // Create resource with service information
+        log.info("Initializing OpenTelemetry for service: {}", serviceName);
+        
         Resource resource = Resource.getDefault()
-            .merge(Resource.builder()
-                .put(ResourceAttributes.SERVICE_NAME, serviceName)
-                .put(ResourceAttributes.SERVICE_VERSION, getClass().getPackage().getImplementationVersion())
-                .put("environment", System.getProperty("spring.profiles.active", "default"))
-                .build());
+                .merge(Resource.create(Attributes.of(
+                        ResourceAttributes.SERVICE_NAME, serviceName,
+                        ResourceAttributes.SERVICE_VERSION, "1.0.0"
+                )));
         
-        // Create tracer provider with batch processor
+        // Configure Jaeger exporter
+        JaegerGrpcSpanExporter jaegerExporter = JaegerGrpcSpanExporter.builder()
+                .setEndpoint(jaeger.getEndpoint())
+                .setTimeout(jaeger.getTimeout().toMillis(), TimeUnit.MILLISECONDS)
+                .build();
+        
+        // Configure tracer provider with appropriate sampler
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
-            .addSpanProcessor(BatchSpanProcessor.builder(jaegerExporter)
-                .setScheduleDelay(100, TimeUnit.MILLISECONDS)
-                .setMaxQueueSize(2048)
-                .setMaxExportBatchSize(512)
-                .build())
-            .setResource(resource)
-            .setSampler(Sampler.traceIdRatioBased(samplingProbability))
-            .build();
+                .addSpanProcessor(BatchSpanProcessor.builder(jaegerExporter)
+                        .setScheduleDelay(jaeger.getExportInterval())
+                        .setMaxQueueSize(jaeger.getMaxQueueSize())
+                        .setMaxExportBatchSize(jaeger.getMaxBatchSize())
+                        .build())
+                .setResource(resource)
+                .setSampler(getSampler())
+                .build();
         
-        // Build OpenTelemetry SDK
+        // Configure metrics if enabled
+        SdkMeterProvider meterProvider = SdkMeterProvider.builder()
+                .setResource(resource)
+                .build();
+        
+        if (metrics.isEnabled()) {
+            try {
+                OtlpGrpcMetricExporter metricExporter = OtlpGrpcMetricExporter.builder()
+                        .setEndpoint(metrics.getEndpoint())
+                        .setTimeout(metrics.getTimeout().toMillis(), TimeUnit.MILLISECONDS)
+                        .build();
+                
+                meterProvider = SdkMeterProvider.builder()
+                        .setResource(resource)
+                        .registerMetricReader(PeriodicMetricReader.builder(metricExporter)
+                                .setInterval(metrics.getExportInterval())
+                                .build())
+                        .build();
+                
+                log.info("Metrics export configured to endpoint: {}", metrics.getEndpoint());
+            } catch (Exception e) {
+                log.error("Failed to configure metrics export. Using default meter provider.", e);
+            }
+        }
+        
+        // Build and register the OpenTelemetry SDK
         OpenTelemetrySdk openTelemetry = OpenTelemetrySdk.builder()
-            .setTracerProvider(tracerProvider)
-            .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-            .buildAndRegisterGlobal();
+                .setTracerProvider(tracerProvider)
+                .setMeterProvider(meterProvider)
+                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .buildAndRegisterGlobal();
         
-        // Add shutdown hook
-        Runtime.getRuntime().addShutdownHook(new Thread(tracerProvider::close));
+        log.info("OpenTelemetry initialized successfully for service: {}", serviceName);
         
         return openTelemetry;
     }
     
-    @Bean
-    public Tracer tracer(OpenTelemetry openTelemetry) {
-        return openTelemetry.getTracer(serviceName, getClass().getPackage().getImplementationVersion());
+    /**
+     * Get the appropriate sampler based on configuration.
+     *
+     * @return the sampler
+     */
+    private Sampler getSampler() {
+        if (sampling.getType().equalsIgnoreCase("always")) {
+            return Sampler.alwaysOn();
+        } else if (sampling.getType().equalsIgnoreCase("never")) {
+            return Sampler.alwaysOff();
+        } else if (sampling.getType().equalsIgnoreCase("ratio")) {
+            return Sampler.traceIdRatioBased(sampling.getRatio());
+        } else {
+            // Default to parent-based sampling with ratio
+            return Sampler.parentBased(Sampler.traceIdRatioBased(sampling.getRatio()));
+        }
     }
-    
-    @Bean
-    public Filter tracingFilter(OpenTelemetry openTelemetry) {
-        return SpringWebMvcTelemetry.create(openTelemetry).createServletFilter();
+
+    /**
+     * Jaeger configuration.
+     */
+    @Data
+    public static class JaegerConfig {
+        private String endpoint = "http://jaeger:14250";
+        private Duration timeout = Duration.ofSeconds(10);
+        private Duration exportInterval = Duration.ofSeconds(5);
+        private int maxQueueSize = 2048;
+        private int maxBatchSize = 512;
     }
-    
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        // Add tracing interceptor for Spring MVC
-        SpringWebMvcTelemetry telemetry = SpringWebMvcTelemetry.create(openTelemetry());
-        registry.addInterceptor(telemetry.createHandlerInterceptor());
+
+    /**
+     * Sampling configuration.
+     */
+    @Data
+    public static class SamplingConfig {
+        private String type = "ratio"; // always, never, ratio, parent
+        private double ratio = 1.0;
     }
     
     /**
-     * Custom span processor for adding common attributes
+     * Metrics configuration.
      */
-    @Bean
-    public CustomSpanProcessor customSpanProcessor() {
-        return new CustomSpanProcessor();
+    @Data
+    public static class MetricsConfig {
+        private boolean enabled = true;
+        private String endpoint = "http://otel-collector:4317";
+        private Duration timeout = Duration.ofSeconds(10);
+        private Duration exportInterval = Duration.ofSeconds(60);
     }
 }

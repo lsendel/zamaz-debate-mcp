@@ -13,7 +13,7 @@
   - Set up image signing and security policies for registry access
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [-] 3. Enhance security scanning integration
+- [x] 3. Enhance security scanning integration
   - Extend existing security workflow with container image vulnerability scanning
   - Implement Infrastructure as Code security scanning for Docker and Kubernetes files
   - Add DAST (Dynamic Application Security Testing) with OWASP ZAP integration

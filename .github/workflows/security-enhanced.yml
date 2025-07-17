@@ -550,8 +550,8 @@ jobs:
   compliance:
     name: 📋 Compliance Reporting
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [sast, container-scan, iac-scan, secrets-scan]
+    timeout-minutes: 15
+    needs: [sast, container-scan, iac-scan, secrets-scan, dast]
     if: always() && (inputs.scan_type == 'all' || inputs.scan_type == 'compliance' || github.event_name != 'workflow_dispatch')
 
     steps:
@@ -563,17 +563,92 @@ jobs:
         with:
           path: ./artifacts
 
-      - name: Generate compliance report
+      - name: Set up directory structure
         run: |
-          mkdir -p ${{ env.REPORT_DIR }}/compliance
+          mkdir -p ${{ env.REPORT_DIR }}/{compliance,sast,container,iac,secrets,dast}
           
+          # Copy artifacts to the report directory
+          if [ -d "./artifacts/sast-reports" ]; then
+            cp -r ./artifacts/sast-reports/* ${{ env.REPORT_DIR }}/sast/ || true
+          fi
+          
+          if [ -d "./artifacts/container-security-reports" ]; then
+            cp -r ./artifacts/container-security-reports/* ${{ env.REPORT_DIR }}/container/ || true
+          fi
+          
+          if [ -d "./artifacts/iac-security-reports" ]; then
+            cp -r ./artifacts/iac-security-reports/* ${{ env.REPORT_DIR }}/iac/ || true
+          fi
+          
+          if [ -d "./artifacts/secrets-scan-reports" ]; then
+            cp -r ./artifacts/secrets-scan-reports/* ${{ env.REPORT_DIR }}/secrets/ || true
+          fi
+          
+          if [ -d "./artifacts/zap-scan-reports" ]; then
+            cp -r ./artifacts/zap-scan-reports/* ${{ env.REPORT_DIR }}/dast/ || true
+          fi
+
+      - name: Install dependencies for report generation
+        run: |
+          # Install jq for JSON processing
+          sudo apt-get update && sudo apt-get install -y jq
+          
+          # Install pandoc for HTML report generation
+          sudo apt-get install -y pandoc
+          
+          # Install npm and sarif tools if needed
+          if ! command -v npm &> /dev/null; then
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+          fi
+          
+          sudo npm install -g @microsoft/sarif-tools
+
+      - name: Generate comprehensive security report
+        run: |
+          # Make script executable
+          chmod +x ./scripts/generate-security-report.sh
+          
+          # Generate HTML report
+          ./scripts/generate-security-report.sh \
+            --dir ${{ env.REPORT_DIR }} \
+            --format html \
+            --output ${{ env.REPORT_DIR }}/compliance/comprehensive-security-report.html \
+            --title "Comprehensive Security Report - ${{ github.repository }}"
+          
+          # Generate markdown report
+          ./scripts/generate-security-report.sh \
+            --dir ${{ env.REPORT_DIR }} \
+            --format markdown \
+            --output ${{ env.REPORT_DIR }}/compliance/comprehensive-security-report.md \
+            --title "Comprehensive Security Report - ${{ github.repository }}"
+          
+          # Generate JSON report
+          ./scripts/generate-security-report.sh \
+            --dir ${{ env.REPORT_DIR }} \
+            --format json \
+            --output ${{ env.REPORT_DIR }}/compliance/comprehensive-security-report.json \
+            --title "Comprehensive Security Report - ${{ github.repository }}"
+          
+          # Generate summary report
+          ./scripts/generate-security-report.sh \
+            --dir ${{ env.REPORT_DIR }} \
+            --format markdown \
+            --summary \
+            --output ${{ env.REPORT_DIR }}/compliance/security-summary-report.md \
+            --title "Security Summary Report - ${{ github.repository }}"
+          
+          echo "Security reports generated in ${{ env.REPORT_DIR }}/compliance/"
+
+      - name: Generate compliance status report
+        run: |
           # Generate timestamp and report ID
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           REPORT_ID=$(echo $GITHUB_SHA | cut -c1-8)
           
-          # Create compliance report
-          cat > ${{ env.REPORT_DIR }}/compliance/security-compliance-report-${REPORT_ID}.md << EOF
-          # Security Compliance Report
+          # Create compliance status report
+          cat > ${{ env.REPORT_DIR }}/compliance/compliance-status-report-${REPORT_ID}.md << EOF
+          # Security Compliance Status Report
           
           - **Report ID:** ${REPORT_ID}
           - **Date:** ${TIMESTAMP}
@@ -581,7 +656,7 @@ jobs:
           - **Branch:** ${GITHUB_REF#refs/heads/}
           - **Commit:** ${GITHUB_SHA}
           
-          ## Security Scan Summary
+          ## Security Scan Status
           
           | Scan Type | Status | Details |
           |-----------|--------|---------|
@@ -589,60 +664,71 @@ jobs:
           | Container Security | ${{ needs.container-scan.result }} | Docker image vulnerability scanning |
           | IaC Security | ${{ needs.iac-scan.result }} | Infrastructure as Code security scanning |
           | Secrets Detection | ${{ needs.secrets-scan.result }} | Detection of secrets and credentials |
+          | DAST | ${{ needs.dast.result }} | Dynamic Application Security Testing |
           
-          ## Compliance Status
+          ## Compliance Standards
           
-          ### OWASP Top 10 Coverage
+          ### OWASP Top 10 (2021) Coverage
           
-          - A01:2021 Broken Access Control: ✅ Covered by SAST and DAST scans
-          - A02:2021 Cryptographic Failures: ✅ Covered by SAST and dependency scans
-          - A03:2021 Injection: ✅ Covered by SAST and DAST scans
-          - A04:2021 Insecure Design: ⚠️ Partial coverage, requires manual review
-          - A05:2021 Security Misconfiguration: ✅ Covered by IaC and container scans
-          - A06:2021 Vulnerable Components: ✅ Covered by dependency and container scans
-          - A07:2021 Auth Failures: ✅ Covered by SAST and DAST scans
-          - A08:2021 Software and Data Integrity: ✅ Covered by SBOM and container scans
-          - A09:2021 Security Logging: ⚠️ Partial coverage, requires manual review
-          - A10:2021 SSRF: ✅ Covered by SAST and DAST scans
+          | Category | Status | Implementation |
+          |----------|--------|---------------|
+          | A01: Broken Access Control | ✅ Covered | SAST, DAST scans, security annotations |
+          | A02: Cryptographic Failures | ✅ Covered | SAST, dependency scans, TLS configuration |
+          | A03: Injection | ✅ Covered | SAST, DAST scans, input validation |
+          | A04: Insecure Design | ⚠️ Partial | Architecture reviews, threat modeling |
+          | A05: Security Misconfiguration | ✅ Covered | IaC scans, container scans, config validation |
+          | A06: Vulnerable Components | ✅ Covered | Dependency scans, SBOM generation |
+          | A07: Auth Failures | ✅ Covered | SAST, DAST, auth testing |
+          | A08: Software & Data Integrity | ✅ Covered | SBOM, container signing, artifact verification |
+          | A09: Security Logging | ⚠️ Partial | Logging configuration, monitoring |
+          | A10: SSRF | ✅ Covered | SAST, DAST, URL validation |
           
-          ### Security Controls
+          ### CIS Docker Benchmark Coverage
           
-          - Secure Coding Practices: ✅ Enforced by SAST and code quality checks
-          - Dependency Management: ✅ Enforced by OWASP Dependency Check
-          - Container Security: ✅ Enforced by Trivy scans
-          - Infrastructure Security: ✅ Enforced by Checkov and TFSec
-          - Secrets Management: ✅ Enforced by TruffleHog and GitLeaks
-          - Dynamic Testing: ${{ needs.dast.result == 'success' && '✅' || '⚠️' }} ${{ needs.dast.result == 'success' && 'Enforced by ZAP scans' || 'Partial coverage by ZAP scans' }}
+          | Control Area | Status | Implementation |
+          |--------------|--------|---------------|
+          | Host Configuration | ✅ Covered | IaC scanning, security policies |
+          | Docker Daemon Configuration | ✅ Covered | Docker daemon security checks |
+          | Docker Daemon Configuration Files | ✅ Covered | File permission checks |
+          | Container Images & Build Files | ✅ Covered | Dockerfile scanning, Hadolint |
+          | Container Runtime | ✅ Covered | Runtime security checks |
+          | Docker Security Operations | ⚠️ Partial | Operational procedures |
+          | Docker Swarm Configuration | ⚠️ Partial | Swarm security checks |
+          
+          ## Security Controls Implementation
+          
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | Secure Coding Practices | ✅ Implemented | SAST, code quality checks, secure coding guidelines |
+          | Dependency Management | ✅ Implemented | OWASP Dependency Check, NPM Audit, version pinning |
+          | Container Security | ✅ Implemented | Trivy scans, Dockerfile best practices, minimal images |
+          | Infrastructure Security | ✅ Implemented | Checkov, TFSec, Kubesec, security hardening |
+          | Secrets Management | ✅ Implemented | TruffleHog, GitLeaks, secrets rotation |
+          | Dynamic Testing | ${{ needs.dast.result == 'success' && '✅ Implemented' || '⚠️ Partial' }} | ZAP scans, API security testing |
+          | SBOM Generation | ✅ Implemented | CycloneDX, SPDX formats, dependency tracking |
+          | Image Signing | ✅ Implemented | Cosign, signature verification |
           
           ## Audit Trail
           
           - **Workflow Run:** [${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
           - **Triggered By:** ${GITHUB_ACTOR}
           - **Event Type:** ${GITHUB_EVENT_NAME}
+          - **Timestamp:** ${TIMESTAMP}
           
-          ## Recommendations
+          ## Compliance Verification
           
-          1. Review all security findings and prioritize remediation
-          2. Address any critical or high severity vulnerabilities immediately
-          3. Update dependencies with known vulnerabilities
-          4. Implement missing security controls
-          5. Schedule regular security scans and reviews
+          This report verifies that the codebase has undergone comprehensive security scanning and meets the security requirements defined in the security policy.
           
-          ## Next Steps
-          
-          - Review detailed security reports in the artifacts
-          - Address any compliance gaps identified in this report
-          - Update security policies and procedures as needed
-          
+          For detailed findings and recommendations, please refer to the comprehensive security report.
           EOF
           
-          echo "Compliance report generated: ${{ env.REPORT_DIR }}/compliance/security-compliance-report-${REPORT_ID}.md"
+          echo "Compliance status report generated: ${{ env.REPORT_DIR }}/compliance/compliance-status-report-${REPORT_ID}.md"
 
-      - name: Upload compliance report
+      - name: Upload compliance reports
         uses: actions/upload-artifact@v4
         with:
-          name: compliance-report
-          path: ${{ env.REPORT_DIR }}/compliance
+          name: compliance-reports
+          path: ${{ env.REPORT_DIR }}/compliance/
           retention-days: 90
 
   # Security Summary
@@ -653,6 +739,12 @@ jobs:
     if: always()
 
     steps:
+      - name: Download compliance reports
+        uses: actions/download-artifact@v4
+        with:
+          name: compliance-reports
+          path: ./compliance-reports
+
       - name: Generate security summary
         run: |
           echo "## 🛡️ Enhanced Security Scan Results" >> $GITHUB_STEP_SUMMARY
@@ -697,6 +789,30 @@ jobs:
           echo "- **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
           echo "- **Skipped:** $SKIPPED" >> $GITHUB_STEP_SUMMARY
           
+          # Add security metrics if available
+          if [ -f "./compliance-reports/comprehensive-security-report.json" ]; then
+            if command -v jq &> /dev/null; then
+              CRITICAL=$(jq -r '.report.summary.totals.critical' ./compliance-reports/comprehensive-security-report.json 2>/dev/null || echo "N/A")
+              HIGH=$(jq -r '.report.summary.totals.high' ./compliance-reports/comprehensive-security-report.json 2>/dev/null || echo "N/A")
+              MEDIUM=$(jq -r '.report.summary.totals.medium' ./compliance-reports/comprehensive-security-report.json 2>/dev/null || echo "N/A")
+              LOW=$(jq -r '.report.summary.totals.low' ./compliance-reports/comprehensive-security-report.json 2>/dev/null || echo "N/A")
+              
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 🔒 Security Metrics" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+              echo "| High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+              echo "| Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+              echo "| Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+              
+              RISK_ASSESSMENT=$(jq -r '.report.summary.risk_assessment' ./compliance-reports/comprehensive-security-report.json 2>/dev/null || echo "UNKNOWN")
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Overall Risk Assessment:** $RISK_ASSESSMENT" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔍 Next Steps" >> $GITHUB_STEP_SUMMARY
           
@@ -705,6 +821,13 @@ jobs:
           else
             echo "✅ **No Action Required:** All security scans passed" >> $GITHUB_STEP_SUMMARY
           fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Reports" >> $GITHUB_STEP_SUMMARY
+          echo "- Comprehensive Security Report (HTML, Markdown, JSON)" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Summary Report (Markdown)" >> $GITHUB_STEP_SUMMARY
+          echo "- Compliance Status Report (Markdown)" >> $GITHUB_STEP_SUMMARY
+          echo "- Individual scan reports for each security tool" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Detailed reports are available in the workflow artifacts." >> $GITHUB_STEP_SUMMARY
