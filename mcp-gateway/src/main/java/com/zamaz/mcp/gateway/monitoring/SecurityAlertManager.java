@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SecurityAlertManager {
 
     private final ApplicationEventPublisher eventPublisher;
+    private final JavaMailSender mailSender;
     private final RestTemplate restTemplate = new RestTemplate();
     
     @Value("${security.alerts.webhook.url:#{null}}")
@@ -35,6 +38,12 @@ public class SecurityAlertManager {
     
     @Value("${security.alerts.email.enabled:false}")
     private boolean emailAlertsEnabled;
+    
+    @Value("${security.alerts.email.to:admin@mcp-debate.com}")
+    private String alertEmailTo;
+    
+    @Value("${security.alerts.email.from:security@mcp-debate.com}")
+    private String alertEmailFrom;
     
     @Value("${security.alerts.enabled:true}")
     private boolean alertsEnabled;
@@ -323,11 +332,46 @@ public class SecurityAlertManager {
     }
     
     /**
-     * Send email alert (placeholder for email integration)
+     * Send email alert using Spring Mail
      */
     private void sendEmail(SecurityAlert alert) {
-        // TODO: Implement email integration with Spring Mail
-        log.info("Email alert would be sent: {}", alert.getTitle());
+        if (!emailAlertsEnabled || mailSender == null) {
+            log.debug("Email alerts disabled or mail sender not configured");
+            return;
+        }
+        
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(alertEmailFrom);
+            message.setTo(alertEmailTo);
+            message.setSubject("[" + alert.getSeverity() + "] " + alert.getTitle());
+            
+            StringBuilder body = new StringBuilder();
+            body.append("Security Alert Details:\n\n");
+            body.append("Severity: ").append(alert.getSeverity()).append("\n");
+            body.append("Time: ").append(alert.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+            body.append("Title: ").append(alert.getTitle()).append("\n");
+            body.append("Message: ").append(alert.getMessage()).append("\n\n");
+            
+            if (alert.getDetails() != null && !alert.getDetails().isEmpty()) {
+                body.append("Additional Details:\n");
+                alert.getDetails().forEach((key, value) -> 
+                    body.append("- ").append(key).append(": ").append(value).append("\n")
+                );
+            }
+            
+            body.append("\n---\n");
+            body.append("This is an automated security alert from MCP System.\n");
+            body.append("Please investigate immediately if this is a CRITICAL or HIGH severity alert.\n");
+            
+            message.setText(body.toString());
+            
+            mailSender.send(message);
+            log.info("Security alert email sent: {}", alert.getTitle());
+            
+        } catch (Exception e) {
+            log.error("Failed to send security alert email", e);
+        }
     }
     
     /**

@@ -70,6 +70,12 @@
             <artifactId>bucket4j-core</artifactId>
         </dependency>
         
+        <!-- Email Support for Security Alerts -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        
         <!-- Service Discovery (optional) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

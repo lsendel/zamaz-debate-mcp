@@ -3,6 +3,7 @@ package com.zamaz.mcp.controller.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zamaz.mcp.common.security.SecurityContext;
 import com.zamaz.mcp.controller.service.DebateService;
+import com.zamaz.mcp.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,7 @@ public class DebateWebSocketHandler implements WebSocketHandler {
     private final DebateService debateService;
     private final ObjectMapper objectMapper;
     private final SecurityContext securityContext;
+    private final JwtService jwtService;
     
     // Map of debate ID to connected sessions
     private final Map<String, Map<String, WebSocketSession>> debateSessions = new ConcurrentHashMap<>();
@@ -250,8 +252,48 @@ public class DebateWebSocketHandler implements WebSocketHandler {
      * Validate access to debate
      */
     private boolean validateAccess(String token, String organizationId, String debateId) {
-        // TODO: Implement proper authorization check
-        return token != null && organizationId != null;
+        if (token == null || token.trim().isEmpty()) {
+            log.warn("Missing authentication token for WebSocket connection");
+            return false;
+        }
+        
+        if (organizationId == null || organizationId.trim().isEmpty()) {
+            log.warn("Missing organization ID for WebSocket connection");
+            return false;
+        }
+        
+        try {
+            // Validate JWT token
+            if (!jwtService.isTokenValid(token)) {
+                log.warn("Invalid JWT token for WebSocket connection");
+                return false;
+            }
+            
+            // Extract organization from token
+            String tokenOrgId = jwtService.extractOrganizationId(token);
+            if (tokenOrgId == null || !tokenOrgId.equals(organizationId)) {
+                log.warn("Organization ID mismatch: token={}, header={}", tokenOrgId, organizationId);
+                return false;
+            }
+            
+            // Validate user has access to this debate
+            String userId = jwtService.extractUserId(token);
+            if (userId == null) {
+                log.warn("Unable to extract user ID from token");
+                return false;
+            }
+            
+            // TODO: Add debate-specific access check here
+            // For now, we verify the token is valid and organization matches
+            
+            log.debug("WebSocket access validated for user {} in organization {} for debate {}", 
+                userId, organizationId, debateId);
+            return true;
+            
+        } catch (Exception e) {
+            log.error("Error validating WebSocket access", e);
+            return false;
+        }
     }
     
     /**

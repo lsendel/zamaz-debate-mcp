@@ -1,15 +1,22 @@
 package com.zamaz.mcp.gateway.graphql.security;
 
+import com.zamaz.mcp.security.jwt.JwtService;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Security service for GraphQL operations
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class GraphQLSecurityService {
+    
+    private final JwtService jwtService;
 
     /**
      * Check if user is authenticated
@@ -115,27 +122,64 @@ public class GraphQLSecurityService {
     }
 
     private boolean validateToken(String token) {
-        // TODO: Implement actual JWT validation
-        // For now, accept any non-empty token
-        return token != null && !token.trim().isEmpty();
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
+        
+        try {
+            return jwtService.isTokenValid(token);
+        } catch (Exception e) {
+            log.warn("JWT validation failed", e);
+            return false;
+        }
     }
 
     private String extractRoleFromToken(String token) {
-        // TODO: Implement actual JWT parsing
-        // For now, return default role
-        return "USER";
+        if (token == null || token.trim().isEmpty()) {
+            return "ANONYMOUS";
+        }
+        
+        try {
+            List<String> roles = jwtService.extractRoles(token);
+            if (roles == null || roles.isEmpty()) {
+                return "USER"; // Default role for authenticated users
+            }
+            
+            // Return the highest priority role
+            if (roles.contains("SUPER_ADMIN")) return "SUPER_ADMIN";
+            if (roles.contains("ADMIN")) return "ADMIN";
+            if (roles.contains("MODERATOR")) return "MODERATOR";
+            return "USER";
+        } catch (Exception e) {
+            log.warn("Failed to extract role from token", e);
+            return "ANONYMOUS";
+        }
     }
 
     private String extractUserIdFromToken(String token) {
-        // TODO: Implement actual JWT parsing
-        // For now, return mock user ID
-        return "user-123";
+        if (token == null || token.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            return jwtService.extractUserId(token);
+        } catch (Exception e) {
+            log.warn("Failed to extract user ID from token", e);
+            return null;
+        }
     }
 
     private String extractOrganizationIdFromToken(String token) {
-        // TODO: Implement actual JWT parsing
-        // For now, return mock organization ID
-        return "org-123";
+        if (token == null || token.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            return jwtService.extractOrganizationId(token);
+        } catch (Exception e) {
+            log.warn("Failed to extract organization ID from token", e);
+            return null;
+        }
     }
 
     private boolean hasRoleHierarchy(String userRole, String requiredRole) {
@@ -161,8 +205,31 @@ public class GraphQLSecurityService {
     }
 
     private boolean hasPermissionForRole(String userRole, String permission) {
-        // TODO: Implement permission checking based on role
-        // For now, return true for authenticated users
-        return userRole != null && !userRole.equals("ANONYMOUS");
+        if (userRole == null || userRole.equals("ANONYMOUS")) {
+            return false;
+        }
+        
+        // Define permissions based on roles
+        switch (permission) {
+            case "READ":
+                return hasRoleHierarchy(userRole, "USER");
+            case "write":
+                return hasRoleHierarchy(userRole, "USER");
+            case "moderate":
+                return hasRoleHierarchy(userRole, "MODERATOR");
+            case "admin":
+                return hasRoleHierarchy(userRole, "ADMIN");
+            case "super_admin":
+                return hasRoleHierarchy(userRole, "SUPER_ADMIN");
+            case "create_organization":
+                return hasRoleHierarchy(userRole, "ADMIN");
+            case "manage_users":
+                return hasRoleHierarchy(userRole, "ADMIN");
+            case "delete":
+                return hasRoleHierarchy(userRole, "MODERATOR");
+            default:
+                // For unknown permissions, only allow ADMIN and above
+                return hasRoleHierarchy(userRole, "ADMIN");
+        }
     }
 }

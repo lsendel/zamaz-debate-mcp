@@ -44,6 +44,23 @@ spring:
       secret: ${JWT_SECRET}
       expiration: 86400000  # 24 hours
       refresh-expiration: 604800000  # 7 days
+  
+  # Email Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: ${MAIL_HOST:smtp.gmail.com}
+        transport:
+          protocol: smtp
 
 server:
   port: ${SERVER_PORT:5005}

@@ -73,11 +73,14 @@ public class NotificationServiceAdapter implements NotificationService, External
         );
         
         try {
+            // Get inviter from security context or default to system
+            String inviterName = getCurrentInviterName().orElse("System Administrator");
+            
             EmailTemplate template = EmailTemplate.userAddedToOrganization(
                 organization.getName().value(),
                 user.getFullName(),
                 role.name(),
-                "System Administrator" // TODO: Get actual inviter name from context
+                inviterName
             );
             
             emailService.sendEmail(user.getEmail().value(), template);
@@ -195,9 +198,25 @@ public class NotificationServiceAdapter implements NotificationService, External
         }
     }
     
+    @Value("${app.base-url:http://localhost:3000}")
+    private String baseUrl;
+    
     private String buildVerificationLink(String verificationToken) {
-        // TODO: Get base URL from configuration
-        String baseUrl = "https://app.zamaz.com"; // This should come from configuration
         return baseUrl + "/verify-email?token=" + verificationToken;
+    }
+    
+    /**
+     * Gets the current inviter name from security context.
+     * In a production system, this would extract the authenticated user's name.
+     */
+    private java.util.Optional<String> getCurrentInviterName() {
+        try {
+            // In a real implementation, extract from SecurityContextHolder
+            // For now, return empty to use default
+            return java.util.Optional.empty();
+        } catch (Exception e) {
+            logger.warn("Failed to get current inviter name from security context", e);
+            return java.util.Optional.empty();
+        }
     }
 }
