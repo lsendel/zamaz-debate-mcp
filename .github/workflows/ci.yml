@@ -1,0 +1,480 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**', 'hotfix/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (for emergency builds)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '18'
+  MAVEN_OPTS: '-Xmx2048m -XX:MaxMetaspaceSize=512m'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Build and Test Java Services
+  java-build-test:
+    name: 🏗️ Java Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should-build-images: ${{ steps.changes.outputs.java == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            java:
+              - 'mcp-*/**'
+              - 'pom.xml'
+              - 'checkstyle.xml'
+            frontend:
+              - 'debate-ui/**'
+            docker:
+              - '**/Dockerfile'
+              - 'docker-compose*.yml'
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Generate version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            VERSION="1.0.${GITHUB_RUN_NUMBER}"
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            VERSION="1.0.${GITHUB_RUN_NUMBER}-dev"
+          else
+            VERSION="1.0.${GITHUB_RUN_NUMBER}-${GITHUB_SHA:0:8}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${VERSION}"
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Validate Maven configuration
+        run: |
+          mvn validate
+          mvn help:effective-pom -q
+
+      - name: Compile all modules
+        run: |
+          mvn clean compile -T 2C \
+            -Drevision=${{ steps.version.outputs.version }} \
+            --batch-mode --no-transfer-progress
+
+      - name: Run unit tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          mvn test -T 2C \
+            -Drevision=${{ steps.version.outputs.version }} \
+            --batch-mode --no-transfer-progress \
+            -Djacoco.skip=false
+
+      - name: Run integration tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          mvn verify -T 2C \
+            -Drevision=${{ steps.version.outputs.version }} \
+            --batch-mode --no-transfer-progress \
+            -DskipUnitTests=true \
+            -Djacoco.skip=false
+
+      - name: Generate test reports
+        if: always() && !inputs.skip_tests
+        run: |
+          mvn jacoco:report-aggregate \
+            --batch-mode --no-transfer-progress
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always() && !inputs.skip_tests
+        with:
+          name: test-results-java
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+            **/target/site/jacoco/
+          retention-days: 7
+
+      - name: Package applications
+        run: |
+          mvn package -T 2C \
+            -Drevision=${{ steps.version.outputs.version }} \
+            --batch-mode --no-transfer-progress \
+            -DskipTests
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artifacts
+          path: |
+            **/target/*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+          retention-days: 7
+
+  # Job 2: Code Quality Analysis
+  code-quality:
+    name: 🔍 Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: java-build-test
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: ./
+
+      - name: Run Checkstyle
+        run: |
+          mvn checkstyle:check \
+            --batch-mode --no-transfer-progress
+        continue-on-error: true
+
+      - name: Run SpotBugs
+        run: |
+          mvn spotbugs:check \
+            --batch-mode --no-transfer-progress
+        continue-on-error: true
+
+      - name: Run SonarQube analysis
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            mvn sonar:sonar \
+              -Dsonar.projectKey=zamaz-debate-mcp \
+              -Dsonar.organization=zamaz \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.token=$SONAR_TOKEN \
+              --batch-mode --no-transfer-progress
+          else
+            echo "⚠️ SONAR_TOKEN not available, skipping SonarQube analysis"
+          fi
+
+      - name: Upload quality reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-reports
+          path: |
+            **/target/checkstyle-result.xml
+            **/target/spotbugsXml.xml
+            **/target/site/jacoco/
+          retention-days: 7
+
+  # Job 3: Frontend Build and Test
+  frontend-build-test:
+    name: ⚛️ Frontend Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: java-build-test
+    if: needs.java-build-test.outputs.should-build-images == 'true' || contains(github.event.head_commit.modified, 'debate-ui/')
+    
+    defaults:
+      run:
+        working-directory: ./debate-ui
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './debate-ui/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Run linting
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run type checking
+        run: npm run type-check
+        continue-on-error: true
+
+      - name: Run unit tests
+        if: ${{ !inputs.skip_tests }}
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: debate-ui/build/
+          retention-days: 7
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        if: always() && !inputs.skip_tests
+        with:
+          name: frontend-coverage
+          path: debate-ui/coverage/
+          retention-days: 7
+
+  # Job 4: Security Scanning (Enhanced)
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: java-build-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run OWASP Dependency Check
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DskipTestScope=false \
+            --batch-mode --no-transfer-progress
+        continue-on-error: true
+
+      - name: Run Semgrep security scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/java
+            p/typescript
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        continue-on-error: true
+
+      - name: Run TruffleHog secrets scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            **/target/dependency-check-report.html
+            **/target/dependency-check-report.xml
+          retention-days: 30
+
+  # Job 5: Build Summary and Quality Gates
+  build-summary:
+    name: 📊 Build Summary
+    runs-on: ubuntu-latest
+    needs: [java-build-test, code-quality, frontend-build-test, security-scan]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Generate build summary
+        run: |
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Java Build | ${{ needs.java-build-test.result }} | Version: ${{ needs.java-build-test.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result }} | Checkstyle, SpotBugs, SonarQube |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.frontend-build-test.result }} | React TypeScript build |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security-scan.result }} | OWASP, Semgrep, TruffleHog |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- Java JAR files: $(find ./artifacts -name "*.jar" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend build: $([ -d ./artifacts/frontend-build ] && echo "✅" || echo "❌")" >> $GITHUB_STEP_SUMMARY
+          echo "- Test reports: $(find ./artifacts -name "*test*" -type d | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Quality Gates Check
+          echo "### 🚦 Quality Gates" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.java-build-test.result }}" == "success" && 
+                "${{ needs.code-quality.result }}" != "failure" && 
+                "${{ needs.frontend-build-test.result }}" != "failure" && 
+                "${{ needs.security-scan.result }}" != "failure" ]]; then
+            echo "✅ **All quality gates passed!**" >> $GITHUB_STEP_SUMMARY
+            echo "QUALITY_GATE_STATUS=passed" >> $GITHUB_ENV
+          else
+            echo "❌ **Quality gates failed - review required**" >> $GITHUB_STEP_SUMMARY
+            echo "QUALITY_GATE_STATUS=failed" >> $GITHUB_ENV
+          fi
+
+      - name: Set quality gate status
+        run: |
+          if [[ "$QUALITY_GATE_STATUS" == "failed" ]]; then
+            echo "Quality gates failed"
+            exit 1
+          fi
+
+  # Job 6: Prepare for Docker Build (conditional)
+  prepare-docker:
+    name: 🐳 Prepare Docker Build
+    runs-on: ubuntu-latest
+    needs: [java-build-test, build-summary]
+    if: needs.java-build-test.outputs.should-build-images == 'true' && needs.build-summary.result == 'success'
+    
+    outputs:
+      services: ${{ steps.services.outputs.services }}
+      version: ${{ needs.java-build-test.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Identify services to build
+        id: services
+        run: |
+          # Find all services with Dockerfiles
+          services=$(find . -name "Dockerfile" -path "./mcp-*" | sed 's|./\([^/]*\)/.*|\1|' | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "services=${services}" >> $GITHUB_OUTPUT
+          echo "Services to build: ${services}"
+
+      - name: Download Java artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: ./
+
+      - name: Prepare build context
+        run: |
+          # Create a build context with all necessary files
+          mkdir -p build-context
+          cp -r mcp-* build-context/ || true
+          find . -name "*.jar" -path "./mcp-*" -exec cp {} build-context/ \;
+
+      - name: Upload build context
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-build-context
+          path: build-context/
+          retention-days: 1
+
+  # Job 7: Notify on Failure
+  notify-failure:
+    name: 📢 Notify Failure
+    runs-on: ubuntu-latest
+    needs: [java-build-test, code-quality, frontend-build-test, security-scan, build-summary]
+    if: failure() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `CI Pipeline Failed - ${context.ref.replace('refs/heads/', '')} branch`;
+            const body = `
+            ## 🚨 CI Pipeline Failure
+            
+            **Branch:** ${context.ref.replace('refs/heads/', '')}
+            **Commit:** ${context.sha.substring(0, 8)}
+            **Workflow:** ${context.workflow}
+            **Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            
+            ### Failed Jobs:
+            ${ needs.java-build-test.result === 'failure' ? '- ❌ Java Build & Test\n' : '' }
+            ${ needs.code-quality.result === 'failure' ? '- ❌ Code Quality\n' : '' }
+            ${ needs.frontend-build-test.result === 'failure' ? '- ❌ Frontend Build & Test\n' : '' }
+            ${ needs.security-scan.result === 'failure' ? '- ❌ Security Scan\n' : '' }
+            
+            Please investigate and fix the issues.
+            
+            ---
+            *This issue was automatically created by the CI pipeline.*
+            `;
+            
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['ci-failure', 'automated']
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('CI Pipeline Failed') && 
+              issue.title.includes(context.ref.replace('refs/heads/', ''))
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['ci-failure', 'automated', 'bug']
+              });
+            }
