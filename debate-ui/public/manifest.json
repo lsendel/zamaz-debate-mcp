@@ -1,15 +1,81 @@
 {
   "short_name": "Debate System",
-  "name": "Zamaz Debate System",
+  "name": "Zamaz Multi-Tenant Debate System",
+  "description": "AI-powered debate platform with real-time collaboration",
   "icons": [
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait-primary",
+  "theme_color": "#1e40af",
+  "background_color": "#ffffff",
+  "categories": ["education", "productivity", "social"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "New Debate",
+      "short_name": "New Debate",
+      "description": "Create a new debate",
+      "url": "/debates/new",
+      "icons": [
+        {
+          "src": "icons/new-debate-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "My Debates",
+      "short_name": "My Debates",
+      "description": "View your debates",
+      "url": "/debates",
+      "icons": [
+        {
+          "src": "icons/my-debates-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/desktop-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Debate dashboard on desktop"
+    },
+    {
+      "src": "screenshots/mobile-debate.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "label": "Active debate on mobile"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+debate",
+      "url": "/debates/%s"
+    }
+  ]
 }
