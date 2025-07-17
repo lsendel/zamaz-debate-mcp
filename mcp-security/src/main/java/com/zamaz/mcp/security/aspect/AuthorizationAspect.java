@@ -5,6 +5,7 @@ import com.zamaz.mcp.security.annotation.RequiresRole;
 import com.zamaz.mcp.security.exception.AuthorizationException;
 import com.zamaz.mcp.security.model.McpUser;
 import com.zamaz.mcp.security.service.AuthorizationService;
+import com.zamaz.mcp.security.audit.SecurityAuditLogger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 public class AuthorizationAspect {
     
     private final AuthorizationService authorizationService;
+    private final SecurityAuditLogger auditLogger;
     
     /**
      * Intercept methods annotated with @RequiresPermission.
@@ -76,8 +78,20 @@ public class AuthorizationAspect {
         }
         
         if (!hasPermission) {
+            // Audit authorization failure
+            String permissionNames = java.util.Arrays.stream(permissions)
+                .map(p -> p.getPermission())
+                .collect(java.util.stream.Collectors.joining(\", \"));
+            auditLogger.logPermissionDenied(permissionNames, joinPoint.getSignature().getName());
+            
             throw new AuthorizationException(requiresPermission.message());
         }
+        
+        // Audit successful authorization
+        auditLogger.logSecurityEvent(SecurityAuditLogger.SecurityEventType.AUTHORIZATION_SUCCESS, 
+            SecurityAuditLogger.RiskLevel.LOW,
+            \"Permission check passed\", 
+            java.util.Map.of(\"method\", joinPoint.getSignature().getName()));
         
         // Check resource-specific permissions if needed
         if (!requiresPermission.resourceParam().isEmpty()) {
