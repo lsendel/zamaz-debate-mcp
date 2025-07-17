@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  # Redis for queue management
+  redis:
+    image: redis:7-alpine
+    container_name: kiro-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kiro-network
+
+  # Webhook handler service
+  webhook-handler:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.webhook-handler
+    container_name: kiro-webhook-handler
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+      - webhook-logs:/app/logs
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+  # PR processor service
+  pr-processor:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.pr-processor
+    container_name: kiro-pr-processor
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REDIS_URL=redis://redis:6379
+      - PROCESSING_QUEUE=pr-processing
+      - MAX_WORKERS=10
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+      - processor-logs:/app/logs
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+  # Notification service
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: .github/docker/Dockerfile.notification-service
+    container_name: kiro-notification-service
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - notification-logs:/app/logs
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kiro-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+  # Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kiro-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Grafana password required}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+  # Log aggregation - Loki
+  loki:
+    image: grafana/loki:latest
+    container_name: kiro-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+  # Log shipper - Promtail
+  promtail:
+    image: grafana/promtail:latest
+    container_name: kiro-promtail
+    volumes:
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - webhook-logs:/var/log/webhook:ro
+      - processor-logs:/var/log/processor:ro
+      - notification-logs:/var/log/notification:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - kiro-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  webhook-logs:
+  processor-logs:
+  notification-logs:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  kiro-network:
+    name: kiro-network
+    driver: bridge

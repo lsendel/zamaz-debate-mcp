@@ -1,0 +1,312 @@
+name: Kiro GitHub Integration CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '.github/**'
+      - '!.github/ci/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/**'
+  workflow_dispatch:
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/kiro
+
+jobs:
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.github'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Bandit security linter
+        run: |
+          pip install bandit
+          bandit -r .github/scripts -f json -o bandit-results.json || true
+
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-results
+          path: bandit-results.json
+
+  # Code quality checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black ruff mypy
+
+      - name: Run Black formatter
+        run: black --check .github/scripts
+
+      - name: Run Ruff linter
+        run: ruff check .github/scripts
+
+      - name: Run MyPy type checker
+        run: mypy .github/scripts --ignore-missing-imports
+
+  # Unit tests
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [security-scan, code-quality]
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r .github/requirements/test.txt
+
+      - name: Run unit tests
+        run: |
+          cd .github/tests
+          python -m pytest -m unit --cov=../scripts --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: .github/tests/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  # Integration tests
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test-unit
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r .github/requirements/test.txt
+
+      - name: Run integration tests
+        env:
+          REDIS_URL: redis://localhost:6379
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd .github/tests
+          python -m pytest -m integration -v
+
+  # Build Docker images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        service: [webhook-handler, pr-processor, notification-service]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .github/docker/Dockerfile.${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Deploy to Kubernetes
+        env:
+          KUBE_CONFIG: ${{ secrets.STAGING_KUBE_CONFIG }}
+        run: |
+          echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+          
+          cd .github/k8s
+          kustomize edit set image \
+            webhook-handler=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-webhook-handler:sha-${GITHUB_SHA::7} \
+            pr-processor=${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-pr-processor:sha-${GITHUB_SHA::7}
+          
+          kubectl apply -k .
+
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/kiro-github-integration -n kiro-system --timeout=300s
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Deploy to Production
+        env:
+          KUBE_CONFIG: ${{ secrets.PROD_KUBE_CONFIG }}
+        run: |
+          echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+          
+          # Blue-green deployment
+          kubectl apply -f .github/k8s/production/
+
+      - name: Run smoke tests
+        run: |
+          # Wait for service to be ready
+          kubectl wait --for=condition=ready pod -l app=kiro -n kiro-system --timeout=300s
+          
+          # Run smoke tests
+          SERVICE_URL=$(kubectl get svc kiro-webhook-service -n kiro-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -f http://$SERVICE_URL/health || exit 1
+
+      - name: Create GitHub deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              description: 'Kiro GitHub Integration',
+              auto_merge: false,
+              required_contexts: []
+            });
+            
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'success',
+              environment_url: 'https://kiro.example.com'
+            });
+
+  # Performance tests
+  performance-test:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run load tests
+        run: |
+          cd .github/tests
+          python -m pytest -m load -v --benchmark-only
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: .github/tests/benchmark_results.json

@@ -1,0 +1,183 @@
+groups:
+  - name: kiro_github_integration
+    interval: 30s
+    rules:
+      # Webhook handler alerts
+      - alert: WebhookHandlerDown
+        expr: up{job="webhook-handler"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: webhook-handler
+        annotations:
+          summary: "Webhook handler is down"
+          description: "The webhook handler service has been down for more than 2 minutes."
+
+      - alert: HighWebhookErrorRate
+        expr: |
+          rate(webhook_handler_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: webhook-handler
+        annotations:
+          summary: "High webhook error rate"
+          description: "Webhook handler error rate is above 10% for the last 5 minutes."
+
+      - alert: WebhookProcessingBacklog
+        expr: |
+          webhook_handler_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: webhook-handler
+        annotations:
+          summary: "Webhook processing backlog"
+          description: "More than 100 webhooks are queued for processing."
+
+      # PR processor alerts
+      - alert: PRProcessorDown
+        expr: up{job="pr-processor"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: pr-processor
+        annotations:
+          summary: "PR processor is down"
+          description: "The PR processor service has been down for more than 2 minutes."
+
+      - alert: HighPRProcessingTime
+        expr: |
+          histogram_quantile(0.95, rate(pr_processing_duration_seconds_bucket[5m])) > 60
+        for: 10m
+        labels:
+          severity: warning
+          service: pr-processor
+        annotations:
+          summary: "High PR processing time"
+          description: "95th percentile of PR processing time is above 60 seconds."
+
+      - alert: PRProcessingFailureRate
+        expr: |
+          rate(pr_processing_failures_total[5m]) / rate(pr_processing_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: pr-processor
+        annotations:
+          summary: "High PR processing failure rate"
+          description: "More than 5% of PR processing attempts are failing."
+
+      # GitHub API alerts
+      - alert: GitHubAPIRateLimitNear
+        expr: |
+          github_api_rate_limit_remaining / github_api_rate_limit_total < 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: github-client
+        annotations:
+          summary: "GitHub API rate limit approaching"
+          description: "Less than 10% of GitHub API rate limit remaining."
+
+      - alert: GitHubAPIErrors
+        expr: |
+          rate(github_api_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: github-client
+        annotations:
+          summary: "GitHub API errors"
+          description: "GitHub API is returning errors at a rate of {{ $value }} per second."
+
+      # Redis alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis server has been down for more than 2 minutes."
+
+      - alert: RedisHighMemoryUsage
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis is using more than 90% of available memory."
+
+      # Security alerts
+      - alert: SuspiciousWebhookActivity
+        expr: |
+          rate(webhook_handler_invalid_signatures_total[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Suspicious webhook activity detected"
+          description: "High rate of invalid webhook signatures detected."
+
+      - alert: UnauthorizedAPIAccess
+        expr: |
+          rate(api_unauthorized_access_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Unauthorized API access attempts"
+          description: "Detecting unauthorized API access attempts."
+
+      # Performance alerts
+      - alert: HighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: performance
+        annotations:
+          summary: "High CPU usage"
+          description: "Service {{ $labels.job }} CPU usage is above 80%."
+
+      - alert: HighMemoryUsage
+        expr: |
+          process_resident_memory_bytes / process_virtual_memory_max_bytes > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: performance
+        annotations:
+          summary: "High memory usage"
+          description: "Service {{ $labels.job }} memory usage is above 80%."
+
+      # Business metrics alerts
+      - alert: NoPRsProcessed
+        expr: |
+          increase(pr_processing_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: info
+          service: business
+        annotations:
+          summary: "No PRs processed"
+          description: "No pull requests have been processed in the last hour."
+
+      - alert: HighCriticalIssueRate
+        expr: |
+          rate(code_issues_found_total{severity="critical"}[1h]) > 10
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High critical issue detection rate"
+          description: "Detecting more than 10 critical issues per hour."

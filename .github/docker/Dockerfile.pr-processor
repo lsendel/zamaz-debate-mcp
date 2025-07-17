@@ -1,0 +1,58 @@
+FROM python:3.11-slim-bullseye AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements/pr-processor.txt /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Production stage
+FROM python:3.11-slim-bullseye
+
+# Security: Create non-root user
+RUN groupadd -r kiro && useradd -r -g kiro kiro
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY scripts/pr_processor.py /app/
+COPY scripts/code_analyzer.py /app/
+COPY scripts/comment_generator.py /app/
+COPY scripts/github_client.py /app/
+COPY scripts/auto_fixer.py /app/
+COPY scripts/__init__.py /app/
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/data /app/config && \
+    chown -R kiro:kiro /app
+
+# Security: Switch to non-root user
+USER kiro
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app
+
+# Run the PR processor
+CMD ["python", "-m", "pr_processor"]
