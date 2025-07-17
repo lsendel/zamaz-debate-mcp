@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   Box,
+  Grid,
   Paper,
   Typography,
   Card,
   CardContent,
   LinearProgress,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import {
   TrendingUp as TrendingUpIcon,
   Forum as ForumIcon,

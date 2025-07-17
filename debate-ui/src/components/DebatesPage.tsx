@@ -11,8 +11,8 @@ import {
   IconButton,
   Tooltip,
   LinearProgress,
+  Grid,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import {
   Add as AddIcon,
   PlayArrow as PlayIcon,
