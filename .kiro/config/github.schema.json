@@ -1,0 +1,289 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Kiro GitHub Integration Configuration",
+  "description": "Configuration schema for Kiro GitHub integration",
+  "type": "object",
+  "properties": {
+    "review": {
+      "type": "object",
+      "description": "Review settings",
+      "properties": {
+        "depth": {
+          "type": "string",
+          "description": "Depth of code review",
+          "enum": ["basic", "standard", "thorough"],
+          "default": "standard"
+        },
+        "focus_areas": {
+          "type": "array",
+          "description": "Areas to focus on during review",
+          "items": {
+            "type": "string",
+            "enum": ["security", "performance", "style", "documentation", "best_practice", "maintainability"]
+          },
+          "default": ["security", "performance", "style", "documentation"]
+        },
+        "auto_fix": {
+          "type": "boolean",
+          "description": "Whether to suggest automated fixes",
+          "default": true
+        },
+        "comment_style": {
+          "type": "string",
+          "description": "Style of comments",
+          "enum": ["concise", "educational", "detailed"],
+          "default": "educational"
+        }
+      },
+      "required": ["depth", "focus_areas", "auto_fix", "comment_style"]
+    },
+    "rules": {
+      "type": "object",
+      "description": "Rules configuration",
+      "properties": {
+        "custom_rules_enabled": {
+          "type": "boolean",
+          "description": "Whether custom rules are enabled",
+          "default": true
+        },
+        "rule_sets": {
+          "type": "array",
+          "description": "Sets of rules",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the rule set"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether the rule set is enabled",
+                "default": true
+              },
+              "rules": {
+                "type": "array",
+                "description": "Rules in the set",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique identifier for the rule"
+                    },
+                    "severity": {
+                      "type": "string",
+                      "description": "Severity level of the rule",
+                      "enum": ["critical", "major", "minor", "suggestion"],
+                      "default": "suggestion"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description of the rule"
+                    },
+                    "pattern": {
+                      "type": "string",
+                      "description": "Regex pattern for the rule"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Message to display when the rule is violated"
+                    },
+                    "fix_template": {
+                      "type": "string",
+                      "description": "Template for fixing violations"
+                    },
+                    "file_patterns": {
+                      "type": "array",
+                      "description": "File patterns to apply the rule to",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["id", "severity", "description"]
+                }
+              }
+            },
+            "required": ["name", "enabled"]
+          }
+        }
+      },
+      "required": ["custom_rules_enabled"]
+    },
+    "notifications": {
+      "type": "object",
+      "description": "Notification settings",
+      "properties": {
+        "channels": {
+          "type": "array",
+          "description": "Notification channels",
+          "items": {
+            "type": "string",
+            "enum": ["github", "slack", "email"]
+          },
+          "default": ["github"]
+        },
+        "events": {
+          "type": "array",
+          "description": "Events to notify on",
+          "items": {
+            "type": "string",
+            "enum": ["review_complete", "critical_issue", "fix_applied"]
+          },
+          "default": ["review_complete", "critical_issue"]
+        },
+        "slack": {
+          "type": "object",
+          "description": "Slack notification settings",
+          "properties": {
+            "webhook_url": {
+              "type": "string",
+              "description": "Slack webhook URL"
+            },
+            "channel": {
+              "type": "string",
+              "description": "Slack channel"
+            }
+          },
+          "required": ["webhook_url"]
+        },
+        "email": {
+          "type": "object",
+          "description": "Email notification settings",
+          "properties": {
+            "recipients": {
+              "type": "array",
+              "description": "Email recipients",
+              "items": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          },
+          "required": ["recipients"]
+        }
+      },
+      "required": ["channels", "events"]
+    },
+    "team_standards": {
+      "type": "object",
+      "description": "Team coding standards",
+      "properties": {
+        "indentation": {
+          "type": "object",
+          "description": "Indentation standards",
+          "properties": {
+            "style": {
+              "type": "string",
+              "description": "Indentation style",
+              "enum": ["spaces", "tabs"],
+              "default": "spaces"
+            },
+            "size": {
+              "type": "integer",
+              "description": "Indentation size",
+              "minimum": 1,
+              "maximum": 8,
+              "default": 2
+            }
+          }
+        },
+        "line_length": {
+          "type": "integer",
+          "description": "Maximum line length",
+          "minimum": 40,
+          "maximum": 200,
+          "default": 80
+        },
+        "naming_conventions": {
+          "type": "object",
+          "description": "Naming conventions",
+          "properties": {
+            "variables": {
+              "type": "string",
+              "description": "Variable naming convention",
+              "enum": ["camelCase", "snake_case", "PascalCase"],
+              "default": "camelCase"
+            },
+            "functions": {
+              "type": "string",
+              "description": "Function naming convention",
+              "enum": ["camelCase", "snake_case", "PascalCase"],
+              "default": "camelCase"
+            },
+            "classes": {
+              "type": "string",
+              "description": "Class naming convention",
+              "enum": ["camelCase", "snake_case", "PascalCase"],
+              "default": "PascalCase"
+            },
+            "constants": {
+              "type": "string",
+              "description": "Constant naming convention",
+              "enum": ["camelCase", "snake_case", "PascalCase", "UPPER_CASE"],
+              "default": "UPPER_CASE"
+            }
+          }
+        },
+        "documentation": {
+          "type": "object",
+          "description": "Documentation standards",
+          "properties": {
+            "required_for": {
+              "type": "array",
+              "description": "Code elements that require documentation",
+              "items": {
+                "type": "string",
+                "enum": ["classes", "functions", "methods", "properties", "files"]
+              },
+              "default": ["classes", "functions", "methods"]
+            },
+            "style": {
+              "type": "string",
+              "description": "Documentation style",
+              "enum": ["jsdoc", "javadoc", "docstring", "markdown"],
+              "default": "jsdoc"
+            }
+          }
+        }
+      }
+    },
+    "advanced": {
+      "type": "object",
+      "description": "Advanced settings",
+      "properties": {
+        "max_files_per_review": {
+          "type": "integer",
+          "description": "Maximum number of files to review in a PR",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 50
+        },
+        "max_review_time_seconds": {
+          "type": "integer",
+          "description": "Maximum time to spend on a review in seconds",
+          "minimum": 1,
+          "maximum": 3600,
+          "default": 300
+        },
+        "context_lines": {
+          "type": "integer",
+          "description": "Number of context lines to include in comments",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 5
+        },
+        "ignore_patterns": {
+          "type": "array",
+          "description": "Patterns to ignore during review",
+          "items": {
+            "type": "string"
+          },
+          "default": ["*.min.js", "*.generated.*", "vendor/**"]
+        }
+      }
+    }
+  },
+  "required": ["review"]
+}

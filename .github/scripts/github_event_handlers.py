@@ -86,6 +86,7 @@ def get_github_client(installation_id):
                 'Authorization': f'token {token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
+            self.api_base = GITHUB_API_URL
         
         def get(self, url, params=None):
             response = requests.get(url, headers=self.headers, params=params)
@@ -206,10 +207,77 @@ def handle_issue_comment_event(payload):
     
     logger.info(f"Processing comment on PR #{issue.get('number')}")
     
-    # Check if comment mentions Kiro
+    # Check for apply suggestion command
     comment_body = comment.get('body', '')
-    if mentions_kiro(comment_body):
+    if '/apply-suggestion' in comment_body.lower():
+        process_suggestion_command(comment, issue, repository, installation_id)
+    # Check if comment mentions Kiro
+    elif mentions_kiro(comment_body):
         process_pr_comment(comment, issue, repository, installation_id)
+
+def process_suggestion_command(comment, issue, repository, installation_id):
+    """Process a comment with an apply suggestion command."""
+    # Get GitHub client
+    github = get_github_client(installation_id)
+    if not github:
+        logger.error("Failed to get GitHub client")
+        return
+    
+    # Get PR details
+    pr_number = issue.get('number')
+    repo_full_name = repository.get('full_name')
+    comment_id = comment.get('id')
+    comment_body = comment.get('body', '')
+    
+    logger.info(f"Processing suggestion command in comment #{comment_id} on PR #{pr_number}")
+    
+    try:
+        # Import fix suggester
+        from fix_suggester import handle_suggestion_comment
+        
+        # Get repository configuration
+        repo_owner, repo_name = repo_full_name.split('/')
+        config = get_repository_config(github, repo_owner, repo_name)
+        
+        # Handle the suggestion command
+        success = handle_suggestion_comment(
+            github,
+            repo_full_name,
+            pr_number,
+            comment_id,
+            comment_body,
+            config
+        )
+        
+        # Add a reply to the comment
+        reply_url = f"{GITHUB_API_URL}/repos/{repo_full_name}/issues/{pr_number}/comments"
+        
+        if success:
+            reply_body = f"✅ Successfully applied the suggestion! The changes have been committed to the PR branch."
+        else:
+            reply_body = f"❌ Failed to apply the suggestion. Please check the syntax or try applying it manually."
+        
+        reply_data = {
+            'body': reply_body,
+            'in_reply_to': comment_id
+        }
+        
+        github.post(reply_url, json=reply_data)
+        logger.info(f"Added reply to suggestion command in comment #{comment_id}")
+    
+    except Exception as e:
+        logger.error(f"Error processing suggestion command: {str(e)}")
+        
+        # Add error reply
+        try:
+            reply_url = f"{GITHUB_API_URL}/repos/{repo_full_name}/issues/{pr_number}/comments"
+            reply_data = {
+                'body': f"❌ Error applying suggestion: {str(e)}",
+                'in_reply_to': comment_id
+            }
+            github.post(reply_url, json=reply_data)
+        except:
+            logger.error("Failed to add error reply")
 
 def mentions_kiro(text):
     """Check if text mentions Kiro."""
@@ -266,6 +334,7 @@ def process_pr_comment(comment, issue, repository, installation_id):
 - `/kiro explain [file:line]` - Ask for an explanation of specific code
 - `/kiro fix [file:line]` - Request an automated fix for an issue
 - `/kiro ignore [file:line]` - Ignore a specific issue
+- `/apply-suggestion [id]` - Apply a suggested fix (can be used on any suggestion)
 - `/kiro help` - Show this help message
 
 For more information, see the [documentation](https://docs.example.com/kiro).
@@ -298,6 +367,46 @@ The purpose of this section is to [purpose would go here].
             }
             github.post(comment_url, json=comment_data)
             logger.info(f"Added explanation comment for {file_path}:{line_number} to PR #{pr_number}")
+    
+    elif '/kiro fix' in comment_body.lower():
+        # Extract file and line reference
+        match = re.search(r'/kiro\s+fix\s+([^\s:]+):(\d+)', comment_body, re.IGNORECASE)
+        if match:
+            file_path = match.group(1)
+            line_number = int(match.group(2))
+            
+            # Get PR details
+            pr_url = f"{GITHUB_API_URL}/repos/{repo_full_name}/pulls/{pr_number}"
+            pr = github.get(pr_url)
+            
+            # Get file content
+            contents_url = f"{GITHUB_API_URL}/repos/{repo_full_name}/contents/{file_path}"
+            response = github.get(contents_url, params={'ref': pr.get('head', {}).get('ref')})
+            
+            if 'content' in response:
+                import base64
+                content = base64.b64decode(response['content']).decode('utf-8')
+                lines = content.splitlines()
+                
+                if 0 <= line_number - 1 < len(lines):
+                    # Generate a fix suggestion
+                    comment_url = f"{GITHUB_API_URL}/repos/{repo_full_name}/issues/{pr_number}/comments"
+                    suggestion = f"""
+## Fix Suggestion for `{file_path}:{line_number}`
+
+I've analyzed this code and here's a suggested fix:
+
+```suggestion
+{lines[line_number - 1]}
+```
+
+You can apply this suggestion by clicking the "Add suggestion to batch" button above.
+"""
+                    comment_data = {
+                        'body': suggestion
+                    }
+                    github.post(comment_url, json=comment_data)
+                    logger.info(f"Added fix suggestion for {file_path}:{line_number} to PR #{pr_number}")
 
 def handle_pull_request_review_event(payload):
     """Handle pull request review events."""
@@ -352,17 +461,11 @@ def handle_push_event(payload):
 def get_repository_config(github, repo_owner, repo_name):
     """Get Kiro configuration for a repository."""
     try:
-        # Try to get the configuration file
-        config_url = f"{GITHUB_API_URL}/repos/{repo_owner}/{repo_name}/contents/.kiro/config/github.yml"
-        response = github.get(config_url)
+        # Import config manager
+        from config_manager import get_repository_config as get_config
         
-        # Decode content
-        import base64
-        content = base64.b64decode(response.get('content', '')).decode('utf-8')
-        
-        # Parse YAML
-        import yaml
-        config = yaml.safe_load(content)
+        # Get configuration
+        config = get_config(github, repo_owner, repo_name)
         
         return config
     except Exception as e:

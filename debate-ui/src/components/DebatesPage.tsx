@@ -4,7 +4,6 @@ import {
   Button,
   Paper,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -13,6 +12,7 @@ import {
   Tooltip,
   LinearProgress,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
   Add as AddIcon,
   PlayArrow as PlayIcon,
@@ -117,7 +117,7 @@ const DebatesPage: React.FC = () => {
       ) : (
         <Grid container spacing={3}>
           {debates.map((debate) => (
-            <Grid item xs={12} md={6} lg={4} key={debate.id}>
+            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={debate.id}>
               <Card
                 sx={{
                   cursor: 'pointer',

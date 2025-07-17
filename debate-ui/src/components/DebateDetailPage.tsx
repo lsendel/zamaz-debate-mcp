@@ -12,9 +12,9 @@ import {
   Avatar,
   Divider,
   LinearProgress,
-  Grid,
   Tooltip,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
   ArrowBack as ArrowBackIcon,
   PlayArrow as PlayIcon,
@@ -145,7 +145,7 @@ const DebateDetailPage: React.FC = () => {
       )}
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -239,7 +239,7 @@ const DebateDetailPage: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Participants

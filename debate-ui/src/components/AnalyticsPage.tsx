@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   Card,
   CardContent,
   LinearProgress,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
   TrendingUp as TrendingUpIcon,
   Forum as ForumIcon,
@@ -73,7 +73,7 @@ const AnalyticsPage: React.FC = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Debates"
             value={totalDebates}
@@ -81,7 +81,7 @@ const AnalyticsPage: React.FC = () => {
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Completed"
             value={completedDebates}
@@ -89,7 +89,7 @@ const AnalyticsPage: React.FC = () => {
             color="success"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="In Progress"
             value={inProgressDebates}
@@ -97,7 +97,7 @@ const AnalyticsPage: React.FC = () => {
             color="warning"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Avg. Participants"
             value={avgParticipants}
@@ -108,7 +108,7 @@ const AnalyticsPage: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Debate Status Distribution
@@ -137,7 +137,7 @@ const AnalyticsPage: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Recent Activity
@@ -168,7 +168,7 @@ const AnalyticsPage: React.FC = () => {
           Performance Metrics
         </Typography>
         <Grid container spacing={3} sx={{ mt: 1 }}>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Typography variant="subtitle2" color="text.secondary">
               Average Debate Duration
             </Typography>
@@ -176,13 +176,13 @@ const AnalyticsPage: React.FC = () => {
               {completedDebates > 0 ? 'N/A' : '-'}
             </Typography>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Typography variant="subtitle2" color="text.secondary">
               Average Rounds per Debate
             </Typography>
             <Typography variant="h5">{avgRounds}</Typography>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Typography variant="subtitle2" color="text.secondary">
               Success Rate
             </Typography>
