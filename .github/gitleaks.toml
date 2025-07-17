@@ -1,0 +1,69 @@
+# GitLeaks configuration file
+
+title = "GitLeaks Configuration"
+
+# Global settings
+[allowlist]
+description = "Global allowlist"
+paths = [
+    '''node_modules''',
+    '''.git/''',
+    '''target/''',
+    '''build/''',
+    '''dist/''',
+    '''.*\.min\.js$''',
+    '''.*\.test\..*''',
+    '''.*\.md$''',
+]
+
+# AWS
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "AWS"]
+[rules.allowlist]
+regexes = ['''AKIAIOSFODNN7EXAMPLE''', '''AKIALONGEXAMPLEKEYID''']
+
+# Generic API Key
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey|api_key_secret|api[_-]?secret|app[_-]?key|app[_-]?secret|application[_-]?key|access[_-]?key|auth[_-]?key|client[_-]?key|consumer[_-]?key|customer[_-]?key|key[_-]?secret|oauth[_-]?key|private[_-]?key|public[_-]?key|secret[_-]?key|session[_-]?key|session[_-]?secret|token)(.{0,20})['\"][0-9a-zA-Z]{16,45}['\"]'''
+tags = ["key", "API", "generic"]
+[rules.allowlist]
+regexes = ['''example_key''', '''test_key''', '''dummy_key''', '''placeholder''', '''sample''']
+
+# JWT Token
+[[rules]]
+id = "jwt"
+description = "JSON Web Token"
+regex = '''eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*'''
+tags = ["jwt"]
+[rules.allowlist]
+regexes = ['''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9''']
+
+# Password in code
+[[rules]]
+id = "password"
+description = "Password in code"
+regex = '''(?i)(password|passwd|pwd)(.{0,20})['\"][^'\"]{4,}['\"]'''
+tags = ["password"]
+[rules.allowlist]
+regexes = ['''(?i)(password|passwd|pwd)(.{0,20})['\"][^'\"]{0,3}['\"]''', '''example''', '''placeholder''', '''dummy''', '''test''', '''sample''']
+
+# Private key
+[[rules]]
+id = "private-key"
+description = "Private key"
+regex = '''-----BEGIN ((RSA|DSA|EC|PGP|OPENSSH) )?PRIVATE KEY( BLOCK)?-----'''
+tags = ["key", "private"]
+
+# Database connection string
+[[rules]]
+id = "db-connection-string"
+description = "Database connection string"
+regex = '''(?i)(jdbc:mysql|jdbc:postgresql|jdbc:oracle|jdbc:sqlserver|mongodb(\+srv)?:|redis://|postgres://|mysql://|mongodb://|sqlserver://|oracle://)[^'"\s]+'''
+tags = ["database", "connection"]
+[rules.allowlist]
+regexes = ['''localhost''', '''127.0.0.1''', '''example''', '''test''', '''dummy''']

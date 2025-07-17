@@ -1,0 +1,7 @@
+10016	IGNORE	(Modern Web Application)
+10017	IGNORE	(Cross-Domain JavaScript Source File Inclusion)
+10096	IGNORE	(Timestamp Disclosure)
+10055	IGNORE	(CSP Scanner)
+10098	IGNORE	(Cross-Domain Misconfiguration)
+10104	IGNORE	(User Agent Fuzzer)
+90033	IGNORE	(Loosely Scoped Cookie)

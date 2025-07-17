@@ -127,14 +127,31 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics,gateway,prometheus
   endpoint:
     health:
       show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
   metrics:
     export:
       prometheus:
         enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        security.authentication.duration: true
+        security.authorization.duration: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+        security.authentication.duration: 0.5, 0.9, 0.95, 0.99
+        security.authorization.duration: 0.5, 0.9, 0.95, 0.99
+    tags:
+      application: mcp-gateway
+      environment: ${SPRING_PROFILES_ACTIVE:development}
 
 logging:
   level:

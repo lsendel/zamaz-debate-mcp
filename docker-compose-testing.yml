@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: zamaz-postgres-test
+    environment:
+      POSTGRES_DB: debate_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d debate_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: zamaz-redis-test
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Jaeger for tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: zamaz-jaeger-test
+    ports:
+      - "16686:16686"
+      - "14250:14250"
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Organization Service
+  mcp-organization:
+    build:
+      context: ./mcp-organization
+      dockerfile: Dockerfile
+    container_name: zamaz-organization-test
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      DB_HOST: postgres
+      DB_NAME: debate_test
+      DB_USER: test_user
+      DB_PASSWORD: test_password
+      REDIS_HOST: redis
+      JAEGER_ENDPOINT: http://jaeger:14250
+    ports:
+      - "5005:5005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Controller Service
+  mcp-controller:
+    build:
+      context: ./mcp-controller
+      dockerfile: Dockerfile
+    container_name: zamaz-controller-test
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      DB_HOST: postgres
+      DB_NAME: debate_test
+      DB_USER: test_user
+      DB_PASSWORD: test_password
+      REDIS_HOST: redis
+      ORGANIZATION_SERVICE_URL: http://mcp-organization:5005
+      LLM_SERVICE_URL: http://mcp-llm:5002
+      JAEGER_ENDPOINT: http://jaeger:14250
+    ports:
+      - "5013:5013"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-organization:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5013/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Gateway Service
+  mcp-gateway:
+    build:
+      context: ./mcp-gateway
+      dockerfile: Dockerfile
+    container_name: zamaz-gateway-test
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      REDIS_HOST: redis
+      ORGANIZATION_SERVICE_URL: http://mcp-organization:5005
+      CONTROLLER_SERVICE_URL: http://mcp-controller:5013
+      JAEGER_ENDPOINT: http://jaeger:14250
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mcp-organization:
+        condition: service_healthy
+      mcp-controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Mock LLM Service for testing
+  mock-llm:
+    image: wiremock/wiremock:latest
+    container_name: zamaz-mock-llm-test
+    ports:
+      - "5002:8080"
+    volumes:
+      - ./test-data/wiremock:/home/wiremock
+    command: [
+      "--global-response-templating",
+      "--disable-gzip",
+      "--verbose"
+    ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_test_data:
+
+networks:
+  default:
+    name: zamaz-test-network
+    driver: bridge

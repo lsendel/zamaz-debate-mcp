@@ -46,7 +46,7 @@ zamaz-debate-mcp/
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── docker-compose.yml    # Multi-service orchestration
-└── docs/                 # Architecture documentation
+└── docs/                 # Complete project documentation
 ```
 
 ## Development Commands
@@ -259,3 +259,20 @@ The UI has been thoroughly tested and is working correctly:
 2. **Don't forget to import Lucide icons** - Each icon must be imported
 3. **Don't skip E2E testing** - UI might look fine but not actually work
 4. **Don't use generic names in Makefile** - Be specific (start-all vs start)
+
+## Documentation Structure
+
+All project documentation is organized in the `docs/` folder:
+
+- **`docs/architecture/`** - System architecture, multi-tenant design, MCP integration
+- **`docs/api/`** - API documentation, cURL examples, endpoint testing guides  
+- **`docs/development/`** - Setup guides, testing, Docker configuration, Makefile practices
+- **`docs/security/`** - Security guidelines, incident response, monitoring, deployment guides
+- **`docs/reports/`** - Analysis reports, implementation summaries, migration documentation
+- **`docs/operations/`** - Deployment, monitoring, CI/CD pipeline guides
+
+Key reference documents:
+- Architecture overview: `docs/architecture/ARCHITECTURE.md`
+- Security guidelines: `docs/security/SECURITY.md` 
+- API examples: `docs/api/LLM_CURL_EXAMPLES.md`
+- Development setup: `docs/development/setup.md`

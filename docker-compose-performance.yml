@@ -1,0 +1,244 @@
+version: '3.8'
+
+services:
+  # Database with performance tuning
+  postgres:
+    image: postgres:15-alpine
+    container_name: zamaz-postgres-perf
+    environment:
+      POSTGRES_DB: debate_perf
+      POSTGRES_USER: perf_user
+      POSTGRES_PASSWORD: perf_password
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=pg_stat_statements"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_perf_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./config/postgres-perf.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U perf_user -d debate_perf"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis with performance configuration
+  redis:
+    image: redis:7-alpine
+    container_name: zamaz-redis-perf
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./config/redis-perf.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Organization Service
+  mcp-organization:
+    build:
+      context: ./mcp-organization
+      dockerfile: Dockerfile
+    container_name: zamaz-organization-perf
+    environment:
+      SPRING_PROFILES_ACTIVE: performance
+      DB_HOST: postgres
+      DB_NAME: debate_perf
+      DB_USER: perf_user
+      DB_PASSWORD: perf_password
+      REDIS_HOST: redis
+      # JVM tuning for performance
+      JAVA_OPTS: >
+        -Xms512m -Xmx1g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+UseStringDeduplication
+        -Djava.awt.headless=true
+    ports:
+      - "5005:5005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.0'
+      replicas: 2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Controller Service
+  mcp-controller:
+    build:
+      context: ./mcp-controller
+      dockerfile: Dockerfile
+    container_name: zamaz-controller-perf
+    environment:
+      SPRING_PROFILES_ACTIVE: performance
+      DB_HOST: postgres
+      DB_NAME: debate_perf
+      DB_USER: perf_user
+      DB_PASSWORD: perf_password
+      REDIS_HOST: redis
+      ORGANIZATION_SERVICE_URL: http://mcp-organization:5005
+      LLM_SERVICE_URL: http://mock-llm:8080
+      # JVM tuning
+      JAVA_OPTS: >
+        -Xms1g -Xmx2g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+UseStringDeduplication
+        -Djava.awt.headless=true
+    ports:
+      - "5013:5013"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-organization:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2.5G
+          cpus: '1.5'
+      replicas: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5013/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Gateway Service with load balancing
+  mcp-gateway:
+    build:
+      context: ./mcp-gateway
+      dockerfile: Dockerfile
+    container_name: zamaz-gateway-perf
+    environment:
+      SPRING_PROFILES_ACTIVE: performance
+      REDIS_HOST: redis
+      ORGANIZATION_SERVICE_URL: http://mcp-organization:5005
+      CONTROLLER_SERVICE_URL: http://mcp-controller:5013
+      # JVM tuning
+      JAVA_OPTS: >
+        -Xms512m -Xmx1g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=100
+        -XX:+UseStringDeduplication
+        -Djava.awt.headless=true
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mcp-organization:
+        condition: service_healthy
+      mcp-controller:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.0'
+      replicas: 2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # High-performance mock LLM
+  mock-llm:
+    image: wiremock/wiremock:latest
+    container_name: zamaz-mock-llm-perf
+    ports:
+      - "5002:8080"
+    volumes:
+      - ./test-data/wiremock-perf:/home/wiremock
+    command: [
+      "--global-response-templating",
+      "--disable-gzip",
+      "--async-response-enabled",
+      "--async-response-threads", "10"
+    ]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx load balancer
+  nginx:
+    image: nginx:alpine
+    container_name: zamaz-nginx-perf
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx-perf.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - mcp-gateway
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: zamaz-prometheus-perf
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus-perf.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=1h'
+      - '--web.enable-lifecycle'
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  postgres_perf_data:
+
+networks:
+  default:
+    name: zamaz-perf-network
+    driver: bridge

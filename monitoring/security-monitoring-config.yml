@@ -1,0 +1,332 @@
+# Security Monitoring Configuration
+# This file configures security monitoring and alerting for the MCP Gateway
+
+# Prometheus Configuration for Security Metrics
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "security_alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # MCP Gateway security metrics
+  - job_name: 'mcp-gateway-security'
+    static_configs:
+      - targets: ['mcp-gateway:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+  # Redis monitoring for security data
+  - job_name: 'redis-security'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+---
+# Security Alert Rules for Prometheus
+# File: security_alert_rules.yml
+
+groups:
+  - name: security_alerts
+    rules:
+      # Critical Authentication Failures
+      - alert: HighAuthenticationFailures
+        expr: increase(security_authentication_failures_total[5m]) > 50
+        for: 2m
+        labels:
+          severity: critical
+          service: mcp-gateway
+          category: authentication
+        annotations:
+          summary: "High number of authentication failures detected"
+          description: "{{ $value }} authentication failures in the last 5 minutes"
+          runbook_url: "https://docs.mcp.com/runbooks/authentication-failures"
+
+      # DDoS Attack Detection
+      - alert: DDoSAttackDetected
+        expr: increase(security_ddos_blocks_total[1m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          service: mcp-gateway
+          category: ddos
+        annotations:
+          summary: "DDoS attack detected"
+          description: "{{ $value }} IPs blocked for DDoS in the last minute"
+          runbook_url: "https://docs.mcp.com/runbooks/ddos-mitigation"
+
+      # Rate Limit Violations
+      - alert: HighRateLimitViolations
+        expr: increase(security_rate_limit_violations_total[5m]) > 100
+        for: 3m
+        labels:
+          severity: warning
+          service: mcp-gateway
+          category: rate_limiting
+        annotations:
+          summary: "High number of rate limit violations"
+          description: "{{ $value }} rate limit violations in the last 5 minutes"
+
+      # Suspicious Activity
+      - alert: SuspiciousActivityDetected
+        expr: increase(security_suspicious_activity_detections_total[10m]) > 20
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-gateway
+          category: suspicious_activity
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "{{ $value }} suspicious activities detected in the last 10 minutes"
+
+      # Circuit Breaker Openings
+      - alert: CircuitBreakerOpen
+        expr: security_circuit_breaker_openings_total > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: mcp-gateway
+          category: circuit_breaker
+        annotations:
+          summary: "Circuit breaker opened"
+          description: "Circuit breaker has opened for service protection"
+
+      # Authorization Denials
+      - alert: HighAuthorizationDenials
+        expr: increase(security_authorization_denials_total[5m]) > 30
+        for: 3m
+        labels:
+          severity: warning
+          service: mcp-gateway
+          category: authorization
+        annotations:
+          summary: "High number of authorization denials"
+          description: "{{ $value }} authorization denials in the last 5 minutes"
+
+      # Security Health Degraded
+      - alert: SecurityHealthDegraded
+        expr: security_users_active < 1 and security_authentication_failures_total > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-gateway
+          category: health
+        annotations:
+          summary: "Security health degraded"
+          description: "Overall security health has degraded"
+
+      # High Number of Blocked IPs
+      - alert: HighBlockedIPs
+        expr: security_ips_blocked > 100
+        for: 10m
+        labels:
+          severity: warning
+          service: mcp-gateway
+          category: ip_blocking
+        annotations:
+          summary: "High number of blocked IPs"
+          description: "{{ $value }} IPs are currently blocked"
+
+---
+# Alertmanager Configuration
+# File: alertmanager.yml
+
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'security-alerts@mcp.com'
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'web.hook'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 1h
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      group_interval: 30s
+      repeat_interval: 6h
+
+receivers:
+  - name: 'web.hook'
+    webhook_configs:
+      - url: 'http://mcp-gateway:8080/api/v1/security/webhook/prometheus'
+        send_resolved: true
+
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'security-team@mcp.com'
+        subject: '🚨 CRITICAL Security Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt }}
+          
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+    webhook_configs:
+      - url: 'http://mcp-gateway:8080/api/v1/security/webhook/critical'
+        send_resolved: true
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#security-alerts'
+        title: '🚨 CRITICAL Security Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: 'danger'
+
+  - name: 'warning-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#security-alerts'
+        title: '⚠️ Security Warning'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: 'warning'
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
+
+---
+# Grafana Dashboard Configuration
+# File: security-dashboard.json
+
+{
+  "dashboard": {
+    "id": null,
+    "title": "MCP Security Monitoring",
+    "tags": ["security", "mcp"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Authentication Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(security_authentication_attempts_total[5m])",
+            "legendFormat": "Attempts/sec"
+          },
+          {
+            "expr": "rate(security_authentication_failures_total[5m])",
+            "legendFormat": "Failures/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Security Blocks",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "security_ips_blocked",
+            "legendFormat": "Blocked IPs"
+          }
+        ],
+        "thresholds": "50,100",
+        "colorBackground": true
+      },
+      {
+        "id": 3,
+        "title": "Rate Limiting",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(security_rate_limit_violations_total[5m])",
+            "legendFormat": "Violations/sec"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "DDoS Protection",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(security_ddos_blocks_total[5m])",
+            "legendFormat": "Blocks/sec"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Active Users",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "security_users_active",
+            "legendFormat": "Active Users"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Circuit Breaker Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "security_circuit_breaker_openings_total",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Suspicious Activities",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(security_suspicious_activity_detections_total[5m])",
+            "legendFormat": "{{type}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(security_authentication_duration_seconds_bucket[5m]))",
+            "legendFormat": "Auth P95"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(security_authorization_duration_seconds_bucket[5m]))",
+            "legendFormat": "Authz P95"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

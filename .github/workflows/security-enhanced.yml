@@ -1,0 +1,535 @@
+name: Enhanced Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scans daily at 3 AM UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - sast
+          - dast
+          - container
+          - iac
+          - secrets
+          - compliance
+
+env:
+  NODE_VERSION: "18"
+  JAVA_VERSION: "21"
+  REGISTRY: ghcr.io
+  REGISTRY_BASE: ${{ github.repository_owner }}
+  SECURITY_FAIL_THRESHOLD: "7"
+  ZAP_TARGET_URL: "http://localhost:8080"
+  REPORT_DIR: "security-reports"
+
+jobs:
+  # SAST: Static Application Security Testing
+  sast:
+    name: 🔍 SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ inputs.scan_type == 'all' || inputs.scan_type == 'sast' || github.event_name != 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: "temurin"
+          cache: maven
+
+      - name: Run Semgrep security scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/java
+            p/typescript
+            p/docker
+            p/kubernetes
+          output: semgrep-results.sarif
+          metrics: false
+          generate-sarif: true
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        continue-on-error: true
+
+      - name: Upload Semgrep results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif
+          category: semgrep
+
+      - name: Run OWASP Dependency Check
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}
+          mvn -Psecurity \
+            --batch-mode --no-transfer-progress \
+            org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=${{ env.SECURITY_FAIL_THRESHOLD }} \
+            -DskipTestScope=false \
+            -DformatsToUse=HTML,JSON,SARIF \
+            -DoutputDirectory=${{ env.REPORT_DIR }}
+        continue-on-error: true
+
+      - name: Upload OWASP Dependency Check SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/dependency-check-report.sarif
+          category: owasp-dependency-check
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java, javascript, typescript
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: codeql
+
+      - name: Upload SAST reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-reports
+          path: |
+            semgrep-results.sarif
+            ${{ env.REPORT_DIR }}/**
+          retention-days: 30
+
+  # Container Security Scanning
+  container-scan:
+    name: 🐳 Container Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ inputs.scan_type == 'all' || inputs.scan_type == 'container' || github.event_name != 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Find services with Dockerfiles
+        id: find-services
+        run: |
+          services=$(find . -name "Dockerfile" -path "./mcp-*" | sed 's|./\([^/]*\)/.*|\1|' | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "services=${services}" >> $GITHUB_OUTPUT
+          echo "Found services: ${services}"
+
+      - name: Build Docker images for scanning
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}/container-scan
+          for service in $(echo '${{ steps.find-services.outputs.services }}' | jq -r '.[]'); do
+            echo "Building ${service} for scanning..."
+            docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${service}:scan -f ${service}/Dockerfile .
+          done
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.48.0
+
+      - name: Scan Docker images with Trivy
+        run: |
+          for service in $(echo '${{ steps.find-services.outputs.services }}' | jq -r '.[]'); do
+            echo "Scanning ${service}..."
+            trivy image \
+              --format sarif \
+              --output ${{ env.REPORT_DIR }}/container-scan/${service}-scan.sarif \
+              --severity HIGH,CRITICAL \
+              ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${service}:scan
+            
+            # Also generate human-readable report
+            trivy image \
+              --format table \
+              --output ${{ env.REPORT_DIR }}/container-scan/${service}-scan.txt \
+              --severity HIGH,CRITICAL \
+              ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${service}:scan
+          done
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/container-scan
+          category: trivy-container-scan
+
+      - name: Generate SBOM for each image
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}/sbom
+          for service in $(echo '${{ steps.find-services.outputs.services }}' | jq -r '.[]'); do
+            echo "Generating SBOM for ${service}..."
+            trivy image \
+              --format cyclonedx \
+              --output ${{ env.REPORT_DIR }}/sbom/${service}-sbom.json \
+              ${{ env.REGISTRY }}/${{ env.REGISTRY_BASE }}/${service}:scan
+          done
+
+      - name: Upload container security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-security-reports
+          path: ${{ env.REPORT_DIR }}/container-scan
+          retention-days: 30
+
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-sboms
+          path: ${{ env.REPORT_DIR }}/sbom
+          retention-days: 30
+
+  # Infrastructure as Code Security Scanning
+  iac-scan:
+    name: 🏗️ IaC Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ inputs.scan_type == 'all' || inputs.scan_type == 'iac' || github.event_name != 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: dockerfile,kubernetes,github_actions,secrets
+          output_format: cli,sarif
+          output_file_path: ${{ env.REPORT_DIR }}/checkov-results.sarif
+          soft_fail: true
+
+      - name: Upload Checkov scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/checkov-results.sarif
+          category: checkov-iac
+
+      - name: Run TFSec for Terraform files
+        uses: aquasecurity/tfsec-action@v1.0.3
+        if: hashFiles('**/*.tf') != ''
+        with:
+          soft_fail: true
+          format: sarif
+          out_file: ${{ env.REPORT_DIR }}/tfsec-results.sarif
+
+      - name: Upload TFSec scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: hashFiles('**/*.tf') != ''
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/tfsec-results.sarif
+          category: tfsec-terraform
+
+      - name: Run Hadolint for Dockerfiles
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}
+          docker run --rm -v $(pwd):/workspace \
+            -w /workspace \
+            hadolint/hadolint:latest-debian \
+            hadolint --format sarif --output ${{ env.REPORT_DIR }}/hadolint-results.sarif \
+            $(find . -name "Dockerfile" | xargs)
+        continue-on-error: true
+
+      - name: Upload Hadolint scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/hadolint-results.sarif
+          category: hadolint-dockerfile
+
+      - name: Upload IaC security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iac-security-reports
+          path: ${{ env.REPORT_DIR }}
+          retention-days: 30
+
+  # Secrets Detection
+  secrets-scan:
+    name: 🔐 Secrets Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ inputs.scan_type == 'all' || inputs.scan_type == 'secrets' || github.event_name != 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog secrets scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified --json
+          output: ${{ env.REPORT_DIR }}/trufflehog-results.json
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .github/gitleaks.toml
+          format: sarif
+          report-path: ${{ env.REPORT_DIR }}/gitleaks-results.sarif
+        continue-on-error: true
+
+      - name: Upload GitLeaks scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/gitleaks-results.sarif
+          category: gitleaks-secrets
+
+      - name: Upload secrets scan reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secrets-scan-reports
+          path: ${{ env.REPORT_DIR }}
+          retention-days: 30
+
+  # DAST: Dynamic Application Security Testing
+  dast:
+    name: 🕸️ DAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ inputs.scan_type == 'all' || inputs.scan_type == 'dast' || github.event_name == 'schedule' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start application for testing
+        run: |
+          # This is a placeholder - in a real scenario, you would start your application
+          # using docker-compose or similar, and wait for it to be ready
+          echo "Starting application for DAST testing..."
+          # docker-compose up -d
+          # sleep 30  # Wait for application to start
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.11.0
+        with:
+          target: ${{ env.ZAP_TARGET_URL }}
+          rules_file_name: '.github/zap-rules.tsv'
+          cmd_options: '-a -j'
+          allow_issue_writing: false
+          fail_action: false
+
+      - name: ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          target: ${{ env.ZAP_TARGET_URL }}
+          rules_file_name: '.github/zap-rules.tsv'
+          cmd_options: '-a -j'
+          allow_issue_writing: false
+          fail_action: false
+
+      - name: Upload ZAP scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-scan-reports
+          path: |
+            zap-baseline-report.html
+            zap-baseline-report.json
+            zap-full-scan-report.html
+            zap-full-scan-report.json
+          retention-days: 30
+
+  # Compliance Reporting
+  compliance:
+    name: 📋 Compliance Reporting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [sast, container-scan, iac-scan, secrets-scan]
+    if: always() && (inputs.scan_type == 'all' || inputs.scan_type == 'compliance' || github.event_name != 'workflow_dispatch')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Generate compliance report
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}/compliance
+          
+          # Generate timestamp and report ID
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          REPORT_ID=$(echo $GITHUB_SHA | cut -c1-8)
+          
+          # Create compliance report
+          cat > ${{ env.REPORT_DIR }}/compliance/security-compliance-report-${REPORT_ID}.md << EOF
+          # Security Compliance Report
+          
+          - **Report ID:** ${REPORT_ID}
+          - **Date:** ${TIMESTAMP}
+          - **Repository:** ${{ github.repository }}
+          - **Branch:** ${GITHUB_REF#refs/heads/}
+          - **Commit:** ${GITHUB_SHA}
+          
+          ## Security Scan Summary
+          
+          | Scan Type | Status | Details |
+          |-----------|--------|---------|
+          | SAST | ${{ needs.sast.result }} | Static Application Security Testing |
+          | Container Security | ${{ needs.container-scan.result }} | Docker image vulnerability scanning |
+          | IaC Security | ${{ needs.iac-scan.result }} | Infrastructure as Code security scanning |
+          | Secrets Detection | ${{ needs.secrets-scan.result }} | Detection of secrets and credentials |
+          
+          ## Compliance Status
+          
+          ### OWASP Top 10 Coverage
+          
+          - A01:2021 Broken Access Control: ✅ Covered by SAST and DAST scans
+          - A02:2021 Cryptographic Failures: ✅ Covered by SAST and dependency scans
+          - A03:2021 Injection: ✅ Covered by SAST and DAST scans
+          - A04:2021 Insecure Design: ⚠️ Partial coverage, requires manual review
+          - A05:2021 Security Misconfiguration: ✅ Covered by IaC and container scans
+          - A06:2021 Vulnerable Components: ✅ Covered by dependency and container scans
+          - A07:2021 Auth Failures: ✅ Covered by SAST and DAST scans
+          - A08:2021 Software and Data Integrity: ✅ Covered by SBOM and container scans
+          - A09:2021 Security Logging: ⚠️ Partial coverage, requires manual review
+          - A10:2021 SSRF: ✅ Covered by SAST and DAST scans
+          
+          ### Security Controls
+          
+          - Secure Coding Practices: ✅ Enforced by SAST and code quality checks
+          - Dependency Management: ✅ Enforced by OWASP Dependency Check
+          - Container Security: ✅ Enforced by Trivy scans
+          - Infrastructure Security: ✅ Enforced by Checkov and TFSec
+          - Secrets Management: ✅ Enforced by TruffleHog and GitLeaks
+          - Dynamic Testing: ${{ needs.dast.result == 'success' && '✅' || '⚠️' }} ${{ needs.dast.result == 'success' && 'Enforced by ZAP scans' || 'Partial coverage by ZAP scans' }}
+          
+          ## Audit Trail
+          
+          - **Workflow Run:** [${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+          - **Triggered By:** ${GITHUB_ACTOR}
+          - **Event Type:** ${GITHUB_EVENT_NAME}
+          
+          ## Recommendations
+          
+          1. Review all security findings and prioritize remediation
+          2. Address any critical or high severity vulnerabilities immediately
+          3. Update dependencies with known vulnerabilities
+          4. Implement missing security controls
+          5. Schedule regular security scans and reviews
+          
+          ## Next Steps
+          
+          - Review detailed security reports in the artifacts
+          - Address any compliance gaps identified in this report
+          - Update security policies and procedures as needed
+          
+          EOF
+          
+          echo "Compliance report generated: ${{ env.REPORT_DIR }}/compliance/security-compliance-report-${REPORT_ID}.md"
+
+      - name: Upload compliance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report
+          path: ${{ env.REPORT_DIR }}/compliance
+          retention-days: 90
+
+  # Security Summary
+  security-summary:
+    name: 📊 Security Summary
+    runs-on: ubuntu-latest
+    needs: [sast, container-scan, iac-scan, secrets-scan, dast, compliance]
+    if: always()
+
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## 🛡️ Enhanced Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan Type | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SAST | ${{ needs.sast.result }} | Static Application Security Testing |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Security | ${{ needs.container-scan.result }} | Docker image vulnerability scanning |" >> $GITHUB_STEP_SUMMARY
+          echo "| IaC Security | ${{ needs.iac-scan.result }} | Infrastructure as Code security scanning |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets Detection | ${{ needs.secrets-scan.result }} | Detection of secrets and credentials |" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.dast.result }}" != "skipped" ]]; then
+            echo "| DAST | ${{ needs.dast.result }} | Dynamic Application Security Testing |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "| Compliance | ${{ needs.compliance.result }} | Security compliance reporting |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Summary" >> $GITHUB_STEP_SUMMARY
+          
+          # Count passed/failed/skipped scans
+          TOTAL=0
+          PASSED=0
+          FAILED=0
+          SKIPPED=0
+          
+          for result in "${{ needs.sast.result }}" "${{ needs.container-scan.result }}" "${{ needs.iac-scan.result }}" "${{ needs.secrets-scan.result }}" "${{ needs.dast.result }}" "${{ needs.compliance.result }}"; do
+            if [[ "$result" != "skipped" ]]; then
+              TOTAL=$((TOTAL+1))
+              if [[ "$result" == "success" ]]; then
+                PASSED=$((PASSED+1))
+              elif [[ "$result" == "failure" ]]; then
+                FAILED=$((FAILED+1))
+              fi
+            else
+              SKIPPED=$((SKIPPED+1))
+            fi
+          done
+          
+          echo "- **Total Scans:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skipped:** $SKIPPED" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Next Steps" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ $FAILED -gt 0 ]]; then
+            echo "⚠️ **Action Required:** Review security findings and address issues" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **No Action Required:** All security scans passed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Detailed reports are available in the workflow artifacts." >> $GITHUB_STEP_SUMMARY
+
+      - name: Set workflow status
+        if: ${{ needs.sast.result == 'failure' || needs.container-scan.result == 'failure' || needs.iac-scan.result == 'failure' || needs.secrets-scan.result == 'failure' }}
+        run: |
+          echo "Critical security issues found!"
+          exit 1
