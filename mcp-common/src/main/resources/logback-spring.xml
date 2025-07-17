@@ -23,20 +23,9 @@
                 <mdc/>
                 <arguments/>
                 <stackTrace/>
-                <pattern>
-                    <pattern>
-                        {
-                            "service": "${springAppName:-mcp-service}",
-                            "environment": "${springProfile:-default}",
-                            "instance": "${HOSTNAME:-localhost}",
-                            "thread": "%thread",
-                            "logger": "%logger{36}",
-                            "line": "%line",
-                            "method": "%method",
-                            "class": "%class{36}"
-                        }
-                    </pattern>
-                </pattern>
+                <jsonMessage/>
+                <context/>
+                <logstashMarkers/>
             </providers>
         </encoder>
     </appender>
@@ -62,20 +51,9 @@
                 <mdc/>
                 <arguments/>
                 <stackTrace/>
-                <pattern>
-                    <pattern>
-                        {
-                            "service": "${springAppName:-mcp-service}",
-                            "environment": "${springProfile:-default}",
-                            "instance": "${HOSTNAME:-localhost}",
-                            "thread": "%thread",
-                            "logger": "%logger{36}",
-                            "line": "%line",
-                            "method": "%method",
-                            "class": "%class{36}"
-                        }
-                    </pattern>
-                </pattern>
+                <jsonMessage/>
+                <context/>
+                <logstashMarkers/>
             </providers>
         </encoder>
     </appender>
@@ -118,18 +96,9 @@
                 <mdc/>
                 <arguments/>
                 <stackTrace/>
-                <pattern>
-                    <pattern>
-                        {
-                            "service": "${springAppName:-mcp-service}",
-                            "environment": "${springProfile:-default}",
-                            "instance": "${HOSTNAME:-localhost}",
-                            "category": "security-audit",
-                            "thread": "%thread",
-                            "logger": "%logger{36}"
-                        }
-                    </pattern>
-                </pattern>
+                <jsonMessage/>
+                <context/>
+                <logstashMarkers/>
             </providers>
         </encoder>
     </appender>
