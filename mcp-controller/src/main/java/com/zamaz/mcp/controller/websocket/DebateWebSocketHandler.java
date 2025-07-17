@@ -16,6 +16,7 @@ import reactor.core.publisher.Sinks;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -283,8 +284,22 @@ public class DebateWebSocketHandler implements WebSocketHandler {
                 return false;
             }
             
-            // TODO: Add debate-specific access check here
-            // For now, we verify the token is valid and organization matches
+            // Verify user has access to the debate
+            try {
+                var debate = debateService.getDebate(UUID.fromString(debateId));
+                if (!debate.getOrganizationId().toString().equals(organizationId)) {
+                    log.warn("Debate organization mismatch: debate belongs to {} but user is in {}", 
+                        debate.getOrganizationId(), organizationId);
+                    return false;
+                }
+                
+                // Additional permission checks can be added here based on debate settings
+                // For example: check if debate is public, if user is participant, etc.
+                
+            } catch (Exception e) {
+                log.warn("Unable to verify debate access", e);
+                return false;
+            }
             
             log.debug("WebSocket access validated for user {} in organization {} for debate {}", 
                 userId, organizationId, debateId);
