@@ -118,51 +118,79 @@ class LLMClient extends BaseApiClient {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer = await this.processChunk(
-        decoder.decode(value, { stream: true }),
-        buffer,
-        onChunk,
-        onComplete
-      );
+        buffer = this.updateBufferWithNewData(
+          decoder.decode(value, { stream: true }),
+          buffer,
+          onChunk,
+          onComplete
+        );
+      }
+    } finally {
+      reader.releaseLock();
     }
   }
 
-  private async processChunk(
+  private updateBufferWithNewData(
     decodedValue: string,
     currentBuffer: string,
     onChunk: (chunk: string) => void,
     onComplete?: (response: CompletionResponse) => void
-  ): Promise<string> {
-    let buffer = currentBuffer + decodedValue;
+  ): string {
+    const buffer = currentBuffer + decodedValue;
     const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+    const remainingBuffer = lines.pop() || '';
 
-    for (const line of lines) {
-      await this.processLine(line, onChunk, onComplete);
-    }
-
-    return buffer;
+    this.processCompletedLines(lines, onChunk, onComplete);
+    return remainingBuffer;
   }
 
-  private async processLine(
+  private processCompletedLines(
+    lines: string[],
+    onChunk: (chunk: string) => void,
+    onComplete?: (response: CompletionResponse) => void
+  ): void {
+    lines.forEach(line => this.processSingleLine(line, onChunk, onComplete));
+  }
+
+  private processSingleLine(
     line: string,
     onChunk: (chunk: string) => void,
     onComplete?: (response: CompletionResponse) => void
-  ): Promise<void> {
-    if (!line.startsWith('data: ')) return;
+  ): void {
+    if (!this.isValidSSELine(line)) return;
 
-    const data = line.slice(6);
-    if (data === '[DONE]') return;
+    const data = this.extractSSEData(line);
+    if (this.isEndMarker(data)) return;
 
-    try {
-      const chunk = JSON.parse(data);
+    const chunk = this.parseChunkData(data);
+    if (chunk) {
       this.handleChunk(chunk, onChunk, onComplete);
+    }
+  }
+
+  private isValidSSELine(line: string): boolean {
+    return line.startsWith('data: ');
+  }
+
+  private extractSSEData(line: string): string {
+    return line.slice(6);
+  }
+
+  private isEndMarker(data: string): boolean {
+    return data === '[DONE]';
+  }
+
+  private parseChunkData(data: string): any | null {
+    try {
+      return JSON.parse(data);
     } catch (e) {
       console.error('Failed to parse SSE chunk:', e);
+      return null;
     }
   }
 

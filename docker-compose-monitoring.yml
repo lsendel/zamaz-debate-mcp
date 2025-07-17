@@ -114,7 +114,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Database password must be provided}@postgres:5432/${POSTGRES_DB:-postgres}?sslmode=disable
     networks:
       - mcp-network
     restart: unless-stopped

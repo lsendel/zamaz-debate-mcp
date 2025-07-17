@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mcp_modulith}
     username: ${DB_USER:mcp_user}
-    password: ${DB_PASSWORD:#{null}}
+    password: ${DB_PASSWORD:?Database password must be provided}
     driver-class-name: org.postgresql.Driver
   
   jpa:

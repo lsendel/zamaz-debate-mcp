@@ -1,106 +1,120 @@
-server:
-  port: 5004
-  servlet:
-    context-path: /
-
 spring:
   application:
     name: mcp-rag
   
   datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:rag_db}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:rag_db}
     username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:#{null}}
+    password: ${DB_PASSWORD:?Database password must be provided}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 2000000
+      connection-timeout: 30000
+      pool-name: RagHikariPool
   
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        query:
+          in_clause_parameter_padding: true
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+    open-in-view: false
   
-  data:
-    redis:
-      host: redis
-      port: 6379
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    timeout: 2000
+    connect-timeout: 2000
   
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
-    default-property-inclusion: non_null
-    
-  task:
-    execution:
-      pool:
-        core-size: 2
-        max-size: 10
-        queue-capacity: 100
-    scheduling:
-      pool:
-        size: 2
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
-# Actuator configuration
+server:
+  port: ${SERVER_PORT:5004}
+  servlet:
+    context-path: /
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
-      base-path: /actuator
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
 
-# API Documentation
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-
-# MCP Configuration
-mcp:
-  service:
-    name: mcp-rag
-    version: 1.0.0
-    description: "Retrieval Augmented Generation service for MCP"
-  
-  vector:
-    type: in-memory  # Options: in-memory, qdrant
-    dimension: 1536
-    
-# Qdrant Configuration
-qdrant:
-  host: qdrant
-  port: 6334
-  
-# OpenAI Configuration
-openai:
-  api:
-    key: ${OPENAI_API_KEY:your-api-key-here}
-  embedding:
-    model: text-embedding-ada-002
-    dimension: 1536
-    
-# RAG Configuration
-rag:
-  chunking:
-    default-size: 1000
-    overlap: 200
-    max-size: 2000
-  processing:
-    batch-size: 10
-    max-retries: 3
-    
-# Logging
 logging:
   level:
-    com.zamaz.mcp.rag: DEBUG
+    root: ${LOG_LEVEL:INFO}
+    com.zamaz.mcp: ${LOG_LEVEL:INFO}
     org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
+
+mcp:
+  cache:
+    enabled: true
+    default-ttl: PT30M
+    redis:
+      enabled: true
+      max-memory-policy: allkeys-lru
+      key-prefixes:
+        rag: rag:
+  
+  async:
+    redis-streams:
+      enabled: true
+      stream-names:
+        rag-document-ingestion: rag:document:ingestion
+      consumer-group-names:
+        rag-document-ingestion: rag-document-ingestion-group
+      consumer-names:
+        rag-document-ingestion: rag-document-ingestion-consumer
+      polling:
+        poll-timeout: PT0.1S
+  
+  rag:
+    qdrant-url: ${QDRANT_URL:http://qdrant:6333}
+    
+    embedding:
+      default-model: text-embedding-3-large
+      dimension: 1536
+      batch-size: 100
+    
+    chunking:
+      default-chunk-size: 1000
+      default-chunk-overlap: 200
+    
+    retrieval:
+      default-top-k: 5
+      default-similarity-threshold: 0.7
+    
+    augmentation:
+      max-tokens-per-source: 1000
+      include-metadata: true
+      include-sources: true

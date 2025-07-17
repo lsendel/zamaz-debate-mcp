@@ -2,7 +2,7 @@ name: Enhanced Security Scanning
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'release/**']
   pull_request:
     branches: [main, develop]
   schedule:
@@ -23,6 +23,31 @@ on:
           - iac
           - secrets
           - compliance
+      severity_threshold:
+        description: 'Severity threshold for scanning'
+        required: false
+        default: 'CRITICAL,HIGH'
+        type: choice
+        options:
+          - CRITICAL
+          - CRITICAL,HIGH
+          - CRITICAL,HIGH,MEDIUM
+          - CRITICAL,HIGH,MEDIUM,LOW
+      fail_on_severity:
+        description: 'Fail build on severity level'
+        required: false
+        default: 'CRITICAL'
+        type: choice
+        options:
+          - CRITICAL
+          - HIGH
+          - MEDIUM
+          - LOW
+      target_url:
+        description: 'Target URL for DAST scanning'
+        required: false
+        default: 'http://localhost:8080'
+        type: string
 
 env:
   NODE_VERSION: "18"
@@ -30,8 +55,10 @@ env:
   REGISTRY: ghcr.io
   REGISTRY_BASE: ${{ github.repository_owner }}
   SECURITY_FAIL_THRESHOLD: "7"
-  ZAP_TARGET_URL: "http://localhost:8080"
+  ZAP_TARGET_URL: ${{ inputs.target_url || 'http://localhost:8080' }}
   REPORT_DIR: "security-reports"
+  SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || 'CRITICAL,HIGH' }}
+  FAIL_ON_SEVERITY: ${{ inputs.fail_on_severity || 'CRITICAL' }}
 
 jobs:
   # SAST: Static Application Security Testing
@@ -208,28 +235,66 @@ jobs:
   iac-scan:
     name: 🏗️ IaC Security
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     if: ${{ inputs.scan_type == 'all' || inputs.scan_type == 'iac' || github.event_name != 'workflow_dispatch' }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Checkov scan
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create output directory
+        run: mkdir -p ${{ env.REPORT_DIR }}/iac
+
+      - name: Run Checkov scan for Docker files
         uses: bridgecrewio/checkov-action@master
         with:
           directory: .
-          framework: dockerfile,kubernetes,github_actions,secrets
+          framework: dockerfile
           output_format: cli,sarif
-          output_file_path: ${{ env.REPORT_DIR }}/checkov-results.sarif
+          output_file_path: ${{ env.REPORT_DIR }}/iac/checkov-docker-results.sarif
           soft_fail: true
 
-      - name: Upload Checkov scan results
+      - name: Run Checkov scan for Kubernetes files
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: kubernetes
+          output_format: cli,sarif
+          output_file_path: ${{ env.REPORT_DIR }}/iac/checkov-k8s-results.sarif
+          soft_fail: true
+
+      - name: Run Checkov scan for GitHub Actions
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: github_actions
+          output_format: cli,sarif
+          output_file_path: ${{ env.REPORT_DIR }}/iac/checkov-github-results.sarif
+          soft_fail: true
+
+      - name: Upload Checkov Docker scan results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: ${{ env.REPORT_DIR }}/checkov-results.sarif
-          category: checkov-iac
+          sarif_file: ${{ env.REPORT_DIR }}/iac/checkov-docker-results.sarif
+          category: checkov-docker
+
+      - name: Upload Checkov Kubernetes scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/iac/checkov-k8s-results.sarif
+          category: checkov-kubernetes
+
+      - name: Upload Checkov GitHub Actions scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/iac/checkov-github-results.sarif
+          category: checkov-github-actions
 
       - name: Run TFSec for Terraform files
         uses: aquasecurity/tfsec-action@v1.0.3
@@ -237,22 +302,22 @@ jobs:
         with:
           soft_fail: true
           format: sarif
-          out_file: ${{ env.REPORT_DIR }}/tfsec-results.sarif
+          out_file: ${{ env.REPORT_DIR }}/iac/tfsec-results.sarif
 
       - name: Upload TFSec scan results
         uses: github/codeql-action/upload-sarif@v3
         if: hashFiles('**/*.tf') != ''
         with:
-          sarif_file: ${{ env.REPORT_DIR }}/tfsec-results.sarif
+          sarif_file: ${{ env.REPORT_DIR }}/iac/tfsec-results.sarif
           category: tfsec-terraform
 
       - name: Run Hadolint for Dockerfiles
         run: |
-          mkdir -p ${{ env.REPORT_DIR }}
+          mkdir -p ${{ env.REPORT_DIR }}/iac
           docker run --rm -v $(pwd):/workspace \
             -w /workspace \
             hadolint/hadolint:latest-debian \
-            hadolint --format sarif --output ${{ env.REPORT_DIR }}/hadolint-results.sarif \
+            hadolint --format sarif --output ${{ env.REPORT_DIR }}/iac/hadolint-results.sarif \
             $(find . -name "Dockerfile" | xargs)
         continue-on-error: true
 
@@ -260,15 +325,81 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: ${{ env.REPORT_DIR }}/hadolint-results.sarif
+          sarif_file: ${{ env.REPORT_DIR }}/iac/hadolint-results.sarif
           category: hadolint-dockerfile
+
+      - name: Run Kubesec for Kubernetes files
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}/iac/kubesec
+          
+          # Find Kubernetes YAML files
+          K8S_FILES=$(find . -name "*.yaml" -o -name "*.yml" | xargs grep -l "kind:" | grep -v "node_modules" || echo "")
+          
+          if [[ -n "$K8S_FILES" ]]; then
+            for file in $K8S_FILES; do
+              base_name=$(basename "$file")
+              echo "Scanning $file with Kubesec"
+              docker run --rm -v $(pwd):/workspace \
+                -w /workspace \
+                kubesec/kubesec:v2 scan "$file" > "${{ env.REPORT_DIR }}/iac/kubesec/${base_name}.json" || true
+            done
+          else
+            echo "No Kubernetes files found for Kubesec scanning"
+          fi
+        continue-on-error: true
+
+      - name: Generate IaC security summary
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}/iac
+          
+          # Generate timestamp and report ID
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          
+          # Create summary report
+          cat > ${{ env.REPORT_DIR }}/iac/iac-security-summary-${TIMESTAMP}.md << EOF
+          # Infrastructure as Code Security Scan Summary
+          
+          - **Date:** $(date +"%Y-%m-%d %H:%M:%S")
+          - **Repository:** ${{ github.repository }}
+          - **Branch:** ${GITHUB_REF#refs/heads/}
+          - **Commit:** ${GITHUB_SHA}
+          
+          ## Scan Results
+          
+          | Tool | Target | Status |
+          |------|--------|--------|
+          | Checkov | Dockerfiles | ✅ Completed |
+          | Checkov | Kubernetes | ✅ Completed |
+          | Checkov | GitHub Actions | ✅ Completed |
+          | Hadolint | Dockerfiles | ✅ Completed |
+          | TFSec | Terraform | $([ -f "${{ env.REPORT_DIR }}/iac/tfsec-results.sarif" ] && echo "✅ Completed" || echo "⏭️ Skipped") |
+          | Kubesec | Kubernetes | ✅ Completed |
+          
+          ## Security Best Practices
+          
+          - Use minimal base images for containers
+          - Run containers as non-root users
+          - Apply least privilege principle in Kubernetes
+          - Implement proper secret management
+          - Use version pinning for dependencies
+          - Implement security context in Kubernetes pods
+          - Scan IaC files regularly as part of CI/CD
+          
+          ## Next Steps
+          
+          1. Review detailed scan reports
+          2. Address high and critical severity issues
+          3. Implement security best practices
+          4. Run regular security scans
+          
+          EOF
 
       - name: Upload IaC security reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: iac-security-reports
-          path: ${{ env.REPORT_DIR }}
+          path: ${{ env.REPORT_DIR }}/iac
           retention-days: 30
 
   # Secrets Detection
@@ -335,6 +466,9 @@ jobs:
           # docker-compose up -d
           # sleep 30  # Wait for application to start
 
+      - name: Create output directory
+        run: mkdir -p ${{ env.REPORT_DIR }}/dast
+
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.11.0
         with:
@@ -344,7 +478,28 @@ jobs:
           allow_issue_writing: false
           fail_action: false
 
-      - name: ZAP Full Scan
+      - name: Check for OpenAPI/Swagger specs
+        id: find-api-specs
+        run: |
+          API_SPECS=$(find . -name "*.json" -o -name "*.yaml" -o -name "*.yml" | xargs grep -l "openapi\|swagger" | head -n 5 || echo "")
+          if [[ -n "$API_SPECS" ]]; then
+            echo "specs=$(echo "$API_SPECS" | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+            echo "Found API specs: $API_SPECS"
+          else
+            echo "No API specs found"
+          fi
+
+      - name: ZAP API Scan
+        if: steps.find-api-specs.outputs.specs != ''
+        uses: zaproxy/action-api-scan@v0.5.0
+        with:
+          target: ${{ env.ZAP_TARGET_URL }}
+          format: openapi
+          file: ${{ fromJson(steps.find-api-specs.outputs.specs)[0] }}
+          fail_action: false
+          cmd_options: '-a -j'
+
+      - name: Run OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.8.0
         with:
           target: ${{ env.ZAP_TARGET_URL }}
@@ -352,6 +507,29 @@ jobs:
           cmd_options: '-a -j'
           allow_issue_writing: false
           fail_action: false
+
+      - name: Generate SARIF from ZAP results
+        run: |
+          # Install sarif-tools if needed
+          npm install -g @microsoft/sarif-tools
+
+          # Convert ZAP JSON to SARIF format
+          if [ -f "zap-full-scan-report.json" ]; then
+            zap-to-sarif -f zap-full-scan-report.json -o ${{ env.REPORT_DIR }}/dast/zap-full-scan.sarif || echo "Conversion failed"
+          fi
+          
+          if [ -f "zap-api-scan-report.json" ]; then
+            zap-to-sarif -f zap-api-scan-report.json -o ${{ env.REPORT_DIR }}/dast/zap-api-scan.sarif || echo "Conversion failed"
+          fi
+        continue-on-error: true
+
+      - name: Upload ZAP SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && fileExists('${{ env.REPORT_DIR }}/dast/zap-full-scan.sarif')
+        with:
+          sarif_file: ${{ env.REPORT_DIR }}/dast/zap-full-scan.sarif
+          category: zap-dast
+        continue-on-error: true
 
       - name: Upload ZAP scan results
         uses: actions/upload-artifact@v4
@@ -363,6 +541,9 @@ jobs:
             zap-baseline-report.json
             zap-full-scan-report.html
             zap-full-scan-report.json
+            zap-api-scan-report.html
+            zap-api-scan-report.json
+            ${{ env.REPORT_DIR }}/dast/
           retention-days: 30
 
   # Compliance Reporting

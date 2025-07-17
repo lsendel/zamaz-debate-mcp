@@ -91,6 +91,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-your-256-bit-secret-key-for-jwt-token-generation}
       - SERVER_PORT=5005
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - JAEGER_ENDPOINT=http://jaeger:14250
     ports:
       - "${MCP_ORGANIZATION_PORT:-5005}:5005"
     depends_on:
@@ -124,6 +125,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - SERVER_PORT=5002
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JAEGER_ENDPOINT=http://jaeger:14250
     ports:
       - "${MCP_LLM_PORT:-5002}:5002"
     depends_on:
@@ -159,6 +161,7 @@ services:
       - LLM_SERVICE_URL=http://mcp-llm:5002
       - SERVER_PORT=5013
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JAEGER_ENDPOINT=http://jaeger:14250
     ports:
       - "${MCP_DEBATE_PORT:-5013}:5013"
     depends_on:
@@ -198,6 +201,7 @@ services:
       - REDIS_PORT=6379
       - SERVER_PORT=5004
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JAEGER_ENDPOINT=http://jaeger:14250
     ports:
       - "${MCP_RAG_PORT:-5004}:5004"
     depends_on:
@@ -233,6 +237,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - SERVER_PORT=5006
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JAEGER_ENDPOINT=http://jaeger:14250
     ports:
       - "${MCP_TEMPLATE_PORT:-5006}:5006"
     depends_on:
@@ -265,7 +270,19 @@ services:
     profiles:
       - llama
 
-  # Optional: Monitoring with Prometheus
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"  # UI
+      - "${JAEGER_COLLECTOR_PORT:-14250}:14250"  # gRPC collector
+      - "${JAEGER_AGENT_PORT:-6831}:6831/udp"  # agent
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=9411
+    networks:
+      - mcp-network
+
+  # Optional: Prometheus for metrics collection
   prometheus:
     image: prom/prometheus
     command:
