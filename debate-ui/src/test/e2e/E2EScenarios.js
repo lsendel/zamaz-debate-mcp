@@ -609,7 +609,7 @@ export class IntegrationTestSuite {
       await this.auth.loginSuccessfully();
       
       // 2. Create a debate
-      const debate = await this.debates.createDebate({
+      await this.debates.createDebate({
         title: 'Integration Test Debate',
         description: 'Testing the complete user journey'
       });

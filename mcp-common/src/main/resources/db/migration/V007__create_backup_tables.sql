@@ -1,5 +1,12 @@
 -- Backup and Disaster Recovery Tables for MCP System
 
+-- Constants used throughout this migration:
+-- STATUS_COMPLETED = 'COMPLETED'
+-- STATUS_FAILED = 'FAILED' 
+-- STATUS_DELETED = 'DELETED'
+-- STATUS_PENDING = 'PENDING'
+-- DEFAULT_TIMESTAMP = CURRENT_TIMESTAMP (for created_at/updated_at fields)
+
 -- Backup metadata table
 CREATE TABLE IF NOT EXISTS backup_metadata (
     id BIGSERIAL PRIMARY KEY,

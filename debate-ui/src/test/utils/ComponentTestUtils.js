@@ -3,14 +3,13 @@
  * Provides helpers for common testing patterns and component interactions.
  */
 
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
-import { ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { createTheme } from '@mui/material/styles';
 
 // Default test theme
 const testTheme = createTheme({
@@ -286,7 +285,7 @@ export function testAccessibility(component) {
  * Helper to simulate drag and drop
  */
 export async function simulateDragAndDrop(sourceElement, targetElement) {
-  const user = userEvent.setup();
+  // Note: userEvent not needed for this drag/drop implementation
   
   // Start drag
   fireEvent.dragStart(sourceElement, {

@@ -1,0 +1,1071 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mcp-compliance-scanner
+  namespace: security
+  labels:
+    app: mcp-compliance-scanner
+    component: compliance-scanning
+spec:
+  schedule: "0 6 * * *"  # Daily at 6 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mcp-compliance-scanner
+        spec:
+          serviceAccountName: mcp-compliance-scanner
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            fsGroup: 10001
+          containers:
+          - name: compliance-scanner
+            image: aquasec/kube-bench:latest
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              echo "Starting compliance scan..."
+              
+              # Create output directory
+              mkdir -p /tmp/compliance-reports
+              
+              # Run CIS Kubernetes Benchmark
+              echo "Running CIS Kubernetes Benchmark..."
+              kube-bench run --targets master,node,controlplane,etcd,policies \
+                --json --outputfile /tmp/compliance-reports/cis-benchmark-$(date +%Y%m%d).json
+              
+              # Run custom MCP compliance checks
+              echo "Running MCP-specific compliance checks..."
+              python3 /scripts/mcp-compliance-check.py > /tmp/compliance-reports/mcp-compliance-$(date +%Y%m%d).json
+              
+              # Run NIST Cybersecurity Framework checks
+              echo "Running NIST CSF compliance checks..."
+              python3 /scripts/nist-csf-check.py > /tmp/compliance-reports/nist-csf-$(date +%Y%m%d).json
+              
+              # Run SOC 2 compliance checks
+              echo "Running SOC 2 compliance checks..."
+              python3 /scripts/soc2-check.py > /tmp/compliance-reports/soc2-$(date +%Y%m%d).json
+              
+              # Generate summary report
+              python3 /scripts/generate-compliance-summary.py /tmp/compliance-reports
+              
+              # Upload reports to S3
+              if [ -n "${S3_COMPLIANCE_BUCKET:-}" ]; then
+                aws s3 sync /tmp/compliance-reports "s3://$S3_COMPLIANCE_BUCKET/$(date +%Y/%m/%d)/"
+                echo "Compliance reports uploaded to S3"
+              fi
+              
+              # Send notifications for critical findings
+              python3 /scripts/notify-compliance-issues.py /tmp/compliance-reports
+              
+              echo "Compliance scan completed"
+            env:
+            - name: KUBERNETES_SERVICE_HOST
+              value: kubernetes.default
+            - name: KUBERNETES_SERVICE_PORT
+              value: "443"
+            - name: S3_COMPLIANCE_BUCKET
+              value: "mcp-compliance-reports"
+            - name: SLACK_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: security-secrets
+                  key: slack-webhook-url
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: config
+              mountPath: /etc/compliance
+            - name: kube-bench-config
+              mountPath: /opt/kube-bench/cfg
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                cpu: 2000m
+                memory: 4Gi
+          volumes:
+          - name: scripts
+            configMap:
+              name: compliance-scripts
+              defaultMode: 0755
+          - name: config
+            configMap:
+              name: compliance-config
+          - name: kube-bench-config
+            configMap:
+              name: kube-bench-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: compliance-scripts
+  namespace: security
+  labels:
+    app: mcp-compliance-scanner
+    component: scripts
+data:
+  mcp-compliance-check.py: |
+    #!/usr/bin/env python3
+    import json
+    import subprocess
+    import sys
+    from datetime import datetime
+    from kubernetes import client, config
+    
+    def run_kubectl(cmd):
+        """Run kubectl command and return JSON output."""
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+            else:
+                return None
+        except Exception as e:
+            print(f"Error running command: {cmd}, Error: {e}", file=sys.stderr)
+            return None
+    
+    def check_pod_security_policies():
+        """Check Pod Security Policy compliance."""
+        findings = []
+        
+        # Check for privileged pods
+        pods = run_kubectl("kubectl get pods --all-namespaces -o json")
+        if pods:
+            for pod in pods['items']:
+                namespace = pod['metadata']['namespace']
+                name = pod['metadata']['name']
+                
+                for container in pod['spec'].get('containers', []):
+                    security_context = container.get('securityContext', {})
+                    if security_context.get('privileged', False):
+                        findings.append({
+                            'check': 'privileged-container',
+                            'severity': 'CRITICAL',
+                            'namespace': namespace,
+                            'pod': name,
+                            'container': container['name'],
+                            'description': 'Container running with privileged access'
+                        })
+                    
+                    if security_context.get('runAsUser') == 0:
+                        findings.append({
+                            'check': 'root-user',
+                            'severity': 'HIGH',
+                            'namespace': namespace,
+                            'pod': name,
+                            'container': container['name'],
+                            'description': 'Container running as root user'
+                        })
+        
+        return findings
+    
+    def check_network_policies():
+        """Check Network Policy compliance."""
+        findings = []
+        
+        # Get all namespaces
+        namespaces = run_kubectl("kubectl get namespaces -o json")
+        if namespaces:
+            for ns in namespaces['items']:
+                ns_name = ns['metadata']['name']
+                
+                # Skip system namespaces
+                if ns_name.startswith('kube-'):
+                    continue
+                
+                # Check if namespace has network policies
+                netpols = run_kubectl(f"kubectl get networkpolicies -n {ns_name} -o json")
+                if not netpols or len(netpols['items']) == 0:
+                    findings.append({
+                        'check': 'missing-network-policy',
+                        'severity': 'MEDIUM',
+                        'namespace': ns_name,
+                        'description': f'Namespace {ns_name} has no network policies'
+                    })
+        
+        return findings
+    
+    def check_rbac_compliance():
+        """Check RBAC compliance."""
+        findings = []
+        
+        # Check for cluster-admin usage
+        crb = run_kubectl("kubectl get clusterrolebindings -o json")
+        if crb:
+            for binding in crb['items']:
+                if 'cluster-admin' in binding.get('roleRef', {}).get('name', ''):
+                    subjects = binding.get('subjects', [])
+                    for subject in subjects:
+                        if subject.get('kind') == 'User':
+                            findings.append({
+                                'check': 'cluster-admin-user',
+                                'severity': 'CRITICAL',
+                                'binding': binding['metadata']['name'],
+                                'subject': subject.get('name'),
+                                'description': 'User has cluster-admin privileges'
+                            })
+        
+        return findings
+    
+    def check_secrets_compliance():
+        """Check secrets compliance."""
+        findings = []
+        
+        # Check for unencrypted secrets in production
+        secrets = run_kubectl("kubectl get secrets -n production -o json")
+        if secrets:
+            for secret in secrets['items']:
+                # Check if secret data is base64 encoded only (not encrypted)
+                if secret.get('data'):
+                    findings.append({
+                        'check': 'unencrypted-secret',
+                        'severity': 'HIGH',
+                        'namespace': 'production',
+                        'secret': secret['metadata']['name'],
+                        'description': 'Secret may not be encrypted at rest'
+                    })
+        
+        return findings
+    
+    def check_resource_quotas():
+        """Check resource quota compliance."""
+        findings = []
+        
+        namespaces = run_kubectl("kubectl get namespaces -o json")
+        if namespaces:
+            for ns in namespaces['items']:
+                ns_name = ns['metadata']['name']
+                
+                # Skip system namespaces
+                if ns_name.startswith('kube-'):
+                    continue
+                
+                # Check if namespace has resource quotas
+                quotas = run_kubectl(f"kubectl get resourcequotas -n {ns_name} -o json")
+                if not quotas or len(quotas['items']) == 0:
+                    findings.append({
+                        'check': 'missing-resource-quota',
+                        'severity': 'MEDIUM',
+                        'namespace': ns_name,
+                        'description': f'Namespace {ns_name} has no resource quotas'
+                    })
+        
+        return findings
+    
+    def main():
+        # Load Kubernetes configuration
+        try:
+            config.load_incluster_config()
+        except:
+            config.load_kube_config()
+        
+        # Run all compliance checks
+        all_findings = []
+        all_findings.extend(check_pod_security_policies())
+        all_findings.extend(check_network_policies())
+        all_findings.extend(check_rbac_compliance())
+        all_findings.extend(check_secrets_compliance())
+        all_findings.extend(check_resource_quotas())
+        
+        # Generate report
+        report = {
+            'scan_date': datetime.now().isoformat(),
+            'framework': 'MCP Security Compliance',
+            'version': '1.0',
+            'total_findings': len(all_findings),
+            'severity_summary': {
+                'critical': len([f for f in all_findings if f['severity'] == 'CRITICAL']),
+                'high': len([f for f in all_findings if f['severity'] == 'HIGH']),
+                'medium': len([f for f in all_findings if f['severity'] == 'MEDIUM']),
+                'low': len([f for f in all_findings if f['severity'] == 'LOW'])
+            },
+            'findings': all_findings
+        }
+        
+        print(json.dumps(report, indent=2))
+    
+    if __name__ == "__main__":
+        main()
+  
+  nist-csf-check.py: |
+    #!/usr/bin/env python3
+    import json
+    import subprocess
+    import sys
+    from datetime import datetime
+    
+    def run_kubectl(cmd):
+        """Run kubectl command and return JSON output."""
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+            else:
+                return None
+        except Exception as e:
+            return None
+    
+    def check_identify_function():
+        """NIST CSF Identify Function checks."""
+        findings = []
+        
+        # ID.AM - Asset Management
+        # Check if all containers have resource limits
+        pods = run_kubectl("kubectl get pods --all-namespaces -o json")
+        if pods:
+            for pod in pods['items']:
+                for container in pod['spec'].get('containers', []):
+                    resources = container.get('resources', {})
+                    if not resources.get('limits'):
+                        findings.append({
+                            'function': 'Identify',
+                            'category': 'ID.AM-2',
+                            'check': 'missing-resource-limits',
+                            'severity': 'MEDIUM',
+                            'namespace': pod['metadata']['namespace'],
+                            'pod': pod['metadata']['name'],
+                            'container': container['name'],
+                            'description': 'Container lacks resource limits'
+                        })
+        
+        return findings
+    
+    def check_protect_function():
+        """NIST CSF Protect Function checks."""
+        findings = []
+        
+        # PR.AC - Identity Management and Access Control
+        # Check for service accounts with default tokens
+        sa = run_kubectl("kubectl get serviceaccounts --all-namespaces -o json")
+        if sa:
+            for account in sa['items']:
+                if account['metadata']['name'] == 'default':
+                    auto_mount = account.get('automountServiceAccountToken', True)
+                    if auto_mount:
+                        findings.append({
+                            'function': 'Protect',
+                            'category': 'PR.AC-1',
+                            'check': 'default-sa-token-mount',
+                            'severity': 'MEDIUM',
+                            'namespace': account['metadata']['namespace'],
+                            'service_account': account['metadata']['name'],
+                            'description': 'Default service account auto-mounts tokens'
+                        })
+        
+        # PR.DS - Data Security
+        # Check for secrets not using encryption
+        secrets = run_kubectl("kubectl get secrets --all-namespaces -o json")
+        if secrets:
+            for secret in secrets['items']:
+                # This is a simplified check - in reality, you'd verify encryption at rest
+                if secret['metadata']['namespace'] in ['production', 'staging']:
+                    findings.append({
+                        'function': 'Protect',
+                        'category': 'PR.DS-1',
+                        'check': 'secret-encryption-status',
+                        'severity': 'HIGH',
+                        'namespace': secret['metadata']['namespace'],
+                        'secret': secret['metadata']['name'],
+                        'description': 'Verify secret encryption at rest'
+                    })
+        
+        return findings
+    
+    def check_detect_function():
+        """NIST CSF Detect Function checks."""
+        findings = []
+        
+        # DE.CM - Security Continuous Monitoring
+        # Check if monitoring tools are deployed
+        monitoring_pods = run_kubectl("kubectl get pods -n monitoring -o json")
+        required_tools = ['prometheus', 'grafana', 'alertmanager']
+        
+        for tool in required_tools:
+            tool_found = False
+            if monitoring_pods:
+                for pod in monitoring_pods['items']:
+                    if tool in pod['metadata']['name']:
+                        tool_found = True
+                        break
+            
+            if not tool_found:
+                findings.append({
+                    'function': 'Detect',
+                    'category': 'DE.CM-1',
+                    'check': 'missing-monitoring-tool',
+                    'severity': 'HIGH',
+                    'tool': tool,
+                    'description': f'Required monitoring tool {tool} not found'
+                })
+        
+        return findings
+    
+    def check_respond_function():
+        """NIST CSF Respond Function checks."""
+        findings = []
+        
+        # RS.RP - Response Planning
+        # Check if incident response tools are available
+        ir_namespace = run_kubectl("kubectl get namespace security -o json")
+        if not ir_namespace:
+            findings.append({
+                'function': 'Respond',
+                'category': 'RS.RP-1',
+                'check': 'missing-incident-response-namespace',
+                'severity': 'HIGH',
+                'description': 'Security namespace for incident response not found'
+            })
+        
+        return findings
+    
+    def check_recover_function():
+        """NIST CSF Recover Function checks."""
+        findings = []
+        
+        # RC.RP - Recovery Planning
+        # Check for backup solutions
+        backup_pods = run_kubectl("kubectl get pods --all-namespaces -l app=velero -o json")
+        if not backup_pods or len(backup_pods['items']) == 0:
+            findings.append({
+                'function': 'Recover',
+                'category': 'RC.RP-1',
+                'check': 'missing-backup-solution',
+                'severity': 'HIGH',
+                'description': 'No backup solution (Velero) found'
+            })
+        
+        return findings
+    
+    def main():
+        # Run all NIST CSF checks
+        all_findings = []
+        all_findings.extend(check_identify_function())
+        all_findings.extend(check_protect_function())
+        all_findings.extend(check_detect_function())
+        all_findings.extend(check_respond_function())
+        all_findings.extend(check_recover_function())
+        
+        # Generate report
+        report = {
+            'scan_date': datetime.now().isoformat(),
+            'framework': 'NIST Cybersecurity Framework',
+            'version': '1.1',
+            'total_findings': len(all_findings),
+            'function_summary': {
+                'identify': len([f for f in all_findings if f['function'] == 'Identify']),
+                'protect': len([f for f in all_findings if f['function'] == 'Protect']),
+                'detect': len([f for f in all_findings if f['function'] == 'Detect']),
+                'respond': len([f for f in all_findings if f['function'] == 'Respond']),
+                'recover': len([f for f in all_findings if f['function'] == 'Recover'])
+            },
+            'severity_summary': {
+                'critical': len([f for f in all_findings if f['severity'] == 'CRITICAL']),
+                'high': len([f for f in all_findings if f['severity'] == 'HIGH']),
+                'medium': len([f for f in all_findings if f['severity'] == 'MEDIUM']),
+                'low': len([f for f in all_findings if f['severity'] == 'LOW'])
+            },
+            'findings': all_findings
+        }
+        
+        print(json.dumps(report, indent=2))
+    
+    if __name__ == "__main__":
+        main()
+  
+  soc2-check.py: |
+    #!/usr/bin/env python3
+    import json
+    import subprocess
+    import sys
+    from datetime import datetime
+    
+    def run_kubectl(cmd):
+        """Run kubectl command and return JSON output."""
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+            else:
+                return None
+        except Exception as e:
+            return None
+    
+    def check_security_criteria():
+        """SOC 2 Security criteria checks."""
+        findings = []
+        
+        # CC6.1 - Logical and physical access controls
+        # Check for proper RBAC implementation
+        crb = run_kubectl("kubectl get clusterrolebindings -o json")
+        if crb:
+            excessive_permissions = 0
+            for binding in crb['items']:
+                if 'cluster-admin' in binding.get('roleRef', {}).get('name', ''):
+                    excessive_permissions += 1
+            
+            if excessive_permissions > 2:  # Allow for system and emergency accounts
+                findings.append({
+                    'criteria': 'Security',
+                    'control': 'CC6.1',
+                    'check': 'excessive-admin-permissions',
+                    'severity': 'HIGH',
+                    'count': excessive_permissions,
+                    'description': f'{excessive_permissions} cluster-admin bindings found'
+                })
+        
+        # CC6.2 - User access management
+        # Check for unused service accounts
+        sa = run_kubectl("kubectl get serviceaccounts --all-namespaces -o json")
+        rb = run_kubectl("kubectl get rolebindings,clusterrolebindings --all-namespaces -o json")
+        
+        if sa and rb:
+            used_sa = set()
+            for binding in rb['items']:
+                for subject in binding.get('subjects', []):
+                    if subject.get('kind') == 'ServiceAccount':
+                        used_sa.add(f"{subject.get('namespace', 'default')}/{subject.get('name')}")
+            
+            unused_count = 0
+            for account in sa['items']:
+                sa_name = f"{account['metadata']['namespace']}/{account['metadata']['name']}"
+                if sa_name not in used_sa and account['metadata']['name'] != 'default':
+                    unused_count += 1
+            
+            if unused_count > 5:
+                findings.append({
+                    'criteria': 'Security',
+                    'control': 'CC6.2',
+                    'check': 'unused-service-accounts',
+                    'severity': 'MEDIUM',
+                    'count': unused_count,
+                    'description': f'{unused_count} unused service accounts found'
+                })
+        
+        return findings
+    
+    def check_availability_criteria():
+        """SOC 2 Availability criteria checks."""
+        findings = []
+        
+        # A1.1 - Availability monitoring
+        # Check for monitoring and alerting systems
+        monitoring_pods = run_kubectl("kubectl get pods -n monitoring -o json")
+        if not monitoring_pods or len(monitoring_pods['items']) == 0:
+            findings.append({
+                'criteria': 'Availability',
+                'control': 'A1.1',
+                'check': 'missing-monitoring',
+                'severity': 'HIGH',
+                'description': 'No monitoring systems found'
+            })
+        
+        # A1.2 - Capacity management
+        # Check for resource quotas
+        namespaces = run_kubectl("kubectl get namespaces -o json")
+        if namespaces:
+            namespaces_without_quotas = 0
+            for ns in namespaces['items']:
+                ns_name = ns['metadata']['name']
+                if not ns_name.startswith('kube-'):
+                    quotas = run_kubectl(f"kubectl get resourcequotas -n {ns_name} -o json")
+                    if not quotas or len(quotas['items']) == 0:
+                        namespaces_without_quotas += 1
+            
+            if namespaces_without_quotas > 0:
+                findings.append({
+                    'criteria': 'Availability',
+                    'control': 'A1.2',
+                    'check': 'missing-resource-quotas',
+                    'severity': 'MEDIUM',
+                    'count': namespaces_without_quotas,
+                    'description': f'{namespaces_without_quotas} namespaces without resource quotas'
+                })
+        
+        return findings
+    
+    def check_confidentiality_criteria():
+        """SOC 2 Confidentiality criteria checks."""
+        findings = []
+        
+        # C1.1 - Data classification and handling
+        # Check for proper secret management
+        secrets = run_kubectl("kubectl get secrets --all-namespaces -o json")
+        if secrets:
+            unprotected_secrets = 0
+            for secret in secrets['items']:
+                # Check if secret has proper labels for classification
+                labels = secret['metadata'].get('labels', {})
+                if 'data-classification' not in labels:
+                    unprotected_secrets += 1
+            
+            if unprotected_secrets > 10:  # Allow for some system secrets
+                findings.append({
+                    'criteria': 'Confidentiality',
+                    'control': 'C1.1',
+                    'check': 'unclassified-secrets',
+                    'severity': 'MEDIUM',
+                    'count': unprotected_secrets,
+                    'description': f'{unprotected_secrets} secrets without data classification'
+                })
+        
+        return findings
+    
+    def check_processing_integrity_criteria():
+        """SOC 2 Processing Integrity criteria checks."""
+        findings = []
+        
+        # PI1.1 - Data processing integrity
+        # Check for admission controllers
+        admission_controllers = run_kubectl("kubectl get validatingadmissionwebhooks -o json")
+        if not admission_controllers or len(admission_controllers['items']) == 0:
+            findings.append({
+                'criteria': 'Processing Integrity',
+                'control': 'PI1.1',
+                'check': 'missing-admission-controllers',
+                'severity': 'MEDIUM',
+                'description': 'No validating admission webhooks found'
+            })
+        
+        return findings
+    
+    def check_privacy_criteria():
+        """SOC 2 Privacy criteria checks."""
+        findings = []
+        
+        # P1.1 - Privacy notice and consent
+        # Check for data retention policies
+        configmaps = run_kubectl("kubectl get configmaps --all-namespaces -o json")
+        if configmaps:
+            retention_policies = 0
+            for cm in configmaps['items']:
+                if 'retention' in cm['metadata']['name'].lower():
+                    retention_policies += 1
+            
+            if retention_policies == 0:
+                findings.append({
+                    'criteria': 'Privacy',
+                    'control': 'P1.1',
+                    'check': 'missing-retention-policies',
+                    'severity': 'MEDIUM',
+                    'description': 'No data retention policies found'
+                })
+        
+        return findings
+    
+    def main():
+        # Run all SOC 2 checks
+        all_findings = []
+        all_findings.extend(check_security_criteria())
+        all_findings.extend(check_availability_criteria())
+        all_findings.extend(check_confidentiality_criteria())
+        all_findings.extend(check_processing_integrity_criteria())
+        all_findings.extend(check_privacy_criteria())
+        
+        # Generate report
+        report = {
+            'scan_date': datetime.now().isoformat(),
+            'framework': 'SOC 2 Type II',
+            'version': '2017',
+            'total_findings': len(all_findings),
+            'criteria_summary': {
+                'security': len([f for f in all_findings if f['criteria'] == 'Security']),
+                'availability': len([f for f in all_findings if f['criteria'] == 'Availability']),
+                'confidentiality': len([f for f in all_findings if f['criteria'] == 'Confidentiality']),
+                'processing_integrity': len([f for f in all_findings if f['criteria'] == 'Processing Integrity']),
+                'privacy': len([f for f in all_findings if f['criteria'] == 'Privacy'])
+            },
+            'severity_summary': {
+                'critical': len([f for f in all_findings if f['severity'] == 'CRITICAL']),
+                'high': len([f for f in all_findings if f['severity'] == 'HIGH']),
+                'medium': len([f for f in all_findings if f['severity'] == 'MEDIUM']),
+                'low': len([f for f in all_findings if f['severity'] == 'LOW'])
+            },
+            'findings': all_findings
+        }
+        
+        print(json.dumps(report, indent=2))
+    
+    if __name__ == "__main__":
+        main()
+  
+  generate-compliance-summary.py: |
+    #!/usr/bin/env python3
+    import json
+    import os
+    import sys
+    from datetime import datetime
+    
+    def load_report(filepath):
+        """Load a compliance report from file."""
+        try:
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading {filepath}: {e}")
+            return None
+    
+    def generate_summary(reports_dir):
+        """Generate a comprehensive compliance summary."""
+        summary = {
+            'generated_at': datetime.now().isoformat(),
+            'reports_analyzed': [],
+            'overall_score': 0,
+            'total_findings': 0,
+            'severity_breakdown': {'critical': 0, 'high': 0, 'medium': 0, 'low': 0},
+            'framework_scores': {},
+            'top_issues': [],
+            'remediation_priorities': []
+        }
+        
+        all_findings = []
+        framework_findings = {}
+        
+        # Process all JSON reports in the directory
+        for filename in os.listdir(reports_dir):
+            if filename.endswith('.json') and not filename.startswith('summary'):
+                filepath = os.path.join(reports_dir, filename)
+                report = load_report(filepath)
+                
+                if report:
+                    summary['reports_analyzed'].append(filename)
+                    
+                    # Extract findings based on report structure
+                    findings = []
+                    framework = 'unknown'
+                    
+                    if 'framework' in report:
+                        framework = report['framework']
+                    
+                    if 'findings' in report:
+                        findings = report['findings']
+                    elif 'Controls' in report:  # CIS Benchmark format
+                        framework = 'CIS Kubernetes Benchmark'
+                        for section in report.get('Controls', []):
+                            for test in section.get('tests', []):
+                                for result in test.get('results', []):
+                                    if result.get('test_result') == 'FAIL':
+                                        findings.append({
+                                            'check': result.get('test_number', 'unknown'),
+                                            'severity': 'HIGH' if result.get('scored') else 'MEDIUM',
+                                            'description': result.get('test_desc', 'No description'),
+                                            'remediation': result.get('remediation', 'No remediation provided')
+                                        })
+                    
+                    all_findings.extend(findings)
+                    framework_findings[framework] = findings
+                    
+                    # Count severity levels
+                    for finding in findings:
+                        severity = finding.get('severity', 'unknown').lower()
+                        if severity in summary['severity_breakdown']:
+                            summary['severity_breakdown'][severity] += 1
+        
+        summary['total_findings'] = len(all_findings)
+        
+        # Calculate framework scores (percentage of passed checks)
+        for framework, findings in framework_findings.items():
+            total_checks = 100  # Assuming 100 total checks per framework
+            failed_checks = len(findings)
+            score = max(0, (total_checks - failed_checks) / total_checks * 100)
+            summary['framework_scores'][framework] = round(score, 2)
+        
+        # Calculate overall score
+        if summary['framework_scores']:
+            summary['overall_score'] = round(
+                sum(summary['framework_scores'].values()) / len(summary['framework_scores']), 2
+            )
+        
+        # Identify top issues (most common findings)
+        issue_counts = {}
+        for finding in all_findings:
+            check = finding.get('check', 'unknown')
+            issue_counts[check] = issue_counts.get(check, 0) + 1
+        
+        summary['top_issues'] = [
+            {'issue': issue, 'count': count}
+            for issue, count in sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        ]
+        
+        # Generate remediation priorities
+        critical_high = [f for f in all_findings if f.get('severity', '').upper() in ['CRITICAL', 'HIGH']]
+        summary['remediation_priorities'] = [
+            {
+                'priority': i + 1,
+                'check': finding.get('check', 'unknown'),
+                'severity': finding.get('severity', 'unknown'),
+                'description': finding.get('description', 'No description')[:100] + '...'
+            }
+            for i, finding in enumerate(critical_high[:20])  # Top 20 critical/high issues
+        ]
+        
+        # Write summary to file
+        summary_file = os.path.join(reports_dir, f'compliance-summary-{datetime.now().strftime("%Y%m%d")}.json')
+        with open(summary_file, 'w') as f:
+            json.dump(summary, f, indent=2)
+        
+        print(f"Compliance summary generated: {summary_file}")
+        print(f"Overall Score: {summary['overall_score']}%")
+        print(f"Total Findings: {summary['total_findings']}")
+        print(f"Critical: {summary['severity_breakdown']['critical']}")
+        print(f"High: {summary['severity_breakdown']['high']}")
+        
+        return summary
+    
+    if __name__ == "__main__":
+        if len(sys.argv) != 2:
+            print("Usage: generate-compliance-summary.py <reports_directory>")
+            sys.exit(1)
+        
+        reports_dir = sys.argv[1]
+        generate_summary(reports_dir)
+  
+  notify-compliance-issues.py: |
+    #!/usr/bin/env python3
+    import json
+    import os
+    import sys
+    import urllib.request
+    import urllib.parse
+    from datetime import datetime
+    
+    def send_slack_notification(webhook_url, message):
+        """Send notification to Slack."""
+        data = {
+            'text': message,
+            'username': 'Compliance Scanner',
+            'icon_emoji': ':shield:'
+        }
+        
+        req = urllib.request.Request(
+            webhook_url,
+            data=json.dumps(data).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        try:
+            urllib.request.urlopen(req)
+            print("Slack notification sent successfully")
+        except Exception as e:
+            print(f"Failed to send Slack notification: {e}")
+    
+    def analyze_compliance_issues(reports_dir):
+        """Analyze compliance reports and identify critical issues."""
+        critical_issues = []
+        high_issues = []
+        total_findings = 0
+        
+        # Load summary report if available
+        summary_files = [f for f in os.listdir(reports_dir) if f.startswith('compliance-summary')]
+        if summary_files:
+            summary_file = os.path.join(reports_dir, summary_files[0])
+            try:
+                with open(summary_file, 'r') as f:
+                    summary = json.load(f)
+                    total_findings = summary.get('total_findings', 0)
+                    
+                    for priority in summary.get('remediation_priorities', []):
+                        if priority.get('severity', '').upper() == 'CRITICAL':
+                            critical_issues.append(priority)
+                        elif priority.get('severity', '').upper() == 'HIGH':
+                            high_issues.append(priority)
+            except Exception as e:
+                print(f"Error reading summary: {e}")
+        
+        return critical_issues, high_issues, total_findings
+    
+    def main():
+        if len(sys.argv) != 2:
+            print("Usage: notify-compliance-issues.py <reports_directory>")
+            sys.exit(1)
+        
+        reports_dir = sys.argv[1]
+        webhook_url = os.environ.get('SLACK_WEBHOOK')
+        
+        if not webhook_url:
+            print("SLACK_WEBHOOK environment variable not set")
+            return
+        
+        critical_issues, high_issues, total_findings = analyze_compliance_issues(reports_dir)
+        
+        # Send notification if critical issues found
+        if critical_issues:
+            message = f"""🚨 *CRITICAL COMPLIANCE ISSUES DETECTED* 🚨
+            
+Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Total Findings: {total_findings}
+Critical Issues: {len(critical_issues)}
+High Issues: {len(high_issues)}
+
+*Top Critical Issues:*
+"""
+            
+            for issue in critical_issues[:5]:  # Top 5 critical issues
+                message += f"• {issue.get('check', 'Unknown')}: {issue.get('description', 'No description')}\n"
+            
+            message += f"\nFull report available in S3 bucket: mcp-compliance-reports/{datetime.now().strftime('%Y/%m/%d')}"
+            
+            send_slack_notification(webhook_url, message)
+        
+        elif high_issues:
+            message = f"""⚠️ *High Priority Compliance Issues Found* ⚠️
+            
+Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Total Findings: {total_findings}
+High Issues: {len(high_issues)}
+
+Review required - see compliance dashboard for details."""
+            
+            send_slack_notification(webhook_url, message)
+        
+        else:
+            message = f"""✅ *Compliance Scan Completed Successfully* ✅
+            
+Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Total Findings: {total_findings}
+No critical or high priority issues detected."""
+            
+            send_slack_notification(webhook_url, message)
+    
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: compliance-config
+  namespace: security
+  labels:
+    app: mcp-compliance-scanner
+    component: configuration
+data:
+  compliance.yaml: |
+    # Compliance scanning configuration
+    frameworks:
+      cis_kubernetes:
+        enabled: true
+        version: "1.6"
+        benchmark_file: "cis_k8s_1.6.yaml"
+        
+      nist_csf:
+        enabled: true
+        version: "1.1"
+        categories:
+          - "Identify"
+          - "Protect"
+          - "Detect"
+          - "Respond"
+          - "Recover"
+          
+      soc2:
+        enabled: true
+        type: "Type II"
+        criteria:
+          - "Security"
+          - "Availability"
+          - "Confidentiality"
+          - "Processing Integrity"
+          - "Privacy"
+          
+      pci_dss:
+        enabled: false
+        version: "3.2.1"
+        
+    scanning:
+      schedule: "daily"
+      retention_days: 365
+      notifications:
+        slack: true
+        email: true
+        pagerduty: false
+        
+    thresholds:
+      critical_findings: 0
+      high_findings: 5
+      overall_score_minimum: 85
+      
+    reporting:
+      formats: ["json", "html", "pdf"]
+      upload_to_s3: true
+      generate_trends: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-bench-config
+  namespace: security
+  labels:
+    app: mcp-compliance-scanner
+    component: kube-bench
+data:
+  config.yaml: |
+    # Kube-bench configuration for MCP environment
+    master:
+      components:
+        - apiserver
+        - scheduler
+        - controllermanager
+        - etcd
+        - flanneld
+      
+    node:
+      components:
+        - kubelet
+        - proxy
+      
+    etcd:
+      components:
+        - etcd
+      
+    controlplane:
+      components:
+        - apiserver
+        - scheduler
+        - controllermanager
+      
+    policies:
+      components:
+        - policies
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-compliance-scanner
+  namespace: security
+  labels:
+    app: mcp-compliance-scanner
+    component: scanning
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-compliance-scanner
+  labels:
+    app: mcp-compliance-scanner
+    component: scanning
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+# Read-only access for compliance scanning
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-compliance-scanner
+  labels:
+    app: mcp-compliance-scanner
+    component: scanning
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-compliance-scanner
+subjects:
+- kind: ServiceAccount
+  name: mcp-compliance-scanner
+  namespace: security

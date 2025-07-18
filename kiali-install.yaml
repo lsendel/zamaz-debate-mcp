@@ -1,0 +1,16 @@
+
+apiVersion: install.kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+  namespace: istio-system
+spec:
+  auth:
+    strategy: anonymous # For quick setup, consider 'token' or 'openid' for production
+  external_services:
+    prometheus:
+      url: "http://prometheus.istio-system.svc:9090" # Adjust if Prometheus is in a different namespace
+    grafana:
+      url: "http://grafana.istio-system.svc:3000" # Adjust if Grafana is in a different namespace
+    jaeger:
+      url: "http://jaeger-query.istio-system.svc:16686" # Adjust if Jaeger is in a different namespace

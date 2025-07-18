@@ -1,0 +1,682 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: incident-response-playbooks
+  namespace: security
+  labels:
+    app: mcp-incident-response
+    component: playbooks
+data:
+  security-breach-playbook.yaml: |
+    playbook:
+      name: "Security Breach Response"
+      version: "1.0"
+      description: "Automated response to security breaches"
+      triggers:
+        - alert: "CriticalVulnerabilitiesDetected"
+        - alert: "SuspiciousRuntimeActivity"
+        - alert: "UnauthorizedAccess"
+      
+      phases:
+        - name: "immediate-response"
+          timeout: "5m"
+          actions:
+            - name: "isolate-affected-pods"
+              type: "kubernetes"
+              config:
+                action: "scale-down"
+                target: "deployment"
+                replicas: 0
+            - name: "block-suspicious-traffic"
+              type: "network-policy"
+              config:
+                action: "deny-all"
+                namespace: "production"
+            - name: "notify-security-team"
+              type: "alert"
+              config:
+                channels: ["slack", "pagerduty", "email"]
+                priority: "critical"
+        
+        - name: "investigation"
+          timeout: "30m"
+          actions:
+            - name: "collect-forensic-data"
+              type: "script"
+              config:
+                script: "/scripts/collect-forensics.sh"
+                params: ["--namespace", "production"]
+            - name: "capture-network-traffic"
+              type: "network-capture"
+              config:
+                duration: "10m"
+                namespace: "production"
+            - name: "export-audit-logs"
+              type: "log-export"
+              config:
+                source: "kubernetes-audit"
+                timeframe: "24h"
+        
+        - name: "containment"
+          timeout: "15m"
+          actions:
+            - name: "revoke-compromised-tokens"
+              type: "auth"
+              config:
+                action: "revoke-all-tokens"
+                users: ["${COMPROMISED_USERS}"]
+            - name: "rotate-secrets"
+              type: "secrets"
+              config:
+                action: "rotate"
+                scope: "all-production"
+            - name: "enable-enhanced-monitoring"
+              type: "monitoring"
+              config:
+                level: "debug"
+                duration: "24h"
+  
+  vulnerability-response-playbook.yaml: |
+    playbook:
+      name: "Critical Vulnerability Response"
+      version: "1.0"
+      description: "Automated response to critical vulnerabilities"
+      triggers:
+        - alert: "CriticalVulnerabilitiesDetected"
+        - alert: "HighVulnerabilitiesThresholdExceeded"
+      
+      phases:
+        - name: "assessment"
+          timeout: "10m"
+          actions:
+            - name: "analyze-vulnerability-impact"
+              type: "script"
+              config:
+                script: "/scripts/analyze-vulnerabilities.sh"
+            - name: "check-exploit-availability"
+              type: "threat-intel"
+              config:
+                sources: ["nvd", "mitre", "cisa"]
+            - name: "assess-exposure"
+              type: "network-analysis"
+              config:
+                scope: "internet-facing"
+        
+        - name: "mitigation"
+          timeout: "30m"
+          actions:
+            - name: "apply-temporary-patches"
+              type: "image-update"
+              config:
+                strategy: "rolling"
+                max-unavailable: "25%"
+            - name: "implement-waf-rules"
+              type: "waf"
+              config:
+                action: "block-patterns"
+                patterns: ["${EXPLOIT_PATTERNS}"]
+            - name: "increase-monitoring"
+              type: "monitoring"
+              config:
+                focus: "vulnerable-components"
+                sensitivity: "high"
+  
+  unauthorized-access-playbook.yaml: |
+    playbook:
+      name: "Unauthorized Access Response"
+      version: "1.0"
+      description: "Response to unauthorized access attempts"
+      triggers:
+        - alert: "ClusterAdminUsage"
+        - alert: "UnauthorizedAPIAccess"
+        - alert: "SuspiciousUserActivity"
+      
+      phases:
+        - name: "immediate-lockdown"
+          timeout: "2m"
+          actions:
+            - name: "suspend-user-account"
+              type: "auth"
+              config:
+                action: "suspend"
+                user: "${SUSPICIOUS_USER}"
+            - name: "revoke-active-sessions"
+              type: "auth"
+              config:
+                action: "revoke-sessions"
+                user: "${SUSPICIOUS_USER}"
+            - name: "block-source-ip"
+              type: "firewall"
+              config:
+                action: "block"
+                ip: "${SOURCE_IP}"
+        
+        - name: "forensics"
+          timeout: "60m"
+          actions:
+            - name: "analyze-access-patterns"
+              type: "log-analysis"
+              config:
+                timeframe: "48h"
+                user: "${SUSPICIOUS_USER}"
+            - name: "check-privilege-escalation"
+              type: "rbac-analysis"
+              config:
+                user: "${SUSPICIOUS_USER}"
+                check-history: true
+            - name: "audit-resource-access"
+              type: "audit-analysis"
+              config:
+                resources: ["secrets", "configmaps", "pods"]
+                user: "${SUSPICIOUS_USER}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-incident-response
+  namespace: security
+  labels:
+    app: mcp-incident-response
+    component: automation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-incident-response
+  template:
+    metadata:
+      labels:
+        app: mcp-incident-response
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: mcp-incident-response
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+      - name: incident-response
+        image: mcp-debate/incident-response:latest
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: http-api
+        env:
+        - name: KUBERNETES_API_URL
+          value: "https://kubernetes.default.svc"
+        - name: ALERTMANAGER_URL
+          value: "http://alertmanager.monitoring.svc.cluster.local:9093"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.monitoring.svc.cluster.local:9090"
+        - name: PLAYBOOK_DIR
+          value: "/etc/playbooks"
+        - name: SCRIPTS_DIR
+          value: "/etc/scripts"
+        - name: AUTO_RESPONSE_ENABLED
+          value: "true"
+        - name: DRY_RUN_MODE
+          value: "false"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: playbooks
+          mountPath: /etc/playbooks
+          readOnly: true
+        - name: scripts
+          mountPath: /etc/scripts
+          readOnly: true
+        - name: temp-storage
+          mountPath: /tmp/incident-response
+      volumes:
+      - name: playbooks
+        configMap:
+          name: incident-response-playbooks
+      - name: scripts
+        configMap:
+          name: incident-response-scripts
+          defaultMode: 0755
+      - name: temp-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: incident-response-scripts
+  namespace: security
+  labels:
+    app: mcp-incident-response
+    component: scripts
+data:
+  collect-forensics.sh: |
+    #!/bin/bash
+    # Forensic data collection script
+    
+    set -euo pipefail
+    
+    NAMESPACE=${1:-production}
+    OUTPUT_DIR="/tmp/incident-response/forensics-$(date +%Y%m%d-%H%M%S)"
+    
+    mkdir -p "$OUTPUT_DIR"
+    
+    echo "Collecting forensic data for namespace: $NAMESPACE"
+    
+    # Collect pod information
+    kubectl get pods -n "$NAMESPACE" -o yaml > "$OUTPUT_DIR/pods.yaml"
+    kubectl describe pods -n "$NAMESPACE" > "$OUTPUT_DIR/pods-describe.txt"
+    
+    # Collect events
+    kubectl get events -n "$NAMESPACE" --sort-by='.lastTimestamp' > "$OUTPUT_DIR/events.txt"
+    
+    # Collect network policies
+    kubectl get networkpolicies -n "$NAMESPACE" -o yaml > "$OUTPUT_DIR/networkpolicies.yaml"
+    
+    # Collect services and endpoints
+    kubectl get services,endpoints -n "$NAMESPACE" -o yaml > "$OUTPUT_DIR/services.yaml"
+    
+    # Collect resource usage
+    kubectl top pods -n "$NAMESPACE" > "$OUTPUT_DIR/resource-usage.txt" || true
+    
+    # Collect logs from running pods
+    for pod in $(kubectl get pods -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
+        kubectl logs "$pod" -n "$NAMESPACE" --previous > "$OUTPUT_DIR/logs-$pod-previous.txt" 2>/dev/null || true
+        kubectl logs "$pod" -n "$NAMESPACE" > "$OUTPUT_DIR/logs-$pod-current.txt" 2>/dev/null || true
+    done
+    
+    # Collect cluster-wide information
+    kubectl get nodes -o yaml > "$OUTPUT_DIR/nodes.yaml"
+    kubectl cluster-info > "$OUTPUT_DIR/cluster-info.txt"
+    
+    # Collect security-related information
+    kubectl get clusterroles,clusterrolebindings -o yaml > "$OUTPUT_DIR/cluster-rbac.yaml"
+    kubectl get secrets -n "$NAMESPACE" -o yaml > "$OUTPUT_DIR/secrets.yaml"
+    
+    # Create tarball
+    tar -czf "$OUTPUT_DIR.tar.gz" -C "$(dirname "$OUTPUT_DIR")" "$(basename "$OUTPUT_DIR")"
+    
+    echo "Forensic data collected: $OUTPUT_DIR.tar.gz"
+    
+    # Upload to S3 if configured
+    if [ -n "${S3_FORENSICS_BUCKET:-}" ]; then
+        aws s3 cp "$OUTPUT_DIR.tar.gz" "s3://$S3_FORENSICS_BUCKET/$(date +%Y/%m/%d)/"
+        echo "Forensic data uploaded to S3"
+    fi
+  
+  analyze-vulnerabilities.sh: |
+    #!/bin/bash
+    # Vulnerability analysis script
+    
+    set -euo pipefail
+    
+    REPORTS_DIR="/reports"
+    OUTPUT_FILE="/tmp/incident-response/vulnerability-analysis.json"
+    
+    echo "Analyzing vulnerabilities..."
+    
+    # Find latest vulnerability reports
+    LATEST_REPORT=$(find "$REPORTS_DIR" -name "summary-*.json" | sort -r | head -1)
+    
+    if [ -z "$LATEST_REPORT" ]; then
+        echo "No vulnerability reports found"
+        exit 1
+    fi
+    
+    # Extract critical vulnerabilities
+    jq '.scans[] | select(.vulnerability_count > 0) | {
+        image: .file,
+        critical_count: ([.vulnerabilities[] | select(.severity == "CRITICAL")] | length),
+        high_count: ([.vulnerabilities[] | select(.severity == "HIGH")] | length),
+        critical_vulns: [.vulnerabilities[] | select(.severity == "CRITICAL") | {id, package, version, fixed_version}]
+    }' "$LATEST_REPORT" > "$OUTPUT_FILE"
+    
+    # Check for internet-facing exposure
+    INTERNET_FACING=$(kubectl get services --all-namespaces -o json | jq -r '.items[] | select(.spec.type == "LoadBalancer") | .metadata.namespace + "/" + .metadata.name')
+    
+    # Generate priority matrix
+    python3 - <<EOF
+    import json
+    import sys
+    
+    with open('$OUTPUT_FILE', 'r') as f:
+        vulns = json.load(f)
+    
+    internet_facing = """$INTERNET_FACING""".strip().split('\n')
+    
+    priority_matrix = []
+    for vuln in vulns:
+        if vuln['critical_count'] > 0:
+            priority = 'CRITICAL'
+        elif vuln['high_count'] > 5:
+            priority = 'HIGH'
+        else:
+            priority = 'MEDIUM'
+        
+        # Increase priority if internet-facing
+        image_name = vuln['image'].split('/')[-1].split(':')[0]
+        if any(image_name in svc for svc in internet_facing):
+            if priority == 'MEDIUM':
+                priority = 'HIGH'
+            elif priority == 'HIGH':
+                priority = 'CRITICAL'
+        
+        priority_matrix.append({
+            'image': vuln['image'],
+            'priority': priority,
+            'critical_count': vuln['critical_count'],
+            'high_count': vuln['high_count'],
+            'internet_facing': any(image_name in svc for svc in internet_facing)
+        })
+    
+    with open('$OUTPUT_FILE.prioritized', 'w') as f:
+        json.dump(priority_matrix, f, indent=2)
+    
+    print(f"Analysis complete. Results in $OUTPUT_FILE.prioritized")
+    EOF
+  
+  isolate-pods.sh: |
+    #!/bin/bash
+    # Pod isolation script
+    
+    set -euo pipefail
+    
+    NAMESPACE=${1:-production}
+    POD_SELECTOR=${2:-""}
+    
+    if [ -z "$POD_SELECTOR" ]; then
+        echo "Usage: $0 <namespace> <pod-selector>"
+        echo "Example: $0 production app=mcp-gateway"
+        exit 1
+    fi
+    
+    echo "Isolating pods in namespace $NAMESPACE with selector: $POD_SELECTOR"
+    
+    # Create isolation network policy
+    cat <<EOF | kubectl apply -f -
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: incident-isolation-$(date +%s)
+      namespace: $NAMESPACE
+      labels:
+        created-by: incident-response
+        incident-id: "$(date +%Y%m%d-%H%M%S)"
+    spec:
+      podSelector:
+        matchLabels:
+          $(echo "$POD_SELECTOR" | tr '=' ':' | sed 's/^/  /')
+      policyTypes:
+      - Ingress
+      - Egress
+      ingress: []
+      egress:
+      # Allow DNS only
+      - to: []
+        ports:
+        - protocol: UDP
+          port: 53
+    EOF
+    
+    echo "Isolation network policy applied"
+    
+    # Scale down the deployment to 0 replicas
+    DEPLOYMENT=$(kubectl get pods -n "$NAMESPACE" -l "$POD_SELECTOR" -o jsonpath='{.items[0].metadata.ownerReferences[0].name}' 2>/dev/null || echo "")
+    
+    if [ -n "$DEPLOYMENT" ]; then
+        kubectl scale deployment "$DEPLOYMENT" -n "$NAMESPACE" --replicas=0
+        echo "Deployment $DEPLOYMENT scaled down to 0 replicas"
+    fi
+    
+    # Log the incident
+    echo "$(date): Isolated pods in $NAMESPACE with selector $POD_SELECTOR" >> /tmp/incident-response/isolation.log
+  
+  rotate-secrets.sh: |
+    #!/bin/bash
+    # Secret rotation script
+    
+    set -euo pipefail
+    
+    NAMESPACE=${1:-production}
+    
+    echo "Rotating secrets in namespace: $NAMESPACE"
+    
+    # Get list of secrets to rotate
+    SECRETS=$(kubectl get secrets -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -v '^default-token' | grep -v '^sh\.helm')
+    
+    for secret in $SECRETS; do
+        echo "Processing secret: $secret"
+        
+        # Backup current secret
+        kubectl get secret "$secret" -n "$NAMESPACE" -o yaml > "/tmp/incident-response/backup-$secret-$(date +%s).yaml"
+        
+        # Check if it's a TLS secret
+        SECRET_TYPE=$(kubectl get secret "$secret" -n "$NAMESPACE" -o jsonpath='{.type}')
+        
+        case "$SECRET_TYPE" in
+            "kubernetes.io/tls")
+                echo "Rotating TLS secret: $secret"
+                # Generate new certificate (this would typically integrate with cert-manager)
+                kubectl delete secret "$secret" -n "$NAMESPACE"
+                kubectl create secret tls "$secret" -n "$NAMESPACE" \
+                    --cert=/tmp/new-cert.pem \
+                    --key=/tmp/new-key.pem || true
+                ;;
+            "Opaque")
+                echo "Rotating opaque secret: $secret"
+                # Generate new random passwords/tokens
+                kubectl patch secret "$secret" -n "$NAMESPACE" --type='json' \
+                    -p='[{"op": "replace", "path": "/data", "value": {}}]' || true
+                ;;
+            *)
+                echo "Skipping secret type: $SECRET_TYPE"
+                ;;
+        esac
+    done
+    
+    echo "Secret rotation completed for namespace: $NAMESPACE"
+    
+    # Restart all deployments to pick up new secrets
+    kubectl rollout restart deployment -n "$NAMESPACE"
+    
+    echo "Deployments restarted to pick up new secrets"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-incident-response
+  namespace: security
+  labels:
+    app: mcp-incident-response
+    component: automation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-incident-response
+  labels:
+    app: mcp-incident-response
+    component: automation
+rules:
+# Full access for incident response
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+# This is intentionally broad for emergency response
+# In production, this should be scoped more narrowly
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-incident-response
+  labels:
+    app: mcp-incident-response
+    component: automation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-incident-response
+subjects:
+- kind: ServiceAccount
+  name: mcp-incident-response
+  namespace: security
+---
+# Emergency break-glass access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-emergency-access
+  labels:
+    app: mcp-incident-response
+    component: break-glass
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+# This binding should be activated only during emergencies
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-emergency-access
+  labels:
+    app: mcp-incident-response
+    component: break-glass
+    enabled: "false"  # Set to "true" only during emergencies
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-emergency-access
+subjects:
+- kind: User
+  name: emergency-admin@mcp-debate.com
+  apiGroup: rbac.authorization.k8s.io
+---
+# Incident tracking CRD
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: incidents.security.mcp-debate.com
+spec:
+  group: security.mcp-debate.com
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              severity:
+                type: string
+                enum: ["low", "medium", "high", "critical"]
+              category:
+                type: string
+                enum: ["vulnerability", "breach", "unauthorized-access", "malware", "ddos"]
+              affectedResources:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    namespace:
+                      type: string
+                    resourceType:
+                      type: string
+                    resourceName:
+                      type: string
+              playbook:
+                type: string
+              autoResponse:
+                type: boolean
+                default: true
+            required: ["title", "severity", "category"]
+          status:
+            type: object
+            properties:
+              phase:
+                type: string
+                enum: ["detected", "investigating", "contained", "resolved"]
+              startTime:
+                type: string
+                format: date-time
+              endTime:
+                type: string
+                format: date-time
+              actions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    status:
+                      type: string
+                    timestamp:
+                      type: string
+                      format: date-time
+                    result:
+                      type: string
+              metrics:
+                type: object
+                properties:
+                  detectionTime:
+                    type: string
+                  responseTime:
+                    type: string
+                  containmentTime:
+                    type: string
+                  resolutionTime:
+                    type: string
+  scope: Namespaced
+  names:
+    plural: incidents
+    singular: incident
+    kind: Incident
+    shortNames:
+    - inc
+---
+# Service for incident response API
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-incident-response
+  namespace: security
+  labels:
+    app: mcp-incident-response
+spec:
+  selector:
+    app: mcp-incident-response
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+  - name: http-api
+    port: 8081
+    targetPort: 8081

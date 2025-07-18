@@ -17,7 +17,7 @@ import traceback
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Callable, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -654,7 +654,7 @@ def generate_test_data(size: int, pattern: str = "random") -> List[Dict[str, Any
                 'id': i,
                 'name': ''.join(random.choices(string.ascii_letters, k=10)),
                 'value': random.randint(1, 1000),
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'data': ''.join(random.choices(string.ascii_letters + string.digits, k=100))
             })
         elif pattern == "sequential":
@@ -662,7 +662,7 @@ def generate_test_data(size: int, pattern: str = "random") -> List[Dict[str, Any
                 'id': i,
                 'name': f'item_{i:06d}',
                 'value': i,
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'data': f'data_{i}' * 20
             })
     

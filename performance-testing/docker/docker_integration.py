@@ -609,6 +609,57 @@ CMD ["python", "run_tests.py"]
         
         return {'error': 'No test results found'}
     
+    def _calculate_cpu_percent(self, stats):
+        """Calculate CPU usage percentage from container stats."""
+        cpu_delta = stats['cpu_stats']['cpu_usage']['total_usage'] - stats['precpu_stats']['cpu_usage']['total_usage']
+        system_delta = stats['cpu_stats']['system_cpu_usage'] - stats['precpu_stats']['system_cpu_usage']
+        return (cpu_delta / system_delta) * len(stats['cpu_stats']['cpu_usage']['percpu_usage']) * 100.0
+
+    def _calculate_memory_metrics(self, stats):
+        """Calculate memory usage metrics from container stats."""
+        memory_usage = stats['memory_stats']['usage']
+        memory_limit = stats['memory_stats']['limit']
+        memory_percent = (memory_usage / memory_limit) * 100.0
+        
+        return {
+            'usage_mb': memory_usage / (1024 * 1024),
+            'limit_mb': memory_limit / (1024 * 1024),
+            'percent': memory_percent
+        }
+
+    def _get_network_stats(self, stats):
+        """Extract network statistics from container stats."""
+        if 'networks' not in stats:
+            return {'rx_bytes': 0, 'tx_bytes': 0}
+        
+        return {
+            'rx_bytes': stats['networks']['eth0']['rx_bytes'],
+            'tx_bytes': stats['networks']['eth0']['tx_bytes']
+        }
+
+    def _collect_container_stats(self, container_name, container):
+        """Collect stats for a single container."""
+        try:
+            container.reload()
+            stats = container.stats(stream=False)
+            
+            cpu_percent = self._calculate_cpu_percent(stats)
+            memory_metrics = self._calculate_memory_metrics(stats)
+            network_stats = self._get_network_stats(stats)
+            
+            return {
+                'status': container.status,
+                'cpu_percent': cpu_percent,
+                'memory_usage_mb': memory_metrics['usage_mb'],
+                'memory_limit_mb': memory_metrics['limit_mb'],
+                'memory_percent': memory_metrics['percent'],
+                'network_rx_bytes': network_stats['rx_bytes'],
+                'network_tx_bytes': network_stats['tx_bytes'],
+            }
+        except Exception as e:
+            self.logger.debug(f"Error monitoring container {container_name}: {e}")
+            return None
+
     async def _monitor_containers(self):
         """Monitor container resources during test execution."""
         self.monitoring_active = True
@@ -620,39 +671,13 @@ CMD ["python", "run_tests.py"]
                     'containers': {}
                 }
                 
-                # Monitor all containers
+                # Collect stats for all containers
                 for container_name, container in self.test_containers.items():
-                    try:
-                        container.reload()
-                        
-                        # Get container stats
-                        stats = container.stats(stream=False)
-                        
-                        # Calculate CPU usage
-                        cpu_delta = stats['cpu_stats']['cpu_usage']['total_usage'] - stats['precpu_stats']['cpu_usage']['total_usage']
-                        system_delta = stats['cpu_stats']['system_cpu_usage'] - stats['precpu_stats']['system_cpu_usage']
-                        cpu_percent = (cpu_delta / system_delta) * len(stats['cpu_stats']['cpu_usage']['percpu_usage']) * 100.0
-                        
-                        # Calculate memory usage
-                        memory_usage = stats['memory_stats']['usage']
-                        memory_limit = stats['memory_stats']['limit']
-                        memory_percent = (memory_usage / memory_limit) * 100.0
-                        
-                        monitoring_sample['containers'][container_name] = {
-                            'status': container.status,
-                            'cpu_percent': cpu_percent,
-                            'memory_usage_mb': memory_usage / (1024 * 1024),
-                            'memory_limit_mb': memory_limit / (1024 * 1024),
-                            'memory_percent': memory_percent,
-                            'network_rx_bytes': stats['networks']['eth0']['rx_bytes'] if 'networks' in stats else 0,
-                            'network_tx_bytes': stats['networks']['eth0']['tx_bytes'] if 'networks' in stats else 0,
-                        }
-                        
-                    except Exception as e:
-                        self.logger.debug(f"Error monitoring container {container_name}: {e}")
+                    container_stats = self._collect_container_stats(container_name, container)
+                    if container_stats:
+                        monitoring_sample['containers'][container_name] = container_stats
                 
                 self.monitoring_data.append(monitoring_sample)
-                
                 await asyncio.sleep(self.config.monitoring_interval)
                 
             except asyncio.CancelledError:
