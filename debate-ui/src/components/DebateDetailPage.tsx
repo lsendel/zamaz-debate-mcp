@@ -85,14 +85,14 @@ const DebateDetailPage: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "created":
+    switch (status?.toUpperCase()) {
+      case "CREATED":
         return "default";
-      case "in_progress":
+      case "IN_PROGRESS":
         return "primary";
-      case "completed":
+      case "COMPLETED":
         return "success";
-      case "cancelled":
+      case "CANCELLED":
         return "error";
       default:
         return "default";
@@ -123,7 +123,7 @@ const DebateDetailPage: React.FC = () => {
             color={getStatusColor(currentDebate.status) as any}
           />
           <Chip
-            label={`Round ${currentDebate.currentRound}/${currentDebate.maxRounds}`}
+            label={`Format: ${currentDebate.format || 'OXFORD'}`}
             variant="outlined"
           />
           {isConnected && (
@@ -158,7 +158,7 @@ const DebateDetailPage: React.FC = () => {
                 Debate Progress
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
-                {currentDebate.status === "created" && (
+                {currentDebate.status === "CREATED" && (
                   <Button
                     startIcon={<PlayIcon />}
                     variant="contained"
@@ -168,7 +168,7 @@ const DebateDetailPage: React.FC = () => {
                     Start
                   </Button>
                 )}
-                {currentDebate.status === "in_progress" && (
+                {currentDebate.status === "IN_PROGRESS" && (
                   <Button
                     startIcon={<PauseIcon />}
                     variant="outlined"
@@ -177,8 +177,8 @@ const DebateDetailPage: React.FC = () => {
                     Pause
                   </Button>
                 )}
-                {(currentDebate.status === "created" ||
-                  currentDebate.status === "in_progress") && (
+                {(currentDebate.status === "CREATED" ||
+                  currentDebate.status === "IN_PROGRESS") && (
                   <Button
                     startIcon={<StopIcon />}
                     variant="outlined"
@@ -199,71 +199,82 @@ const DebateDetailPage: React.FC = () => {
             </Box>
 
             <Box sx={{ maxHeight: 600, overflowY: "auto" }}>
-              {currentDebate.rounds.map((round) => (
-                <Box key={round.roundNumber} sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                    Round {round.roundNumber}
-                  </Typography>
-                  {round.responses.map((response) => {
-                    const participant = currentDebate.participants.find(
-                      (p) => p.id === response.participantId,
-                    );
-                    const participantIndex =
-                      currentDebate.participants.findIndex(
+              {currentDebate.rounds && currentDebate.rounds.length > 0 ? (
+                currentDebate.rounds.map((round) => (
+                  <Box key={round.roundNumber} sx={{ mb: 3 }}>
+                    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                      Round {round.roundNumber}
+                    </Typography>
+                    {round.responses.map((response) => {
+                      const participant = currentDebate.participants.find(
                         (p) => p.id === response.participantId,
                       );
-                    return (
-                      <Card key={response.id} sx={{ mb: 2 }}>
-                        <CardContent>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              mb: 1,
-                            }}
-                          >
-                            <Avatar
+                      const participantIndex =
+                        currentDebate.participants.findIndex(
+                          (p) => p.id === response.participantId,
+                        );
+                      return (
+                        <Card key={response.id} sx={{ mb: 2 }}>
+                          <CardContent>
+                            <Box
                               sx={{
-                                bgcolor: getParticipantColor(participantIndex),
-                                width: 32,
-                                height: 32,
-                                mr: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                mb: 1,
                               }}
                             >
-                              {participant?.name.charAt(0)}
-                            </Avatar>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ flexGrow: 1 }}
-                            >
-                              {participant?.name}
+                              <Avatar
+                                sx={{
+                                  bgcolor: getParticipantColor(participantIndex),
+                                  width: 32,
+                                  height: 32,
+                                  mr: 1,
+                                }}
+                              >
+                                {participant?.name.charAt(0)}
+                              </Avatar>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{ flexGrow: 1 }}
+                              >
+                                {participant?.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {new Date(
+                                  response.timestamp,
+                                ).toLocaleTimeString()}
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2">
+                              {response.content}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {new Date(
-                                response.timestamp,
-                              ).toLocaleTimeString()}
-                            </Typography>
-                          </Box>
-                          <Typography variant="body2">
-                            {response.content}
-                          </Typography>
-                          {response.tokenCount && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {response.tokenCount} tokens
-                            </Typography>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                            {response.tokenCount && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {response.tokenCount} tokens
+                              </Typography>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </Box>
+                ))
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    No debate rounds yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {currentDebate.status === 'CREATED' ? 'Start the debate to see rounds' : 'This debate has no recorded rounds'}
+                  </Typography>
                 </Box>
-              ))}
+              )}
             </Box>
           </Paper>
         </Grid>
@@ -273,40 +284,54 @@ const DebateDetailPage: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Participants
             </Typography>
-            {currentDebate.participants.map((participant, index) => (
-              <Box key={participant.id} sx={{ mb: 2 }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: getParticipantColor(index),
-                      width: 40,
-                      height: 40,
-                      mr: 2,
-                    }}
-                  >
-                    {participant.name.charAt(0)}
-                  </Avatar>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle1">
-                      {participant.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {participant.llmProvider} - {participant.model}
-                    </Typography>
+            {currentDebate.participants && Array.isArray(currentDebate.participants) ? (
+              currentDebate.participants.map((participant, index) => {
+                // Handle both string and object participants
+                const isString = typeof participant === 'string';
+                const name = isString ? participant : participant.name;
+                const llmProvider = isString ? 'Unknown' : participant.llmProvider;
+                const model = isString ? participant : participant.model;
+                
+                return (
+                  <Box key={isString ? participant : participant.id} sx={{ mb: 2 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      <Avatar
+                        sx={{
+                          bgcolor: getParticipantColor(index),
+                          width: 40,
+                          height: 40,
+                          mr: 2,
+                        }}
+                      >
+                        {name.charAt(0)}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="subtitle1">
+                          {name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {isString ? `Model: ${participant}` : `${llmProvider} - ${model}`}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {!isString && participant.systemPrompt && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ ml: 7 }}
+                      >
+                        {participant.systemPrompt}
+                      </Typography>
+                    )}
+                    <Divider sx={{ mt: 2 }} />
                   </Box>
-                </Box>
-                {participant.systemPrompt && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ ml: 7 }}
-                  >
-                    {participant.systemPrompt}
-                  </Typography>
-                )}
-                <Divider sx={{ mt: 2 }} />
-              </Box>
-            ))}
+                );
+              })
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No participants found
+              </Typography>
+            )}
           </Paper>
 
           <Paper sx={{ p: 3 }}>

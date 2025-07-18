@@ -549,4 +549,112 @@ public class MetricsCollectorService {
                 .doOnSuccess(v -> log.debug("Metrics exported successfully"))
                 .doOnError(error -> log.error("Failed to export metrics", error));
     }
+
+    /**
+     * Record circuit breaker success
+     */
+    public void recordCircuitBreakerSuccess(String circuitBreakerName) {
+        Counter.builder("sidecar.circuit_breaker.success")
+                .tag("circuit_breaker", circuitBreakerName)
+                .description("Number of successful circuit breaker calls")
+                .register(meterRegistry)
+                .increment();
+        
+        log.debug("Recorded circuit breaker success for: {}", circuitBreakerName);
+    }
+
+    /**
+     * Record circuit breaker failure
+     */
+    public void recordCircuitBreakerFailure(String circuitBreakerName, String errorType) {
+        Counter.builder("sidecar.circuit_breaker.failure")
+                .tag("circuit_breaker", circuitBreakerName)
+                .tag("error_type", errorType)
+                .description("Number of failed circuit breaker calls")
+                .register(meterRegistry)
+                .increment();
+        
+        log.debug("Recorded circuit breaker failure for: {} with error type: {}", circuitBreakerName, errorType);
+    }
+
+    /**
+     * Record circuit breaker state change
+     */
+    public void recordCircuitBreakerStateChange(String circuitBreakerName, String fromState, String toState) {
+        Counter.builder("sidecar.circuit_breaker.state_change")
+                .tag("circuit_breaker", circuitBreakerName)
+                .tag("from_state", fromState)
+                .tag("to_state", toState)
+                .description("Number of circuit breaker state changes")
+                .register(meterRegistry)
+                .increment();
+        
+        log.debug("Recorded circuit breaker state change for: {} from {} to {}", circuitBreakerName, fromState, toState);
+    }
+
+    /**
+     * Record circuit breaker trip
+     */
+    public void recordCircuitBreakerTrip(String circuitBreakerName) {
+        circuitBreakerTripsCounter.increment();
+        
+        Counter.builder("sidecar.circuit_breaker.trips")
+                .tag("circuit_breaker", circuitBreakerName)
+                .description("Number of circuit breaker trips")
+                .register(meterRegistry)
+                .increment();
+        
+        log.debug("Recorded circuit breaker trip for: {}", circuitBreakerName);
+    }
+
+    /**
+     * Record circuit breaker execution time
+     */
+    public void recordCircuitBreakerExecutionTime(String circuitBreakerName, long executionTimeMs) {
+        Timer.builder("sidecar.circuit_breaker.execution_time")
+                .tag("circuit_breaker", circuitBreakerName)
+                .description("Circuit breaker execution time")
+                .register(meterRegistry)
+                .record(Duration.ofMillis(executionTimeMs));
+        
+        log.debug("Recorded circuit breaker execution time for: {} - {}ms", circuitBreakerName, executionTimeMs);
+    }
+
+    /**
+     * Record service health check
+     */
+    public void recordServiceHealth(String serviceName, String instanceId, boolean healthy, long responseTime) {
+        Counter.builder("sidecar.service.health_check")
+                .tag("service", serviceName)
+                .tag("instance", instanceId)
+                .tag("status", healthy ? "healthy" : "unhealthy")
+                .description("Service health check results")
+                .register(meterRegistry)
+                .increment();
+        
+        Timer.builder("sidecar.service.health_check_time")
+                .tag("service", serviceName)
+                .tag("instance", instanceId)
+                .description("Service health check response time")
+                .register(meterRegistry)
+                .record(Duration.ofMillis(responseTime));
+        
+        log.debug("Recorded service health check for: {} instance {} - healthy: {}, time: {}ms", 
+                serviceName, instanceId, healthy, responseTime);
+    }
+
+    /**
+     * Record audit event
+     */
+    public void recordAuditEvent(String eventType, String severity, String outcome) {
+        Counter.builder("sidecar.audit.events")
+                .tag("event_type", eventType)
+                .tag("severity", severity)
+                .tag("outcome", outcome)
+                .description("Audit events recorded")
+                .register(meterRegistry)
+                .increment();
+        
+        log.debug("Recorded audit event: type={}, severity={}, outcome={}", eventType, severity, outcome);
+    }
 }

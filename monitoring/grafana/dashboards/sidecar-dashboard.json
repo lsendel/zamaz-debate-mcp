@@ -1,547 +1,476 @@
 {
-  "annotations": {
-    "list": [
+  "dashboard": {
+    "id": null,
+    "title": "MCP Sidecar Dashboard",
+    "tags": ["mcp", "sidecar", "monitoring"],
+    "timezone": "browser",
+    "panels": [
       {
-        "builtIn": 1,
-        "datasource": "-- Grafana --",
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
+        "id": 1,
+        "title": "Request Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(sidecar_requests_total[5m])",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 100
+                }
+              ]
+            },
+            "unit": "reqps"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Response Time (95th percentile)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sidecar_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.1
+                },
+                {
+                  "color": "red",
+                  "value": 0.5
+                }
+              ]
+            },
+            "unit": "s"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(sidecar_requests_total{status=~\"4..|5..\"}[5m]) / rate(sidecar_requests_total[5m]) * 100",
+            "legendFormat": "Error %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 5
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sidecar_connections_active",
+            "legendFormat": "Active"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 100
+                },
+                {
+                  "color": "red",
+                  "value": 500
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        }
+      },
+      {
+        "id": 5,
+        "title": "Request Volume Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(sidecar_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "xAxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "show": true
+          }
+        ],
+        "legend": {
+          "show": true
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        }
+      },
+      {
+        "id": 6,
+        "title": "Response Time Distribution",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(sidecar_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(sidecar_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(sidecar_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "xAxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Duration (s)",
+            "show": true
+          }
+        ],
+        "legend": {
+          "show": true
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        }
+      },
+      {
+        "id": 7,
+        "title": "Authentication Success Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(sidecar_auth_success[5m]) / (rate(sidecar_auth_success[5m]) + rate(sidecar_auth_failure[5m])) * 100",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 95
+                },
+                {
+                  "color": "green",
+                  "value": 99
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 14
+        }
+      },
+      {
+        "id": 8,
+        "title": "Rate Limit Hits",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(sidecar_rate_limit_hits[5m])",
+            "legendFormat": "Hits/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 10
+                },
+                {
+                  "color": "red",
+                  "value": 50
+                }
+              ]
+            },
+            "unit": "reqps"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 14
+        }
+      },
+      {
+        "id": 9,
+        "title": "Cache Hit Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sidecar_cache_hit_rate",
+            "legendFormat": "Hit Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.7
+                },
+                {
+                  "color": "green",
+                  "value": 0.9
+                }
+              ]
+            },
+            "unit": "percentunit"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 14
+        }
+      },
+      {
+        "id": 10,
+        "title": "AI Service Availability",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sidecar_ai_availability",
+            "legendFormat": "Availability"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.95
+                },
+                {
+                  "color": "green",
+                  "value": 0.99
+                }
+              ]
+            },
+            "unit": "percentunit"
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 14
+        }
+      },
+      {
+        "id": 11,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sidecar_memory_used / 1024 / 1024",
+            "legendFormat": "Memory Used (MB)"
+          }
+        ],
+        "xAxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yAxes": [
+          {
+            "label": "Memory (MB)",
+            "show": true
+          }
+        ],
+        "legend": {
+          "show": true
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "id": 12,
+        "title": "Security Threats by Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "increase(security_threats_detected_total[1h])",
+            "legendFormat": "{{threat_type}}"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": ""
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        }
       }
-    ]
-  },
-  "editable": true,
-  "gnetId": null,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [],
-  "panels": [
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(http_server_requests_seconds_count{job=\"mcp-sidecar\"}[5m])",
-          "interval": "",
-          "legendFormat": "{{method}} {{uri}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Sidecar Request Rate",
-      "type": "timeseries"
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
     },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"mcp-sidecar\"}[5m])) by (le))",
-          "interval": "",
-          "legendFormat": "95th percentile",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"mcp-sidecar\"}[5m])) by (le))",
-          "interval": "",
-          "legendFormat": "50th percentile",
-          "refId": "B"
-        }
-      ],
-      "title": "Sidecar Response Time",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "id": 3,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(http_server_requests_seconds_count{job=\"mcp-sidecar\",status=~\"4.*\"}[5m])",
-          "interval": "",
-          "legendFormat": "4xx errors",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(http_server_requests_seconds_count{job=\"mcp-sidecar\",status=~\"5.*\"}[5m])",
-          "interval": "",
-          "legendFormat": "5xx errors",
-          "refId": "B"
-        }
-      ],
-      "title": "Sidecar Error Rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "expr": "jvm_memory_used_bytes{job=\"mcp-sidecar\",area=\"heap\"}",
-          "interval": "",
-          "legendFormat": "Heap Used",
-          "refId": "A"
-        },
-        {
-          "expr": "jvm_memory_max_bytes{job=\"mcp-sidecar\",area=\"heap\"}",
-          "interval": "",
-          "legendFormat": "Heap Max",
-          "refId": "B"
-        }
-      ],
-      "title": "Sidecar JVM Memory Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "expr": "resilience4j_circuitbreaker_state{job=\"mcp-sidecar\"}",
-          "interval": "",
-          "legendFormat": "{{name}} - {{state}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Circuit Breaker Status",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(spring_security_authentication_success_total{job=\"mcp-sidecar\"}[5m])",
-          "interval": "",
-          "legendFormat": "Authentication Success",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(spring_security_authentication_failure_total{job=\"mcp-sidecar\"}[5m])",
-          "interval": "",
-          "legendFormat": "Authentication Failure",
-          "refId": "B"
-        }
-      ],
-      "title": "Authentication Metrics",
-      "type": "timeseries"
-    }
-  ],
-  "schemaVersion": 27,
-  "style": "dark",
-  "tags": [
-    "mcp",
-    "sidecar",
-    "security"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "MCP Sidecar Dashboard",
-  "uid": "mcp-sidecar",
-  "version": 1
+    "timepicker": {},
+    "timezone": "",
+    "refresh": "5s",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
 }

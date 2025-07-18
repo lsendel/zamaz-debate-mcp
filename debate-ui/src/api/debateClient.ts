@@ -27,18 +27,21 @@ export interface Round {
 
 export interface Debate {
   id: string;
+  title?: string;
   topic: string;
   description?: string;
-  status: "created" | "in_progress" | "completed" | "cancelled";
-  participants: Participant[];
-  rounds: Round[];
-  maxRounds: number;
-  currentRound: number;
+  status: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  format?: string;
+  participants: string[] | Participant[]; // Can be either strings or objects
+  rounds?: Round[];
+  maxRounds?: number;
+  currentRound?: number;
   turnTimeLimit?: number;
-  organizationId: string;
+  organizationId?: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  createdBy?: string;
   winner?: string;
   summary?: string;
 }
@@ -81,7 +84,16 @@ class DebateClient extends BaseApiClient {
 
   // Debate management
   async createDebate(data: CreateDebateRequest): Promise<Debate> {
-    return this.callTool("create_debate", data);
+    const response = await this.client.post("/debates", {
+      title: data.topic, // Use topic as title for now
+      topic: data.topic,
+      description: data.description,
+      format: "OXFORD", // Default format
+      participants: data.participants.map(p => p.name), // Simplified for now
+      maxRounds: data.maxRounds,
+      turnTimeLimit: data.turnTimeLimit
+    });
+    return response.data;
   }
 
   async getDebate(id: string): Promise<Debate> {
@@ -99,19 +111,26 @@ class DebateClient extends BaseApiClient {
   }
 
   async startDebate(debateId: string): Promise<void> {
-    return this.callTool("start_debate", { debate_id: debateId });
+    const response = await this.client.post(`/debates/${debateId}/start`);
+    return response.data;
   }
 
   async pauseDebate(debateId: string): Promise<void> {
-    return this.callTool("pause_debate", { debate_id: debateId });
+    // For now, just update the status to paused
+    const response = await this.client.put(`/debates/${debateId}`, { status: 'PAUSED' });
+    return response.data;
   }
 
   async resumeDebate(debateId: string): Promise<void> {
-    return this.callTool("resume_debate", { debate_id: debateId });
+    // For now, just update the status to in_progress
+    const response = await this.client.put(`/debates/${debateId}`, { status: 'IN_PROGRESS' });
+    return response.data;
   }
 
   async cancelDebate(debateId: string): Promise<void> {
-    return this.callTool("cancel_debate", { debate_id: debateId });
+    // For now, just update the status to cancelled
+    const response = await this.client.put(`/debates/${debateId}`, { status: 'CANCELLED' });
+    return response.data;
   }
 
   // Participant management
@@ -119,20 +138,16 @@ class DebateClient extends BaseApiClient {
     debateId: string,
     participant: Omit<Participant, "id">,
   ): Promise<Participant> {
-    return this.callTool("add_participant", {
-      debate_id: debateId,
-      ...participant,
-    });
+    const response = await this.client.post(`/debates/${debateId}/participants`, participant);
+    return response.data;
   }
 
   async removeParticipant(
     debateId: string,
     participantId: string,
   ): Promise<void> {
-    return this.callTool("remove_participant", {
-      debate_id: debateId,
-      participant_id: participantId,
-    });
+    const response = await this.client.delete(`/debates/${debateId}/participants/${participantId}`);
+    return response.data;
   }
 
   async updateParticipant(
@@ -165,11 +180,11 @@ class DebateClient extends BaseApiClient {
     participantId: string,
     content: string,
   ): Promise<Response> {
-    return this.callTool("submit_response", {
-      debate_id: debateId,
-      participant_id: participantId,
-      content,
+    const response = await this.client.post(`/debates/${debateId}/responses`, {
+      participantId,
+      content
     });
+    return response.data;
   }
 
   // WebSocket connection for live updates

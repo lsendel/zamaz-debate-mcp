@@ -1,0 +1,172 @@
+spring:
+  application:
+    name: mcp-sidecar-test
+  
+  profiles:
+    active: test
+  
+  # Redis Configuration for Tests
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    timeout: 1000ms
+    jedis:
+      pool:
+        max-active: 2
+        max-idle: 2
+        min-idle: 0
+        max-wait: 100ms
+  
+  # Security Configuration
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
+# JWT Configuration for Tests
+jwt:
+  secret: test-secret-key-for-unit-tests
+  issuer: test-issuer
+  expiration: 3600 # 1 hour
+  refresh-expiration: 7200 # 2 hours
+
+# Rate Limiting Configuration for Tests
+rate-limit:
+  redis-rate-limiter:
+    replenish-rate: 100
+    burst-capacity: 200
+    requested-tokens: 1
+
+# Circuit Breaker Configuration for Tests
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 2
+    instances:
+      test-service:
+        base-config: default
+
+# Logging Configuration for Tests
+logging:
+  level:
+    com.zamaz.mcp.sidecar: DEBUG
+    org.springframework.security: WARN
+    org.springframework.cloud.gateway: WARN
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator Configuration for Tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Application Configuration for Tests
+app:
+  name: mcp-sidecar-test
+  version: 1.0.0-test
+  
+  # CORS Configuration
+  cors:
+    allowed-origins: "http://localhost:3000,http://localhost:3001"
+    allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+  
+  # AI Service Configuration for Tests
+  ai:
+    services:
+      gpt-4:
+        url: http://localhost:5002
+        model: gpt-4
+        priority: 1
+        timeout: 5s
+      test-model:
+        url: http://localhost:5002
+        model: test-model
+        priority: 2
+        timeout: 5s
+    
+    load-balancer:
+      strategy: round-robin
+      health-check:
+        interval: 10s
+        timeout: 2s
+        unhealthy-threshold: 2
+        healthy-threshold: 1
+  
+  # Metrics Configuration for Tests
+  metrics:
+    enabled: true
+    prefix: test.sidecar
+    collection:
+      interval: 5s
+    cleanup:
+      interval: 30s
+    retention:
+      period: 1h
+    export:
+      enabled: true
+      interval: 10s
+  
+  # Cache Configuration for Tests
+  cache:
+    enabled: true
+    default-ttl: 60
+    ai-response-ttl: 300
+    auth-token-ttl: 600
+    user-session-ttl: 3600
+    organization-data-ttl: 600
+  
+  # Tracing Configuration for Tests
+  tracing:
+    enabled: true
+    sampling-rate: 1.0
+    service-name: mcp-sidecar-test
+  
+  # Security Configuration for Tests
+  security:
+    scanning:
+      enabled: true
+      strict-mode: false
+      max-payload-size: 1024
+    threat-intelligence:
+      enabled: false
+      api-url: ""
+      update-interval: 1h
+    cleanup:
+      interval: 10s
+
+# Test-specific properties
+test:
+  timeout: 10s
+  redis:
+    cleanup: true
+  containers:
+    startup-timeout: 60s
+  integration:
+    enabled: true
+  performance:
+    enabled: false
+  security:
+    enabled: true

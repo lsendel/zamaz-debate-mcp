@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # MCP Sidecar Service
+  # MCP Sidecar
   mcp-sidecar:
     build:
       context: ./mcp-sidecar
@@ -9,30 +9,31 @@ services:
     image: zamaz/mcp-sidecar:latest
     container_name: mcp-sidecar
     ports:
-      - "${MCP_SIDECAR_PORT:-8080}:8080"
+      - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=production
-      - MCP_SIDECAR_PORT=8080
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis-password}
-      - JWT_SECRET=${JWT_SECRET:-mcp-sidecar-secret-key-change-in-production}
-      - JWT_ISSUER=zamaz-mcp-sidecar
-      - JWT_EXPIRATION=86400
-      - JWT_REFRESH_EXPIRATION=604800
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-mcp-sidecar-production-secret}
+      - JWT_ISSUER=${JWT_ISSUER:-zamaz-mcp-sidecar}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-604800}
       - ORGANIZATION_SERVICE_URL=http://mcp-organization:5005
       - LLM_SERVICE_URL=http://mcp-llm:5002
-      - CONTROLLER_SERVICE_URL=http://mcp-controller:5013
+      - CONTROLLER_SERVICE_URL=http://mcp-debate:5013
       - RAG_SERVICE_URL=http://mcp-rag:5004
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-      - LOG_LEVEL=INFO
-      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
+      - RATE_LIMIT_REPLENISH_RATE=${RATE_LIMIT_REPLENISH_RATE:-10}
+      - RATE_LIMIT_BURST_CAPACITY=${RATE_LIMIT_BURST_CAPACITY:-20}
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - CACHE_ENABLED=${CACHE_ENABLED:-true}
+      - TRACING_ENABLED=${TRACING_ENABLED:-true}
+      - SECURITY_SCANNING_ENABLED=${SECURITY_SCANNING_ENABLED:-true}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       - redis
-      - mcp-organization
-      - mcp-llm
-      - mcp-controller
-      - mcp-rag
+      - prometheus
     networks:
       - mcp-network
     restart: unless-stopped
@@ -43,149 +44,78 @@ services:
       retries: 3
       start_period: 60s
     volumes:
-      - sidecar-logs:/app/logs
+      - ./logs/sidecar:/app/logs
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sidecar.rule=Host(`sidecar.localhost`)"
-      - "traefik.http.routers.sidecar.entrypoints=web"
-      - "traefik.http.services.sidecar.loadbalancer.server.port=8080"
+      - "traefik.http.routers.mcp-sidecar.rule=PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.mcp-sidecar.middlewares=auth"
+      - "traefik.http.services.mcp-sidecar.loadbalancer.server.port=8080"
 
-  # Redis for session management and rate limiting
+  # Redis for caching and session management
   redis:
     image: redis:7-alpine
     container_name: mcp-redis
     ports:
-      - "${REDIS_PORT:-6379}:6379"
-    command: redis-server --requirepass ${REDIS_PASSWORD:-redis-password}
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis-password}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     volumes:
-      - redis-data:/data
-      - ./redis.conf:/etc/redis/redis.conf
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - mcp-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
       retries: 3
-    sysctls:
-      - net.core.somaxconn=65535
 
-  # Existing services (referenced for completeness)
-  mcp-organization:
-    image: zamaz/mcp-organization:latest
-    container_name: mcp-organization
-    expose:
-      - "5005"
-    environment:
-      - SPRING_PROFILES_ACTIVE=production
-      - MCP_ORGANIZATION_PORT=5005
-    networks:
-      - mcp-network
-    restart: unless-stopped
-
-  mcp-llm:
-    image: zamaz/mcp-llm:latest
-    container_name: mcp-llm
-    expose:
-      - "5002"
-    environment:
-      - SPRING_PROFILES_ACTIVE=production
-      - MCP_LLM_PORT=5002
-    networks:
-      - mcp-network
-    restart: unless-stopped
-
-  mcp-controller:
-    image: zamaz/mcp-controller:latest
-    container_name: mcp-controller
-    expose:
-      - "5013"
-    environment:
-      - SPRING_PROFILES_ACTIVE=production
-      - MCP_CONTROLLER_PORT=5013
-    networks:
-      - mcp-network
-    restart: unless-stopped
-
-  mcp-rag:
-    image: zamaz/mcp-rag:latest
-    container_name: mcp-rag
-    expose:
-      - "5004"
-    environment:
-      - SPRING_PROFILES_ACTIVE=production
-      - MCP_RAG_PORT=5004
-    networks:
-      - mcp-network
-    restart: unless-stopped
-
-  # Monitoring and observability
+  # Prometheus for metrics collection
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: mcp-prometheus
     ports:
       - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     networks:
       - mcp-network
     restart: unless-stopped
+    depends_on:
+      - mcp-sidecar
 
+  # Grafana for monitoring dashboards
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: mcp-grafana
     ports:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
-      - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - mcp-network
+    restart: unless-stopped
     depends_on:
       - prometheus
-    networks:
-      - mcp-network
-    restart: unless-stopped
-
-  # Reverse proxy for load balancing
-  traefik:
-    image: traefik:v3.0
-    container_name: traefik
-    ports:
-      - "80:80"
-      - "8080:8080"
-    command:
-      - --api.insecure=true
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - mcp-network
-    restart: unless-stopped
 
 volumes:
-  redis-data:
-    driver: local
-  sidecar-logs:
-    driver: local
-  prometheus-data:
-    driver: local
-  grafana-data:
-    driver: local
+  redis_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   mcp-network:
