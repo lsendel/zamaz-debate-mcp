@@ -38,7 +38,7 @@ GRAFANA_PORT ?= 3000
 LOKI_PORT ?= 3100
 OLLAMA_PORT ?= 11434
 
-.PHONY: help setup start stop restart build clean test lint status logs ui health check-env install
+.PHONY: help setup start stop restart build clean test lint status logs ui health check-env install hooks
 
 # =============================================================================
 # HELP & DOCUMENTATION
@@ -97,12 +97,18 @@ help: ## 📚 Show this help message
 # SETUP & ENVIRONMENT
 # =============================================================================
 
-setup: check-deps check-env install ## 🛠️ Complete project setup (run this first!)
+setup: check-deps check-env install hooks ## 🛠️ Complete project setup (run this first!)
 	@echo "$(GREEN)✅ Project setup complete!$(NC)"
 	@echo "$(YELLOW)Next steps:$(NC)"
 	@echo "  1. Edit .env with your API keys if needed"
 	@echo "  2. Run '$(CYAN)make dev$(NC)' to start development"
 	@echo "  3. Open $(CYAN)http://localhost:$(UI_PORT)$(NC) in your browser"
+
+hooks: ## 🔗 Install git hooks for code quality
+	@echo "$(BLUE)Installing git hooks...$(NC)"
+	@chmod +x scripts/setup/install-git-hooks.sh
+	@./scripts/setup/install-git-hooks.sh
+	@echo "$(GREEN)✅ Git hooks installed$(NC)"
 
 check-deps: ## 🔍 Check if required tools are installed
 	@echo "$(BLUE)Checking dependencies...$(NC)"

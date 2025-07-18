@@ -784,7 +784,7 @@ alerting:
 
         logging_dir = self.github_integration_dir / "src" / "main" / "java" / "com" / "zamaz" / "github" / "logging"
         logging_dir.mkdir(parents=True, exist_ok=True)
-        
+
         resources_dir = self.github_integration_dir / "src" / "main" / "resources"
         resources_dir.mkdir(parents=True, exist_ok=True)
 

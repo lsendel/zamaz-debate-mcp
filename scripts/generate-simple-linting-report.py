@@ -36,8 +36,8 @@ def get_python_issues():
 
                     line_num = issue["location"]["row"]
                     issue["line_content"] = lines[line_num - 1].strip() if line_num <= len(lines) else ""
-                    issue["context_before"] = [l.strip() for l in lines[max(0, line_num - 3) : line_num - 1]]
-                    issue["context_after"] = [l.strip() for l in lines[line_num : min(len(lines), line_num + 2)]]
+                    issue["context_before"] = [line.strip() for line in lines[max(0, line_num - 3) : line_num - 1]]
+                    issue["context_after"] = [line.strip() for line in lines[line_num : min(len(lines), line_num + 2)]]
                 except:
                     issue["line_content"] = ""
                     issue["context_before"] = []

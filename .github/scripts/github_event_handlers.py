@@ -7,7 +7,6 @@ This module contains handlers for different GitHub webhook events.
 import logging
 import os
 import re
-from typing import List, Tuple
 
 import requests
 from github_auth import GitHubCredentialManager
@@ -443,7 +442,7 @@ def process_review_feedback(review, pr, repository, installation_id):
         logger.error(f"Error processing feedback: {e!s}")
 
 
-def analyze_feedback_sentiment(text: str) -> Tuple[str, int]:
+def analyze_feedback_sentiment(text: str) -> tuple[str, int]:
     """Analyze the sentiment of feedback text."""
     text_lower = text.lower()
 
@@ -473,7 +472,7 @@ def analyze_feedback_sentiment(text: str) -> Tuple[str, int]:
         return "neutral", 3
 
 
-def extract_mentioned_rules(text: str) -> List[Tuple[str, str]]:
+def extract_mentioned_rules(text: str) -> list[tuple[str, str]]:
     """Extract mentioned rules from feedback text."""
     # Look for rule patterns in the text
     rule_patterns = [

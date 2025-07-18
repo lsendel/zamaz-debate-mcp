@@ -6,7 +6,6 @@ formatting, and general quality issues.
 """
 
 import re
-from typing import Optional
 
 from ..core.interfaces import CodeIssue, IssueLevel
 from .base_analyzer import AnalysisStrategy, AnalyzerContext
@@ -92,7 +91,7 @@ class StyleGuideStrategy(AnalysisStrategy):
 
         return issues
 
-    def _check_rule(self, rule: dict, line: str, line_num: int, context: AnalyzerContext) -> Optional[CodeIssue]:
+    def _check_rule(self, rule: dict, line: str, line_num: int, context: AnalyzerContext) -> CodeIssue | None:
         """Check a single style rule."""
         # Simple check function
         if "check" in rule and rule["check"](line):

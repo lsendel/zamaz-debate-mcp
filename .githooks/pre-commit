@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Pre-commit hook for build validation
+# Pre-commit hook for build validation and documentation quality
 # Install with: git config core.hooksPath .githooks
 
 set -e
 
-echo "🔍 Running pre-commit build validation..."
+echo "🔍 Running pre-commit validation..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -78,6 +78,25 @@ if [ "$declared_modules" != "$actual_modules" ]; then
     print_status $YELLOW "Declared modules: $declared_modules"
     print_status $YELLOW "Actual modules: $actual_modules"
     exit 1
+fi
+
+# Check for personal notes in documentation files
+print_status $YELLOW "📝 Checking documentation quality..."
+if git diff --cached --name-only | grep -E '\.(md|txt)$' | xargs grep -l -E 'TODO|FIXME|NOTE:|see my|my note' > /dev/null 2>&1; then
+    print_status $RED "❌ Found personal notes in documentation files."
+    print_status $RED "Please remove personal notes before committing."
+    git diff --cached --name-only | grep -E '\.(md|txt)$' | xargs grep -n -E 'TODO|FIXME|NOTE:|see my|my note' 2>/dev/null
+    exit 1
+fi
+
+# Run markdown linting if available
+if command -v markdownlint &> /dev/null && git diff --cached --name-only | grep -q '\.md$'; then
+    print_status $YELLOW "📋 Running markdown linting..."
+    if ! git diff --cached --name-only | grep -E '\.md$' | xargs markdownlint 2>/dev/null; then
+        print_status $RED "❌ Markdown linting failed."
+        print_status $RED "Please fix the issues before committing."
+        exit 1
+    fi
 fi
 
 print_status $GREEN "✅ All pre-commit checks passed!"

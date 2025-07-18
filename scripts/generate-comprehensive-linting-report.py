@@ -55,7 +55,7 @@ class ComprehensiveLintingReporter:
                 "lines": len(lines),
                 "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                 "encoding": "utf-8",
-                "empty_lines": len([l for l in lines if not l.strip()]),
+                "empty_lines": len([line for line in lines if not line.strip()]),
                 "comment_lines": self._count_comment_lines(content, file_path),
             }
         except Exception as e:

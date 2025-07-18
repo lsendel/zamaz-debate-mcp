@@ -7,7 +7,7 @@ that manages service lifecycles and dependencies.
 
 import inspect
 from collections.abc import Callable
-from typing import Any, Tuple, TypeVar
+from typing import Any, TypeVar
 
 from .exceptions import ConfigurationError, ServiceError
 
@@ -26,7 +26,7 @@ class ServiceContainer:
     """
 
     def __init__(self):
-        self._services: dict[type, Tuple[Any, bool]] = {}
+        self._services: dict[type, tuple[Any, bool]] = {}
         self._singletons: dict[type, Any] = {}
         self._factories: dict[type, Callable] = {}
         self._config: dict[str, Any] = {}

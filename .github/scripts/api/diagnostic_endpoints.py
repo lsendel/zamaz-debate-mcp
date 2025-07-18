@@ -7,6 +7,7 @@ Provides endpoints for:
 - Request tracing
 - Performance profiling
 """
+# ruff: noqa: B008
 
 import asyncio
 from datetime import datetime, timedelta
