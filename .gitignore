@@ -82,3 +82,7 @@ mcp-organization/src/main/resources/application-simple.yml
 # Generated reports (keep docs directory for GitHub Pages)
 sonar-reports/
 tools/sonar-cnes-report*.jar
+.github/scripts/analyzers/__pycache__/
+.github/tests/__pycache__/
+scripts/sonarqube/__pycache__/
+.kiro/specs/.DS_Store
