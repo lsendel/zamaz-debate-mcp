@@ -225,7 +225,7 @@ class CodeAnalyzer:
 
             # Try to run pyflakes if available
             try:
-                result = subprocess.run(["pyflakes", full_path], capture_output=True, text=True, check=False)  # noqa: S603
+                result = subprocess.run(["pyflakes", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607
 
                 if result.returncode != 0:
                     # Parse pyflakes output

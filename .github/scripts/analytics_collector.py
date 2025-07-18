@@ -5,10 +5,10 @@ This module collects and stores analytics data for code reviews and feedback.
 """
 
 import logging
-import os
 import sqlite3
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 # Configure logging
@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger("kiro_analytics")
 
 # Constants
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "data", "analytics.db")
+DEFAULT_DB_PATH = Path(__file__).parent / ".." / ".." / ".kiro" / "data" / "analytics.db"
 
 
 class AnalyticsCollector:
@@ -31,7 +31,7 @@ class AnalyticsCollector:
         self.db_path = db_path or DEFAULT_DB_PATH
 
         # Ensure directory exists
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
 
         # Initialize database
         self._init_db()

@@ -1323,8 +1323,8 @@ class OutdatedDocumentationDetector:
         # Get git history for file modifications
         try:
             # Get recently modified code files
-            result = subprocess.run(
-                ["git", "log", "--name-only", "--pretty=format:", "--since=30 days ago"],
+            result = subprocess.run(  # noqa: S603
+                ["git", "log", "--name-only", "--pretty=format:", "--since=30 days ago"],  # noqa: S607
                 cwd=project_path,
                 capture_output=True,
                 text=True,

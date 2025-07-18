@@ -296,8 +296,8 @@ class ConfigManager:
                 self.github.get(contents_url)
                 logger.warning(f"Configuration file already exists in {repo_owner}/{repo_name}")
                 return False
-            except Exception:
-                # File doesn't exist, create it
+            except Exception:  # noqa: S110
+                # File doesn't exist, create it (expected behavior)
                 pass
 
             # Create the file

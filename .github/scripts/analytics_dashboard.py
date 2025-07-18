@@ -7,6 +7,7 @@ This module provides a web-based dashboard for viewing analytics and insights.
 import logging
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from analytics_collector import get_feedback_stats, get_metrics, get_review_stats, get_top_issues
 from flask import Flask, jsonify, render_template, request
@@ -522,12 +523,12 @@ def create_dashboard_html():
     """
 
     # Create templates directory
-    templates_dir = os.path.join(os.path.dirname(__file__), "templates")
-    os.makedirs(templates_dir, exist_ok=True)
+    templates_dir = Path(__file__).parent / "templates"
+    templates_dir.mkdir(exist_ok=True)
 
     # Write the HTML template
-    with open(os.path.join(templates_dir, "dashboard.html"), "w") as f:
-        f.write(html_content)
+    dashboard_path = Path(templates_dir) / "dashboard.html"
+    dashboard_path.write_text(html_content, encoding="utf-8")
 
 
 def main():

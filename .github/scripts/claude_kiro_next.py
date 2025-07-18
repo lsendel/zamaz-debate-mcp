@@ -25,9 +25,8 @@ class KiroNextCommand:
             if not tasks_file.exists():
                 continue
 
-            with open(tasks_file) as f:
-                content = f.read()
-                lines = content.split("\n")
+            content = tasks_file.read_text(encoding="utf-8")
+            lines = content.split("\n")
 
             # Track parent task for subtasks
             current_parent = None
@@ -75,14 +74,13 @@ class KiroNextCommand:
     def mark_task_complete(self, task: dict) -> bool:
         """Mark a task as complete in the file."""
         try:
-            with open(task["file"]) as f:
-                lines = f.readlines()
+            task_file = Path(task["file"])
+            lines = task_file.read_text(encoding="utf-8").splitlines(keepends=True)
 
             # Replace [ ] with [x]
             lines[task["line"]] = lines[task["line"]].replace("- [ ]", "- [x]", 1)
 
-            with open(task["file"], "w") as f:
-                f.writelines(lines)
+            task_file.write_text("".join(lines), encoding="utf-8")
 
             return True
         except Exception:
