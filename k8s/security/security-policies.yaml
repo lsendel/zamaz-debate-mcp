@@ -1,0 +1,581 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: mcp-restricted
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  seLinux:
+    rule: 'RunAsAny'
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: mcp-database-restricted
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  allowedCapabilities:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  seLinux:
+    rule: 'RunAsAny'
+---
+# Network Policies for Zero Trust Architecture
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-default-deny-all
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-gateway-policy
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-gateway
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow ingress from Istio gateway
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow health checks from monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow connection to other MCP services
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mcp-organization
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mcp-context
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mcp-debate
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mcp-llm
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mcp-rag
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-llm-policy
+  namespace: production
+  labels:
+    app: mcp-llm
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-llm
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow ingress from gateway and debate services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mcp-gateway
+    - podSelector:
+        matchLabels:
+          app: mcp-debate
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow external AI API calls (OpenAI, Anthropic, Google)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow connection to Redis for caching
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-context-policy
+  namespace: production
+  labels:
+    app: mcp-context
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-context
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow ingress from gateway, debate, and rag services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mcp-gateway
+    - podSelector:
+        matchLabels:
+          app: mcp-debate
+    - podSelector:
+        matchLabels:
+          app: mcp-rag
+    - podSelector:
+        matchLabels:
+          app: mcp-organization
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow connection to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow connection to Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-database-policy
+  namespace: production
+  labels:
+    app: postgresql
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow connections from MCP services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mcp-context
+    - podSelector:
+        matchLabels:
+          app: mcp-organization
+    - podSelector:
+        matchLabels:
+          app: mcp-debate
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  # Allow DNS resolution only
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Security Contexts for Containers
+apiVersion: v1
+kind: SecurityContext
+metadata:
+  name: mcp-security-context
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+  seccompProfile:
+    type: RuntimeDefault
+---
+# RBAC Policies
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: production
+  name: mcp-service-role
+  labels:
+    app: mcp-debate
+    component: security
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mcp-service-binding
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+subjects:
+- kind: ServiceAccount
+  name: mcp-gateway
+  namespace: production
+- kind: ServiceAccount
+  name: mcp-organization
+  namespace: production
+- kind: ServiceAccount
+  name: mcp-context
+  namespace: production
+- kind: ServiceAccount
+  name: mcp-llm
+  namespace: production
+- kind: ServiceAccount
+  name: mcp-debate
+  namespace: production
+- kind: ServiceAccount
+  name: mcp-rag
+  namespace: production
+roleRef:
+  kind: Role
+  name: mcp-service-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Secrets Management
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcp-app-secrets
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+  annotations:
+    reloader.stakater.com/match: "true"
+type: Opaque
+stringData:
+  # Database credentials (these should be injected from external secret management)
+  database-url: "postgresql://app_user:${DB_PASSWORD}@postgresql.production:5432/debate_db"
+  redis-url: "redis://redis.production:6379/0"
+  
+  # API Keys (should be rotated regularly)
+  openai-api-key: "${OPENAI_API_KEY}"
+  anthropic-api-key: "${ANTHROPIC_API_KEY}"
+  google-ai-api-key: "${GOOGLE_AI_API_KEY}"
+  
+  # JWT signing keys
+  jwt-secret: "${JWT_SECRET}"
+  jwt-issuer: "https://auth.mcp-debate.com"
+  
+  # Encryption keys
+  encryption-key: "${ENCRYPTION_KEY}"
+  
+  # External service credentials
+  slack-webhook-url: "${SLACK_WEBHOOK_URL}"
+  smtp-password: "${SMTP_PASSWORD}"
+---
+# Certificate Management
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mcp-tls-certificate
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  secretName: mcp-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: api.mcp-debate.com
+  dnsNames:
+  - api.mcp-debate.com
+  - staging.mcp-debate.com
+  - admin.mcp-debate.com
+  - grafana.mcp-debate.com
+  - prometheus.mcp-debate.com
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: security@mcp-debate.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: alb
+    - dns01:
+        route53:
+          region: us-east-1
+          hostedZoneID: Z1D633PJN98FT9
+          accessKeyID: AKIAIOSFODNN7EXAMPLE
+          secretAccessKeySecretRef:
+            name: route53-credentials
+            key: secret-access-key
+---
+# Pod Disruption Budgets for Security Services
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mcp-security-pdb
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      security: critical
+---
+# Resource Quotas for Security
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mcp-security-quota
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: security
+spec:
+  hard:
+    secrets: "50"
+    configmaps: "50"
+    persistentvolumeclaims: "20"
+    services: "20"
+    count/networkpolicies.networking.k8s.io: "20"
+    count/podsecuritypolicies.policy: "10"
+---
+# Security Monitoring ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-security-monitor
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: security-monitoring
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-security-monitor
+  labels:
+    app: mcp-debate
+    component: security-monitoring
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "services", "endpoints", "secrets", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies", "ingresses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["policy"]
+  resources: ["podsecuritypolicies", "poddisruptionbudgets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["security.istio.io"]
+  resources: ["authorizationpolicies", "peerauthentications", "requestauthentications"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-security-monitor
+  labels:
+    app: mcp-debate
+    component: security-monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-security-monitor
+subjects:
+- kind: ServiceAccount
+  name: mcp-security-monitor
+  namespace: monitoring
