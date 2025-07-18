@@ -1,0 +1,191 @@
+name: Build Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly to catch dependency issues
+    - cron: '0 2 * * *'
+
+jobs:
+  build-validation:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [21]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java-version }}
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Validate Maven Project Structure
+      run: |
+        echo "Validating Maven project structure..."
+        if [ ! -f pom.xml ]; then
+          echo "ERROR: Root pom.xml not found"
+          exit 1
+        fi
+        
+        # Check for circular dependencies
+        mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:tree \
+          -DoutputType=dot -DoutputFile=dependency-tree.dot
+        
+        if grep -q "cyclic" dependency-tree.dot; then
+          echo "ERROR: Circular dependencies detected"
+          cat dependency-tree.dot
+          exit 1
+        fi
+
+    - name: Compile with Maven
+      run: |
+        echo "Compiling all modules..."
+        mvn clean compile -B -V -T 1C \
+          -Dmaven.compiler.failOnError=true \
+          -Dmaven.compiler.showWarnings=true
+
+    - name: Run Unit Tests
+      run: |
+        echo "Running unit tests..."
+        mvn test -B -V \
+          -Dmaven.test.failure.ignore=false \
+          -Djacoco.skip=false
+
+    - name: Check Code Quality
+      run: |
+        echo "Running code quality checks..."
+        mvn verify -B -V \
+          -Pcode-quality \
+          -Dmaven.test.skip=true \
+          -Dcheckstyle.failOnViolation=true \
+          -Dspotbugs.failOnError=true
+
+    - name: Dependency Security Scan
+      run: |
+        echo "Running dependency security scan..."
+        mvn org.owasp:dependency-check-maven:check \
+          -DfailBuildOnCVSS=7 \
+          -DskipTestScope=false
+
+    - name: Package Applications
+      run: |
+        echo "Packaging applications..."
+        mvn package -B -V \
+          -Dmaven.test.skip=true \
+          -Dmaven.javadoc.skip=true
+
+    - name: Validate Docker Images
+      run: |
+        echo "Validating Docker configurations..."
+        for dockerfile in $(find . -name "Dockerfile" -not -path "./target/*"); do
+          echo "Validating $dockerfile"
+          docker build --no-cache -f "$dockerfile" -t test-image .
+          docker rmi test-image
+        done
+
+    - name: Check for Build Artifacts
+      run: |
+        echo "Checking for build artifacts..."
+        find . -name "*.jar" -not -path "./target/*" -not -path "./.m2/*" | while read jar; do
+          echo "Found JAR: $jar"
+          if [[ "$jar" == *"-SNAPSHOT.jar" ]]; then
+            echo "Checking JAR contents..."
+            jar tf "$jar" | head -10
+          fi
+        done
+
+    - name: Generate Build Report
+      if: always()
+      run: |
+        echo "Generating build validation report..."
+        cat > build-report.md << EOF
+        # Build Validation Report
+        
+        **Date:** $(date)
+        **Java Version:** ${{ matrix.java-version }}
+        **Maven Version:** $(mvn --version | head -1)
+        
+        ## Module Status
+        EOF
+        
+        for module in $(find . -name "pom.xml" -not -path "./target/*" -exec dirname {} \;); do
+          module_name=$(basename "$module")
+          if [ -f "$module/target/classes" ] || [ -d "$module/target/classes" ]; then
+            echo "- ✅ $module_name: Build successful" >> build-report.md
+          else
+            echo "- ❌ $module_name: Build failed" >> build-report.md
+          fi
+        done
+
+    - name: Upload Build Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-validation-report
+        path: build-report.md
+
+  dependency-validation:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Check for Version Conflicts
+      run: |
+        echo "Checking for dependency version conflicts..."
+        mvn dependency:tree -Dverbose | grep -E "(omitted|conflicts)" > conflicts.txt || true
+        
+        if [ -s conflicts.txt ]; then
+          echo "WARNING: Dependency conflicts detected:"
+          cat conflicts.txt
+          echo "Consider adding explicit dependency management."
+        else
+          echo "✅ No dependency conflicts detected"
+        fi
+
+    - name: Validate Parent POM Modules
+      run: |
+        echo "Validating parent POM module declarations..."
+        
+        # Extract modules from parent POM
+        grep -A 20 "<modules>" pom.xml | grep "<module>" | sed 's/.*<module>\(.*\)<\/module>.*/\1/' > declared-modules.txt
+        
+        # Find actual module directories
+        find . -maxdepth 2 -name "pom.xml" -not -path "./pom.xml" -exec dirname {} \; | sed 's|./||' | sort > actual-modules.txt
+        
+        # Compare lists
+        echo "Declared modules:"
+        cat declared-modules.txt
+        echo "Actual modules:"
+        cat actual-modules.txt
+        
+        if ! diff -q declared-modules.txt actual-modules.txt > /dev/null; then
+          echo "ERROR: Module mismatch detected!"
+          echo "Missing from parent POM:"
+          comm -23 actual-modules.txt declared-modules.txt
+          echo "Declared but not found:"
+          comm -13 actual-modules.txt declared-modules.txt
+          exit 1
+        else
+          echo "✅ All modules properly declared"
+        fi

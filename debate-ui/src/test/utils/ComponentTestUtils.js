@@ -186,14 +186,19 @@ export async function waitForLoadingToFinish() {
 export function mockApiResponse(url, response, options = {}) {
   const { method = 'GET', status = 200, delay = 0 } = options;
   
+  const createDelayedResponse = () => {
+    if (delay > 0) {
+      return new Promise(resolve => setTimeout(() => resolve(response), delay));
+    }
+    return Promise.resolve(response);
+  };
+
   global.fetch = jest.fn().mockImplementation((requestUrl, requestOptions = {}) => {
     if (requestUrl.includes(url) && (requestOptions.method || 'GET') === method) {
       return Promise.resolve({
         ok: status >= 200 && status < 300,
         status,
-        json: () => new Promise(resolve => {
-          setTimeout(() => resolve(response), delay);
-        }),
+        json: createDelayedResponse,
         text: () => Promise.resolve(JSON.stringify(response)),
       });
     }

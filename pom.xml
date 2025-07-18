@@ -88,6 +88,12 @@
         <module>mcp-debate-engine</module>
         <module>mcp-llm</module>
         <module>mcp-rag</module>
+        <module>mcp-gateway</module>
+        <module>mcp-testing</module>
+        <module>mcp-pattern-recognition</module>
+        <module>github-integration</module>
+        <module>load-tests</module>
+        <module>performance-tests/gatling</module>
         <!-- Legacy modules (to be phased out) -->
         <module>mcp-context</module>
         <module>mcp-controller</module>

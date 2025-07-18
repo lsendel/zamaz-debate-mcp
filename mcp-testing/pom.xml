@@ -19,8 +19,6 @@
     <properties>
         <pact.version>4.6.3</pact.version>
         <chaos-monkey-spring-boot.version>2.3.10</chaos-monkey-spring-boot.version>
-        <testcontainers.version>1.19.3</testcontainers.version>
-        <rest-assured.version>5.3.2</rest-assured.version>
         <owasp-dependency-check.version>9.0.7</owasp-dependency-check.version>
     </properties>
 
@@ -72,21 +70,18 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -94,24 +89,15 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${rest-assured.version}</version>
             <scope>test</scope>
         </dependency>
         
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>spring-mock-mvc</artifactId>
-            <version>${rest-assured.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- Security Testing -->
-        <dependency>
-            <groupId>org.owasp</groupId>
-            <artifactId>dependency-check-maven</artifactId>
-            <version>${owasp-dependency-check.version}</version>
-            <type>maven-plugin</type>
-        </dependency>
     </dependencies>
 
     <build>

@@ -188,49 +188,39 @@ public class McpToolsController {
             response.put("organizations", List.of(organization));
             response.put("count", 1);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in list_organizations: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error listing organizations: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "list_organizations", null);
         }
     }
     
     /**
      * Generic tool call handler for MCP protocol
      */
-    public Mono<JsonNode> callTool(String toolName, JsonNode params) {
+    public Mono<JsonNode> callTool(String toolName, JsonNode params, Authentication authentication) {
         Map<String, Object> paramsMap = objectMapper.convertValue(params, Map.class);
         
         ResponseEntity<Map<String, Object>> response;
         switch (toolName) {
             case "create_organization":
-                response = createOrganization(paramsMap);
+                response = createOrganization(paramsMap, authentication);
                 break;
             case "get_organization":
-                response = getOrganization(paramsMap);
+                response = getOrganization(paramsMap, authentication);
                 break;
             case "update_organization":
-                response = updateOrganization(paramsMap);
+                response = updateOrganization(paramsMap, authentication);
                 break;
             case "delete_organization":
-                response = deleteOrganization(paramsMap);
+                response = deleteOrganization(paramsMap, authentication);
                 break;
             case "add_user_to_organization":
-                response = addUserToOrganization(paramsMap);
+                response = addUserToOrganization(paramsMap, authentication);
                 break;
             case "remove_user_from_organization":
-                response = removeUserFromOrganization(paramsMap);
+                response = removeUserFromOrganization(paramsMap, authentication);
                 break;
             case "list_organizations":
-                response = listOrganizationsResource();
+                response = listOrganizationsResource(authentication);
                 break;
             default:
                 Map<String, Object> errorResponse = new HashMap<>();

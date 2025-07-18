@@ -30,16 +30,59 @@ let baselineResponseTimes = {};
 let isBaselineSet = false;
 const BASELINE_DURATION = 300000; // 5 minutes in ms
 
-export default function () {
-  const testStartTime = Date.now();
-  const endpoints = [
+// Helper function to get test endpoints
+function getTestEndpoints() {
+  return [
     { name: 'ListOrganizations', url: '/api/organization/list?page=0&size=20', method: 'GET' },
     { name: 'ListDebates', url: '/api/debate/list?page=0&size=20', method: 'GET' },
     { name: 'HealthCheck', url: '/health', method: 'GET' },
     { name: 'SearchDebates', url: '/api/debate/search?topic=test&page=0&size=10', method: 'GET' },
   ];
+}
 
-  // Randomly select an endpoint to test
+// Helper function to handle baseline tracking
+function handleBaseline(endpoint, response, testStartTime) {
+  if (testStartTime - __ITER * 1000 < BASELINE_DURATION) {
+    trackBaselineResponse(endpoint, response);
+  } else {
+    checkPerformanceDegradation(endpoint, response);
+  }
+}
+
+// Helper function to track baseline response times
+function trackBaselineResponse(endpoint, response) {
+  if (!baselineResponseTimes[endpoint.name]) {
+    baselineResponseTimes[endpoint.name] = [];
+  }
+  baselineResponseTimes[endpoint.name].push(response.timings.duration);
+}
+
+// Helper function to check performance degradation
+function checkPerformanceDegradation(endpoint, response) {
+  if (!isBaselineSet) {
+    calculateBaselineAverages();
+  }
+  
+  const baseline = baselineResponseTimes[endpoint.name] || 1000;
+  const degradation = response.timings.duration - baseline;
+  if (degradation > 0) {
+    memoryLeakIndicator.add(degradation);
+  }
+}
+
+// Helper function to calculate baseline averages
+function calculateBaselineAverages() {
+  for (const [key, times] of Object.entries(baselineResponseTimes)) {
+    const avg = times.reduce((a, b) => a + b, 0) / times.length;
+    baselineResponseTimes[key] = avg;
+  }
+  isBaselineSet = true;
+  console.log('Baseline response times set:', baselineResponseTimes);
+}
+
+export default function () {
+  const testStartTime = Date.now();
+  const endpoints = getTestEndpoints();
   const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
   
   const params = {
@@ -51,13 +94,11 @@ export default function () {
     timeout: '10s',
   };
 
-  // Make the request
   const response = http[endpoint.method.toLowerCase()](
     `${BASE_URL}${endpoint.url}`,
     params
   );
 
-  // Check response
   const checks = check(response, {
     'status is 200': (r) => r.status === 200,
     'response time OK': (r) => r.timings.duration < 2000,
@@ -66,32 +107,7 @@ export default function () {
 
   if (checks) {
     successfulTransactions.add(1);
-    
-    // Track baseline response times during first 5 minutes
-    if (testStartTime - __ITER * 1000 < BASELINE_DURATION) {
-      if (!baselineResponseTimes[endpoint.name]) {
-        baselineResponseTimes[endpoint.name] = [];
-      }
-      baselineResponseTimes[endpoint.name].push(response.timings.duration);
-    } else {
-      // After baseline period, check for performance degradation
-      if (!isBaselineSet) {
-        // Calculate baseline averages
-        for (const [key, times] of Object.entries(baselineResponseTimes)) {
-          const avg = times.reduce((a, b) => a + b, 0) / times.length;
-          baselineResponseTimes[key] = avg;
-        }
-        isBaselineSet = true;
-        console.log('Baseline response times set:', baselineResponseTimes);
-      }
-
-      // Compare current response time with baseline
-      const baseline = baselineResponseTimes[endpoint.name] || 1000;
-      const degradation = response.timings.duration - baseline;
-      if (degradation > 0) {
-        memoryLeakIndicator.add(degradation);
-      }
-    }
+    handleBaseline(endpoint, response, testStartTime);
   } else {
     failedTransactions.add(1);
     errorRate.add(1);

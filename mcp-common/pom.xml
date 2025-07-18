@@ -168,10 +168,10 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         
-        <!-- MapStruct for DTO mapping - Commented out due to Java 21 compatibility issues -->
-        <!-- <dependency>
+        <!-- MapStruct for DTO mapping -->
+        <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
-        </dependency> -->
+        </dependency>
     </dependencies>
 </project>

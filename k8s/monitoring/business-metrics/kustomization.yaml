@@ -51,18 +51,18 @@ configMapGenerator:
 secretGenerator:
   - name: business-metrics-secrets
     literals:
-      - database-url=postgresql://metrics_user:CHANGE_ME@postgres.monitoring:5432/business_metrics
+      - database-url=postgresql://metrics_user:${DB_PASSWORD}@postgres.monitoring:5432/business_metrics
       - redis-url=redis://redis.monitoring:6379/2
-      - analytics-api-token=CHANGE_ME
+      - analytics-api-token=${ANALYTICS_API_TOKEN}
     type: Opaque
     options:
       disableNameSuffixHash: true
   
   - name: alerting-secrets
     literals:
-      - slack-webhook-url=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
-      - pagerduty-key=YOUR_PAGERDUTY_INTEGRATION_KEY
-      - email-smtp-password=CHANGE_ME
+      - slack-webhook-url=${SLACK_WEBHOOK_URL}
+      - pagerduty-key=${PAGERDUTY_INTEGRATION_KEY}
+      - email-smtp-password=${EMAIL_SMTP_PASSWORD}
     type: Opaque
     options:
       disableNameSuffixHash: true

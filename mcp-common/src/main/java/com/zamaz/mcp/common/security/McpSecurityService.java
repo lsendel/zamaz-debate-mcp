@@ -1,7 +1,5 @@
 package com.zamaz.mcp.common.security;
 
-import com.zamaz.mcp.security.context.SecurityContext;
-import com.zamaz.mcp.security.context.SecurityContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder as SpringSecurityContextHolder;

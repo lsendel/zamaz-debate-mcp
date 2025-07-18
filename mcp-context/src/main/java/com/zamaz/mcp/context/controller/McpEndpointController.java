@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zamaz.mcp.common.security.McpSecurityService;
 import com.zamaz.mcp.common.security.McpSecurityException;
+import com.zamaz.mcp.common.error.McpErrorHandler;
 import com.zamaz.mcp.context.dto.AppendMessageRequest;
 import com.zamaz.mcp.context.dto.ContextDto;
 import com.zamaz.mcp.context.dto.ContextWindowRequest;
@@ -48,6 +49,7 @@ public class McpEndpointController {
     private final ContextSharingService sharingService;
     private final ObjectMapper objectMapper;
     private final McpSecurityService mcpSecurityService;
+    private final McpErrorHandler mcpErrorHandler;
     
     @PostMapping("/create_context")
     @Operation(summary = "Create context (MCP Tool)")
@@ -76,18 +78,8 @@ public class McpEndpointController {
             response.put("success", true);
             response.put("context", context);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in create_context: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error creating context: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "create_context", null);
         }
     }
     
@@ -117,18 +109,8 @@ public class McpEndpointController {
             response.put("success", true);
             response.put("message", message);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in append_message: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error appending message: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "append_message", null);
         }
     }
     
@@ -158,18 +140,8 @@ public class McpEndpointController {
             response.put("success", true);
             response.put("window", window);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in get_context_window: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error getting context window: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "get_context_window", null);
         }
     }
     
@@ -199,18 +171,8 @@ public class McpEndpointController {
             response.put("totalElements", contexts.getTotalElements());
             response.put("totalPages", contexts.getTotalPages());
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in search_contexts: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error searching contexts: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "search_contexts", null);
         }
     }
     
@@ -243,18 +205,8 @@ public class McpEndpointController {
             response.put("success", true);
             response.put("share", share);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in share_context: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error sharing context: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "share_context", null);
         }
     }
 }
