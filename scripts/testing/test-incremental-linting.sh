@@ -6,7 +6,7 @@
 set -e
 
 PROJECT_ROOT="/Users/lsendel/IdeaProjects/zamaz-debate-mcp"
-LINTING_JAR="""$PROJECT_ROOT""/mcp-common/target/mcp-common-1.0.0.jar"
+LINTING_JAR=""""$PROJECT_ROOT"""/mcp-common/target/mcp-common-1.0.0.jar"
 
 echo "🚀 Testing Incremental Linting Engine"
 echo "===================================="
@@ -16,12 +16,12 @@ run_linting_test() {
     local test_name="$1"
     local options="$2"
     echo ""
-    echo "📋 Test: ""$test_name"""
-    echo "Options: ""$options"""
+    echo "📋 Test: """$test_name""""
+    echo "Options: """$options""""
     echo "----------------------------------------"
     
     # For now, just demonstrate the CLI structure
-    echo "java -cp ""$LINTING_JAR"" com.zamaz.mcp.common.linting.cli.LintingCLI ""$options"""
+    echo "java -cp """$LINTING_JAR""" com.zamaz.mcp.common.linting.cli.LintingCLI """$options""""
     echo "✅ Test configuration validated"
 }
 

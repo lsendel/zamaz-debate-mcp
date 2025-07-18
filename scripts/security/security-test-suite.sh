@@ -87,7 +87,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # If run all is specified, set all tests
-if [[ """$RUN_ALL""" = true ]]; then
+if [[ """"$RUN_ALL"""" = true ]]; then
     TESTS=("sast" "container" "iac" "secrets" "dast" "compliance")
 fi
 
@@ -99,13 +99,13 @@ if [[ "${#TESTS[@]}" -eq 0 ]]; then
 fi
 
 # Create output directory
-mkdir -p """$REPORT_DIR"""
+mkdir -p """"$REPORT_DIR""""
 
 # Create summary report file
-SUMMARY_FILE="""$REPORT_DIR""/security-tests-""$TIMESTAMP"".md"
+SUMMARY_FILE=""""$REPORT_DIR"""/security-tests-"""$TIMESTAMP""".md"
 
 # Initialize summary report
-cat > """$SUMMARY_FILE""" << EOF
+cat > """"$SUMMARY_FILE"""" << EOF
 # Security Test Suite Report
 
 - **Date:** $(date +"%Y-%m-%d %H:%M:%S")
@@ -124,18 +124,18 @@ run_test() {
     local test_name="$1"
     local test_command="$2"
     local test_description="$3"
-    local output_file="""$REPORT_DIR""/test-""$test_name""-""$TIMESTAMP"".log"
+    local output_file=""""$REPORT_DIR"""/test-"""$test_name"""-"""$TIMESTAMP""".log"
     
-    log_info "Running ""$test_name"" test..."
+    log_info "Running """$test_name""" test..."
     
     # Run the test command and capture output
-    if eval """$test_command""" > """$output_file""" 2>&1; then
-        log_success """$test_name"" test passed"
-        echo "| ""$test_name"" | ✅ Pass | ""$test_description"" |" >> """$SUMMARY_FILE"""
+    if eval """"$test_command"""" > """"$output_file"""" 2>&1; then
+        log_success """"$test_name""" test passed"
+        echo "| """$test_name""" | ✅ Pass | """$test_description""" |" >> """"$SUMMARY_FILE""""
         return 0
     else
-        log_error """$test_name"" test failed"
-        echo "| ""$test_name"" | ❌ Fail | ""$test_description"" |" >> """$SUMMARY_FILE"""
+        log_error """"$test_name""" test failed"
+        echo "| """$test_name""" | ❌ Fail | """$test_description""" |" >> """"$SUMMARY_FILE""""
         return 1
     fi
 }
@@ -144,7 +144,7 @@ run_test() {
 FAILED_TESTS=0
 
 for test in "${TESTS[@]}"; do
-    case ""$test"" in
+    case """$test""" in
         sast)
             run_test "SAST-Semgrep" \
                 "semgrep --config=p/security-audit --quiet ." \
@@ -166,7 +166,7 @@ for test in "${TESTS[@]}"; do
                     "Container vulnerability scanning with Trivy" || ((FAILED_TESTS++))
             else
                 log_warning "Trivy not installed, skipping container vulnerability scan"
-                echo "| Container-vulnerability-scan | ⚠️ Skip | Trivy not installed |" >> """$SUMMARY_FILE"""
+                echo "| Container-vulnerability-scan | ⚠️ Skip | Trivy not installed |" >> """"$SUMMARY_FILE""""
             fi
             ;;
         
@@ -181,7 +181,7 @@ for test in "${TESTS[@]}"; do
                     "Infrastructure as Code security scanning with Checkov" || ((FAILED_TESTS++))
             else
                 log_warning "Checkov not installed, skipping IaC security scan"
-                echo "| IaC-security-scan | ⚠️ Skip | Checkov not installed |" >> """$SUMMARY_FILE"""
+                echo "| IaC-security-scan | ⚠️ Skip | Checkov not installed |" >> """"$SUMMARY_FILE""""
             fi
             ;;
         
@@ -206,7 +206,7 @@ for test in "${TESTS[@]}"; do
                     "OWASP ZAP baseline scan" || ((FAILED_TESTS++))
             else
                 log_warning "ZAP not installed, skipping DAST scan"
-                echo "| OWASP-ZAP-baseline-scan | ⚠️ Skip | ZAP not installed |" >> """$SUMMARY_FILE"""
+                echo "| OWASP-ZAP-baseline-scan | ⚠️ Skip | ZAP not installed |" >> """"$SUMMARY_FILE""""
             fi
             ;;
         
@@ -265,15 +265,15 @@ for test in "${TESTS[@]}"; do
             ;;
         
         *)
-            log_error "Unknown test: ""$test"""
-            echo "| ""$test"" | ❌ Error | Unknown test |" >> """$SUMMARY_FILE"""
+            log_error "Unknown test: """$test""""
+            echo "| """$test""" | ❌ Error | Unknown test |" >> """"$SUMMARY_FILE""""
             ((FAILED_TESTS++))
             ;;
     esac
 done
 
 # Add summary to report
-cat >> """$SUMMARY_FILE""" << EOF
+cat >> """"$SUMMARY_FILE"""" << EOF
 
 ## Summary
 
@@ -292,10 +292,10 @@ cat >> """$SUMMARY_FILE""" << EOF
 EOF
 
 log_info "Security test suite completed"
-log_info "Report generated: ""$SUMMARY_FILE"""
+log_info "Report generated: """$SUMMARY_FILE""""
 
-if [[ ""$FAILED_TESTS"" -gt 0 ]]; then
-    log_error """$FAILED_TESTS"" tests failed"
+if [[ """$FAILED_TESTS""" -gt 0 ]]; then
+    log_error """"$FAILED_TESTS""" tests failed"
     exit 1
 else
     log_success "All tests passed"

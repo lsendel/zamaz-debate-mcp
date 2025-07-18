@@ -54,7 +54,7 @@ echo -e "${BLUE}=== 1. ORGANIZATION SERVICE ===${NC}"
 echo ""
 
 echo "List tools:"
-echo "claude --mcp ""$ORG_SERVICE"" list-tools"
+echo "claude --mcp """$ORG_SERVICE""" list-tools"
 echo ""
 
 echo "Create organization:"
@@ -62,14 +62,14 @@ echo 'claude --mcp zamaz-organization call-tool create_organization \'{"name": "
 echo ""
 
 echo "Direct HTTP:"
-echo "curl -X POST ""$ORG_URL""/api/v1/organizations -H 'Content-Type: application/json' -d '{\"name\": \"AI Debate Society\"}'"
+echo "curl -X POST """$ORG_URL"""/api/v1/organizations -H 'Content-Type: application/json' -d '{\"name\": \"AI Debate Society\"}'"
 echo ""
 
 echo -e "${BLUE}=== 2. LLM SERVICE ===${NC}"
 echo ""
 
 echo "List providers:"
-echo "claude --mcp ""$LLM_SERVICE"" call-tool list_providers"
+echo "claude --mcp """$LLM_SERVICE""" call-tool list_providers"
 echo ""
 
 echo "Generate completion:"
@@ -95,10 +95,10 @@ echo ""
 
 echo "Create debate:"
 cat << EOF
-claude --mcp ""$DEBATE_SERVICE"" call-tool create_debate '{
+claude --mcp """$DEBATE_SERVICE""" call-tool create_debate '{
   "topic": "Should we use Airtable?",
   "format": "OXFORD",
-  "organizationId": """$ORG_ID""",
+  "organizationId": """"$ORG_ID"""",
   "participants": ["Pro-Airtable", "Anti-Airtable"],
   "maxRounds": 3
 }'
@@ -107,10 +107,10 @@ echo ""
 
 echo "Direct HTTP (working example):"
 cat << EOF
-curl -X POST ""$DEBATE_URL""/api/v1/debates \\
+curl -X POST """$DEBATE_URL"""/api/v1/debates \\
   -H "Content-Type: application/json" \\
   -d '{
-    "organizationId": """$ORG_ID""",
+    "organizationId": """"$ORG_ID"""",
     "title": "Airtable vs PostgreSQL",
     "topic": "Should I use Airtable and DAG?",
     "description": "Database choice evaluation",
@@ -152,10 +152,10 @@ echo ""
 echo "1. Create a debate (verified working):"
 echo ""
 cat << EOF
-DEBATE_ID=\$(curl -s -X POST ""$DEBATE_URL""/api/v1/debates \\
+DEBATE_ID=\$(curl -s -X POST """$DEBATE_URL"""/api/v1/debates \\
   -H "Content-Type: application/json" \\
   -d '{
-    "organizationId": """$ORG_ID""",
+    "organizationId": """"$ORG_ID"""",
     "title": "Database Architecture Decision",
     "topic": "Airtable + DAG vs PostgreSQL + Queues",
     "description": "Evaluating modern vs traditional architectures",
@@ -163,16 +163,16 @@ DEBATE_ID=\$(curl -s -X POST ""$DEBATE_URL""/api/v1/debates \\
     "maxRounds": 3
   }' | jq -r .id)
 
-echo "Created debate: \""$DEBATE_ID"""
+echo "Created debate: \"""$DEBATE_ID""""
 EOF
 echo ""
 
 echo "2. List all debates:"
-echo "curl '""$DEBATE_URL""/api/v1/debates?organizationId=""$ORG_ID""' | jq ."
+echo "curl '"""$DEBATE_URL"""/api/v1/debates?organizationId="""$ORG_ID"""' | jq ."
 echo ""
 
 echo "3. Get debate details:"
-echo "curl '""$DEBATE_URL""/api/v1/debates/\""$DEBATE_ID""' | jq ."
+echo "curl '"""$DEBATE_URL"""/api/v1/debates/\"""$DEBATE_ID"""' | jq ."
 echo ""
 
 echo -e "${RED}=== CURRENT STATUS ===${NC}"
@@ -193,4 +193,4 @@ echo -e "${YELLOW}=== QUICK TEST ===${NC}"
 echo ""
 echo "Run this to create a test debate right now:"
 echo ""
-echo "curl -X POST ""$DEBATE_URL""/api/v1/debates -H 'Content-Type: application/json' -d '{\"organizationId\":\"""$ORG_ID""\",\"title\":\"Test Debate\",\"topic\":\"Is MCP useful?\",\"format\":\"OXFORD\",\"maxRounds\":2}' | jq ."
+echo "curl -X POST """$DEBATE_URL"""/api/v1/debates -H 'Content-Type: application/json' -d '{\"organizationId\":\""""$ORG_ID"""\",\"title\":\"Test Debate\",\"topic\":\"Is MCP useful?\",\"format\":\"OXFORD\",\"maxRounds\":2}' | jq ."

@@ -19,8 +19,8 @@ echo "================================================"
 echo
 
 # Check if report script exists
-if [ ! -f """$REPORT_SCRIPT""" ]; then
-    echo -e "${RED}Error: Report generation script not found at ""$REPORT_SCRIPT""${NC}"
+if [ ! -f """"$REPORT_SCRIPT"""" ]; then
+    echo -e "${RED}Error: Report generation script not found at """$REPORT_SCRIPT"""${NC}"
     exit 1
 fi
 
@@ -34,25 +34,25 @@ add_cron_job() {
     CRON_JOB="${schedule} ${CRON_CMD}"
     
     # Check if cron job already exists
-    if crontab -l 2>/dev/null | grep -q """$REPORT_SCRIPT"""; then
+    if crontab -l 2>/dev/null | grep -q """"$REPORT_SCRIPT""""; then
         echo -e "${YELLOW}Warning: A cron job for SonarQube reports already exists${NC}"
         echo "Current cron job:"
-        crontab -l | grep """$REPORT_SCRIPT"""
+        crontab -l | grep """"$REPORT_SCRIPT""""
         echo
         read -p "Do you want to replace it? (y/n): " -n 1 -r
         echo
-        if [[ ! ""$REPLY"" =~ ^[Yy]$ ]]; then
+        if [[ ! """$REPLY""" =~ ^[Yy]$ ]]; then
             echo "Keeping existing cron job."
             return
         fi
         # Remove existing job
-        crontab -l | grep -v """$REPORT_SCRIPT""" | crontab -
+        crontab -l | grep -v """"$REPORT_SCRIPT"""" | crontab -
     fi
     
     # Add new cron job
-    (crontab -l 2>/dev/null; echo """$CRON_JOB""") | crontab -
+    (crontab -l 2>/dev/null; echo """"$CRON_JOB"""") | crontab -
     echo -e "${GREEN}✓ Cron job added successfully${NC}"
-    echo "Schedule: ""$schedule"""
+    echo "Schedule: """$schedule""""
 }
 
 # Interactive setup
@@ -79,36 +79,36 @@ read -p "Enter Branch (default: main): " SONAR_BRANCH
 SONAR_BRANCH=${SONAR_BRANCH:-main}
 
 # Build environment variables string
-ENV_VARS="SONAR_URL='""$SONAR_URL""' SONAR_PROJECT_KEY='""$SONAR_PROJECT_KEY""' SONAR_BRANCH='""$SONAR_BRANCH""'"
-if [ -n """$SONAR_TOKEN""" ]; then
-    ENV_VARS="""$ENV_VARS"" SONAR_TOKEN='""$SONAR_TOKEN""'"
+ENV_VARS="SONAR_URL='"""$SONAR_URL"""' SONAR_PROJECT_KEY='"""$SONAR_PROJECT_KEY"""' SONAR_BRANCH='"""$SONAR_BRANCH"""'"
+if [ -n """"$SONAR_TOKEN"""" ]; then
+    ENV_VARS=""""$ENV_VARS""" SONAR_TOKEN='"""$SONAR_TOKEN"""'"
 fi
 
-case ""$choice"" in
+case """$choice""" in
     1)
-        add_cron_job "0 2 * * *" """$ENV_VARS"""
+        add_cron_job "0 2 * * *" """"$ENV_VARS""""
         ;;
     2)
-        add_cron_job "0 2 * * 1" """$ENV_VARS"""
+        add_cron_job "0 2 * * 1" """"$ENV_VARS""""
         ;;
     3)
-        add_cron_job "0 */12 * * *" """$ENV_VARS"""
+        add_cron_job "0 */12 * * *" """"$ENV_VARS""""
         ;;
     4)
         echo "Enter custom cron schedule (e.g., '0 2 * * *' for daily at 2 AM):"
         echo "Format: minute hour day month day-of-week"
         echo "Use https://crontab.guru/ for help with cron syntax"
         read -p "Schedule: " custom_schedule
-        if [ -n """$custom_schedule""" ]; then
-            add_cron_job """$custom_schedule""" """$ENV_VARS"""
+        if [ -n """"$custom_schedule"""" ]; then
+            add_cron_job """"$custom_schedule"""" """"$ENV_VARS""""
         else
             echo -e "${RED}Error: No schedule provided${NC}"
             exit 1
         fi
         ;;
     5)
-        if crontab -l 2>/dev/null | grep -q """$REPORT_SCRIPT"""; then
-            crontab -l | grep -v """$REPORT_SCRIPT""" | crontab -
+        if crontab -l 2>/dev/null | grep -q """"$REPORT_SCRIPT""""; then
+            crontab -l | grep -v """"$REPORT_SCRIPT"""" | crontab -
             echo -e "${GREEN}✓ Cron job removed successfully${NC}"
         else
             echo -e "${YELLOW}No existing cron job found${NC}"
@@ -126,7 +126,7 @@ echo "Setup completed!"
 echo "================================================"
 echo
 echo "Current cron jobs:"
-crontab -l 2>/dev/null | grep """$REPORT_SCRIPT""" || echo "No SonarQube report cron jobs found"
+crontab -l 2>/dev/null | grep """"$REPORT_SCRIPT"""" || echo "No SonarQube report cron jobs found"
 echo
 echo "To view all cron jobs: crontab -l"
 echo "To edit cron jobs manually: crontab -e"

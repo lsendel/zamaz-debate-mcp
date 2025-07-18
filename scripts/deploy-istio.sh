@@ -62,13 +62,13 @@ install_istio() {
     print_status "Installing Istio ${ISTIO_VERSION}..."
     
     # Download Istio if not already present
-    if [ ! -d """$ISTIO_DIR""" ]; then
+    if [ ! -d """"$ISTIO_DIR"""" ]; then
         print_status "Downloading Istio ${ISTIO_VERSION}..."
         curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
     fi
     
     # Add istioctl to PATH
-    export PATH="""$PWD""/""$ISTIO_DIR""/bin:""$PATH"""
+    export PATH=""""$PWD"""/"""$ISTIO_DIR"""/bin:"""$PATH""""
     
     # Verify installation
     if ! command -v istioctl &> /dev/null; then
@@ -84,7 +84,7 @@ install_control_plane() {
     print_status "Installing Istio control plane..."
     
     # Create namespace
-    kubectl create namespace ""$NAMESPACE"" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace """$NAMESPACE""" --dry-run=client -o yaml | kubectl apply -f -
     
     # Install Istio with custom configuration
     istioctl install --set values.pilot.env.EXTERNAL_ISTIOD=false \
@@ -111,7 +111,7 @@ install_control_plane() {
         --yes
     
     # Wait for control plane to be ready
-    kubectl wait --for=condition=ready pod -l app=istiod -n ""$NAMESPACE"" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=istiod -n """$NAMESPACE""" --timeout=300s
     
     print_success "Istio control plane installed successfully"
 }
@@ -136,9 +136,9 @@ install_addons() {
     kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.19/samples/addons/prometheus.yaml
     
     # Wait for addons to be ready
-    kubectl wait --for=condition=ready pod -l app=kiali -n ""$NAMESPACE"" --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=jaeger -n ""$NAMESPACE"" --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=grafana -n ""$NAMESPACE"" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=kiali -n """$NAMESPACE""" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=jaeger -n """$NAMESPACE""" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=grafana -n """$NAMESPACE""" --timeout=300s
     
     print_success "Istio addons installed successfully"
 }
@@ -147,8 +147,8 @@ install_addons() {
 create_mcp_namespace() {
     print_status "Creating MCP namespace with sidecar injection..."
     
-    kubectl create namespace ""$MCP_NAMESPACE"" --dry-run=client -o yaml | kubectl apply -f -
-    kubectl label namespace ""$MCP_NAMESPACE"" istio-injection=enabled --overwrite
+    kubectl create namespace """$MCP_NAMESPACE""" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl label namespace """$MCP_NAMESPACE""" istio-injection=enabled --overwrite
     
     print_success "MCP namespace created with sidecar injection enabled"
 }
@@ -181,11 +181,11 @@ deploy_mcp_services() {
     
     # Wait for services to be ready
     print_status "Waiting for MCP services to be ready..."
-    kubectl wait --for=condition=ready pod -l app=mcp-organization -n ""$MCP_NAMESPACE"" --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=mcp-llm -n ""$MCP_NAMESPACE"" --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=mcp-controller -n ""$MCP_NAMESPACE"" --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=mcp-rag -n ""$MCP_NAMESPACE"" --timeout=300s
-    kubectl wait --for=condition=ready pod -l app=mcp-template -n ""$MCP_NAMESPACE"" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=mcp-organization -n """$MCP_NAMESPACE""" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=mcp-llm -n """$MCP_NAMESPACE""" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=mcp-controller -n """$MCP_NAMESPACE""" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=mcp-rag -n """$MCP_NAMESPACE""" --timeout=300s
+    kubectl wait --for=condition=ready pod -l app=mcp-template -n """$MCP_NAMESPACE""" --timeout=300s
     
     print_success "MCP services deployed successfully"
 }
@@ -215,30 +215,30 @@ show_access_info() {
     print_status "Service mesh access information:"
     
     # Get ingress gateway IP
-    INGRESS_HOST=$(kubectl get svc istio-ingressgateway -n ""$NAMESPACE"" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n ""$NAMESPACE"" -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
-    SECURE_INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n ""$NAMESPACE"" -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
+    INGRESS_HOST=$(kubectl get svc istio-ingressgateway -n """$NAMESPACE""" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n """$NAMESPACE""" -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+    SECURE_INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n """$NAMESPACE""" -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
     
     # Get addon URLs
-    KIALI_URL="http://""$INGRESS_HOST"":""$INGRESS_PORT""/kiali"
-    JAEGER_URL="http://""$INGRESS_HOST"":""$INGRESS_PORT""/jaeger"
-    GRAFANA_URL="http://""$INGRESS_HOST"":""$INGRESS_PORT""/grafana"
+    KIALI_URL="http://"""$INGRESS_HOST""":"""$INGRESS_PORT"""/kiali"
+    JAEGER_URL="http://"""$INGRESS_HOST""":"""$INGRESS_PORT"""/jaeger"
+    GRAFANA_URL="http://"""$INGRESS_HOST""":"""$INGRESS_PORT"""/grafana"
     
     echo ""
     echo "🌐 Access URLs:"
-    echo "  Kiali (Service Mesh Dashboard): ""$KIALI_URL"""
-    echo "  Jaeger (Tracing): ""$JAEGER_URL"""
-    echo "  Grafana (Metrics): ""$GRAFANA_URL"""
+    echo "  Kiali (Service Mesh Dashboard): """$KIALI_URL""""
+    echo "  Jaeger (Tracing): """$JAEGER_URL""""
+    echo "  Grafana (Metrics): """$GRAFANA_URL""""
     echo ""
     echo "🔧 Port forwarding commands (if LoadBalancer is not available):"
-    echo "  kubectl port-forward svc/kiali 20001:20001 -n ""$NAMESPACE"""
-    echo "  kubectl port-forward svc/jaeger 16686:16686 -n ""$NAMESPACE"""
-    echo "  kubectl port-forward svc/grafana 3000:3000 -n ""$NAMESPACE"""
+    echo "  kubectl port-forward svc/kiali 20001:20001 -n """$NAMESPACE""""
+    echo "  kubectl port-forward svc/jaeger 16686:16686 -n """$NAMESPACE""""
+    echo "  kubectl port-forward svc/grafana 3000:3000 -n """$NAMESPACE""""
     echo ""
     echo "🔍 Troubleshooting commands:"
     echo "  istioctl proxy-status"
-    echo "  istioctl analyze -n ""$MCP_NAMESPACE"""
-    echo "  kubectl logs -l app=istiod -n ""$NAMESPACE"""
+    echo "  istioctl analyze -n """$MCP_NAMESPACE""""
+    echo "  kubectl logs -l app=istiod -n """$NAMESPACE""""
     echo ""
 }
 
@@ -255,13 +255,13 @@ cleanup() {
         kubectl delete -f k8s/istio/gateway-config.yaml --ignore-not-found=true
         
         # Remove namespace
-        kubectl delete namespace ""$MCP_NAMESPACE"" --ignore-not-found=true
+        kubectl delete namespace """$MCP_NAMESPACE""" --ignore-not-found=true
         
         # Uninstall Istio
         istioctl uninstall --purge -y
         
         # Remove namespace
-        kubectl delete namespace ""$NAMESPACE"" --ignore-not-found=true
+        kubectl delete namespace """$NAMESPACE""" --ignore-not-found=true
         
         print_success "Istio uninstalled successfully"
         exit 0

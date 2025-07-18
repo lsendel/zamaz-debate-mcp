@@ -35,7 +35,7 @@ echo "Testing Token Estimation:"
 RESPONSE=$(curl -s -X POST http://localhost:5002/tools/estimate_tokens \
     -H "Content-Type: application/json" \
     -d '{"arguments": {"text": "Hello world!", "model": "gpt-3.5-turbo"}}' 2>/dev/null)
-echo "  Response: ""$RESPONSE"""
+echo "  Response: """$RESPONSE""""
 
 echo ""
 echo ""

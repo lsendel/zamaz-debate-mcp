@@ -17,9 +17,9 @@ TOOL=${2:-"k6"} # k6, gatling, locust, artillery
 
 echo -e "${GREEN}MCP Debate API Performance Test Runner${NC}"
 echo "========================================"
-echo "Base URL: ""$BASE_URL"""
-echo "Test Type: ""$TEST_TYPE"""
-echo "Tool: ""$TOOL"""
+echo "Base URL: """$BASE_URL""""
+echo "Test Type: """$TEST_TYPE""""
+echo "Tool: """$TOOL""""
 echo ""
 
 # Function to check if services are healthy
@@ -27,7 +27,7 @@ check_services() {
     echo -e "${YELLOW}Checking service health...${NC}"
     
     # Check if API is responding
-    if curl -f -s """$BASE_URL""/health" > /dev/null; then
+    if curl -f -s """"$BASE_URL"""/health" > /dev/null; then
         echo -e "${GREEN}✓ API is healthy${NC}"
     else
         echo -e "${RED}✗ API is not responding${NC}"
@@ -60,7 +60,7 @@ start_monitoring() {
 # Function to run k6 tests
 run_k6_test() {
     local test_script=""
-    case ""$TEST_TYPE"" in
+    case """$TEST_TYPE""" in
         "load")
             test_script="debate-api-load-test.js"
             ;;
@@ -74,19 +74,19 @@ run_k6_test() {
             test_script="debate-api-soak-test.js"
             ;;
         *)
-            echo -e "${RED}Unknown test type: ""$TEST_TYPE""${NC}"
+            echo -e "${RED}Unknown test type: """$TEST_TYPE"""${NC}"
             exit 1
             ;;
     esac
     
-    echo -e "${YELLOW}Running k6 ""$TEST_TYPE"" test...${NC}"
+    echo -e "${YELLOW}Running k6 """$TEST_TYPE""" test...${NC}"
     
     # Run k6 with Docker
     docker run --rm \
         -v $(pwd)/k6:/scripts \
         -v $(pwd)/results:/results \
-        -e BASE_URL="""$BASE_URL""" \
-        -e JWT_TOKEN="""$JWT_TOKEN""" \
+        -e BASE_URL=""""$BASE_URL"""" \
+        -e JWT_TOKEN=""""$JWT_TOKEN"""" \
         -e K6_OUT="json=/results/k6-${TEST_TYPE}-$(date +%Y%m%d-%H%M%S).json" \
         --network host \
         grafana/k6:latest \
@@ -97,7 +97,7 @@ run_k6_test() {
 
 # Function to run Gatling tests
 run_gatling_test() {
-    echo -e "${YELLOW}Running Gatling ""$TEST_TYPE"" test...${NC}"
+    echo -e "${YELLOW}Running Gatling """$TEST_TYPE""" test...${NC}"
     
     # Build Gatling image
     docker build -t mcp-gatling -f gatling/Dockerfile gatling/
@@ -105,8 +105,8 @@ run_gatling_test() {
     # Run Gatling test
     docker run --rm \
         -v $(pwd)/gatling/results:/opt/gatling/results \
-        -e BASE_URL="""$BASE_URL""" \
-        -e JWT_TOKEN="""$JWT_TOKEN""" \
+        -e BASE_URL=""""$BASE_URL"""" \
+        -e JWT_TOKEN=""""$JWT_TOKEN"""" \
         --network host \
         mcp-gatling \
         -s com.zamaz.mcp.performance.DebateAPILoadTest
@@ -116,7 +116,7 @@ run_gatling_test() {
 
 # Function to run Locust tests
 run_locust_test() {
-    echo -e "${YELLOW}Starting Locust for ""$TEST_TYPE"" test...${NC}"
+    echo -e "${YELLOW}Starting Locust for """$TEST_TYPE""" test...${NC}"
     
     # Start Locust
     docker-compose -f docker-compose.perf.yml up -d locust-master locust-worker
@@ -152,9 +152,9 @@ generate_report() {
     <h1>Performance Test Report</h1>
     <div class="info">
         <h2>Test Configuration</h2>
-        <p><strong>Test Type:</strong> ""$TEST_TYPE""</p>
-        <p><strong>Tool:</strong> ""$TOOL""</p>
-        <p><strong>Base URL:</strong> ""$BASE_URL""</p>
+        <p><strong>Test Type:</strong> """$TEST_TYPE"""</p>
+        <p><strong>Tool:</strong> """$TOOL"""</p>
+        <p><strong>Base URL:</strong> """$BASE_URL"""</p>
         <p><strong>Date:</strong> $(date)</p>
     </div>
     <div class="info">
@@ -180,7 +180,7 @@ main() {
     fi
     
     # Run the appropriate test
-    case ""$TOOL"" in
+    case """$TOOL""" in
         "k6")
             run_k6_test
             ;;
@@ -191,7 +191,7 @@ main() {
             run_locust_test
             ;;
         *)
-            echo -e "${RED}Unknown tool: ""$TOOL""${NC}"
+            echo -e "${RED}Unknown tool: """$TOOL"""${NC}"
             echo "Supported tools: k6, gatling, locust"
             exit 1
             ;;

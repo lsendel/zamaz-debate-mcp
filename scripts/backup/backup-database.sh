@@ -29,7 +29,7 @@ S3_PREFIX=${S3_PREFIX:-"backups"}
 
 # Logging
 LOG_FILE="${BACKUP_DIR}/backup.log"
-exec 1> >(tee -a """$LOG_FILE""")
+exec 1> >(tee -a """"$LOG_FILE"""")
 exec 2>&1
 
 log() {
@@ -42,8 +42,8 @@ error() {
 }
 
 # Create backup directory
-mkdir -p """$BACKUP_DIR"""
-cd """$BACKUP_DIR"""
+mkdir -p """"$BACKUP_DIR""""
+cd """"$BACKUP_DIR""""
 
 log "Starting backup process for MCP Debate System"
 
@@ -55,34 +55,34 @@ backup_postgresql() {
     local compressed_file="${backup_file}.gz"
     
     # Check if PostgreSQL is accessible
-    if ! pg_isready -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" >/dev/null 2>&1; then
+    if ! pg_isready -h """"$DB_HOST"""" -p """"$DB_PORT"""" -U """"$DB_USER"""" >/dev/null 2>&1; then
         error "PostgreSQL is not accessible at ${DB_HOST}:${DB_PORT}"
     fi
     
     # Create database dump
     log "Creating PostgreSQL dump..."
-    PGPASSWORD="""$DB_PASSWORD""" pg_dump \
-        -h """$DB_HOST""" \
-        -p """$DB_PORT""" \
-        -U """$DB_USER""" \
-        -d """$DB_NAME""" \
+    PGPASSWORD=""""$DB_PASSWORD"""" pg_dump \
+        -h """"$DB_HOST"""" \
+        -p """"$DB_PORT"""" \
+        -U """"$DB_USER"""" \
+        -d """"$DB_NAME"""" \
         --verbose \
         --no-password \
         --format=custom \
-        --compress="""$COMPRESSION_LEVEL""" \
-        --file="""$backup_file"""
+        --compress=""""$COMPRESSION_LEVEL"""" \
+        --file=""""$backup_file""""
     
     if [ "$?" -eq 0 ]; then
-        log "PostgreSQL backup completed: ""$backup_file"""
+        log "PostgreSQL backup completed: """$backup_file""""
         
         # Get backup size
-        local backup_size=$(du -h """$backup_file""" | cut -f1)
-        log "Backup size: ""$backup_size"""
+        local backup_size=$(du -h """"$backup_file"""" | cut -f1)
+        log "Backup size: """$backup_size""""
         
         # Verify backup integrity
-        PGPASSWORD="""$DB_PASSWORD""" pg_restore \
+        PGPASSWORD=""""$DB_PASSWORD"""" pg_restore \
             --list \
-            """$backup_file""" >/dev/null 2>&1
+            """"$backup_file"""" >/dev/null 2>&1
         
         if [ "$?" -eq 0 ]; then
             log "Backup integrity verified"
@@ -90,7 +90,7 @@ backup_postgresql() {
             error "Backup integrity check failed"
         fi
         
-        echo """$backup_file"""
+        echo """"$backup_file""""
     else
         error "PostgreSQL backup failed"
     fi
@@ -103,30 +103,30 @@ backup_redis() {
     local backup_file="${BACKUP_PREFIX}_redis_${TIMESTAMP}.rdb"
     
     # Check if Redis is accessible
-    if [ -n """$REDIS_PASSWORD""" ]; then
-        redis_cmd="redis-cli -h ""$REDIS_HOST"" -p ""$REDIS_PORT"" -a ""$REDIS_PASSWORD"""
+    if [ -n """"$REDIS_PASSWORD"""" ]; then
+        redis_cmd="redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""" -a """$REDIS_PASSWORD""""
     else
-        redis_cmd="redis-cli -h ""$REDIS_HOST"" -p ""$REDIS_PORT"""
+        redis_cmd="redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""""
     fi
     
-    if ! ""$redis_cmd"" ping >/dev/null 2>&1; then
+    if ! """$redis_cmd""" ping >/dev/null 2>&1; then
         error "Redis is not accessible at ${REDIS_HOST}:${REDIS_PORT}"
     fi
     
     # Trigger Redis background save
     log "Triggering Redis BGSAVE..."
-    ""$redis_cmd"" BGSAVE >/dev/null
+    """$redis_cmd""" BGSAVE >/dev/null
     
     # Wait for background save to complete
-    while [ "$(""$redis_cmd"" LASTSAVE)" = "$(""$redis_cmd"" LASTSAVE)" ]; do
+    while [ "$("""$redis_cmd""" LASTSAVE)" = "$("""$redis_cmd""" LASTSAVE)" ]; do
         sleep 1
     done
     
     # Copy Redis dump file
     local redis_data_dir="/var/lib/redis"
-    if [ -f """$redis_data_dir""/dump.rdb" ]; then
-        cp """$redis_data_dir""/dump.rdb" """$backup_file"""
-        gzip """$backup_file"""
+    if [ -f """"$redis_data_dir"""/dump.rdb" ]; then
+        cp """"$redis_data_dir"""/dump.rdb" """"$backup_file""""
+        gzip """"$backup_file""""
         log "Redis backup completed: ${backup_file}.gz"
         echo "${backup_file}.gz"
     else
@@ -141,7 +141,7 @@ backup_application_state() {
     local backup_file="${BACKUP_PREFIX}_config_${TIMESTAMP}.tar.gz"
     
     # Backup configuration files, secrets, and other state
-    tar -czf """$backup_file""" \
+    tar -czf """"$backup_file"""" \
         -C / \
         --exclude='*/node_modules/*' \
         --exclude='*/target/*' \
@@ -152,9 +152,9 @@ backup_application_state() {
         var/log/mcp/ \
         2>/dev/null || true
     
-    if [ -f """$backup_file""" ]; then
-        log "Application state backup completed: ""$backup_file"""
-        echo """$backup_file"""
+    if [ -f """"$backup_file"""" ]; then
+        log "Application state backup completed: """$backup_file""""
+        echo """"$backup_file""""
     else
         error "Application state backup failed"
     fi
@@ -175,12 +175,12 @@ backup_kubernetes() {
     # Backup all MCP-related resources
     kubectl get all,configmap,secret,pvc,ingress \
         -n production \
-        -o yaml > """$backup_file""" 2>/dev/null || {
+        -o yaml > """"$backup_file"""" 2>/dev/null || {
         log "Kubernetes backup failed or no access"
         return
     }
     
-    gzip """$backup_file"""
+    gzip """"$backup_file""""
     log "Kubernetes backup completed: ${backup_file}.gz"
     echo "${backup_file}.gz"
 }
@@ -189,7 +189,7 @@ backup_kubernetes() {
 upload_to_s3() {
     local file="$1"
     
-    if [ -z """$S3_BUCKET""" ]; then
+    if [ -z """"$S3_BUCKET"""" ]; then
         return
     fi
     
@@ -198,30 +198,30 @@ upload_to_s3() {
         return
     fi
     
-    log "Uploading ""$file"" to S3..."
-    aws s3 cp """$file""" "s3://${S3_BUCKET}/${S3_PREFIX}/" --quiet
+    log "Uploading """$file""" to S3..."
+    aws s3 cp """"$file"""" "s3://${S3_BUCKET}/${S3_PREFIX}/" --quiet
     
     if [ "$?" -eq 0 ]; then
-        log "Successfully uploaded ""$file"" to S3"
+        log "Successfully uploaded """$file""" to S3"
     else
-        log "Failed to upload ""$file"" to S3"
+        log "Failed to upload """$file""" to S3"
     fi
 }
 
 # Cleanup old backups
 cleanup_old_backups() {
-    log "Cleaning up backups older than ""$RETENTION_DAYS"" days..."
+    log "Cleaning up backups older than """$RETENTION_DAYS""" days..."
     
-    find """$BACKUP_DIR""" -name "${BACKUP_PREFIX}_*" -mtime +""$RETENTION_DAYS"" -delete
+    find """"$BACKUP_DIR"""" -name "${BACKUP_PREFIX}_*" -mtime +"""$RETENTION_DAYS""" -delete
     
     # Also cleanup S3 if configured
-    if [ -n """$S3_BUCKET""" ] && command -v aws >/dev/null 2>&1; then
-        local cutoff_date=$(date -d """$RETENTION_DAYS"" days ago" +%Y-%m-%d)
+    if [ -n """"$S3_BUCKET"""" ] && command -v aws >/dev/null 2>&1; then
+        local cutoff_date=$(date -d """"$RETENTION_DAYS""" days ago" +%Y-%m-%d)
         aws s3 ls "s3://${S3_BUCKET}/${S3_PREFIX}/" --recursive | \
-        awk -v cutoff="""$cutoff_date""" '$1 < cutoff {print $4}' | \
+        awk -v cutoff=""""$cutoff_date"""" '$1 < cutoff {print $4}' | \
         while read -r file; do
-            aws s3 rm "s3://${S3_BUCKET}/""$file""" --quiet
-            log "Deleted old S3 backup: ""$file"""
+            aws s3 rm "s3://${S3_BUCKET}/"""$file"""" --quiet
+            log "Deleted old S3 backup: """$file""""
         done
     fi
     
@@ -233,14 +233,14 @@ health_check() {
     log "Performing health check before backup..."
     
     # Check system resources
-    local disk_usage=$(df """$BACKUP_DIR""" | awk 'NR==2 {print $5}' | sed 's/%//')
-    if [ """$disk_usage""" -gt 90 ]; then
+    local disk_usage=$(df """"$BACKUP_DIR"""" | awk 'NR==2 {print $5}' | sed 's/%//')
+    if [ """"$disk_usage"""" -gt 90 ]; then
         error "Insufficient disk space: ${disk_usage}% used"
     fi
     
     # Check memory usage
     local mem_usage=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
-    if [ """$mem_usage""" -gt 95 ]; then
+    if [ """"$mem_usage"""" -gt 95 ]; then
         log "WARNING: High memory usage: ${mem_usage}%"
     fi
     
@@ -256,31 +256,31 @@ generate_report() {
     
     local report_file="${BACKUP_PREFIX}_report_${TIMESTAMP}.txt"
     
-    cat > """$report_file""" <<EOF
+    cat > """"$report_file"""" <<EOF
 MCP Debate System Backup Report
 ===============================
 Timestamp: $(date)
 Backup Directory: $BACKUP_DIR
-Retention Period: ""$RETENTION_DAYS"" days
+Retention Period: """$RETENTION_DAYS""" days
 
 Backup Files:
-- PostgreSQL: ""$postgres_backup"" ($(du -h """$postgres_backup""" 2>/dev/null | cut -f1 || echo "N/A"))
-- Redis: ""$redis_backup"" ($(du -h """$redis_backup""" 2>/dev/null | cut -f1 || echo "N/A"))
-- Configuration: ""$config_backup"" ($(du -h """$config_backup""" 2>/dev/null | cut -f1 || echo "N/A"))
-- Kubernetes: ""$k8s_backup"" ($(du -h """$k8s_backup""" 2>/dev/null | cut -f1 || echo "N/A"))
+- PostgreSQL: """$postgres_backup""" ($(du -h """"$postgres_backup"""" 2>/dev/null | cut -f1 || echo "N/A"))
+- Redis: """$redis_backup""" ($(du -h """"$redis_backup"""" 2>/dev/null | cut -f1 || echo "N/A"))
+- Configuration: """$config_backup""" ($(du -h """"$config_backup"""" 2>/dev/null | cut -f1 || echo "N/A"))
+- Kubernetes: """$k8s_backup""" ($(du -h """"$k8s_backup"""" 2>/dev/null | cut -f1 || echo "N/A"))
 
 System Status:
-- Disk Usage: $(df """$BACKUP_DIR""" | awk 'NR==2 {print $5}')
+- Disk Usage: $(df """"$BACKUP_DIR"""" | awk 'NR==2 {print $5}')
 - Memory Usage: $(free | awk 'NR==2{printf "%.0f%%", $3*100/$2}')
 - Load Average: $(uptime | awk -F'load average:' '{print $2}')
 
-S3 Upload: $([ -n """$S3_BUCKET""" ] && echo "Enabled" || echo "Disabled")
+S3 Upload: $([ -n """"$S3_BUCKET"""" ] && echo "Enabled" || echo "Disabled")
 
 Backup Status: SUCCESS
 EOF
     
-    log "Backup report generated: ""$report_file"""
-    cat """$report_file"""
+    log "Backup report generated: """$report_file""""
+    cat """"$report_file""""
 }
 
 # Send notification (if configured)
@@ -291,13 +291,13 @@ send_notification() {
     # Slack notification
     if [ -n "${SLACK_WEBHOOK:-}" ]; then
         curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"🗄️ MCP Backup ""$status"": ""$message""\"}" \
-            """$SLACK_WEBHOOK""" >/dev/null 2>&1 || true
+            --data "{\"text\":\"🗄️ MCP Backup """$status""": """$message"""\"}" \
+            """"$SLACK_WEBHOOK"""" >/dev/null 2>&1 || true
     fi
     
     # Email notification
     if [ -n "${EMAIL_TO:-}" ] && command -v mail >/dev/null 2>&1; then
-        echo """$message""" | mail -s "MCP Backup ""$status""" """$EMAIL_TO""" || true
+        echo """"$message"""" | mail -s "MCP Backup """$status"""" """"$EMAIL_TO"""" || true
     fi
 }
 
@@ -317,9 +317,9 @@ main() {
     local k8s_backup=$(backup_kubernetes)
     
     # Upload to S3 if configured
-    for file in """$postgres_backup""" """$redis_backup""" """$config_backup""" """$k8s_backup"""; do
-        if [ -n """$file""" ] && [ -f """$file""" ]; then
-            upload_to_s3 """$file"""
+    for file in """"$postgres_backup"""" """"$redis_backup"""" """"$config_backup"""" """"$k8s_backup""""; do
+        if [ -n """"$file"""" ] && [ -f """"$file"""" ]; then
+            upload_to_s3 """"$file""""
         fi
     done
     
@@ -327,7 +327,7 @@ main() {
     cleanup_old_backups
     
     # Generate report
-    generate_report """$postgres_backup""" """$redis_backup""" """$config_backup""" """$k8s_backup"""
+    generate_report """"$postgres_backup"""" """"$redis_backup"""" """"$config_backup"""" """"$k8s_backup""""
     
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))

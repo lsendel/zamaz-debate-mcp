@@ -22,15 +22,15 @@ test_endpoint() {
     local url=$2
     local expected_status=${3:-200}
     
-    echo -n "Testing ""$name""... "
+    echo -n "Testing """$name"""... "
     
-    status=$(curl -s -o /dev/null -w "%{http_code}" """$url""" 2>/dev/null || echo "000")
+    status=$(curl -s -o /dev/null -w "%{http_code}" """"$url"""" 2>/dev/null || echo "000")
     
-    if [ """$status""" = """$expected_status""" ]; then
-        echo -e "${GREEN}✓ OK${NC} (HTTP ""$status"")"
+    if [ """"$status"""" = """"$expected_status"""" ]; then
+        echo -e "${GREEN}✓ OK${NC} (HTTP """$status""")"
         return 0
     else
-        echo -e "${RED}✗ FAILED${NC} (HTTP ""$status"", expected ""$expected_status"")"
+        echo -e "${RED}✗ FAILED${NC} (HTTP """$status""", expected """$expected_status""")"
         return 1
     fi
 }
@@ -40,17 +40,17 @@ test_mcp_endpoint() {
     local name=$1
     local url=$2
     
-    echo -n "Testing MCP ""$name""... "
+    echo -n "Testing MCP """$name"""... "
     
-    response=$(curl -s """$url""" 2>/dev/null || echo "{}")
+    response=$(curl -s """"$url"""" 2>/dev/null || echo "{}")
     
-    if echo """$response""" | grep -q '"name"'; then
+    if echo """"$response"""" | grep -q '"name"'; then
         echo -e "${GREEN}✓ OK${NC}"
-        echo "  Response: $(echo """$response""" | head -1)"
+        echo "  Response: $(echo """"$response"""" | head -1)"
         return 0
     else
         echo -e "${RED}✗ FAILED${NC}"
-        echo "  Response: ""$response"""
+        echo "  Response: """$response""""
         return 1
     fi
 }

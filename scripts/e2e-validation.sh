@@ -103,13 +103,13 @@ check_prerequisites() {
     
     # Check system resources
     local memory_gb=$(free -g | awk '/^Mem:/{print $2}' 2>/dev/null || echo "0")
-    if [ """$memory_gb""" -lt 8 ]; then
+    if [ """"$memory_gb"""" -lt 8 ]; then
         log_warning "System has less than 8GB RAM. E2E tests may be slow or fail."
     fi
     
     # Check disk space
     local disk_space_gb=$(df . | awk 'NR==2 {print int($4/1024/1024)}')
-    if [ """$disk_space_gb""" -lt 5 ]; then
+    if [ """"$disk_space_gb"""" -lt 5 ]; then
         log_warning "Less than 5GB disk space available. May not be sufficient for reports."
     fi
     
@@ -124,19 +124,19 @@ check_system_health() {
     local total_services=${#SERVICES[@]}
     
     for service in "${!SERVICES[@]}"; do
-        local port="${SERVICES[""$service""]}"
-        if curl -s http://localhost:""$port""/health &> /dev/null; then
+        local port="${SERVICES["""$service"""]}"
+        if curl -s http://localhost:"""$port"""/health &> /dev/null; then
             ((healthy_services++))
-            log_success """$service"" is healthy"
+            log_success """"$service""" is healthy"
         else
-            log_warning """$service"" is not responding on port ""$port"""
+            log_warning """"$service""" is not responding on port """$port""""
         fi
     done
     
     local health_percentage=$((healthy_services * 100 / total_services))
-    log_metric "System Health: ""$healthy_services""/""$total_services"" services healthy (""$health_percentage""%)"
+    log_metric "System Health: """$healthy_services"""/"""$total_services""" services healthy ("""$health_percentage"""%)"
     
-    if [ ""$health_percentage"" -lt 80 ]; then
+    if [ """$health_percentage""" -lt 80 ]; then
         log_error "System health is below 80%. Cannot proceed with E2E validation."
         exit 1
     fi
@@ -148,37 +148,37 @@ check_system_health() {
 establish_baseline() {
     log_info "Establishing baseline metrics..."
     
-    mkdir -p """$REPORT_DIR""/baseline"
-    local baseline_file="""$REPORT_DIR""/baseline/system-baseline.json"
+    mkdir -p """"$REPORT_DIR"""/baseline"
+    local baseline_file=""""$REPORT_DIR"""/baseline/system-baseline.json"
     
     {
         echo "{"
         echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
-        echo "  \"environment\": \"""$ENVIRONMENT""\","
+        echo "  \"environment\": \""""$ENVIRONMENT"""\","
         echo "  \"services\": {"
         
         local first=true
         for service in "${!SERVICES[@]}"; do
-            if [ """$first""" = true ]; then
+            if [ """"$first"""" = true ]; then
                 first=false
             else
                 echo ","
             fi
             
-            local port="${SERVICES[""$service""]}"
-            local response_time=$(measure_response_time "http://localhost:""$port""/health")
+            local port="${SERVICES["""$service"""]}"
+            local response_time=$(measure_response_time "http://localhost:"""$port"""/health")
             local health_status="unknown"
             
-            if curl -s http://localhost:""$port""/health &> /dev/null; then
+            if curl -s http://localhost:"""$port"""/health &> /dev/null; then
                 health_status="healthy"
             else
                 health_status="unhealthy"
             fi
             
-            echo "    \"""$service""\": {"
-            echo "      \"port\": ""$port"","
-            echo "      \"health\": \"""$health_status""\","
-            echo "      \"response_time_ms\": ""$response_time"""
+            echo "    \""""$service"""\": {"
+            echo "      \"port\": """$port""","
+            echo "      \"health\": \""""$health_status"""\","
+            echo "      \"response_time_ms\": """$response_time""""
             echo "    }"
         done
         
@@ -189,9 +189,9 @@ establish_baseline() {
         echo "    \"disk_available_gb\": $(df . | awk 'NR==2 {print int($4/1024/1024)}')"
         echo "  }"
         echo "}"
-    } > """$baseline_file"""
+    } > """"$baseline_file""""
     
-    log_success "Baseline established: ""$baseline_file"""
+    log_success "Baseline established: """$baseline_file""""
 }
 
 # Measure response time
@@ -199,7 +199,7 @@ measure_response_time() {
     local url="$1"
     local start_time=$(date +%s%3N)
     
-    if curl -s """$url""" &> /dev/null; then
+    if curl -s """"$url"""" &> /dev/null; then
         local end_time=$(date +%s%3N)
         echo $((end_time - start_time))
     else
@@ -210,45 +210,45 @@ measure_response_time() {
 # Run specific validation phase
 run_validation_phase() {
     local phase="$1"
-    local phase_name="${PHASES[""$phase""]}"
+    local phase_name="${PHASES["""$phase"""]}"
     
-    log_phase "Starting phase: ""$phase_name"""
+    log_phase "Starting phase: """$phase_name""""
     
-    local phase_dir="""$REPORT_DIR""/phases/""$phase"""
-    mkdir -p """$phase_dir"""
+    local phase_dir=""""$REPORT_DIR"""/phases/"""$phase""""
+    mkdir -p """"$phase_dir""""
     
     local start_time=$(date +%s)
-    local phase_log="""$phase_dir""/phase.log"
-    local phase_result="""$phase_dir""/result.json"
+    local phase_log=""""$phase_dir"""/phase.log"
+    local phase_result=""""$phase_dir"""/result.json"
     local success=true
     
-    case ""$phase"" in
+    case """$phase""" in
         "prerequisites")
-            run_prerequisites_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_prerequisites_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "unit-integration")
-            run_unit_integration_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_unit_integration_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "contract")
-            run_contract_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_contract_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "functional")
-            run_functional_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_functional_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "performance")
-            run_performance_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_performance_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "resilience")
-            run_resilience_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_resilience_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "security")
-            run_security_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_security_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         "cleanup")
-            run_cleanup_phase """$phase_dir""" > """$phase_log""" 2>&1 || success=false
+            run_cleanup_phase """"$phase_dir"""" > """"$phase_log"""" 2>&1 || success=false
             ;;
         *)
-            log_error "Unknown phase: ""$phase"""
+            log_error "Unknown phase: """$phase""""
             return 1
             ;;
     esac
@@ -259,20 +259,20 @@ run_validation_phase() {
     # Generate phase result
     {
         echo "{"
-        echo "  \"phase\": \"""$phase""\","
-        echo "  \"name\": \"""$phase_name""\","
-        echo "  \"success\": ""$success"","
-        echo "  \"duration_seconds\": ""$duration"","
+        echo "  \"phase\": \""""$phase"""\","
+        echo "  \"name\": \""""$phase_name"""\","
+        echo "  \"success\": """$success""","
+        echo "  \"duration_seconds\": """$duration""","
         echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
         echo "  \"log_file\": \"phase.log\""
         echo "}"
-    } > """$phase_result"""
+    } > """"$phase_result""""
     
-    if [ """$success""" = true ]; then
-        log_success "Phase '""$phase_name""' completed successfully in ${duration}s"
+    if [ """"$success"""" = true ]; then
+        log_success "Phase '"""$phase_name"""' completed successfully in ${duration}s"
         return 0
     else
-        log_error "Phase '""$phase_name""' failed after ${duration}s"
+        log_error "Phase '"""$phase_name"""' failed after ${duration}s"
         return 1
     fi
 }
@@ -440,11 +440,11 @@ run_complete_validation() {
     local total_start_time=$(date +%s)
     
     for phase in prerequisites unit-integration contract functional performance resilience security cleanup; do
-        if ! run_validation_phase """$phase"""; then
-            failed_phases+=("""$phase""")
+        if ! run_validation_phase """"$phase""""; then
+            failed_phases+=(""""$phase"""")
             
-            if [ """$FAIL_FAST""" = "true" ]; then
-                log_error "Fail-fast enabled, stopping after phase failure: ""$phase"""
+            if [ """"$FAIL_FAST"""" = "true" ]; then
+                log_error "Fail-fast enabled, stopping after phase failure: """$phase""""
                 break
             fi
         fi
@@ -454,7 +454,7 @@ run_complete_validation() {
     local total_duration=$((total_end_time - total_start_time))
     
     # Generate summary
-    generate_validation_summary """$total_duration""" "${failed_phases[@]}"
+    generate_validation_summary """"$total_duration"""" "${failed_phases[@]}"
     
     if [ "${#failed_phases[@]}" -eq 0 ]; then
         log_success "Complete E2E validation passed in ${total_duration}s"
@@ -469,7 +469,7 @@ run_complete_validation() {
 run_validation_mode() {
     local mode="$1"
     
-    case ""$mode"" in
+    case """$mode""" in
         "complete")
             run_complete_validation
             ;;
@@ -477,8 +477,8 @@ run_validation_mode() {
             log_info "Running critical validation (prerequisites, unit-integration, functional)..."
             establish_baseline
             for phase in prerequisites unit-integration functional; do
-                if ! run_validation_phase """$phase"""; then
-                    log_error "Critical phase failed: ""$phase"""
+                if ! run_validation_phase """"$phase""""; then
+                    log_error "Critical phase failed: """$phase""""
                     return 1
                 fi
             done
@@ -489,8 +489,8 @@ run_validation_mode() {
             log_info "Running performance validation..."
             establish_baseline
             for phase in prerequisites performance; do
-                if ! run_validation_phase """$phase"""; then
-                    log_error "Performance validation failed: ""$phase"""
+                if ! run_validation_phase """"$phase""""; then
+                    log_error "Performance validation failed: """$phase""""
                     return 1
                 fi
             done
@@ -501,8 +501,8 @@ run_validation_mode() {
             log_info "Running resilience validation..."
             establish_baseline
             for phase in prerequisites resilience; do
-                if ! run_validation_phase """$phase"""; then
-                    log_error "Resilience validation failed: ""$phase"""
+                if ! run_validation_phase """"$phase""""; then
+                    log_error "Resilience validation failed: """$phase""""
                     return 1
                 fi
             done
@@ -513,8 +513,8 @@ run_validation_mode() {
             log_info "Running security validation..."
             establish_baseline
             for phase in prerequisites security; do
-                if ! run_validation_phase """$phase"""; then
-                    log_error "Security validation failed: ""$phase"""
+                if ! run_validation_phase """"$phase""""; then
+                    log_error "Security validation failed: """$phase""""
                     return 1
                 fi
             done
@@ -522,7 +522,7 @@ run_validation_mode() {
             log_success "Security validation completed successfully"
             ;;
         *)
-            log_error "Unknown validation mode: ""$mode"""
+            log_error "Unknown validation mode: """$mode""""
             return 1
             ;;
     esac
@@ -536,7 +536,7 @@ generate_validation_summary() {
     
     log_info "Generating validation summary..."
     
-    local summary_file="""$REPORT_DIR""/validation-summary.json"
+    local summary_file=""""$REPORT_DIR"""/validation-summary.json"
     local total_phases=8
     local successful_phases=$((total_phases - ${#failed_phases[@]}))
     local success_rate=$((successful_phases * 100 / total_phases))
@@ -545,40 +545,40 @@ generate_validation_summary() {
         echo "{"
         echo "  \"validation_id\": \"e2e-$(date +%Y%m%d-%H%M%S)\","
         echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
-        echo "  \"mode\": \"""$E2E_MODE""\","
-        echo "  \"environment\": \"""$ENVIRONMENT""\","
-        echo "  \"total_duration_seconds\": ""$total_duration"","
-        echo "  \"total_phases\": ""$total_phases"","
-        echo "  \"successful_phases\": ""$successful_phases"","
+        echo "  \"mode\": \""""$E2E_MODE"""\","
+        echo "  \"environment\": \""""$ENVIRONMENT"""\","
+        echo "  \"total_duration_seconds\": """$total_duration""","
+        echo "  \"total_phases\": """$total_phases""","
+        echo "  \"successful_phases\": """$successful_phases""","
         echo "  \"failed_phases\": ${#failed_phases[@]},"
-        echo "  \"success_rate_percentage\": ""$success_rate"","
+        echo "  \"success_rate_percentage\": """$success_rate""","
         echo "  \"overall_success\": $([ "${#failed_phases[@]}" -eq 0 ] && echo true || echo false),"
         echo "  \"failed_phase_names\": ["
         
         if [ "${#failed_phases[@]}" -gt 0 ]; then
             local first=true
             for phase in "${failed_phases[@]}"; do
-                if [ """$first""" = true ]; then
+                if [ """"$first"""" = true ]; then
                     first=false
                 else
                     echo ","
                 fi
-                echo "    \"""$phase""\""
+                echo "    \""""$phase"""\""
             done
         fi
         
         echo "  ]"
         echo "}"
-    } > """$summary_file"""
+    } > """"$summary_file""""
     
-    log_success "Validation summary generated: ""$summary_file"""
+    log_success "Validation summary generated: """$summary_file""""
     
     # Print summary to console
     echo
     log_info "=== E2E Validation Summary ==="
-    log_metric "Mode: ""$E2E_MODE"""
+    log_metric "Mode: """$E2E_MODE""""
     log_metric "Duration: ${total_duration}s"
-    log_metric "Success Rate: ""$success_rate""% (""$successful_phases""/""$total_phases"" phases)"
+    log_metric "Success Rate: """$success_rate"""% ("""$successful_phases"""/"""$total_phases""" phases)"
     
     if [ "${#failed_phases[@]}" -eq 0 ]; then
         log_success "Overall Result: SUCCESS"
@@ -591,15 +591,15 @@ generate_validation_summary() {
 
 # Generate comprehensive report
 generate_comprehensive_report() {
-    if [ """$GENERATE_REPORTS""" != "true" ]; then
+    if [ """"$GENERATE_REPORTS"""" != "true" ]; then
         return 0
     fi
     
     log_info "Generating comprehensive E2E report..."
     
-    local report_file="""$REPORT_DIR""/e2e-validation-report.html"
+    local report_file=""""$REPORT_DIR"""/e2e-validation-report.html"
     
-    cat > """$report_file""" << EOF
+    cat > """"$report_file"""" << EOF
 <!DOCTYPE html>
 <html>
 <head>
@@ -621,8 +621,8 @@ generate_comprehensive_report() {
     <div class="header">
         <h1>MCP End-to-End Validation Report</h1>
         <p><strong>Generated:</strong> $(date)</p>
-        <p><strong>Mode:</strong> ""$E2E_MODE""</p>
-        <p><strong>Environment:</strong> ""$ENVIRONMENT""</p>
+        <p><strong>Mode:</strong> """$E2E_MODE"""</p>
+        <p><strong>Environment:</strong> """$ENVIRONMENT"""</p>
     </div>
     
     <div class="section">
@@ -631,37 +631,37 @@ EOF
 
     # Add phase results
     for phase in "${!PHASES[@]}"; do
-        local phase_result_file="""$REPORT_DIR""/phases/""$phase""/result.json"
-        if [ -f """$phase_result_file""" ]; then
-            local success=$(grep '"success"' """$phase_result_file""" | cut -d':' -f2 | tr -d ' ,' | tr -d '"')
-            local duration=$(grep '"duration_seconds"' """$phase_result_file""" | cut -d':' -f2 | tr -d ' ,')
-            local phase_name="${PHASES[""$phase""]}"
+        local phase_result_file=""""$REPORT_DIR"""/phases/"""$phase"""/result.json"
+        if [ -f """"$phase_result_file"""" ]; then
+            local success=$(grep '"success"' """"$phase_result_file"""" | cut -d':' -f2 | tr -d ' ,' | tr -d '"')
+            local duration=$(grep '"duration_seconds"' """"$phase_result_file"""" | cut -d':' -f2 | tr -d ' ,')
+            local phase_name="${PHASES["""$phase"""]}"
             
             local css_class="phase"
-            if [ """$success""" = "true" ]; then
+            if [ """"$success"""" = "true" ]; then
                 css_class="phase success"
             else
                 css_class="phase failed"
             fi
             
-            cat >> """$report_file""" << EOF
-        <div class="""$css_class""">
-            <h3>""$phase_name""</h3>
-            <p><strong>Status:</strong> $([ """$success""" = "true" ] && echo "SUCCESS" || echo "FAILED")</p>
+            cat >> """"$report_file"""" << EOF
+        <div class=""""$css_class"""">
+            <h3>"""$phase_name"""</h3>
+            <p><strong>Status:</strong> $([ """"$success"""" = "true" ] && echo "SUCCESS" || echo "FAILED")</p>
             <p><strong>Duration:</strong> ${duration}s</p>
-            <p><strong>Log:</strong> <a href="phases/""$phase""/phase.log">View Log</a></p>
+            <p><strong>Log:</strong> <a href="phases/"""$phase"""/phase.log">View Log</a></p>
         </div>
 EOF
         fi
     done
     
-    cat >> """$report_file""" << EOF
+    cat >> """"$report_file"""" << EOF
     </div>
 </body>
 </html>
 EOF
 
-    log_success "Comprehensive report generated: ""$report_file"""
+    log_success "Comprehensive report generated: """$report_file""""
 }
 
 # Cleanup function
@@ -673,32 +673,32 @@ cleanup() {
     pkill -f "chaos" 2>/dev/null || true
     
     # Generate final reports
-    if [ """$GENERATE_REPORTS""" = "true" ]; then
+    if [ """"$GENERATE_REPORTS"""" = "true" ]; then
         generate_comprehensive_report
     fi
 }
 
 # Main execution
 main() {
-    local action="${1:-""$E2E_MODE""}"
+    local action="${1:-"""$E2E_MODE"""}"
     
     # Create report directory
-    mkdir -p """$REPORT_DIR""/phases"
+    mkdir -p """"$REPORT_DIR"""/phases"
     
     # Setup cleanup trap
     trap cleanup EXIT
     
-    case ""$action"" in
+    case """$action""" in
         "check")
             log_info "Running E2E validation prerequisite check..."
             check_prerequisites
             check_system_health
             ;;
         "complete"|"critical"|"performance"|"resilience"|"security")
-            log_info "Running E2E validation mode: ""$action"""
+            log_info "Running E2E validation mode: """$action""""
             check_prerequisites
-            E2E_MODE="""$action"""
-            if run_validation_mode """$action"""; then
+            E2E_MODE=""""$action""""
+            if run_validation_mode """"$action""""; then
                 log_success "E2E validation completed successfully"
                 exit 0
             else
@@ -723,17 +723,17 @@ main() {
             echo "  help        - Show this help message"
             echo ""
             echo "Environment variables:"
-            echo "  E2E_MODE=""$E2E_MODE"""
-            echo "  VALIDATION_TIMEOUT=""$VALIDATION_TIMEOUT"""
-            echo "  CONCURRENCY=""$CONCURRENCY"""
-            echo "  FAIL_FAST=""$FAIL_FAST"""
-            echo "  GENERATE_REPORTS=""$GENERATE_REPORTS"""
-            echo "  REPORT_DIR=""$REPORT_DIR"""
-            echo "  ENVIRONMENT=""$ENVIRONMENT"""
+            echo "  E2E_MODE="""$E2E_MODE""""
+            echo "  VALIDATION_TIMEOUT="""$VALIDATION_TIMEOUT""""
+            echo "  CONCURRENCY="""$CONCURRENCY""""
+            echo "  FAIL_FAST="""$FAIL_FAST""""
+            echo "  GENERATE_REPORTS="""$GENERATE_REPORTS""""
+            echo "  REPORT_DIR="""$REPORT_DIR""""
+            echo "  ENVIRONMENT="""$ENVIRONMENT""""
             exit 0
             ;;
         *)
-            log_error "Unknown action: ""$action"""
+            log_error "Unknown action: """$action""""
             echo "Use '$0 help' for usage information"
             exit 1
             ;;

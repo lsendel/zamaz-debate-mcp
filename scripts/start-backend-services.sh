@@ -37,14 +37,14 @@ start_service() {
     local service_dir=$2
     local port=$3
     
-    echo "Starting ""$service_name"" on port ""$port""..."
-    cd """$service_dir""" || exit 1
+    echo "Starting """$service_name""" on port """$port"""..."
+    cd """"$service_dir"""" || exit 1
     
     # Start the service in background
-    mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Dserver.port=""$port""" > "/tmp/""$service_name"".log" 2>&1 &
+    mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Dserver.port="""$port"""" > "/tmp/"""$service_name""".log" 2>&1 &
     local pid=$!
-    echo """$pid""" >> $PID_FILE
-    echo """$service_name"" started with PID: ""$pid"" (log: /tmp/""$service_name"".log)"
+    echo """"$pid"""" >> $PID_FILE
+    echo """"$service_name""" started with PID: """$pid""" (log: /tmp/"""$service_name""".log)"
     
     cd - > /dev/null
 }

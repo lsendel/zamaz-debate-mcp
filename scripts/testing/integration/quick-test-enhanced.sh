@@ -19,9 +19,9 @@ check_service() {
     local port=$2
     local endpoint=$3
     
-    echo -n "  ""$name"" (port ""$port""): "
+    echo -n "  """$name""" (port """$port"""): "
     
-    if curl -s -f -o /dev/null "http://localhost:""$port"""$endpoint"" 2>/dev/null; then
+    if curl -s -f -o /dev/null "http://localhost:"""$port"""""$endpoint""" 2>/dev/null; then
         echo -e "${GREEN}✓ Running${NC}"
         return 0
     else
@@ -34,7 +34,7 @@ check_service() {
 check_container() {
     local name=$1
     
-    if docker ps | grep -q """$name"""; then
+    if docker ps | grep -q """"$name""""; then
         return 0
     else
         return 1
@@ -77,14 +77,14 @@ echo ""
 echo -e "${BLUE}📊 Summary${NC}"
 echo "=========="
 echo -e "  Infrastructure: ${GREEN}3/3 running${NC}"
-echo -e "  Python Services: ""$PYTHON_RUNNING""/6 running"
-echo -e "  Java Services: ""$JAVA_RUNNING""/3 running"
+echo -e "  Python Services: """$PYTHON_RUNNING"""/6 running"
+echo -e "  Java Services: """$JAVA_RUNNING"""/3 running"
 
 echo ""
 echo -e "${BLUE}🚀 Quick Start Commands${NC}"
 echo "======================="
 
-if [ ""$PYTHON_RUNNING"" -eq 0 ] && [ ""$JAVA_RUNNING"" -eq 0 ]; then
+if [ """$PYTHON_RUNNING""" -eq 0 ] && [ """$JAVA_RUNNING""" -eq 0 ]; then
     echo "No MCP services are running. To start:"
     echo ""
     echo -e "${YELLOW}Option 1: Start Python services${NC}"
@@ -114,7 +114,7 @@ echo "  Test Java MCP:    ./mcp-tests/test-java-services.sh"
 echo "  Test databases:   ./test-databases.sh"
 
 # If services are running, try some API calls
-if [ ""$PYTHON_RUNNING"" -gt 0 ] || [ ""$JAVA_RUNNING"" -gt 0 ]; then
+if [ """$PYTHON_RUNNING""" -gt 0 ] || [ """$JAVA_RUNNING""" -gt 0 ]; then
     echo ""
     echo -e "${BLUE}🧪 Quick API Tests${NC}"
     echo "=================="
@@ -129,6 +129,6 @@ if [ ""$PYTHON_RUNNING"" -gt 0 ] || [ ""$JAVA_RUNNING"" -gt 0 ]; then
     if check_service "Debate Service" "5013" "/resources/debates" 2>/dev/null; then
         echo "Active debates:"
         COUNT=$(curl -s http://localhost:5013/resources/debates 2>/dev/null | jq '.debates | length' 2>/dev/null || echo "0")
-        echo "  - Total: ""$COUNT"" debates"
+        echo "  - Total: """$COUNT""" debates"
     fi
 fi

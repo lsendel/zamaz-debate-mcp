@@ -84,9 +84,9 @@ run_basic_tests() {
     print_status "Running basic E2E tests..."
     
     mvn test -Dtest=GitHubIntegrationE2ETest \
-        -Dspring.profiles.active=""$TEST_PROFILE"" \
+        -Dspring.profiles.active="""$TEST_PROFILE""" \
         -Dmaven.test.failure.ignore=false \
-        -Dlogging.level.root=""$LOG_LEVEL"" \
+        -Dlogging.level.root="""$LOG_LEVEL""" \
         $MAVEN_OPTS
     
     if [ "$?" -eq 0 ]; then
@@ -101,9 +101,9 @@ run_pr_flow_tests() {
     print_status "Running PR flow E2E tests..."
     
     mvn test -Dtest=PullRequestReviewFlowE2ETest \
-        -Dspring.profiles.active=""$TEST_PROFILE"" \
+        -Dspring.profiles.active="""$TEST_PROFILE""" \
         -Dmaven.test.failure.ignore=false \
-        -Dlogging.level.root=""$LOG_LEVEL"" \
+        -Dlogging.level.root="""$LOG_LEVEL""" \
         $MAVEN_OPTS
     
     if [ "$?" -eq 0 ]; then
@@ -118,9 +118,9 @@ run_performance_tests() {
     print_status "Running performance E2E tests..."
     
     mvn test -Dtest=PerformanceE2ETest \
-        -Dspring.profiles.active=""$TEST_PROFILE"" \
+        -Dspring.profiles.active="""$TEST_PROFILE""" \
         -Dmaven.test.failure.ignore=false \
-        -Dlogging.level.root=""$LOG_LEVEL"" \
+        -Dlogging.level.root="""$LOG_LEVEL""" \
         $MAVEN_OPTS
     
     if [ "$?" -eq 0 ]; then
@@ -136,9 +136,9 @@ run_complete_suite() {
     print_status "Running complete E2E test suite..."
     
     mvn test -Dtest=GitHubIntegrationE2ETestSuite \
-        -Dspring.profiles.active=""$TEST_PROFILE"" \
+        -Dspring.profiles.active="""$TEST_PROFILE""" \
         -Dmaven.test.failure.ignore=false \
-        -Dlogging.level.root=""$LOG_LEVEL"" \
+        -Dlogging.level.root="""$LOG_LEVEL""" \
         $MAVEN_OPTS
     
     if [ "$?" -eq 0 ]; then
@@ -166,12 +166,12 @@ generate_report() {
 main() {
     local TEST_TYPE=${1:-"all"}
     
-    print_status "Test execution type: ""$TEST_TYPE"""
+    print_status "Test execution type: """$TEST_TYPE""""
     
     check_prerequisites
     cleanup
     
-    case ""$TEST_TYPE"" in
+    case """$TEST_TYPE""" in
         "basic")
             run_basic_tests
             ;;
@@ -185,7 +185,7 @@ main() {
             run_complete_suite
             ;;
         *)
-            print_error "Invalid test type: ""$TEST_TYPE"""
+            print_error "Invalid test type: """$TEST_TYPE""""
             print_status "Usage: $0 [basic|pr-flow|performance|all]"
             exit 1
             ;;

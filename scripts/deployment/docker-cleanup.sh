@@ -18,7 +18,7 @@ echo ""
 read -p "Are you sure you want to continue? (yes/no): " -r
 echo
 
-if [[ ! ""$REPLY"" =~ ^[Yy][Ee][Ss]$ ]]; then
+if [[ ! """$REPLY""" =~ ^[Yy][Ee][Ss]$ ]]; then
     echo "❌ Cleanup cancelled"
     exit 1
 fi
@@ -57,8 +57,8 @@ fi
 
 echo "🌐 Removing all custom networks..."
 CUSTOM_NETWORKS=$(docker network ls -q 2>/dev/null | xargs -I {} docker network inspect {} --format '{{.Name}}' 2>/dev/null | grep -v -E '^(bridge|host|none)$' || true)
-if [ -n """$CUSTOM_NETWORKS""" ]; then
-    echo """$CUSTOM_NETWORKS""" | xargs docker network rm 2>/dev/null || true
+if [ -n """"$CUSTOM_NETWORKS"""" ]; then
+    echo """"$CUSTOM_NETWORKS"""" | xargs docker network rm 2>/dev/null || true
     echo "✓ Networks removed"
 else
     echo "No custom networks to remove"

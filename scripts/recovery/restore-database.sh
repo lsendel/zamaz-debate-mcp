@@ -24,7 +24,7 @@ REDIS_PASSWORD=${REDIS_PASSWORD:-""}
 
 # Logging
 LOG_FILE="${BACKUP_DIR}/restore.log"
-exec 1> >(tee -a """$LOG_FILE""")
+exec 1> >(tee -a """"$LOG_FILE"""")
 exec 2>&1
 
 log() {
@@ -69,35 +69,35 @@ EOF
 
 # List available backups
 list_backups() {
-    log "Available backups in ""$BACKUP_DIR"":"
+    log "Available backups in """$BACKUP_DIR""":"
     echo
     
-    if [ ! -d """$BACKUP_DIR""" ]; then
-        log "Backup directory does not exist: ""$BACKUP_DIR"""
+    if [ ! -d """"$BACKUP_DIR"""" ]; then
+        log "Backup directory does not exist: """$BACKUP_DIR""""
         return 1
     fi
     
     # PostgreSQL backups
     echo "PostgreSQL Backups:"
-    find """$BACKUP_DIR""" -name "*postgres*.sql*" -type f -exec ls -lh {} \; | \
+    find """"$BACKUP_DIR"""" -name "*postgres*.sql*" -type f -exec ls -lh {} \; | \
         awk '{print $9, "(" $5 ")", $6, $7, $8}' | sort -r | head -10
     echo
     
     # Redis backups
     echo "Redis Backups:"
-    find """$BACKUP_DIR""" -name "*redis*.rdb*" -type f -exec ls -lh {} \; | \
+    find """"$BACKUP_DIR"""" -name "*redis*.rdb*" -type f -exec ls -lh {} \; | \
         awk '{print $9, "(" $5 ")", $6, $7, $8}' | sort -r | head -10
     echo
     
     # Configuration backups
     echo "Configuration Backups:"
-    find """$BACKUP_DIR""" -name "*config*.tar.gz" -type f -exec ls -lh {} \; | \
+    find """"$BACKUP_DIR"""" -name "*config*.tar.gz" -type f -exec ls -lh {} \; | \
         awk '{print $9, "(" $5 ")", $6, $7, $8}' | sort -r | head -10
     echo
     
     # Kubernetes backups
     echo "Kubernetes Backups:"
-    find """$BACKUP_DIR""" -name "*k8s*.yaml*" -type f -exec ls -lh {} \; | \
+    find """"$BACKUP_DIR"""" -name "*k8s*.yaml*" -type f -exec ls -lh {} \; | \
         awk '{print $9, "(" $5 ")", $6, $7, $8}' | sort -r | head -10
 }
 
@@ -106,14 +106,14 @@ verify_backup() {
     local file="$1"
     local file_type=""
     
-    if [ ! -f """$file""" ]; then
-        error "Backup file not found: ""$file"""
+    if [ ! -f """"$file"""" ]; then
+        error "Backup file not found: """$file""""
     fi
     
-    log "Verifying backup file: ""$file"""
+    log "Verifying backup file: """$file""""
     
     # Determine file type
-    case """$file""" in
+    case """"$file"""" in
         *postgres*.sql*)
             file_type="postgres"
             ;;
@@ -127,21 +127,21 @@ verify_backup() {
             file_type="kubernetes"
             ;;
         *)
-            error "Unknown backup file type: ""$file"""
+            error "Unknown backup file type: """$file""""
             ;;
     esac
     
-    case """$file_type""" in
+    case """"$file_type"""" in
         postgres)
             # Verify PostgreSQL backup
-            if [[ """$file""" == *.gz ]]; then
-                gunzip -t """$file""" || error "PostgreSQL backup file is corrupted"
-                local temp_file="/tmp/$(basename """$file""" .gz)"
-                gunzip -c """$file""" > """$temp_file"""
-                file="""$temp_file"""
+            if [[ """"$file"""" == *.gz ]]; then
+                gunzip -t """"$file"""" || error "PostgreSQL backup file is corrupted"
+                local temp_file="/tmp/$(basename """"$file"""" .gz)"
+                gunzip -c """"$file"""" > """"$temp_file""""
+                file=""""$temp_file""""
             fi
             
-            PGPASSWORD="""$DB_PASSWORD""" pg_restore --list """$file""" >/dev/null 2>&1 || \
+            PGPASSWORD=""""$DB_PASSWORD"""" pg_restore --list """"$file"""" >/dev/null 2>&1 || \
                 error "PostgreSQL backup verification failed"
             
             log "PostgreSQL backup verified successfully"
@@ -149,29 +149,29 @@ verify_backup() {
             
         redis)
             # Verify Redis backup
-            if [[ """$file""" == *.gz ]]; then
-                gunzip -t """$file""" || error "Redis backup file is corrupted"
+            if [[ """"$file"""" == *.gz ]]; then
+                gunzip -t """"$file"""" || error "Redis backup file is corrupted"
             fi
             
             # Basic file format check
-            file """$file""" | grep -q "data" || error "Redis backup file format invalid"
+            file """"$file"""" | grep -q "data" || error "Redis backup file format invalid"
             log "Redis backup verified successfully"
             ;;
             
         config)
             # Verify configuration backup
-            tar -tzf """$file""" >/dev/null 2>&1 || error "Configuration backup verification failed"
+            tar -tzf """"$file"""" >/dev/null 2>&1 || error "Configuration backup verification failed"
             log "Configuration backup verified successfully"
             ;;
             
         kubernetes)
             # Verify Kubernetes backup
-            if [[ """$file""" == *.gz ]]; then
-                gunzip -t """$file""" || error "Kubernetes backup file is corrupted"
-                gunzip -c """$file""" | yaml-lint >/dev/null 2>&1 || \
+            if [[ """"$file"""" == *.gz ]]; then
+                gunzip -t """"$file"""" || error "Kubernetes backup file is corrupted"
+                gunzip -c """"$file"""" | yaml-lint >/dev/null 2>&1 || \
                     warning "Kubernetes YAML validation failed (proceeding anyway)"
             else
-                yaml-lint """$file""" >/dev/null 2>&1 || \
+                yaml-lint """"$file"""" >/dev/null 2>&1 || \
                     warning "Kubernetes YAML validation failed (proceeding anyway)"
             fi
             log "Kubernetes backup verified successfully"
@@ -184,7 +184,7 @@ get_latest_backup() {
     local type="$1"
     local pattern=""
     
-    case """$type""" in
+    case """"$type"""" in
         postgres)
             pattern="*postgres*.sql*"
             ;;
@@ -198,11 +198,11 @@ get_latest_backup() {
             pattern="*k8s*.yaml*"
             ;;
         *)
-            error "Unknown backup type: ""$type"""
+            error "Unknown backup type: """$type""""
             ;;
     esac
     
-    find """$BACKUP_DIR""" -name """$pattern""" -type f -printf '%T@ %p\n' | \
+    find """"$BACKUP_DIR"""" -name """"$pattern"""" -type f -printf '%T@ %p\n' | \
         sort -n | tail -1 | cut -d' ' -f2-
 }
 
@@ -211,10 +211,10 @@ restore_postgresql() {
     local backup_file="$1"
     local target_time="${2:-}"
     
-    log "Starting PostgreSQL restore from: ""$backup_file"""
+    log "Starting PostgreSQL restore from: """$backup_file""""
     
     # Verify backup first
-    verify_backup """$backup_file"""
+    verify_backup """"$backup_file""""
     
     # Stop applications that use the database
     log "Stopping applications..."
@@ -224,38 +224,38 @@ restore_postgresql() {
     # Create a backup of current database before restore
     log "Creating pre-restore backup..."
     local pre_restore_backup="pre_restore_$(date +%Y%m%d_%H%M%S).sql"
-    PGPASSWORD="""$DB_PASSWORD""" pg_dump \
-        -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d """$DB_NAME""" \
-        --file="""$BACKUP_DIR""/""$pre_restore_backup""" || \
+    PGPASSWORD=""""$DB_PASSWORD"""" pg_dump \
+        -h """"$DB_HOST"""" -p """"$DB_PORT"""" -U """"$DB_USER"""" -d """"$DB_NAME"""" \
+        --file=""""$BACKUP_DIR"""/"""$pre_restore_backup"""" || \
         warning "Could not create pre-restore backup"
     
     # Drop and recreate database
     log "Recreating database..."
-    PGPASSWORD="""$DB_PASSWORD""" psql -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d postgres <<EOF
-SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '""$DB_NAME""';
-DROP DATABASE IF EXISTS ""$DB_NAME"";
-CREATE DATABASE ""$DB_NAME"";
+    PGPASSWORD=""""$DB_PASSWORD"""" psql -h """"$DB_HOST"""" -p """"$DB_PORT"""" -U """"$DB_USER"""" -d postgres <<EOF
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '"""$DB_NAME"""';
+DROP DATABASE IF EXISTS """$DB_NAME""";
+CREATE DATABASE """$DB_NAME""";
 EOF
     
     # Restore from backup
     log "Restoring database from backup..."
-    if [[ """$backup_file""" == *.gz ]]; then
-        gunzip -c """$backup_file""" | PGPASSWORD="""$DB_PASSWORD""" pg_restore \
-            -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d """$DB_NAME""" \
+    if [[ """"$backup_file"""" == *.gz ]]; then
+        gunzip -c """"$backup_file"""" | PGPASSWORD=""""$DB_PASSWORD"""" pg_restore \
+            -h """"$DB_HOST"""" -p """"$DB_PORT"""" -U """"$DB_USER"""" -d """"$DB_NAME"""" \
             --verbose --clean --if-exists --no-owner --no-privileges
     else
-        PGPASSWORD="""$DB_PASSWORD""" pg_restore \
-            -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d """$DB_NAME""" \
+        PGPASSWORD=""""$DB_PASSWORD"""" pg_restore \
+            -h """"$DB_HOST"""" -p """"$DB_PORT"""" -U """"$DB_USER"""" -d """"$DB_NAME"""" \
             --verbose --clean --if-exists --no-owner --no-privileges \
-            """$backup_file"""
+            """"$backup_file""""
     fi
     
     if [ "$?" -eq 0 ]; then
         log "PostgreSQL restore completed successfully"
         
         # Point-in-time recovery if specified
-        if [ -n """$target_time""" ]; then
-            log "Applying point-in-time recovery to: ""$target_time"""
+        if [ -n """"$target_time"""" ]; then
+            log "Applying point-in-time recovery to: """$target_time""""
             # This would require WAL files and more complex setup
             warning "Point-in-time recovery requires WAL files - not implemented in basic restore"
         fi
@@ -266,7 +266,7 @@ EOF
         
         # Verify database integrity
         log "Verifying database integrity..."
-        PGPASSWORD="""$DB_PASSWORD""" psql -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d """$DB_NAME""" \
+        PGPASSWORD=""""$DB_PASSWORD"""" psql -h """"$DB_HOST"""" -p """"$DB_PORT"""" -U """"$DB_USER"""" -d """"$DB_NAME"""" \
             -c "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'public';"
         
     else
@@ -278,10 +278,10 @@ EOF
 restore_redis() {
     local backup_file="$1"
     
-    log "Starting Redis restore from: ""$backup_file"""
+    log "Starting Redis restore from: """$backup_file""""
     
     # Verify backup first
-    verify_backup """$backup_file"""
+    verify_backup """"$backup_file""""
     
     # Stop Redis
     log "Stopping Redis..."
@@ -290,22 +290,22 @@ restore_redis() {
     
     # Backup current Redis data
     local redis_data_dir="/var/lib/redis"
-    if [ -f """$redis_data_dir""/dump.rdb" ]; then
+    if [ -f """"$redis_data_dir"""/dump.rdb" ]; then
         log "Backing up current Redis data..."
-        cp """$redis_data_dir""/dump.rdb" """$redis_data_dir""/dump.rdb.backup.$(date +%Y%m%d_%H%M%S)"
+        cp """"$redis_data_dir"""/dump.rdb" """"$redis_data_dir"""/dump.rdb.backup.$(date +%Y%m%d_%H%M%S)"
     fi
     
     # Restore Redis dump
     log "Restoring Redis data..."
-    if [[ """$backup_file""" == *.gz ]]; then
-        gunzip -c """$backup_file""" > """$redis_data_dir""/dump.rdb"
+    if [[ """"$backup_file"""" == *.gz ]]; then
+        gunzip -c """"$backup_file"""" > """"$redis_data_dir"""/dump.rdb"
     else
-        cp """$backup_file""" """$redis_data_dir""/dump.rdb"
+        cp """"$backup_file"""" """"$redis_data_dir"""/dump.rdb"
     fi
     
     # Set proper permissions
-    chown redis:redis """$redis_data_dir""/dump.rdb" 2>/dev/null || true
-    chmod 660 """$redis_data_dir""/dump.rdb" 2>/dev/null || true
+    chown redis:redis """"$redis_data_dir"""/dump.rdb" 2>/dev/null || true
+    chmod 660 """"$redis_data_dir"""/dump.rdb" 2>/dev/null || true
     
     # Start Redis
     log "Starting Redis..."
@@ -315,14 +315,14 @@ restore_redis() {
     sleep 5
     
     # Verify Redis data
-    local redis_cmd="redis-cli -h ""$REDIS_HOST"" -p ""$REDIS_PORT"""
-    if [ -n """$REDIS_PASSWORD""" ]; then
-        redis_cmd="""$redis_cmd"" -a ""$REDIS_PASSWORD"""
+    local redis_cmd="redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""""
+    if [ -n """"$REDIS_PASSWORD"""" ]; then
+        redis_cmd=""""$redis_cmd""" -a """$REDIS_PASSWORD""""
     fi
     
-    if ""$redis_cmd"" ping >/dev/null 2>&1; then
-        local key_count=$(""$redis_cmd"" dbsize | cut -d: -f2)
-        log "Redis restore completed successfully. Keys restored: ""$key_count"""
+    if """$redis_cmd""" ping >/dev/null 2>&1; then
+        local key_count=$("""$redis_cmd""" dbsize | cut -d: -f2)
+        log "Redis restore completed successfully. Keys restored: """$key_count""""
     else
         error "Redis restore failed - service not responding"
     fi
@@ -332,20 +332,20 @@ restore_redis() {
 restore_configuration() {
     local backup_file="$1"
     
-    log "Starting configuration restore from: ""$backup_file"""
+    log "Starting configuration restore from: """$backup_file""""
     
     # Verify backup first
-    verify_backup """$backup_file"""
+    verify_backup """"$backup_file""""
     
     # Create backup of current configuration
     log "Backing up current configuration..."
     local config_backup="config_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
-    tar -czf """$BACKUP_DIR""/""$config_backup""" \
+    tar -czf """"$BACKUP_DIR"""/"""$config_backup"""" \
         /opt/mcp/ /etc/mcp/ 2>/dev/null || true
     
     # Extract configuration backup
     log "Extracting configuration..."
-    tar -xzf """$backup_file""" -C / 2>/dev/null || \
+    tar -xzf """"$backup_file"""" -C / 2>/dev/null || \
         error "Configuration restore failed"
     
     # Restart services to pick up new configuration
@@ -359,25 +359,25 @@ restore_configuration() {
 restore_kubernetes() {
     local backup_file="$1"
     
-    log "Starting Kubernetes restore from: ""$backup_file"""
+    log "Starting Kubernetes restore from: """$backup_file""""
     
     if ! command -v kubectl >/dev/null 2>&1; then
         error "kubectl not found"
     fi
     
     # Verify backup first
-    verify_backup """$backup_file"""
+    verify_backup """"$backup_file""""
     
     # Extract YAML if compressed
-    local yaml_file="""$backup_file"""
-    if [[ """$backup_file""" == *.gz ]]; then
+    local yaml_file=""""$backup_file""""
+    if [[ """"$backup_file"""" == *.gz ]]; then
         yaml_file="/tmp/k8s_restore_$(date +%Y%m%d_%H%M%S).yaml"
-        gunzip -c """$backup_file""" > """$yaml_file"""
+        gunzip -c """"$backup_file"""" > """"$yaml_file""""
     fi
     
     # Apply Kubernetes resources
     log "Applying Kubernetes resources..."
-    kubectl apply -f """$yaml_file""" || error "Kubernetes restore failed"
+    kubectl apply -f """"$yaml_file"""" || error "Kubernetes restore failed"
     
     # Wait for pods to be ready
     log "Waiting for pods to be ready..."
@@ -385,8 +385,8 @@ restore_kubernetes() {
         warning "Some pods may not be ready yet"
     
     # Clean up temporary file
-    if [[ """$backup_file""" == *.gz ]]; then
-        rm -f """$yaml_file"""
+    if [[ """"$backup_file"""" == *.gz ]]; then
+        rm -f """"$yaml_file""""
     fi
     
     log "Kubernetes restore completed successfully"
@@ -394,18 +394,18 @@ restore_kubernetes() {
 
 # Confirm restore operation
 confirm_restore() {
-    if [ """$CONFIRM_RESTORE""" = true ]; then
+    if [ """"$CONFIRM_RESTORE"""" = true ]; then
         return 0
     fi
     
     echo
     warning "This operation will OVERWRITE existing data!"
-    echo "Restore type: ""$RESTORE_TYPE"""
-    echo "Backup file: ""$BACKUP_FILE"""
+    echo "Restore type: """$RESTORE_TYPE""""
+    echo "Backup file: """$BACKUP_FILE""""
     echo
     read -p "Are you sure you want to continue? (yes/NO): " confirm
     
-    if [ """$confirm""" != "yes" ]; then
+    if [ """"$confirm"""" != "yes" ]; then
         log "Restore operation cancelled by user"
         exit 0
     fi
@@ -413,22 +413,22 @@ confirm_restore() {
 
 # Main restore function
 main_restore() {
-    case """$RESTORE_TYPE""" in
+    case """"$RESTORE_TYPE"""" in
         postgres|postgresql)
             confirm_restore
-            restore_postgresql """$BACKUP_FILE"""
+            restore_postgresql """"$BACKUP_FILE""""
             ;;
         redis)
             confirm_restore
-            restore_redis """$BACKUP_FILE"""
+            restore_redis """"$BACKUP_FILE""""
             ;;
         config|configuration)
             confirm_restore
-            restore_configuration """$BACKUP_FILE"""
+            restore_configuration """"$BACKUP_FILE""""
             ;;
         k8s|kubernetes)
             confirm_restore
-            restore_kubernetes """$BACKUP_FILE"""
+            restore_kubernetes """"$BACKUP_FILE""""
             ;;
         all)
             confirm_restore
@@ -439,24 +439,24 @@ main_restore() {
             local redis_file=$(get_latest_backup "redis")
             local k8s_file=$(get_latest_backup "k8s")
             
-            if [ -n """$config_file""" ]; then
-                restore_configuration """$config_file"""
+            if [ -n """"$config_file"""" ]; then
+                restore_configuration """"$config_file""""
             fi
             
-            if [ -n """$postgres_file""" ]; then
-                restore_postgresql """$postgres_file"""
+            if [ -n """"$postgres_file"""" ]; then
+                restore_postgresql """"$postgres_file""""
             fi
             
-            if [ -n """$redis_file""" ]; then
-                restore_redis """$redis_file"""
+            if [ -n """"$redis_file"""" ]; then
+                restore_redis """"$redis_file""""
             fi
             
-            if [ -n """$k8s_file""" ]; then
-                restore_kubernetes """$k8s_file"""
+            if [ -n """"$k8s_file"""" ]; then
+                restore_kubernetes """"$k8s_file""""
             fi
             ;;
         *)
-            error "Unknown restore type: ""$RESTORE_TYPE"""
+            error "Unknown restore type: """$RESTORE_TYPE""""
             ;;
     esac
 }
@@ -504,32 +504,32 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Validate required parameters
-if [ -z """$RESTORE_TYPE""" ]; then
+if [ -z """"$RESTORE_TYPE"""" ]; then
     error "Restore type is required. Use --type or see --help"
 fi
 
 # Handle special cases for backup file
-if [ """$BACKUP_FILE""" = "latest" ] || [ -z """$BACKUP_FILE""" ]; then
-    BACKUP_FILE=$(get_latest_backup """$RESTORE_TYPE""")
-    if [ -z """$BACKUP_FILE""" ]; then
-        error "No backup files found for type: ""$RESTORE_TYPE"""
+if [ """"$BACKUP_FILE"""" = "latest" ] || [ -z """"$BACKUP_FILE"""" ]; then
+    BACKUP_FILE=$(get_latest_backup """"$RESTORE_TYPE"""")
+    if [ -z """"$BACKUP_FILE"""" ]; then
+        error "No backup files found for type: """$RESTORE_TYPE""""
     fi
-    log "Using latest backup: ""$BACKUP_FILE"""
+    log "Using latest backup: """$BACKUP_FILE""""
 fi
 
 # Ensure backup file exists
-if [ ! -f """$BACKUP_FILE""" ] && [ ! -f """$BACKUP_DIR""/""$BACKUP_FILE""" ]; then
+if [ ! -f """"$BACKUP_FILE"""" ] && [ ! -f """"$BACKUP_DIR"""/"""$BACKUP_FILE"""" ]; then
     # Try with backup directory prefix
-    if [ -f """$BACKUP_DIR""/""$BACKUP_FILE""" ]; then
-        BACKUP_FILE="""$BACKUP_DIR""/""$BACKUP_FILE"""
+    if [ -f """"$BACKUP_DIR"""/"""$BACKUP_FILE"""" ]; then
+        BACKUP_FILE=""""$BACKUP_DIR"""/"""$BACKUP_FILE""""
     else
-        error "Backup file not found: ""$BACKUP_FILE"""
+        error "Backup file not found: """$BACKUP_FILE""""
     fi
 fi
 
 log "Starting restore operation..."
-log "Type: ""$RESTORE_TYPE"""
-log "File: ""$BACKUP_FILE"""
+log "Type: """$RESTORE_TYPE""""
+log "File: """$BACKUP_FILE""""
 
 main_restore
 

@@ -86,8 +86,8 @@ while [[ "$#" -gt 0 ]]; do
         -a|--all)
             # Find all services with Dockerfiles
             while IFS= read -r dockerfile; do
-                service=$(echo """$dockerfile""" | sed 's|./\([^/]*\)/.*|\1|')
-                SERVICES+=("""$service""")
+                service=$(echo """"$dockerfile"""" | sed 's|./\([^/]*\)/.*|\1|')
+                SERVICES+=(""""$service"""")
             done < <(find . -name "Dockerfile" -path "./mcp-*" | sort)
             shift
             ;;
@@ -108,62 +108,62 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Validate arguments
-if [[ -z """$ACTION""" ]]; then
+if [[ -z """"$ACTION"""" ]]; then
     log_error "No action specified"
     show_help
     exit 1
 fi
 
-if [[ "${#SERVICES[@]}" -eq 0 && """$ACTION""" != "list" ]]; then
+if [[ "${#SERVICES[@]}" -eq 0 && """"$ACTION"""" != "list" ]]; then
     log_error "No services specified"
     show_help
     exit 1
 fi
 
 # Execute action
-case ""$ACTION"" in
+case """$ACTION""" in
     build)
         log_info "Building Docker images for: ${SERVICES[*]}"
         for service in "${SERVICES[@]}"; do
-            log_info "Building ""$service"":""$VERSION"""
+            log_info "Building """$service""":"""$VERSION""""
             docker build \
-                --build-arg MODULE_NAME="""$service""" \
-                --build-arg VERSION="""$VERSION""" \
+                --build-arg MODULE_NAME=""""$service"""" \
+                --build-arg VERSION=""""$VERSION"""" \
                 --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
                 --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
                 --build-arg VCS_URL="$(git config --get remote.origin.url)" \
-                -t """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION""" \
-                -f """$service""/Dockerfile" .
-            log_success "Built ""$service"":""$VERSION"""
+                -t """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION"""" \
+                -f """"$service"""/Dockerfile" .
+            log_success "Built """$service""":"""$VERSION""""
         done
         ;;
     push)
         log_info "Pushing Docker images to registry: ${SERVICES[*]}"
         for service in "${SERVICES[@]}"; do
-            log_info "Pushing ""$service"":""$VERSION"" to ""$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            docker push """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            log_success "Pushed ""$service"":""$VERSION"""
+            log_info "Pushing """$service""":"""$VERSION""" to """$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            docker push """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            log_success "Pushed """$service""":"""$VERSION""""
         done
         ;;
     pull)
         log_info "Pulling Docker images from registry: ${SERVICES[*]}"
         for service in "${SERVICES[@]}"; do
-            log_info "Pulling ""$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            docker pull """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            log_success "Pulled ""$service"":""$VERSION"""
+            log_info "Pulling """$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            docker pull """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            log_success "Pulled """$service""":"""$VERSION""""
         done
         ;;
     scan)
         log_info "Scanning Docker images for vulnerabilities: ${SERVICES[*]}"
         for service in "${SERVICES[@]}"; do
-            log_info "Scanning ""$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
+            log_info "Scanning """$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
             if command -v trivy &> /dev/null; then
-                trivy image """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
+                trivy image """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
             else
                 log_warning "Trivy not installed, using Docker Scout"
-                docker scout cves """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
+                docker scout cves """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
             fi
-            log_success "Scanned ""$service"":""$VERSION"""
+            log_success "Scanned """$service""":"""$VERSION""""
         done
         ;;
     sign)
@@ -173,9 +173,9 @@ case ""$ACTION"" in
             exit 1
         fi
         for service in "${SERVICES[@]}"; do
-            log_info "Signing ""$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            COSIGN_EXPERIMENTAL=1 cosign sign --yes """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            log_success "Signed ""$service"":""$VERSION"""
+            log_info "Signing """$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            COSIGN_EXPERIMENTAL=1 cosign sign --yes """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            log_success "Signed """$service""":"""$VERSION""""
         done
         ;;
     verify)
@@ -185,9 +185,9 @@ case ""$ACTION"" in
             exit 1
         fi
         for service in "${SERVICES[@]}"; do
-            log_info "Verifying ""$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            COSIGN_EXPERIMENTAL=1 cosign verify """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
-            log_success "Verified ""$service"":""$VERSION"""
+            log_info "Verifying """$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            COSIGN_EXPERIMENTAL=1 cosign verify """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""":"""$VERSION""""
+            log_success "Verified """$service""":"""$VERSION""""
         done
         ;;
     list)
@@ -196,18 +196,18 @@ case ""$ACTION"" in
             # List all images in registry
             log_info "Available services:"
             while IFS= read -r dockerfile; do
-                service=$(echo """$dockerfile""" | sed 's|./\([^/]*\)/.*|\1|')
-                echo "- ""$service"""
+                service=$(echo """"$dockerfile"""" | sed 's|./\([^/]*\)/.*|\1|')
+                echo "- """$service""""
             done < <(find . -name "Dockerfile" -path "./mcp-*" | sort)
         else
             # List specific services
             for service in "${SERVICES[@]}"; do
-                log_info "Available versions for ""$service"":"
+                log_info "Available versions for """$service""":"
                 if command -v skopeo &> /dev/null; then
-                    skopeo list-tags "docker://""$REGISTRY""/""$REGISTRY_BASE""/""$service""" | jq -r '.Tags[]'
+                    skopeo list-tags "docker://"""$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service"""" | jq -r '.Tags[]'
                 else
                     log_warning "skopeo not installed, using Docker CLI (limited functionality)"
-                    docker image ls """$REGISTRY""/""$REGISTRY_BASE""/""$service"""
+                    docker image ls """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service""""
                 fi
             done
         fi
@@ -215,14 +215,14 @@ case ""$ACTION"" in
     clean)
         log_info "Cleaning up old Docker images: ${SERVICES[*]}"
         for service in "${SERVICES[@]}"; do
-            log_info "Cleaning up ""$service"""
+            log_info "Cleaning up """$service""""
             # Remove all images except the latest version
-            docker image ls --format "{{.Repository}}:{{.Tag}}" | grep """$REGISTRY""/""$REGISTRY_BASE""/""$service""" | grep -v """$VERSION""" | xargs -r docker image rm
-            log_success "Cleaned up ""$service"""
+            docker image ls --format "{{.Repository}}:{{.Tag}}" | grep """"$REGISTRY"""/"""$REGISTRY_BASE"""/"""$service"""" | grep -v """"$VERSION"""" | xargs -r docker image rm
+            log_success "Cleaned up """$service""""
         done
         ;;
     *)
-        log_error "Unknown action: ""$ACTION"""
+        log_error "Unknown action: """$ACTION""""
         show_help
         exit 1
         ;;

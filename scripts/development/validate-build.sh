@@ -51,7 +51,7 @@ check_prerequisites() {
     
     # Check Maven version
     MVN_VERSION=$(mvn -version | head -n 1 | cut -d' ' -f3)
-    log_info "Using Maven version: ""$MVN_VERSION"""
+    log_info "Using Maven version: """$MVN_VERSION""""
     
     log_success "Prerequisites check passed"
 }
@@ -152,12 +152,12 @@ print_summary() {
     
     if [ -f "target/checkstyle-result.xml" ]; then
         CHECKSTYLE_ERRORS=$(grep -c "error" target/checkstyle-result.xml || echo "0")
-        log_info "Checkstyle errors: ""$CHECKSTYLE_ERRORS"""
+        log_info "Checkstyle errors: """$CHECKSTYLE_ERRORS""""
     fi
     
     if [ -f "target/spotbugsXml.xml" ]; then
         SPOTBUGS_BUGS=$(grep -c "BugInstance" target/spotbugsXml.xml || echo "0")
-        log_info "SpotBugs issues: ""$SPOTBUGS_BUGS"""
+        log_info "SpotBugs issues: """$SPOTBUGS_BUGS""""
     fi
     
     log_success "Build validation completed successfully!"

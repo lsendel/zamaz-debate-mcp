@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$(dirname """$SCRIPT_DIR""")")"
+PROJECT_ROOT="$(dirname "$(dirname """"$SCRIPT_DIR"""")")"
 
 # Colors for output
 RED='\033[0;31m'
@@ -21,10 +21,10 @@ echo
 
 # Function to check if .env file exists
 check_env_file() {
-    if [ ! -f """$PROJECT_ROOT""/.env" ]; then
+    if [ ! -f """"$PROJECT_ROOT"""/.env" ]; then
         echo -e "${YELLOW}Warning: .env file not found${NC}"
         echo "Creating .env from .env.example..."
-        cp """$PROJECT_ROOT""/.env.example" """$PROJECT_ROOT""/.env"
+        cp """"$PROJECT_ROOT"""/.env.example" """"$PROJECT_ROOT"""/.env"
         echo -e "${GREEN}Created .env file. Please update with your actual values.${NC}"
         return 1
     fi
@@ -36,19 +36,19 @@ update_token() {
     local token_name=$1
     local new_value=$2
     
-    if grep -q "^${token_name}=" """$PROJECT_ROOT""/.env"; then
+    if grep -q "^${token_name}=" """"$PROJECT_ROOT"""/.env"; then
         # Update existing token
-        if [[ """$OSTYPE""" == "darwin"* ]]; then
+        if [[ """"$OSTYPE"""" == "darwin"* ]]; then
             # macOS
-            sed -i '' "s|^${token_name}=.*|${token_name}=${new_value}|" """$PROJECT_ROOT""/.env"
+            sed -i '' "s|^${token_name}=.*|${token_name}=${new_value}|" """"$PROJECT_ROOT"""/.env"
         else
             # Linux
-            sed -i "s|^${token_name}=.*|${token_name}=${new_value}|" """$PROJECT_ROOT""/.env"
+            sed -i "s|^${token_name}=.*|${token_name}=${new_value}|" """"$PROJECT_ROOT"""/.env"
         fi
         echo -e "${GREEN}Updated ${token_name}${NC}"
     else
         # Add new token
-        echo "${token_name}=${new_value}" >> """$PROJECT_ROOT""/.env"
+        echo "${token_name}=${new_value}" >> """"$PROJECT_ROOT"""/.env"
         echo -e "${GREEN}Added ${token_name}${NC}"
     fi
 }
@@ -65,7 +65,7 @@ main_menu() {
     echo
     read -p "Select option (1-6): " choice
     
-    case ""$choice"" in
+    case """$choice""" in
         1) rotate_sonar_token ;;
         2) rotate_db_passwords ;;
         3) rotate_api_keys ;;
@@ -90,8 +90,8 @@ rotate_sonar_token() {
     echo
     read -p "Enter new SonarCloud token: " new_token
     
-    if [ -n """$new_token""" ]; then
-        update_token "SONAR_TOKEN" """$new_token"""
+    if [ -n """"$new_token"""" ]; then
+        update_token "SONAR_TOKEN" """"$new_token""""
         echo -e "${GREEN}SonarCloud token updated successfully!${NC}"
         
         # Update GitHub secrets reminder
@@ -121,17 +121,17 @@ rotate_db_passwords() {
     echo
     read -p "Use this password? (y/n): " confirm
     
-    if [[ """$confirm""" == "y" ]]; then
-        update_token "POSTGRES_PASSWORD" """$new_password"""
-        update_token "DB_PASSWORD" """$new_password"""
+    if [[ """"$confirm"""" == "y" ]]; then
+        update_token "POSTGRES_PASSWORD" """"$new_password""""
+        update_token "DB_PASSWORD" """"$new_password""""
         echo -e "${GREEN}Database passwords updated!${NC}"
         echo
         echo -e "${YELLOW}Important: You need to update the database with the new password${NC}"
         echo "Run: docker-compose down && docker-compose up -d"
     else
         read -p "Enter custom password: " custom_password
-        update_token "POSTGRES_PASSWORD" """$custom_password"""
-        update_token "DB_PASSWORD" """$custom_password"""
+        update_token "POSTGRES_PASSWORD" """"$custom_password""""
+        update_token "DB_PASSWORD" """"$custom_password""""
     fi
     
     echo
@@ -154,22 +154,22 @@ rotate_api_keys() {
     echo
     read -p "Select option (1-5): " api_choice
     
-    case ""$api_choice"" in
+    case """$api_choice""" in
         1) 
             read -p "Enter new OpenAI API key: " key
-            update_token "OPENAI_API_KEY" """$key"""
+            update_token "OPENAI_API_KEY" """"$key""""
             ;;
         2) 
             read -p "Enter new Claude API key: " key
-            update_token "CLAUDE_API_KEY" """$key"""
+            update_token "CLAUDE_API_KEY" """"$key""""
             ;;
         3) 
             read -p "Enter new Gemini API key: " key
-            update_token "GEMINI_API_KEY" """$key"""
+            update_token "GEMINI_API_KEY" """"$key""""
             ;;
         4) 
             read -p "Enter new GitHub token: " key
-            update_token "GITHUB_TOKEN" """$key"""
+            update_token "GITHUB_TOKEN" """"$key""""
             ;;
         5) main_menu ;;
         *) echo -e "${RED}Invalid option${NC}" ;;
@@ -204,23 +204,23 @@ check_configuration() {
     echo "--------------------------"
     echo
     
-    if [ -f """$PROJECT_ROOT""/.env" ]; then
+    if [ -f """"$PROJECT_ROOT"""/.env" ]; then
         echo "Checking for missing values in .env:"
         echo
         
         # Check for placeholder values
-        if grep -q "your_.*_here\|demo-key" """$PROJECT_ROOT""/.env"; then
+        if grep -q "your_.*_here\|demo-key" """"$PROJECT_ROOT"""/.env"; then
             echo -e "${RED}Found placeholder values:${NC}"
-            grep -n "your_.*_here\|demo-key" """$PROJECT_ROOT""/.env" | sed 's/:/ -> /'
+            grep -n "your_.*_here\|demo-key" """"$PROJECT_ROOT"""/.env" | sed 's/:/ -> /'
         else
             echo -e "${GREEN}No placeholder values found${NC}"
         fi
         
         echo
         echo "Checking for empty values:"
-        if grep -E "^[A-Z_]+=\s*$" """$PROJECT_ROOT""/.env"; then
+        if grep -E "^[A-Z_]+=\s*$" """"$PROJECT_ROOT"""/.env"; then
             echo -e "${RED}Found empty values:${NC}"
-            grep -n -E "^[A-Z_]+=\s*$" """$PROJECT_ROOT""/.env" | sed 's/:/ -> /'
+            grep -n -E "^[A-Z_]+=\s*$" """"$PROJECT_ROOT"""/.env" | sed 's/:/ -> /'
         else
             echo -e "${GREEN}No empty values found${NC}"
         fi

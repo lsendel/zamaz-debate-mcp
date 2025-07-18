@@ -12,7 +12,7 @@ echo ""
 
 # Set Java 21
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-export PATH="""$JAVA_HOME""/bin:""$PATH"""
+export PATH=""""$JAVA_HOME"""/bin:"""$PATH""""
 
 echo "Java version:"
 java -version
@@ -29,9 +29,9 @@ test_compile() {
     local service=$1
     local dir=$2
     
-    echo -n "Testing ""$service"" compilation... "
+    echo -n "Testing """$service""" compilation... "
     
-    if cd """$dir""" && mvn compile > /dev/null 2>&1; then
+    if cd """"$dir"""" && mvn compile > /dev/null 2>&1; then
         echo -e "${GREEN}✓ OK${NC}"
         return 0
     else
@@ -45,9 +45,9 @@ test_package() {
     local service=$1
     local dir=$2
     
-    echo -n "Testing ""$service"" packaging... "
+    echo -n "Testing """$service""" packaging... "
     
-    if cd """$dir""" && mvn package -DskipTests > /dev/null 2>&1; then
+    if cd """"$dir"""" && mvn package -DskipTests > /dev/null 2>&1; then
         echo -e "${GREEN}✓ OK${NC}"
         return 0
     else
@@ -63,25 +63,25 @@ echo ""
 BASE_DIR="/Users/lsendel/IdeaProjects/zamaz-debate-mcp"
 
 # Test compilation
-test_compile "mcp-common" """$BASE_DIR""/mcp-common"
-test_compile "mcp-security" """$BASE_DIR""/mcp-security"
-test_compile "mcp-organization" """$BASE_DIR""/mcp-organization"
-test_compile "mcp-controller" """$BASE_DIR""/mcp-controller"
-test_compile "mcp-llm" """$BASE_DIR""/mcp-llm"
-test_compile "mcp-debate" """$BASE_DIR""/mcp-debate"
-test_compile "mcp-rag" """$BASE_DIR""/mcp-rag"
-test_compile "mcp-template" """$BASE_DIR""/mcp-template"
-test_compile "mcp-context-client" """$BASE_DIR""/mcp-context-client"
-test_compile "mcp-modulith" """$BASE_DIR""/mcp-modulith"
+test_compile "mcp-common" """"$BASE_DIR"""/mcp-common"
+test_compile "mcp-security" """"$BASE_DIR"""/mcp-security"
+test_compile "mcp-organization" """"$BASE_DIR"""/mcp-organization"
+test_compile "mcp-controller" """"$BASE_DIR"""/mcp-controller"
+test_compile "mcp-llm" """"$BASE_DIR"""/mcp-llm"
+test_compile "mcp-debate" """"$BASE_DIR"""/mcp-debate"
+test_compile "mcp-rag" """"$BASE_DIR"""/mcp-rag"
+test_compile "mcp-template" """"$BASE_DIR"""/mcp-template"
+test_compile "mcp-context-client" """"$BASE_DIR"""/mcp-context-client"
+test_compile "mcp-modulith" """"$BASE_DIR"""/mcp-modulith"
 
 echo ""
 echo -e "${YELLOW}=== Testing Service Packaging ===${NC}"
 echo ""
 
 # Test packaging
-test_package "mcp-organization" """$BASE_DIR""/mcp-organization"
-test_package "mcp-llm" """$BASE_DIR""/mcp-llm"
-test_package "mcp-modulith" """$BASE_DIR""/mcp-modulith"
+test_package "mcp-organization" """"$BASE_DIR"""/mcp-organization"
+test_package "mcp-llm" """"$BASE_DIR"""/mcp-llm"
+test_package "mcp-modulith" """"$BASE_DIR"""/mcp-modulith"
 
 echo ""
 echo -e "${YELLOW}=== Test Summary ===${NC}"
@@ -93,5 +93,5 @@ echo "  cd <service-directory>"
 echo "  mvn spring-boot:run"
 echo ""
 echo "Example:"
-echo "  cd ""$BASE_DIR""/mcp-modulith"
+echo "  cd """$BASE_DIR"""/mcp-modulith"
 echo "  mvn spring-boot:run"

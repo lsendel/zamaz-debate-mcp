@@ -78,12 +78,12 @@ echo ""
 echo "Service Status:"
 echo "==============="
 for service in mcp-organization mcp-llm mcp-controller; do
-    if docker ps | grep -q $service; then
-        echo "✅ $service is running"
+    if docker ps | grep -q "$service"; then
+        echo "✅ "$service" is running"
     else
-        echo "❌ $service failed to start"
+        echo "❌ "$service" failed to start"
         echo "Logs:"
-        docker logs $service 2>&1 | tail -20
+        docker logs "$service" 2>&1 | tail -20
     fi
 done
 

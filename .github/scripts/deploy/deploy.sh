@@ -61,28 +61,28 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Validate required arguments
-if [[ -z """$ENVIRONMENT""" ]]; then
+if [[ -z """"$ENVIRONMENT"""" ]]; then
     echo -e "${RED}Error: Environment is required${NC}"
     exit 1
 fi
 
-if [[ -z """$VERSION""" ]] && [[ """$ROLLBACK""" == false ]]; then
+if [[ -z """"$VERSION"""" ]] && [[ """"$ROLLBACK"""" == false ]]; then
     echo -e "${RED}Error: Version is required${NC}"
     exit 1
 fi
 
 # Validate environment
-if [[ """$ENVIRONMENT""" != "staging" ]] && [[ """$ENVIRONMENT""" != "production" ]]; then
+if [[ """"$ENVIRONMENT"""" != "staging" ]] && [[ """"$ENVIRONMENT"""" != "production" ]]; then
     echo -e "${RED}Error: Environment must be 'staging' or 'production'${NC}"
     exit 1
 fi
 
 # Load environment-specific configuration
 CONFIG_FILE=".github/deploy/config/${ENVIRONMENT}.env"
-if [[ -f """$CONFIG_FILE""" ]]; then
-    source """$CONFIG_FILE"""
+if [[ -f """"$CONFIG_FILE"""" ]]; then
+    source """"$CONFIG_FILE""""
 else
-    echo -e "${YELLOW}Warning: Configuration file not found: ""$CONFIG_FILE""${NC}"
+    echo -e "${YELLOW}Warning: Configuration file not found: """$CONFIG_FILE"""${NC}"
 fi
 
 # Functions
@@ -115,8 +115,8 @@ check_prerequisites() {
     fi
     
     # Check namespace exists
-    if ! kubectl get namespace """$NAMESPACE""" &> /dev/null; then
-        log_error "Namespace ""$NAMESPACE"" does not exist"
+    if ! kubectl get namespace """"$NAMESPACE"""" &> /dev/null; then
+        log_error "Namespace """$NAMESPACE""" does not exist"
         exit 1
     fi
     
@@ -125,35 +125,35 @@ check_prerequisites() {
 
 # Deploy function
 deploy() {
-    log_info "Deploying version ""$VERSION"" to ""$ENVIRONMENT""..."
+    log_info "Deploying version """$VERSION""" to """$ENVIRONMENT"""..."
     
     # Update image tags
-    if [[ """$DRY_RUN""" == true ]]; then
+    if [[ """"$DRY_RUN"""" == true ]]; then
         log_info "[DRY RUN] Would update images to:"
-        echo "  webhook-handler: ghcr.io/kiro/webhook-handler:""$VERSION"""
-        echo "  pr-processor: ghcr.io/kiro/pr-processor:""$VERSION"""
-        echo "  notification-service: ghcr.io/kiro/notification-service:""$VERSION"""
+        echo "  webhook-handler: ghcr.io/kiro/webhook-handler:"""$VERSION""""
+        echo "  pr-processor: ghcr.io/kiro/pr-processor:"""$VERSION""""
+        echo "  notification-service: ghcr.io/kiro/notification-service:"""$VERSION""""
     else
         # Apply Kubernetes manifests
         kubectl set image deployment/kiro-webhook-handler \
-            webhook-handler=ghcr.io/kiro/webhook-handler:""$VERSION"" \
-            -n """$NAMESPACE"""
+            webhook-handler=ghcr.io/kiro/webhook-handler:"""$VERSION""" \
+            -n """"$NAMESPACE""""
         
         kubectl set image deployment/kiro-pr-processor \
-            pr-processor=ghcr.io/kiro/pr-processor:""$VERSION"" \
-            -n """$NAMESPACE"""
+            pr-processor=ghcr.io/kiro/pr-processor:"""$VERSION""" \
+            -n """"$NAMESPACE""""
         
         kubectl set image deployment/kiro-notification-service \
-            notification-service=ghcr.io/kiro/notification-service:""$VERSION"" \
-            -n """$NAMESPACE"""
+            notification-service=ghcr.io/kiro/notification-service:"""$VERSION""" \
+            -n """"$NAMESPACE""""
     fi
     
     # Wait for rollout
-    if [[ """$DRY_RUN""" == false ]]; then
+    if [[ """"$DRY_RUN"""" == false ]]; then
         log_info "Waiting for deployments to roll out..."
-        kubectl rollout status deployment/kiro-webhook-handler -n """$NAMESPACE""" --timeout=300s
-        kubectl rollout status deployment/kiro-pr-processor -n """$NAMESPACE""" --timeout=300s
-        kubectl rollout status deployment/kiro-notification-service -n """$NAMESPACE""" --timeout=300s
+        kubectl rollout status deployment/kiro-webhook-handler -n """"$NAMESPACE"""" --timeout=300s
+        kubectl rollout status deployment/kiro-pr-processor -n """"$NAMESPACE"""" --timeout=300s
+        kubectl rollout status deployment/kiro-notification-service -n """"$NAMESPACE"""" --timeout=300s
     fi
     
     log_success "Deployment completed successfully"
@@ -161,22 +161,22 @@ deploy() {
 
 # Rollback function
 rollback() {
-    log_info "Rolling back deployments in ""$ENVIRONMENT""..."
+    log_info "Rolling back deployments in """$ENVIRONMENT"""..."
     
-    if [[ """$DRY_RUN""" == true ]]; then
+    if [[ """"$DRY_RUN"""" == true ]]; then
         log_info "[DRY RUN] Would rollback the following deployments:"
         echo "  - kiro-webhook-handler"
         echo "  - kiro-pr-processor"
         echo "  - kiro-notification-service"
     else
-        kubectl rollout undo deployment/kiro-webhook-handler -n """$NAMESPACE"""
-        kubectl rollout undo deployment/kiro-pr-processor -n """$NAMESPACE"""
-        kubectl rollout undo deployment/kiro-notification-service -n """$NAMESPACE"""
+        kubectl rollout undo deployment/kiro-webhook-handler -n """"$NAMESPACE""""
+        kubectl rollout undo deployment/kiro-pr-processor -n """"$NAMESPACE""""
+        kubectl rollout undo deployment/kiro-notification-service -n """"$NAMESPACE""""
         
         # Wait for rollback
-        kubectl rollout status deployment/kiro-webhook-handler -n """$NAMESPACE""" --timeout=300s
-        kubectl rollout status deployment/kiro-pr-processor -n """$NAMESPACE""" --timeout=300s
-        kubectl rollout status deployment/kiro-notification-service -n """$NAMESPACE""" --timeout=300s
+        kubectl rollout status deployment/kiro-webhook-handler -n """"$NAMESPACE"""" --timeout=300s
+        kubectl rollout status deployment/kiro-pr-processor -n """"$NAMESPACE"""" --timeout=300s
+        kubectl rollout status deployment/kiro-notification-service -n """"$NAMESPACE"""" --timeout=300s
     fi
     
     log_success "Rollback completed successfully"
@@ -187,19 +187,19 @@ health_check() {
     log_info "Running health checks..."
     
     # Check pod status
-    UNHEALTHY_PODS=$(kubectl get pods -n """$NAMESPACE""" -l app=kiro --field-selector=status.phase!=Running -o name | wc -l)
+    UNHEALTHY_PODS=$(kubectl get pods -n """"$NAMESPACE"""" -l app=kiro --field-selector=status.phase!=Running -o name | wc -l)
     
-    if [[ ""$UNHEALTHY_PODS"" -gt 0 ]]; then
-        log_error "Found ""$UNHEALTHY_PODS"" unhealthy pods"
-        kubectl get pods -n """$NAMESPACE""" -l app=kiro --field-selector=status.phase!=Running
+    if [[ """$UNHEALTHY_PODS""" -gt 0 ]]; then
+        log_error "Found """$UNHEALTHY_PODS""" unhealthy pods"
+        kubectl get pods -n """"$NAMESPACE"""" -l app=kiro --field-selector=status.phase!=Running
         return 1
     fi
     
     # Check service endpoints
     for service in webhook-handler pr-processor notification-service; do
-        ENDPOINTS=$(kubectl get endpoints "kiro-""$service""" -n """$NAMESPACE""" -o jsonpath='{.subsets[*].addresses[*].ip}' | wc -w)
-        if [[ ""$ENDPOINTS"" -eq 0 ]]; then
-            log_error "No endpoints found for service: kiro-""$service"""
+        ENDPOINTS=$(kubectl get endpoints "kiro-"""$service"""" -n """"$NAMESPACE"""" -o jsonpath='{.subsets[*].addresses[*].ip}' | wc -w)
+        if [[ """$ENDPOINTS""" -eq 0 ]]; then
+            log_error "No endpoints found for service: kiro-"""$service""""
             return 1
         fi
     done
@@ -212,7 +212,7 @@ post_deployment_tests() {
     log_info "Running post-deployment tests..."
     
     # Get service URL
-    if [[ """$ENVIRONMENT""" == "production" ]]; then
+    if [[ """"$ENVIRONMENT"""" == "production" ]]; then
         SERVICE_URL="https://kiro.example.com"
     else
         SERVICE_URL="https://kiro-staging.example.com"
@@ -220,11 +220,11 @@ post_deployment_tests() {
     
     # Test health endpoint
     if command -v curl &> /dev/null; then
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" """$SERVICE_URL""/health" || echo "000")
-        if [[ """$HTTP_CODE""" == "200" ]]; then
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" """"$SERVICE_URL"""/health" || echo "000")
+        if [[ """"$HTTP_CODE"""" == "200" ]]; then
             log_success "Health endpoint returned 200 OK"
         else
-            log_error "Health endpoint returned HTTP ""$HTTP_CODE"""
+            log_error "Health endpoint returned HTTP """$HTTP_CODE""""
             return 1
         fi
     fi
@@ -236,25 +236,25 @@ post_deployment_tests() {
 main() {
     echo -e "${BLUE}Kiro GitHub Integration Deployment${NC}"
     echo "=================================="
-    echo "Environment: ""$ENVIRONMENT"""
+    echo "Environment: """$ENVIRONMENT""""
     echo "Version: ${VERSION:-N/A}"
-    echo "Namespace: ""$NAMESPACE"""
-    echo "Dry Run: ""$DRY_RUN"""
-    echo "Rollback: ""$ROLLBACK"""
+    echo "Namespace: """$NAMESPACE""""
+    echo "Dry Run: """$DRY_RUN""""
+    echo "Rollback: """$ROLLBACK""""
     echo ""
     
     # Check prerequisites
     check_prerequisites
     
     # Execute deployment or rollback
-    if [[ """$ROLLBACK""" == true ]]; then
+    if [[ """"$ROLLBACK"""" == true ]]; then
         rollback
     else
         deploy
     fi
     
     # Run health checks
-    if [[ """$DRY_RUN""" == false ]]; then
+    if [[ """"$DRY_RUN"""" == false ]]; then
         sleep 10  # Give pods time to start
         health_check || {
             log_error "Health checks failed, consider rolling back"
@@ -262,7 +262,7 @@ main() {
         }
         
         # Run post-deployment tests for production
-        if [[ """$ENVIRONMENT""" == "production" ]]; then
+        if [[ """"$ENVIRONMENT"""" == "production" ]]; then
             post_deployment_tests || {
                 log_error "Post-deployment tests failed"
                 exit 1

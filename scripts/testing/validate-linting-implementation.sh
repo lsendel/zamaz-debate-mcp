@@ -174,10 +174,10 @@ if [ -f "docs/INCREMENTAL_LINTING_GUIDE.md" ]; then
     # Check document completeness
     guide_sections=("Overview" "Architecture" "Getting Started" "Configuration" "CLI Usage" "CI/CD Integration" "Cache Management" "Troubleshooting")
     for section in "${guide_sections[@]}"; do
-        if grep -q """$section""" docs/INCREMENTAL_LINTING_GUIDE.md; then
-            success "Guide contains ""$section"" section"
+        if grep -q """"$section"""" docs/INCREMENTAL_LINTING_GUIDE.md; then
+            success "Guide contains """$section""" section"
         else
-            warning "Guide missing ""$section"" section"
+            warning "Guide missing """$section""" section"
         fi
     done
 else
@@ -232,21 +232,21 @@ log "Validating dependencies..."
 
 if command -v java > /dev/null; then
     java_version=$(java -version 2>&1 | head -1)
-    success "Java is available: ""$java_version"""
+    success "Java is available: """$java_version""""
 else
     failure "Java not available"
 fi
 
 if command -v mvn > /dev/null; then
     maven_version=$(mvn --version 2>&1 | head -1)
-    success "Maven is available: ""$maven_version"""
+    success "Maven is available: """$maven_version""""
 else
     failure "Maven not available"
 fi
 
 if command -v git > /dev/null; then
     git_version=$(git --version)
-    success "Git is available: ""$git_version"""
+    success "Git is available: """$git_version""""
 else
     failure "Git not available"
 fi
@@ -319,13 +319,13 @@ passed_checks=$(printf '%s\n' "${VALIDATION_RESULTS[@]}" | grep -c "^✓")
 failed_checks=$(printf '%s\n' "${VALIDATION_RESULTS[@]}" | grep -c "^✗")
 warning_checks=$(printf '%s\n' "${VALIDATION_RESULTS[@]}" | grep -c "^⚠")
 
-echo "Total Checks: ""$total_checks"""
-echo "Passed: ""$passed_checks"""
-echo "Failed: ""$failed_checks"""
-echo "Warnings: ""$warning_checks"""
+echo "Total Checks: """$total_checks""""
+echo "Passed: """$passed_checks""""
+echo "Failed: """$failed_checks""""
+echo "Warnings: """$warning_checks""""
 echo ""
 
-if [ """$failed_checks""" -eq 0 ]; then
+if [ """"$failed_checks"""" -eq 0 ]; then
     echo -e "${GREEN}🎉 Implementation validation PASSED!${NC}"
     echo ""
     echo "The incremental linting system is properly implemented with:"
@@ -348,9 +348,9 @@ if [ """$failed_checks""" -eq 0 ]; then
 ## Summary Statistics
 - **Total Checks**: $total_checks
 - **Passed**: $passed_checks
-- **Failed**: ""$failed_checks""  
+- **Failed**: """$failed_checks"""  
 - **Warnings**: $warning_checks
-- **Success Rate**: $(echo "scale=1; ""$passed_checks"" * 100 / ""$total_checks""" | bc -l 2>/dev/null || echo "N/A")%
+- **Success Rate**: $(echo "scale=1; """$passed_checks""" * 100 / """$total_checks"""" | bc -l 2>/dev/null || echo "N/A")%
 
 ## Detailed Results
 

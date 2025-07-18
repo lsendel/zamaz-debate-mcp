@@ -38,7 +38,7 @@ if curl -f -s "http://localhost:3000" > /dev/null 2>&1; then
     echo -e "${GREEN}✅ UI is running at http://localhost:3000${NC}"
 else
     echo -e "${RED}❌ UI failed to start${NC}"
-    kill ""$UI_PID"" 2>/dev/null || true
+    kill """$UI_PID""" 2>/dev/null || true
     exit 1
 fi
 
@@ -87,7 +87,7 @@ describe('UI Only Tests (No Backend)', () => {
       // Wait for page to load
       await page.waitForSelector('h1', { timeout: 10000 });
       
-      const title = await page.""$eval""('h1', el => el.textContent);
+      const title = await page."""$eval"""('h1', el => el.textContent);
       expect(title).toContain('AI Debate System');
     }, 20000);
 
@@ -153,7 +153,7 @@ describe('UI Only Tests (No Backend)', () => {
       
       await page.waitForSelector('h1', { timeout: 10000 });
       
-      const title = await page.""$eval""('h1', el => el.textContent);
+      const title = await page."""$eval"""('h1', el => el.textContent);
       expect(title).toContain('AI Debate System');
     }, 15000);
 
@@ -163,7 +163,7 @@ describe('UI Only Tests (No Backend)', () => {
       
       await page.waitForSelector('h1', { timeout: 10000 });
       
-      const title = await page.""$eval""('h1', el => el.textContent);
+      const title = await page."""$eval"""('h1', el => el.textContent);
       expect(title).toContain('AI Debate System');
     }, 15000);
   });
@@ -178,7 +178,7 @@ echo -e "${GREEN}✅ UI tests completed!${NC}"
 
 # Cleanup
 echo -e "${BLUE}🧹 Cleaning up...${NC}"
-kill ""$UI_PID"" 2>/dev/null || true
+kill """$UI_PID""" 2>/dev/null || true
 
 echo -e "${GREEN}🎉 Frontend testing complete!${NC}"
 echo ""

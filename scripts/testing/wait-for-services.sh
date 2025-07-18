@@ -27,27 +27,27 @@ check_service() {
     local service_name=$1
     local endpoint=$2
     
-    if [[ ""$endpoint"" == *"/actuator/health"* ]]; then
+    if [[ """$endpoint""" == *"/actuator/health"* ]]; then
         # Spring Boot health check
-        if curl -s -f "http://""$endpoint""" > /dev/null 2>&1; then
-            local status=$(curl -s "http://""$endpoint""" | jq -r '.status' 2>/dev/null || echo "UNKNOWN")
-            if [[ """$status""" == "UP" ]]; then
+        if curl -s -f "http://"""$endpoint"""" > /dev/null 2>&1; then
+            local status=$(curl -s "http://"""$endpoint"""" | jq -r '.status' 2>/dev/null || echo "UNKNOWN")
+            if [[ """"$status"""" == "UP" ]]; then
                 return 0
             fi
         fi
-    elif [[ ""$service_name"" == "postgres" ]]; then
+    elif [[ """$service_name""" == "postgres" ]]; then
         # PostgreSQL check
         if pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
             return 0
         fi
-    elif [[ ""$service_name"" == "redis" ]]; then
+    elif [[ """$service_name""" == "redis" ]]; then
         # Redis check
         if redis-cli -h localhost -p 6379 ping > /dev/null 2>&1; then
             return 0
         fi
     else
         # Generic HTTP check
-        if curl -s -f "http://""$endpoint""" > /dev/null 2>&1; then
+        if curl -s -f "http://"""$endpoint"""" > /dev/null 2>&1; then
             return 0
         fi
     fi
@@ -56,21 +56,21 @@ check_service() {
 }
 
 # Wait for all services
-while [ ""$ELAPSED"" -lt ""$MAX_WAIT"" ]; do
+while [ """$ELAPSED""" -lt """$MAX_WAIT""" ]; do
     all_ready=true
     
     for service in "${!SERVICES[@]}"; do
-        endpoint="${SERVICES[""$service""]}"
+        endpoint="${SERVICES["""$service"""]}"
         
-        if check_service """$service""" """$endpoint"""; then
-            echo "✅ ""$service"" is ready"
+        if check_service """"$service"""" """"$endpoint""""; then
+            echo "✅ """$service""" is ready"
         else
-            echo "⏳ Waiting for ""$service""..."
+            echo "⏳ Waiting for """$service"""..."
             all_ready=false
         fi
     done
     
-    if ""$all_ready""; then
+    if """$all_ready"""; then
         echo "🎉 All services are ready!"
         exit 0
     fi
@@ -83,11 +83,11 @@ done
 echo "❌ Timeout waiting for services to be ready"
 echo "Services status:"
 for service in "${!SERVICES[@]}"; do
-    endpoint="${SERVICES[""$service""]}"
-    if check_service """$service""" """$endpoint"""; then
-        echo "  ""$service"": ✅ Ready"
+    endpoint="${SERVICES["""$service"""]}"
+    if check_service """"$service"""" """"$endpoint""""; then
+        echo "  """$service""": ✅ Ready"
     else
-        echo "  ""$service"": ❌ Not ready"
+        echo "  """$service""": ❌ Not ready"
     fi
 done
 

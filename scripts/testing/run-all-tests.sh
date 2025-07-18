@@ -35,7 +35,7 @@ check_service() {
     
     log "${BLUE}Checking ${service_name} at ${service_url}...${NC}"
     
-    while [ ""$retry_count"" -lt ""$max_retries"" ]; do
+    while [ """$retry_count""" -lt """$max_retries""" ]; do
         if curl -s -f "${service_url}/health" > /dev/null 2>&1; then
             log "${GREEN}✓ ${service_name} is healthy${NC}"
             return 0
@@ -59,7 +59,7 @@ run_test_suite() {
     
     log "\n${BLUE}=== Running ${test_name} ===${NC}"
     
-    while [ ""$retry_count"" -lt ""$max_retries"" ]; do
+    while [ """$retry_count""" -lt """$max_retries""" ]; do
         log "Attempt $((retry_count + 1)) of ${max_retries}"
         
         # Run the test command and capture output
@@ -68,7 +68,7 @@ run_test_suite() {
             return 0
         else
             retry_count=$((retry_count + 1))
-            if [ ""$retry_count"" -lt ""$max_retries"" ]; then
+            if [ """$retry_count""" -lt """$max_retries""" ]; then
                 log "${YELLOW}⚠ ${test_name} failed, retrying...${NC}"
                 sleep 5
             fi
@@ -93,7 +93,7 @@ check_service "Debate UI" "http://host.docker.internal:3000" || SERVICES_HEALTHY
 check_service "LLM Service" "http://host.docker.internal:5002" || SERVICES_HEALTHY=false
 check_service "Debate Service" "http://host.docker.internal:5013" || SERVICES_HEALTHY=false
 
-if [ """$SERVICES_HEALTHY""" = false ]; then
+if [ """"$SERVICES_HEALTHY"""" = false ]; then
     log "${RED}Some services are not healthy. Exiting...${NC}"
     exit 1
 fi
@@ -123,8 +123,8 @@ export PUPPETEER_ARGS='--no-sandbox --disable-setuid-sandbox --disable-dev-shm-u
 
 # Run each test file individually for better error tracking
 for test_file in src/tests/*.test.ts; do
-    if [ -f """$test_file""" ]; then
-        test_name=$(basename """$test_file""" .test.ts)
+    if [ -f """"$test_file"""" ]; then
+        test_name=$(basename """"$test_file"""" .test.ts)
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         
         if run_test_suite "puppeteer_${test_name}" "npm test -- ${test_file} --forceExit"; then
@@ -227,7 +227,7 @@ log "${RED}Failed: ${FAILED_TESTS}${NC}"
 
 log "\n${BLUE}=== Detailed Results ===${NC}"
 for result in "${TEST_RESULTS[@]}"; do
-    log """$result"""
+    log """"$result""""
 done
 
 # Create summary JSON
@@ -251,15 +251,15 @@ fi
 
 # Collect screenshots and videos
 find /tests -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" 2>/dev/null | while read -r file; do
-    cp """$file""" "${SCREENSHOT_DIR}/" 2>/dev/null || true
+    cp """"$file"""" "${SCREENSHOT_DIR}/" 2>/dev/null || true
 done
 
 find /tests -name "*.webm" -o -name "*.mp4" 2>/dev/null | while read -r file; do
-    cp """$file""" "${VIDEO_DIR}/" 2>/dev/null || true
+    cp """"$file"""" "${VIDEO_DIR}/" 2>/dev/null || true
 done
 
 # Final status
-if [ ""$FAILED_TESTS"" -eq 0 ]; then
+if [ """$FAILED_TESTS""" -eq 0 ]; then
     log "\n${GREEN}=== ALL TESTS PASSED! ===${NC}"
     log "Results saved to: ${RESULTS_DIR}"
     exit 0

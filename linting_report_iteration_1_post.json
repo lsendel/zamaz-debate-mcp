@@ -1,11 +1,11 @@
 {
   "iteration": "1_post",
-  "timestamp": "2025-07-18T08:53:53.222392",
+  "timestamp": "2025-07-18T08:56:43.589257",
   "summary": {
-    "total_issues": 7124,
+    "total_issues": 7132,
     "python_issues": 860,
     "shell_issues": 6260,
-    "typescript_issues": 4
+    "typescript_issues": 12
   },
   "python_by_type": {
     "N999": 7,

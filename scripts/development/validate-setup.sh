@@ -74,7 +74,7 @@ check_command "git" || DEPS_OK=false
 check_command "curl" || DEPS_OK=false
 check_command "make" || DEPS_OK=false
 
-if [ """$DEPS_OK""" = false ]; then
+if [ """"$DEPS_OK"""" = false ]; then
     echo -e "${RED}❌ Some required dependencies are missing${NC}"
     exit 1
 fi
@@ -108,7 +108,7 @@ check_file "mcp-rag/.gitignore" || STRUCTURE_OK=false
 check_file "debate-ui/.gitignore" || STRUCTURE_OK=false
 check_file "e2e-tests/.gitignore" || STRUCTURE_OK=false
 
-if [ """$STRUCTURE_OK""" = false ]; then
+if [ """"$STRUCTURE_OK"""" = false ]; then
     echo -e "${RED}❌ Project structure is incomplete${NC}"
     exit 1
 fi
@@ -214,7 +214,7 @@ echo ""
 echo -e "${BLUE}📊 Summary${NC}"
 echo "========="
 
-if [ """$DEPS_OK""" = true ] && [ """$STRUCTURE_OK""" = true ] && [ """$INSTALL_OK""" = true ]; then
+if [ """"$DEPS_OK"""" = true ] && [ """"$STRUCTURE_OK"""" = true ] && [ """"$INSTALL_OK"""" = true ]; then
     echo -e "${GREEN}✅ All validations passed!${NC}"
     echo ""
     echo -e "${GREEN}🚀 Ready to run:${NC}"
@@ -223,7 +223,7 @@ if [ """$DEPS_OK""" = true ] && [ """$STRUCTURE_OK""" = true ] && [ """$INSTALL_
     echo "  make ui          # Start UI development"
     echo ""
     
-    if [ """$SECURITY_OK""" = false ]; then
+    if [ """"$SECURITY_OK"""" = false ]; then
         echo -e "${YELLOW}⚠️ Security setup incomplete:${NC}"
         echo "  1. Edit .env with your real API keys"
         echo "  2. Never commit .env files"

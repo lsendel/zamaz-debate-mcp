@@ -7,8 +7,8 @@ set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname """$SCRIPT_DIR""")"
-RESULTS_DIR="""$PROJECT_ROOT""/zap-security-results"
+PROJECT_ROOT="$(dirname """"$SCRIPT_DIR"""")"
+RESULTS_DIR=""""$PROJECT_ROOT"""/zap-security-results"
 TARGET_URL="${TARGET_URL:-http://localhost:8080}"
 ZAP_PORT="${ZAP_PORT:-8090}"
 
@@ -20,7 +20,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Create results directory
-mkdir -p """$RESULTS_DIR"""
+mkdir -p """"$RESULTS_DIR""""
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Logging functions
@@ -60,7 +60,7 @@ check_zap_availability() {
 start_zap_daemon() {
     log_info "Starting OWASP ZAP daemon..."
     
-    if [[ """$ZAP_CMD""" == *"docker"* ]]; then
+    if [[ """"$ZAP_CMD"""" == *"docker"* ]]; then
         # Start ZAP in daemon mode using Docker
         docker run -u zap -d --name zap-daemon -p ${ZAP_PORT}:8080 \
             -v "${RESULTS_DIR}:/zap/wrk/:rw" \
@@ -68,7 +68,7 @@ start_zap_daemon() {
             -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
     else
         # Start ZAP daemon locally
-        zap.sh -daemon -port ""$ZAP_PORT"" -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true &
+        zap.sh -daemon -port """$ZAP_PORT""" -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true &
         ZAP_PID=$!
     fi
     
@@ -89,29 +89,29 @@ start_zap_daemon() {
 stop_zap_daemon() {
     log_info "Stopping ZAP daemon..."
     
-    if [[ """$ZAP_CMD""" == *"docker"* ]]; then
+    if [[ """"$ZAP_CMD"""" == *"docker"* ]]; then
         docker stop zap-daemon 2>/dev/null || true
         docker rm zap-daemon 2>/dev/null || true
     else
         if [ -n "${ZAP_PID:-}" ]; then
-            kill ""$ZAP_PID"" 2>/dev/null || true
+            kill """$ZAP_PID""" 2>/dev/null || true
         fi
     fi
 }
 
 # Spider scan
 run_spider_scan() {
-    log_info "Running spider scan on ""$TARGET_URL""..."
+    log_info "Running spider scan on """$TARGET_URL"""..."
     
     # Start spider scan
     SPIDER_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/spider/action/scan/?url=${TARGET_URL}" | jq -r '.scan')
     
-    if [ """$SPIDER_ID""" = "null" ] || [ -z """$SPIDER_ID""" ]; then
+    if [ """"$SPIDER_ID"""" = "null" ] || [ -z """"$SPIDER_ID"""" ]; then
         log_error "Failed to start spider scan"
         return 1
     fi
     
-    log_info "Spider scan started with ID: ""$SPIDER_ID"""
+    log_info "Spider scan started with ID: """$SPIDER_ID""""
     
     # Wait for spider scan to complete
     while true; do
@@ -120,7 +120,7 @@ run_spider_scan() {
         
         log_info "Spider scan progress: ${PROGRESS}%"
         
-        if [ """$STATUS""" = "100" ]; then
+        if [ """"$STATUS"""" = "100" ]; then
             break
         fi
         
@@ -135,17 +135,17 @@ run_spider_scan() {
 
 # Active scan
 run_active_scan() {
-    log_info "Running active security scan on ""$TARGET_URL""..."
+    log_info "Running active security scan on """$TARGET_URL"""..."
     
     # Start active scan
     SCAN_ID=$(curl -s "http://localhost:${ZAP_PORT}/JSON/ascan/action/scan/?url=${TARGET_URL}" | jq -r '.scan')
     
-    if [ """$SCAN_ID""" = "null" ] || [ -z """$SCAN_ID""" ]; then
+    if [ """"$SCAN_ID"""" = "null" ] || [ -z """"$SCAN_ID"""" ]; then
         log_error "Failed to start active scan"
         return 1
     fi
     
-    log_info "Active scan started with ID: ""$SCAN_ID"""
+    log_info "Active scan started with ID: """$SCAN_ID""""
     
     # Wait for active scan to complete
     while true; do
@@ -153,7 +153,7 @@ run_active_scan() {
         
         log_info "Active scan progress: ${STATUS}%"
         
-        if [ """$STATUS""" = "100" ]; then
+        if [ """"$STATUS"""" = "100" ]; then
             break
         fi
         
@@ -177,11 +177,11 @@ run_passive_scan() {
     while true; do
         RECORDS_TO_SCAN=$(curl -s "http://localhost:${ZAP_PORT}/JSON/pscan/view/recordsToScan/" | jq -r '.recordsToScan')
         
-        if [ """$RECORDS_TO_SCAN""" = "0" ]; then
+        if [ """"$RECORDS_TO_SCAN"""" = "0" ]; then
             break
         fi
         
-        log_info "Passive scan - records remaining: ""$RECORDS_TO_SCAN"""
+        log_info "Passive scan - records remaining: """$RECORDS_TO_SCAN""""
         sleep 10
     done
     
@@ -208,14 +208,14 @@ run_authentication_tests() {
     for payload in "${auth_payloads[@]}"; do
         curl -s -X POST \
             -H "Content-Type: application/json" \
-            -d """$payload""" \
+            -d """"$payload"""" \
             "http://localhost:${ZAP_PORT}/JSON/core/action/sendRequest/" \
             --data-urlencode "request=POST ${TARGET_URL}/api/v1/auth/login HTTP/1.1
-Host: $(echo ""$TARGET_URL"" | cut -d'/' -f3)
+Host: $(echo """$TARGET_URL""" | cut -d'/' -f3)
 Content-Type: application/json
 Content-Length: ${#payload}
 
-""$payload"""
+"""$payload""""
     done
     
     log_success "Authentication tests completed"
@@ -235,18 +235,18 @@ run_api_security_tests() {
     )
     
     for endpoint in "${api_endpoints[@]}"; do
-        log_info "Testing endpoint: ""$endpoint"""
+        log_info "Testing endpoint: """$endpoint""""
         
         # Test various HTTP methods
         for method in GET POST PUT DELETE PATCH OPTIONS TRACE; do
             curl -s "http://localhost:${ZAP_PORT}/JSON/core/action/accessUrl/?url=${TARGET_URL}${endpoint}" \
-                --data-urlencode "method=""$method"""
+                --data-urlencode "method="""$method""""
         done
         
         # Test with malicious headers
         curl -s "http://localhost:${ZAP_PORT}/JSON/core/action/sendRequest/" \
             --data-urlencode "request=GET ${TARGET_URL}${endpoint} HTTP/1.1
-Host: $(echo ""$TARGET_URL"" | cut -d'/' -f3)
+Host: $(echo """$TARGET_URL""" | cut -d'/' -f3)
 X-Forwarded-For: 127.0.0.1
 X-Real-IP: 127.0.0.1
 X-Originating-IP: 127.0.0.1
@@ -276,7 +276,7 @@ generate_zap_report() {
     # Generate markdown summary
     generate_markdown_summary
     
-    log_success "Security reports generated in ""$RESULTS_DIR"""
+    log_success "Security reports generated in """$RESULTS_DIR""""
 }
 
 # Generate markdown summary
@@ -284,11 +284,11 @@ generate_markdown_summary() {
     local alerts_file="${RESULTS_DIR}/alerts_${TIMESTAMP}.json"
     local summary_file="${RESULTS_DIR}/security_summary_${TIMESTAMP}.md"
     
-    cat > """$summary_file""" << EOF
+    cat > """"$summary_file"""" << EOF
 # OWASP ZAP Security Testing Summary
 
 **Date:** $(date)  
-**Target:** ""$TARGET_URL""  
+**Target:** """$TARGET_URL"""  
 **Tool:** OWASP ZAP Automated Security Scanner  
 
 ---
@@ -297,18 +297,18 @@ generate_markdown_summary() {
 
 EOF
     
-    if [ -f """$alerts_file""" ]; then
+    if [ -f """"$alerts_file"""" ]; then
         # Count alerts by risk level
-        local high_alerts=$(jq '[.alerts[] | select(.risk == "High")] | length' """$alerts_file""" 2>/dev/null || echo "0")
-        local medium_alerts=$(jq '[.alerts[] | select(.risk == "Medium")] | length' """$alerts_file""" 2>/dev/null || echo "0")
-        local low_alerts=$(jq '[.alerts[] | select(.risk == "Low")] | length' """$alerts_file""" 2>/dev/null || echo "0")
-        local info_alerts=$(jq '[.alerts[] | select(.risk == "Informational")] | length' """$alerts_file""" 2>/dev/null || echo "0")
+        local high_alerts=$(jq '[.alerts[] | select(.risk == "High")] | length' """"$alerts_file"""" 2>/dev/null || echo "0")
+        local medium_alerts=$(jq '[.alerts[] | select(.risk == "Medium")] | length' """"$alerts_file"""" 2>/dev/null || echo "0")
+        local low_alerts=$(jq '[.alerts[] | select(.risk == "Low")] | length' """"$alerts_file"""" 2>/dev/null || echo "0")
+        local info_alerts=$(jq '[.alerts[] | select(.risk == "Informational")] | length' """"$alerts_file"""" 2>/dev/null || echo "0")
         
-        cat >> """$summary_file""" << EOF
+        cat >> """"$summary_file"""" << EOF
 ### Alert Summary
 
 - **High Risk:** $high_alerts
-- **Medium Risk:** ""$medium_alerts""  
+- **Medium Risk:** """$medium_alerts"""  
 - **Low Risk:** $low_alerts
 - **Informational:** $info_alerts
 
@@ -316,30 +316,30 @@ EOF
 
 EOF
         
-        if [ """$high_alerts""" -gt 0 ]; then
-            echo "🚨 **CRITICAL** - High-risk vulnerabilities detected requiring immediate attention" >> """$summary_file"""
-        elif [ """$medium_alerts""" -gt 5 ]; then
-            echo "⚠️ **HIGH** - Multiple medium-risk issues require prompt attention" >> """$summary_file"""
-        elif [ """$medium_alerts""" -gt 0 ]; then
-            echo "🔶 **MEDIUM** - Some security issues identified" >> """$summary_file"""
+        if [ """"$high_alerts"""" -gt 0 ]; then
+            echo "🚨 **CRITICAL** - High-risk vulnerabilities detected requiring immediate attention" >> """"$summary_file""""
+        elif [ """"$medium_alerts"""" -gt 5 ]; then
+            echo "⚠️ **HIGH** - Multiple medium-risk issues require prompt attention" >> """"$summary_file""""
+        elif [ """"$medium_alerts"""" -gt 0 ]; then
+            echo "🔶 **MEDIUM** - Some security issues identified" >> """"$summary_file""""
         else
-            echo "✅ **LOW** - No significant security issues detected" >> """$summary_file"""
+            echo "✅ **LOW** - No significant security issues detected" >> """"$summary_file""""
         fi
         
         # List high and medium risk alerts
-        if [ """$high_alerts""" -gt 0 ] || [ """$medium_alerts""" -gt 0 ]; then
-            cat >> """$summary_file""" << EOF
+        if [ """"$high_alerts"""" -gt 0 ] || [ """"$medium_alerts"""" -gt 0 ]; then
+            cat >> """"$summary_file"""" << EOF
 
 ### Critical Issues
 
 EOF
-            jq -r '.alerts[] | select(.risk == "High" or .risk == "Medium") | "- **" + .name + "** (" + .risk + "): " + .description' """$alerts_file""" 2>/dev/null >> """$summary_file""" || echo "Error processing alerts" >> """$summary_file"""
+            jq -r '.alerts[] | select(.risk == "High" or .risk == "Medium") | "- **" + .name + "** (" + .risk + "): " + .description' """"$alerts_file"""" 2>/dev/null >> """"$summary_file"""" || echo "Error processing alerts" >> """"$summary_file""""
         fi
     else
-        echo "No alerts data available" >> """$summary_file"""
+        echo "No alerts data available" >> """"$summary_file""""
     fi
     
-    cat >> """$summary_file""" << EOF
+    cat >> """"$summary_file"""" << EOF
 
 ---
 
@@ -363,7 +363,7 @@ EOF
 **Next Security Assessment:** $(date -d '+3 months')
 EOF
     
-    log_success "Markdown summary generated: ""$summary_file"""
+    log_success "Markdown summary generated: """$summary_file""""
 }
 
 # Custom security rules
@@ -394,8 +394,8 @@ load_custom_security_rules() {
 # Main execution function
 main() {
     log_info "Starting OWASP ZAP automated security testing"
-    log_info "Target: ""$TARGET_URL"""
-    log_info "Results directory: ""$RESULTS_DIR"""
+    log_info "Target: """$TARGET_URL""""
+    log_info "Results directory: """$RESULTS_DIR""""
     
     # Setup trap to cleanup on exit
     trap stop_zap_daemon EXIT
@@ -420,7 +420,7 @@ main() {
     generate_zap_report
     
     log_success "OWASP ZAP security testing completed"
-    log_info "Check the results in: ""$RESULTS_DIR"""
+    log_info "Check the results in: """$RESULTS_DIR""""
 }
 
 # Help function

@@ -128,11 +128,11 @@ def fix_python_security():
                 # Only fix if there are security-related keywords
                 if any(keyword in content.lower() for keyword in ["token", "password", "secret", "key", "auth"]):
                     # Replace imports
-                    content = content.replace("import random", "import secrets")
+                    content = content.replace("import secrets", "import secrets")
                     content = content.replace("from random import", "from secrets import")
                     # Replace common methods
-                    content = content.replace("random.choice(", "secrets.choice(")
-                    content = content.replace("random.randint(", "secrets.randbelow(")
+                    content = content.replace("secrets.choice(", "secrets.choice(")
+                    content = content.replace("secrets.randbelow(", "secrets.randbelow(")
                     content = content.replace("random.random()", "secrets.randbits(64) / (2**64)")
 
                     with open(file, "w") as f:

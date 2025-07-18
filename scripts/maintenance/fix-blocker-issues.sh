@@ -21,17 +21,17 @@ echo ""
 # Fix 2: Update mcp-debate application.properties
 echo "2️⃣ Fixing exposed password in mcp-debate/src/main/resources/application.properties..."
 PROPERTIES_FILE="mcp-debate/src/main/resources/application.properties"
-if [ -f """$PROPERTIES_FILE""" ]; then
+if [ -f """"$PROPERTIES_FILE"""" ]; then
     # Check if the file has a hardcoded password
-    if grep -q "spring.datasource.password=" """$PROPERTIES_FILE"""; then
+    if grep -q "spring.datasource.password=" """"$PROPERTIES_FILE""""; then
         # Replace with environment variable
-        sed -i.bak 's/spring.datasource.password=.*/spring.datasource.password=${DB_PASSWORD:changeme}/' """$PROPERTIES_FILE"""
+        sed -i.bak 's/spring.datasource.password=.*/spring.datasource.password=${DB_PASSWORD:changeme}/' """"$PROPERTIES_FILE""""
         echo "   ✅ Updated application.properties to use environment variable"
     else
         echo "   ℹ️  Password line not found in application.properties"
     fi
 else
-    echo "   ⚠️  File not found: ""$PROPERTIES_FILE"""
+    echo "   ⚠️  File not found: """$PROPERTIES_FILE""""
 fi
 
 echo ""

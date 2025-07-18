@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # Script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname """$SCRIPT_DIR""")"
+PROJECT_ROOT="$(dirname """"$SCRIPT_DIR"""")"
 
 # Test results tracking
 TESTS_RUN=0
@@ -84,33 +84,33 @@ run_maven_test() {
     local additional_args="$3"
     local description="$4"
     
-    print_info "Running ""$description""..."
+    print_info "Running """$description"""..."
     
-    cd """$PROJECT_ROOT"""
+    cd """"$PROJECT_ROOT""""
     
     local mvn_cmd="mvn test"
     
-    if [ ! -z """$test_profile""" ]; then
-        mvn_cmd="""$mvn_cmd"" -P""$test_profile"""
+    if [ ! -z """"$test_profile"""" ]; then
+        mvn_cmd=""""$mvn_cmd""" -P"""$test_profile""""
     fi
     
-    if [ ! -z """$modules""" ]; then
-        mvn_cmd="""$mvn_cmd"" -pl ""$modules"""
+    if [ ! -z """"$modules"""" ]; then
+        mvn_cmd=""""$mvn_cmd""" -pl """$modules""""
     fi
     
-    if [ ! -z """$additional_args""" ]; then
-        mvn_cmd="""$mvn_cmd"" ""$additional_args"""
+    if [ ! -z """"$additional_args"""" ]; then
+        mvn_cmd=""""$mvn_cmd""" """$additional_args""""
     fi
     
-    echo "Executing: ""$mvn_cmd"""
+    echo "Executing: """$mvn_cmd""""
     
-    if eval ""$mvn_cmd""; then
+    if eval """$mvn_cmd"""; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
-        print_success """$description"" completed successfully"
+        print_success """"$description""" completed successfully"
         return 0
     else
         TESTS_FAILED=$((TESTS_FAILED + 1))
-        print_error """$description"" failed"
+        print_error """"$description""" failed"
         return 1
     fi
 }
@@ -157,12 +157,12 @@ run_performance_tests() {
 run_ui_tests() {
     print_header "UI Tests"
     
-    if [ ! -d """$PROJECT_ROOT""/debate-ui" ]; then
+    if [ ! -d """"$PROJECT_ROOT"""/debate-ui" ]; then
         print_error "UI directory not found"
         return 1
     fi
     
-    cd """$PROJECT_ROOT""/debate-ui"
+    cd """"$PROJECT_ROOT"""/debate-ui"
     
     if npm test -- --watchAll=false; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -172,7 +172,7 @@ run_ui_tests() {
         print_error "UI tests failed"
     fi
     
-    cd """$PROJECT_ROOT"""
+    cd """"$PROJECT_ROOT""""
 }
 
 run_e2e_tests() {
@@ -195,7 +195,7 @@ run_e2e_tests() {
 run_coverage_report() {
     print_header "Coverage Report"
     
-    cd """$PROJECT_ROOT"""
+    cd """"$PROJECT_ROOT""""
     
     print_info "Running tests with coverage..."
     if mvn clean test jacoco:report; then
@@ -203,12 +203,12 @@ run_coverage_report() {
         
         # Try to find and display coverage summary
         if [ -f "target/site/jacoco/index.html" ]; then
-            print_info "Coverage report available at: file://""$PROJECT_ROOT""/target/site/jacoco/index.html"
+            print_info "Coverage report available at: file://"""$PROJECT_ROOT"""/target/site/jacoco/index.html"
         fi
         
         # Look for coverage percentage
         local coverage_files=$(find . -name "jacoco.xml" 2>/dev/null)
-        if [ ! -z """$coverage_files""" ]; then
+        if [ ! -z """"$coverage_files"""" ]; then
             print_info "Jacoco XML reports generated"
         fi
         
@@ -222,7 +222,7 @@ run_coverage_report() {
 run_clean_test_all() {
     print_header "Clean & Test All"
     
-    cd """$PROJECT_ROOT"""
+    cd """"$PROJECT_ROOT""""
     
     print_info "Cleaning project..."
     if mvn clean; then
@@ -240,8 +240,8 @@ run_module_tests() {
     local module="$1"
     local module_name="$2"
     
-    print_header """$module_name"" Module Tests"
-    run_maven_test "" """$module""" "" """$module_name"" tests"
+    print_header """"$module_name""" Module Tests"
+    run_maven_test "" """"$module"""" "" """"$module_name""" tests"
 }
 
 fix_failing_tests() {
@@ -249,7 +249,7 @@ fix_failing_tests() {
     
     print_info "Running tests in debug mode with detailed output..."
     
-    cd """$PROJECT_ROOT"""
+    cd """"$PROJECT_ROOT""""
     
     # Run with maximum verbosity and debugging
     mvn test -X -e -Dsurefire.printSummary=true -Dmaven.test.failure.ignore=true 2>&1 | tee test-debug.log
@@ -274,7 +274,7 @@ fix_failing_tests() {
 show_test_metrics() {
     print_header "Test Metrics & Timing"
     
-    cd """$PROJECT_ROOT"""
+    cd """"$PROJECT_ROOT""""
     
     print_info "Analyzing test execution times..."
     
@@ -284,14 +284,14 @@ show_test_metrics() {
     # Parse test reports
     local test_reports=$(find . -name "TEST-*.xml" 2>/dev/null | head -10)
     
-    if [ ! -z """$test_reports""" ]; then
+    if [ ! -z """"$test_reports"""" ]; then
         echo -e "${CYAN}Test Timing Summary:${NC}"
         
-        for report in ""$test_reports""; do
-            if [ -f """$report""" ]; then
-                local class_name=$(basename """$report""" .xml | sed 's/TEST-//')
-                local time=$(grep -o 'time="[^"]*"' """$report""" | head -1 | sed 's/time="//;s/"//')
-                echo "  ""$class_name"": ${time}s"
+        for report in """$test_reports"""; do
+            if [ -f """"$report"""" ]; then
+                local class_name=$(basename """"$report"""" .xml | sed 's/TEST-//')
+                local time=$(grep -o 'time="[^"]*"' """"$report"""" | head -1 | sed 's/time="//;s/"//')
+                echo "  """$class_name""": ${time}s"
             fi
         done
     else
@@ -307,8 +307,8 @@ tag_based_tests() {
     echo
     read -p "Enter tags (comma-separated): " tags
     
-    if [ ! -z """$tags""" ]; then
-        run_maven_test "" "" "-Dgroups=""$tags""" "Tagged tests (""$tags"")"
+    if [ ! -z """"$tags"""" ]; then
+        run_maven_test "" "" "-Dgroups="""$tags"""" "Tagged tests ("""$tags""")"
     fi
 }
 
@@ -318,12 +318,12 @@ show_summary() {
     
     print_header "Test Session Summary"
     
-    echo -e "${CYAN}Tests Run: ""$TESTS_RUN""${NC}"
-    echo -e "${GREEN}Passed: ""$TESTS_PASSED""${NC}"
-    echo -e "${RED}Failed: ""$TESTS_FAILED""${NC}"
+    echo -e "${CYAN}Tests Run: """$TESTS_RUN"""${NC}"
+    echo -e "${GREEN}Passed: """$TESTS_PASSED"""${NC}"
+    echo -e "${RED}Failed: """$TESTS_FAILED"""${NC}"
     echo -e "${BLUE}Duration: ${duration}s${NC}"
     
-    if [ ""$TESTS_FAILED"" -eq 0 ]; then
+    if [ """$TESTS_FAILED""" -eq 0 ]; then
         echo -e "${GREEN}🎉 All tests passed!${NC}"
     else
         echo -e "${RED}❌ Some tests failed${NC}"
@@ -339,7 +339,7 @@ interactive_mode() {
         
         TESTS_RUN=$((TESTS_RUN + 1))
         
-        case ""$choice"" in
+        case """$choice""" in
             1) run_quick_tests ;;
             2) run_unit_tests ;;
             3) run_integration_tests ;;
