@@ -1,0 +1,110 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: mcp-autoscaling
+  namespace: production
+
+# Resources to deploy
+resources:
+  # Horizontal Pod Autoscalers for reactive scaling
+  - horizontal-pod-autoscalers.yaml
+  
+  # Vertical Pod Autoscalers for resource optimization
+  - vertical-pod-autoscalers.yaml
+  
+  # Cluster Autoscaler for node-level scaling
+  - cluster-autoscaler.yaml
+  
+  # Load balancer configurations
+  - load-balancer-config.yaml
+  
+  # Predictive scaling with ML models
+  - predictive-scaling.yaml
+  
+  # Node affinity and anti-affinity rules
+  - node-affinity-rules.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app: mcp-debate
+  component: autoscaling
+  environment: production
+  managed-by: kustomize
+
+# Configuration patches for different environments
+patchesStrategicMerge:
+  - patches/production-patches.yaml
+
+# ConfigMap generators for environment-specific configs
+configMapGenerator:
+  - name: autoscaling-config
+    literals:
+      - ENVIRONMENT=production
+      - CLUSTER_NAME=mcp-production
+      - AWS_REGION=us-east-1
+      - SCALING_AGGRESSIVENESS=moderate
+      - COST_OPTIMIZATION=enabled
+      - PREDICTIVE_SCALING=enabled
+      - BUSINESS_HOURS_SCALING=enabled
+
+# Secret generators for autoscaling credentials
+secretGenerator:
+  - name: autoscaling-secrets
+    literals:
+      - aws-access-key-id=CHANGE_ME
+      - aws-secret-access-key=CHANGE_ME
+      - prometheus-token=CHANGE_ME
+      - grafana-api-key=CHANGE_ME
+    type: Opaque
+    options:
+      disableNameSuffixHash: true
+
+# Images to use (can be customized per environment)
+images:
+  - name: registry.k8s.io/autoscaling/cluster-autoscaler
+    newTag: v1.28.2
+  - name: registry.k8s.io/autoscaling/vpa-recommender
+    newTag: 0.14.0
+  - name: registry.k8s.io/autoscaling/vpa-updater
+    newTag: 0.14.0
+  - name: registry.k8s.io/autoscaling/vpa-admission-controller
+    newTag: 0.14.0
+  - name: mcp-debate/predictive-scaler
+    newTag: v1.0.0
+  - name: mcp-debate/model-trainer
+    newTag: v1.0.0
+
+# Replacements for templating
+replacements:
+  - source:
+      kind: ConfigMap
+      name: autoscaling-config
+      fieldPath: data.CLUSTER_NAME
+    targets:
+      - select:
+          kind: Deployment
+          name: cluster-autoscaler
+        fieldPaths:
+          - spec.template.spec.containers.[name=cluster-autoscaler].command.[*]
+        options:
+          delimiter: '='
+  
+  - source:
+      kind: ConfigMap
+      name: autoscaling-config
+      fieldPath: data.AWS_REGION
+    targets:
+      - select:
+          kind: Deployment
+          name: cluster-autoscaler
+        fieldPaths:
+          - spec.template.spec.containers.[name=cluster-autoscaler].env.[name=AWS_REGION].value
+
+# Resource transformers
+transformers:
+  - scaling-limits.yaml
+
+# Generators for additional resources
+generators:
+  - autoscaling-policies-generator.yaml

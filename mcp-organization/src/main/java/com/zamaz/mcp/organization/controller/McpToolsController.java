@@ -105,18 +105,8 @@ public class McpToolsController {
             response.put("success", true);
             response.put("organization", organization);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in update_organization: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error updating organization: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "update_organization", null);
         }
     }
     
@@ -135,18 +125,8 @@ public class McpToolsController {
             response.put("success", true);
             response.put("message", "Organization deleted successfully");
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in delete_organization: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error deleting organization: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "delete_organization", null);
         }
     }
     
