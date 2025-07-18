@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Download, Smartphone, Monitor, Wifi, WifiOff } from 'lucide-react';
-import { usePWA } from '../hooks/usePWA';
+import React, { useState } from "react";
+import { X, Download, Smartphone, Monitor, Wifi, WifiOff } from "lucide-react";
+import { usePWA } from "../hooks/usePWA";
 
 const PWAPrompt = () => {
   const {
@@ -9,9 +9,9 @@ const PWAPrompt = () => {
     installPrompt,
     updateAvailable,
     installPWA,
-    updatePWA
+    updatePWA,
   } = usePWA();
-  
+
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -35,11 +35,11 @@ const PWAPrompt = () => {
     setInstalling(true);
     try {
       const outcome = await installPWA();
-      if (outcome === 'accepted') {
+      if (outcome === "accepted") {
         setShowInstallPrompt(false);
       }
     } catch (error) {
-      console.error('Failed to install PWA:', error);
+      console.error("Failed to install PWA:", error);
     } finally {
       setInstalling(false);
     }
@@ -51,7 +51,7 @@ const PWAPrompt = () => {
       await updatePWA();
       setShowUpdatePrompt(false);
     } catch (error) {
-      console.error('Failed to update PWA:', error);
+      console.error("Failed to update PWA:", error);
     } finally {
       setUpdating(false);
     }
@@ -78,29 +78,30 @@ const PWAPrompt = () => {
                 <Download className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Install Debate System
               </h3>
               <p className="text-sm text-gray-600 mb-3">
-                Install our app for a better experience with offline access and push notifications.
+                Install our app for a better experience with offline access and
+                push notifications.
               </p>
-              
+
               <div className="flex items-center space-x-2 text-xs text-gray-500 mb-3">
                 <Monitor className="w-3 h-3" />
                 <span>Works on desktop</span>
                 <Smartphone className="w-3 h-3 ml-2" />
                 <span>and mobile</span>
               </div>
-              
+
               <div className="flex space-x-2">
                 <button
                   onClick={handleInstall}
                   disabled={installing}
                   className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {installing ? 'Installing...' : 'Install'}
+                  {installing ? "Installing..." : "Install"}
                 </button>
                 <button
                   onClick={() => setShowInstallPrompt(false)}
@@ -110,7 +111,7 @@ const PWAPrompt = () => {
                 </button>
               </div>
             </div>
-            
+
             <button
               onClick={() => setShowInstallPrompt(false)}
               className="flex-shrink-0 text-gray-400 hover:text-gray-600"
@@ -130,22 +131,23 @@ const PWAPrompt = () => {
                 <Download className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Update Available
               </h3>
               <p className="text-sm text-gray-600 mb-3">
-                A new version of the app is available with improvements and bug fixes.
+                A new version of the app is available with improvements and bug
+                fixes.
               </p>
-              
+
               <div className="flex space-x-2">
                 <button
                   onClick={handleUpdate}
                   disabled={updating}
                   className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {updating ? 'Updating...' : 'Update Now'}
+                  {updating ? "Updating..." : "Update Now"}
                 </button>
                 <button
                   onClick={() => setShowUpdatePrompt(false)}
@@ -155,7 +157,7 @@ const PWAPrompt = () => {
                 </button>
               </div>
             </div>
-            
+
             <button
               onClick={() => setShowUpdatePrompt(false)}
               className="flex-shrink-0 text-gray-400 hover:text-gray-600"
@@ -168,11 +170,11 @@ const PWAPrompt = () => {
 
       {/* Connection Status Indicator */}
       <div className="fixed top-4 right-4 z-30">
-        <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-          isOnline 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
+        <div
+          className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+            isOnline ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          }`}
+        >
           {isOnline ? (
             <>
               <Wifi className="w-3 h-3" />

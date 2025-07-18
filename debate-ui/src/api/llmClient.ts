@@ -1,4 +1,4 @@
-import BaseApiClient from './baseClient';
+import BaseApiClient from "./baseClient";
 
 export interface LLMProvider {
   name: string;
@@ -9,14 +9,14 @@ export interface LLMProvider {
     visionSupport: boolean;
     maxTokens: number;
   };
-  status: 'available' | 'unavailable' | 'rate_limited';
+  status: "available" | "unavailable" | "rate_limited";
 }
 
 export interface CompletionRequest {
   provider: string;
   model: string;
   messages: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
   temperature?: number;
@@ -52,13 +52,13 @@ export interface ModelInfo {
 
 class LLMClient extends BaseApiClient {
   constructor() {
-    super('/api/llm');
+    super("/api/llm");
   }
 
   // Provider management
   async listProviders(): Promise<LLMProvider[]> {
     const resources = await this.listResources();
-    return resources.filter((r: any) => r.uri.startsWith('provider://'));
+    return resources.filter((r: any) => r.uri.startsWith("provider://"));
   }
 
   async getProvider(name: string): Promise<LLMProvider> {
@@ -67,22 +67,24 @@ class LLMClient extends BaseApiClient {
 
   // Completion
   async complete(request: CompletionRequest): Promise<CompletionResponse> {
-    return this.callTool('complete', request);
+    return this.callTool("complete", request);
   }
 
   async streamComplete(
     request: CompletionRequest,
     onChunk: (chunk: string) => void,
-    onComplete?: (response: CompletionResponse) => void
+    onComplete?: (response: CompletionResponse) => void,
   ): Promise<void> {
     const response = await this.makeStreamRequest(request);
     const reader = this.getResponseReader(response);
     await this.processStream(reader, onChunk, onComplete);
   }
 
-  private async makeStreamRequest(request: CompletionRequest): Promise<Response> {
-    const response = await fetch('/api/llm/tools/complete', {
-      method: 'POST',
+  private async makeStreamRequest(
+    request: CompletionRequest,
+  ): Promise<Response> {
+    const response = await fetch("/api/llm/tools/complete", {
+      method: "POST",
       headers: this.getStreamHeaders(),
       body: JSON.stringify({ ...request, stream: true }),
     });
@@ -96,16 +98,18 @@ class LLMClient extends BaseApiClient {
 
   private getStreamHeaders(): HeadersInit {
     return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-      'X-Organization-Id': localStorage.getItem('currentOrgId') || '',
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+      "X-Organization-Id": localStorage.getItem("currentOrgId") || "",
     };
   }
 
-  private getResponseReader(response: Response): ReadableStreamDefaultReader<Uint8Array> {
+  private getResponseReader(
+    response: Response,
+  ): ReadableStreamDefaultReader<Uint8Array> {
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error('No response body');
+      throw new Error("No response body");
     }
     return reader;
   }
@@ -113,10 +117,10 @@ class LLMClient extends BaseApiClient {
   private async processStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
     onChunk: (chunk: string) => void,
-    onComplete?: (response: CompletionResponse) => void
+    onComplete?: (response: CompletionResponse) => void,
   ): Promise<void> {
     const decoder = new TextDecoder();
-    let buffer = '';
+    let buffer = "";
 
     try {
       while (true) {
@@ -127,7 +131,7 @@ class LLMClient extends BaseApiClient {
           decoder.decode(value, { stream: true }),
           buffer,
           onChunk,
-          onComplete
+          onComplete,
         );
       }
     } finally {
@@ -139,11 +143,11 @@ class LLMClient extends BaseApiClient {
     decodedValue: string,
     currentBuffer: string,
     onChunk: (chunk: string) => void,
-    onComplete?: (response: CompletionResponse) => void
+    onComplete?: (response: CompletionResponse) => void,
   ): string {
     const buffer = currentBuffer + decodedValue;
-    const lines = buffer.split('\n');
-    const remainingBuffer = lines.pop() || '';
+    const lines = buffer.split("\n");
+    const remainingBuffer = lines.pop() || "";
 
     this.processCompletedLines(lines, onChunk, onComplete);
     return remainingBuffer;
@@ -152,15 +156,15 @@ class LLMClient extends BaseApiClient {
   private processCompletedLines(
     lines: string[],
     onChunk: (chunk: string) => void,
-    onComplete?: (response: CompletionResponse) => void
+    onComplete?: (response: CompletionResponse) => void,
   ): void {
-    lines.forEach(line => this.processSingleLine(line, onChunk, onComplete));
+    lines.forEach((line) => this.processSingleLine(line, onChunk, onComplete));
   }
 
   private processSingleLine(
     line: string,
     onChunk: (chunk: string) => void,
-    onComplete?: (response: CompletionResponse) => void
+    onComplete?: (response: CompletionResponse) => void,
   ): void {
     if (!this.isValidSSELine(line)) return;
 
@@ -174,7 +178,7 @@ class LLMClient extends BaseApiClient {
   }
 
   private isValidSSELine(line: string): boolean {
-    return line.startsWith('data: ');
+    return line.startsWith("data: ");
   }
 
   private extractSSEData(line: string): string {
@@ -182,14 +186,14 @@ class LLMClient extends BaseApiClient {
   }
 
   private isEndMarker(data: string): boolean {
-    return data === '[DONE]';
+    return data === "[DONE]";
   }
 
   private parseChunkData(data: string): any | null {
     try {
       return JSON.parse(data);
     } catch (e) {
-      console.error('Failed to parse SSE chunk:', e);
+      console.error("Failed to parse SSE chunk:", e);
       return null;
     }
   }
@@ -197,7 +201,7 @@ class LLMClient extends BaseApiClient {
   private handleChunk(
     chunk: any,
     onChunk: (chunk: string) => void,
-    onComplete?: (response: CompletionResponse) => void
+    onComplete?: (response: CompletionResponse) => void,
   ): void {
     if (chunk.content) {
       onChunk(chunk.content);
@@ -210,7 +214,7 @@ class LLMClient extends BaseApiClient {
   // Model information
   async listModels(provider?: string): Promise<ModelInfo[]> {
     const params = provider ? { provider } : undefined;
-    const response = await this.client.get('/models', { params });
+    const response = await this.client.get("/models", { params });
     return response.data;
   }
 
@@ -221,18 +225,21 @@ class LLMClient extends BaseApiClient {
 
   // Token counting
   async countTokens(text: string, model: string): Promise<number> {
-    return this.callTool('count_tokens', { text, model });
+    return this.callTool("count_tokens", { text, model });
   }
 
   // Rate limit information
   async getRateLimits(): Promise<any> {
-    const response = await this.client.get('/rate-limits');
+    const response = await this.client.get("/rate-limits");
     return response.data;
   }
 
   // Health check
-  async checkHealth(): Promise<{ status: string; providers: Record<string, string> }> {
-    const response = await this.client.get('/health');
+  async checkHealth(): Promise<{
+    status: string;
+    providers: Record<string, string>;
+  }> {
+    const response = await this.client.get("/health");
     return response.data;
   }
 }

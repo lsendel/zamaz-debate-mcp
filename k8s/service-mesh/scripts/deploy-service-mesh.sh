@@ -7,7 +7,7 @@ set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_MESH_DIR="$(dirname "$SCRIPT_DIR")"
+SERVICE_MESH_DIR="$(dirname """$SCRIPT_DIR""")"
 NAMESPACE="production"
 ISTIO_NAMESPACE="istio-system"
 TIMEOUT="600s"
@@ -68,13 +68,13 @@ create_namespaces() {
     log "Creating namespaces..."
     
     # Create istio-system namespace
-    kubectl create namespace "$ISTIO_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace """$ISTIO_NAMESPACE""" --dry-run=client -o yaml | kubectl apply -f -
     
     # Create production namespace
-    kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace """$NAMESPACE""" --dry-run=client -o yaml | kubectl apply -f -
     
     # Label namespace for istio injection
-    kubectl label namespace "$NAMESPACE" istio-injection=enabled --overwrite
+    kubectl label namespace """$NAMESPACE""" istio-injection=enabled --overwrite
     
     log "Namespaces created and configured"
 }
@@ -84,23 +84,23 @@ install_istio() {
     log "Installing Istio..."
     
     # Check if Istio is already installed
-    if kubectl get namespace "$ISTIO_NAMESPACE" &> /dev/null && \
-       kubectl get deployment istiod -n "$ISTIO_NAMESPACE" &> /dev/null; then
+    if kubectl get namespace """$ISTIO_NAMESPACE""" &> /dev/null && \
+       kubectl get deployment istiod -n """$ISTIO_NAMESPACE""" &> /dev/null; then
         warn "Istio appears to be already installed"
         read -p "Do you want to proceed with installation? (y/N): " -n 1 -r
         echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        if [[ ! ""$REPLY"" =~ ^[Yy]$ ]]; then
             info "Skipping Istio installation"
             return 0
         fi
     fi
     
     # Apply Istio installation
-    kubectl apply -f "$SERVICE_MESH_DIR/istio/installation.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/istio/installation.yaml"
     
     # Wait for Istio to be ready
     log "Waiting for Istio control plane to be ready..."
-    kubectl wait --for=condition=ready pod -l app=istiod -n "$ISTIO_NAMESPACE" --timeout="$TIMEOUT"
+    kubectl wait --for=condition=ready pod -l app=istiod -n """$ISTIO_NAMESPACE""" --timeout="""$TIMEOUT"""
     
     # Verify installation
     if istioctl verify-install &> /dev/null; then
@@ -114,10 +114,10 @@ install_istio() {
 deploy_gateways() {
     log "Deploying gateway configuration..."
     
-    kubectl apply -f "$SERVICE_MESH_DIR/gateway/mcp-gateway.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/gateway/mcp-gateway.yaml"
     
     # Wait for gateways to be ready
-    kubectl wait --for=condition=ready gateway -l app=mcp-debate -n "$NAMESPACE" --timeout="$TIMEOUT"
+    kubectl wait --for=condition=ready gateway -l app=mcp-debate -n """$NAMESPACE""" --timeout="""$TIMEOUT"""
     
     log "Gateways deployed successfully"
 }
@@ -126,7 +126,7 @@ deploy_gateways() {
 deploy_virtual_services() {
     log "Deploying virtual services..."
     
-    kubectl apply -f "$SERVICE_MESH_DIR/virtual-services/mcp-virtual-services.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/virtual-services/mcp-virtual-services.yaml"
     
     log "Virtual services deployed successfully"
 }
@@ -135,7 +135,7 @@ deploy_virtual_services() {
 deploy_destination_rules() {
     log "Deploying destination rules..."
     
-    kubectl apply -f "$SERVICE_MESH_DIR/destination-rules/mcp-destination-rules.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/destination-rules/mcp-destination-rules.yaml"
     
     log "Destination rules deployed successfully"
 }
@@ -144,7 +144,7 @@ deploy_destination_rules() {
 deploy_service_entries() {
     log "Deploying service entries for external services..."
     
-    kubectl apply -f "$SERVICE_MESH_DIR/service-entries/external-services.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/service-entries/external-services.yaml"
     
     log "Service entries deployed successfully"
 }
@@ -154,10 +154,10 @@ deploy_security_policies() {
     log "Deploying security policies..."
     
     # Deploy authentication policies
-    kubectl apply -f "$SERVICE_MESH_DIR/security/authentication-policies.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/security/authentication-policies.yaml"
     
     # Deploy authorization policies
-    kubectl apply -f "$SERVICE_MESH_DIR/security/authorization-policies.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/security/authorization-policies.yaml"
     
     log "Security policies deployed successfully"
 }
@@ -166,7 +166,7 @@ deploy_security_policies() {
 deploy_telemetry() {
     log "Deploying telemetry configuration..."
     
-    kubectl apply -f "$SERVICE_MESH_DIR/telemetry/telemetry-config.yaml"
+    kubectl apply -f """$SERVICE_MESH_DIR""/telemetry/telemetry-config.yaml"
     
     log "Telemetry configuration deployed successfully"
 }
@@ -177,34 +177,34 @@ verify_deployment() {
     
     # Check Istio components
     info "Checking Istio control plane..."
-    kubectl get pods -n "$ISTIO_NAMESPACE"
+    kubectl get pods -n """$ISTIO_NAMESPACE"""
     
     # Check gateways
     info "Checking gateways..."
-    kubectl get gateway -n "$NAMESPACE"
+    kubectl get gateway -n """$NAMESPACE"""
     
     # Check virtual services
     info "Checking virtual services..."
-    kubectl get virtualservice -n "$NAMESPACE"
+    kubectl get virtualservice -n """$NAMESPACE"""
     
     # Check destination rules
     info "Checking destination rules..."
-    kubectl get destinationrule -n "$NAMESPACE"
+    kubectl get destinationrule -n """$NAMESPACE"""
     
     # Check security policies
     info "Checking authentication policies..."
-    kubectl get peerauthentication -n "$NAMESPACE"
+    kubectl get peerauthentication -n """$NAMESPACE"""
     
     info "Checking authorization policies..."
-    kubectl get authorizationpolicy -n "$NAMESPACE"
+    kubectl get authorizationpolicy -n """$NAMESPACE"""
     
     # Check telemetry
     info "Checking telemetry configuration..."
-    kubectl get telemetry -n "$NAMESPACE"
+    kubectl get telemetry -n """$NAMESPACE"""
     
     # Run Istio configuration analysis
     info "Running Istio configuration analysis..."
-    if istioctl analyze -n "$NAMESPACE"; then
+    if istioctl analyze -n """$NAMESPACE"""; then
         log "Configuration analysis passed"
     else
         warn "Configuration analysis found issues"
@@ -218,13 +218,13 @@ show_ingress_info() {
     log "Gathering ingress information..."
     
     # Get ingress gateway service
-    INGRESS_HOST=$(kubectl get svc istio-ingressgateway -n "$ISTIO_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    if [ -z "$INGRESS_HOST" ]; then
-        INGRESS_HOST=$(kubectl get svc istio-ingressgateway -n "$ISTIO_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    INGRESS_HOST=$(kubectl get svc istio-ingressgateway -n """$ISTIO_NAMESPACE""" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    if [ -z """$INGRESS_HOST""" ]; then
+        INGRESS_HOST=$(kubectl get svc istio-ingressgateway -n """$ISTIO_NAMESPACE""" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     fi
     
-    INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n "$ISTIO_NAMESPACE" -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
-    SECURE_INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n "$ISTIO_NAMESPACE" -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
+    INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n """$ISTIO_NAMESPACE""" -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+    SECURE_INGRESS_PORT=$(kubectl get svc istio-ingressgateway -n """$ISTIO_NAMESPACE""" -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
     
     echo ""
     info "=== Ingress Information ==="
@@ -233,14 +233,14 @@ show_ingress_info() {
     info "HTTPS Port: ${SECURE_INGRESS_PORT:-443}"
     echo ""
     
-    if [ -n "$INGRESS_HOST" ]; then
+    if [ -n """$INGRESS_HOST""" ]; then
         info "Test URLs:"
         info "  Health Check: http://${INGRESS_HOST}:${INGRESS_PORT}/health"
         info "  API Gateway: http://${INGRESS_HOST}:${INGRESS_PORT}/api/v1/"
         info "  Secure API: https://${INGRESS_HOST}:${SECURE_INGRESS_PORT}/api/v1/"
     else
         warn "Ingress host is not yet available. Check load balancer status:"
-        info "  kubectl get svc istio-ingressgateway -n $ISTIO_NAMESPACE"
+        info "  kubectl get svc istio-ingressgateway -n ""$ISTIO_NAMESPACE"""
     fi
     echo ""
 }
@@ -249,9 +249,9 @@ show_ingress_info() {
 create_deployment_report() {
     log "Creating deployment report..."
     
-    REPORT_FILE="$SERVICE_MESH_DIR/deployment-report-$(date +%Y%m%d-%H%M%S).md"
+    REPORT_FILE="""$SERVICE_MESH_DIR""/deployment-report-$(date +%Y%m%d-%H%M%S).md"
     
-    cat > "$REPORT_FILE" <<EOF
+    cat > """$REPORT_FILE""" <<EOF
 # Service Mesh Deployment Report
 
 **Deployment Date:** $(date)
@@ -266,18 +266,18 @@ create_deployment_report() {
 - Components: Pilot, Ingress Gateway, Egress Gateway
 
 ### Service Mesh Configuration
-- Gateways: $(kubectl get gateway -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) deployed
-- Virtual Services: $(kubectl get virtualservice -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) deployed
-- Destination Rules: $(kubectl get destinationrule -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) deployed
-- Service Entries: $(kubectl get serviceentry -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) deployed
+- Gateways: $(kubectl get gateway -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) deployed
+- Virtual Services: $(kubectl get virtualservice -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) deployed
+- Destination Rules: $(kubectl get destinationrule -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) deployed
+- Service Entries: $(kubectl get serviceentry -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) deployed
 
 ### Security Policies
-- Peer Authentication: $(kubectl get peerauthentication -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) policies
-- Authorization Policies: $(kubectl get authorizationpolicy -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) policies
-- Request Authentication: $(kubectl get requestauthentication -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) policies
+- Peer Authentication: $(kubectl get peerauthentication -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) policies
+- Authorization Policies: $(kubectl get authorizationpolicy -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) policies
+- Request Authentication: $(kubectl get requestauthentication -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) policies
 
 ### Telemetry
-- Telemetry Configs: $(kubectl get telemetry -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l) configurations
+- Telemetry Configs: $(kubectl get telemetry -n """$NAMESPACE""" --no-headers 2>/dev/null | wc -l) configurations
 - Metrics: Enabled (Prometheus)
 - Tracing: Enabled (Jaeger)
 - Access Logging: Enabled
@@ -297,36 +297,36 @@ $(show_ingress_info)
 ## Troubleshooting
 
 If issues occur, check:
-- \`kubectl logs -n $ISTIO_NAMESPACE deployment/istiod\`
-- \`kubectl get pods -n $NAMESPACE\`
-- \`istioctl proxy-status\`
-- \`istioctl analyze -n $NAMESPACE\`
+- \$(kubectl logs -n ""$ISTIO_NAMESPACE"" deployment/istiod\)
+- \$(kubectl get pods -n ""$NAMESPACE""\)
+- \$(istioctl proxy-status\)
+- \$(istioctl analyze -n ""$NAMESPACE""\)
 
 ## Configuration Files
 
 All configuration files are located in:
-- Installation: \`istio/installation.yaml\`
-- Gateways: \`gateway/mcp-gateway.yaml\`
-- Virtual Services: \`virtual-services/mcp-virtual-services.yaml\`
-- Destination Rules: \`destination-rules/mcp-destination-rules.yaml\`
-- Service Entries: \`service-entries/external-services.yaml\`
-- Security: \`security/\`
-- Telemetry: \`telemetry/telemetry-config.yaml\`
+- Installation: \$(istio/installation.yaml\)
+- Gateways: \$(gateway/mcp-gateway.yaml\)
+- Virtual Services: \$(virtual-services/mcp-virtual-services.yaml\)
+- Destination Rules: \$(destination-rules/mcp-destination-rules.yaml\)
+- Service Entries: \$(service-entries/external-services.yaml\)
+- Security: \$(security/\)
+- Telemetry: \$(telemetry/telemetry-config.yaml\)
 EOF
 
-    log "Deployment report created: $REPORT_FILE"
+    log "Deployment report created: ""$REPORT_FILE"""
 }
 
 # Cleanup function
 cleanup_on_error() {
     error "Deployment failed. Check the logs above for details."
     info "To clean up partial deployment, run:"
-    info "  kubectl delete -f $SERVICE_MESH_DIR/security/"
-    info "  kubectl delete -f $SERVICE_MESH_DIR/telemetry/"
-    info "  kubectl delete -f $SERVICE_MESH_DIR/virtual-services/"
-    info "  kubectl delete -f $SERVICE_MESH_DIR/destination-rules/"
-    info "  kubectl delete -f $SERVICE_MESH_DIR/service-entries/"
-    info "  kubectl delete -f $SERVICE_MESH_DIR/gateway/"
+    info "  kubectl delete -f ""$SERVICE_MESH_DIR""/security/"
+    info "  kubectl delete -f ""$SERVICE_MESH_DIR""/telemetry/"
+    info "  kubectl delete -f ""$SERVICE_MESH_DIR""/virtual-services/"
+    info "  kubectl delete -f ""$SERVICE_MESH_DIR""/destination-rules/"
+    info "  kubectl delete -f ""$SERVICE_MESH_DIR""/service-entries/"
+    info "  kubectl delete -f ""$SERVICE_MESH_DIR""/gateway/"
     info "  istioctl uninstall --purge"
 }
 
@@ -365,7 +365,7 @@ main() {
 }
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         --namespace)
             NAMESPACE="$2"

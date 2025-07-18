@@ -83,10 +83,10 @@ echo "🔍 Health Check:"
 echo "==============="
 echo ""
 for port in 5005 5002 5013; do
-    if curl -s http://localhost:$port/actuator/health > /dev/null; then
-        echo "✅ Service on port $port is healthy"
+    if curl -s http://localhost:""$port""/actuator/health > /dev/null; then
+        echo "✅ Service on port ""$port"" is healthy"
     else
-        echo "❌ Service on port $port is not responding"
+        echo "❌ Service on port ""$port"" is not responding"
     fi
 done
 

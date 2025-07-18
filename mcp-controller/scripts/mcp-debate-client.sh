@@ -22,8 +22,8 @@ NC='\033[0m'
 call_mcp_tool() {
     local tool_name=$1
     local args=$2
-    echo -e "${BLUE}Calling MCP tool: $tool_name${NC}"
-    echo "claude --mcp $MCP_SERVICE call-tool $tool_name '$args'"
+    echo -e "${BLUE}Calling MCP tool: ""$tool_name""${NC}"
+    echo "claude --mcp ""$MCP_SERVICE"" call-tool ""$tool_name"" '""$args""'"
     echo ""
 }
 
@@ -50,7 +50,7 @@ echo ""
 # 1. List available tools
 echo -e "${PURPLE}1. List available debate tools:${NC}"
 call_mcp_tool "list-tools" "{}"
-echo "claude --mcp $MCP_SERVICE list-tools"
+echo "claude --mcp ""$MCP_SERVICE"" list-tools"
 echo ""
 
 # 2. Create a debate
@@ -59,12 +59,12 @@ DEBATE_ARGS=$(cat << EOF
 {
   "topic": "Should I use Airtable and DAG in the system?",
   "format": "OXFORD",
-  "organizationId": "$ORG_ID",
+  "organizationId": """$ORG_ID""",
   "maxRounds": 3
 }
 EOF
 )
-call_mcp_tool "create_debate" "$DEBATE_ARGS"
+call_mcp_tool "create_debate" """$DEBATE_ARGS"""
 
 # 3. Get debate status
 echo -e "${PURPLE}3. Get debate details:${NC}"
@@ -72,7 +72,7 @@ call_mcp_tool "get_debate" '{"debateId": "DEBATE_ID_HERE"}'
 
 # 4. List all debates
 echo -e "${PURPLE}4. List debates for organization:${NC}"
-call_mcp_tool "list_debates" "{\"organizationId\": \"$ORG_ID\"}"
+call_mcp_tool "list_debates" "{\"organizationId\": \"""$ORG_ID""\"}"
 
 # 5. Submit a turn
 echo -e "${PURPLE}5. Submit a debate turn:${NC}"
@@ -84,7 +84,7 @@ TURN_ARGS=$(cat << EOF
 }
 EOF
 )
-call_mcp_tool "submit_turn" "$TURN_ARGS"
+call_mcp_tool "submit_turn" """$TURN_ARGS"""
 
 echo ""
 echo -e "${YELLOW}=== Natural Language Examples ===${NC}"

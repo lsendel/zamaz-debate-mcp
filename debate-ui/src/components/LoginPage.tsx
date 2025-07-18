@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Paper,
@@ -9,10 +9,10 @@ import {
   Tabs,
   Alert,
   Container,
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../store';
-import { login, register, clearError } from '../store/slices/authSlice';
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../store";
+import { login, register, clearError } from "../store/slices/authSlice";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -40,14 +40,14 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.auth);
-  
+
   const [tab, setTab] = useState(0);
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    organizationName: '',
+    username: "",
+    email: "",
+    password: "",
+    organizationName: "",
   });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -59,7 +59,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     const result = await dispatch(login(loginForm));
     if (login.fulfilled.match(result)) {
-      navigate('/');
+      navigate("/");
     }
   };
 
@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     const result = await dispatch(register(registerForm));
     if (register.fulfilled.match(result)) {
-      navigate('/');
+      navigate("/");
     }
   };
 
@@ -76,20 +76,20 @@ const LoginPage: React.FC = () => {
       <Box
         sx={{
           marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
         <Typography component="h1" variant="h4" sx={{ mb: 4 }}>
           Zamaz Debate System
         </Typography>
-        <Paper elevation={3} sx={{ width: '100%', overflow: 'hidden' }}>
+        <Paper elevation={3} sx={{ width: "100%", overflow: "hidden" }}>
           <Tabs value={tab} onChange={handleTabChange} variant="fullWidth">
             <Tab label="Login" />
             <Tab label="Register" />
           </Tabs>
-          
+
           {error && (
             <Alert severity="error" sx={{ m: 2 }}>
               {error}
@@ -98,11 +98,13 @@ const LoginPage: React.FC = () => {
 
           <TabPanel value={tab} index={0}>
             <Box component="form" onSubmit={handleLogin}>
-              {process.env.NODE_ENV === 'development' && (
+              {process.env.NODE_ENV === "development" && (
                 <Alert severity="info" sx={{ mb: 2 }}>
                   <Typography variant="body2">
-                    <strong>Development Mode</strong><br />
-                    Username: <code>demo</code><br />
+                    <strong>Development Mode</strong>
+                    <br />
+                    Username: <code>demo</code>
+                    <br />
                     Password: <code>demo123</code>
                   </Typography>
                 </Alert>
@@ -138,7 +140,7 @@ const LoginPage: React.FC = () => {
                 sx={{ mt: 3, mb: 2 }}
                 disabled={loading}
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? "Logging in..." : "Login"}
               </Button>
             </Box>
           </TabPanel>
@@ -153,7 +155,10 @@ const LoginPage: React.FC = () => {
                 autoFocus
                 value={registerForm.organizationName}
                 onChange={(e) =>
-                  setRegisterForm({ ...registerForm, organizationName: e.target.value })
+                  setRegisterForm({
+                    ...registerForm,
+                    organizationName: e.target.value,
+                  })
                 }
               />
               <TextField
@@ -198,7 +203,7 @@ const LoginPage: React.FC = () => {
                 sx={{ mt: 3, mb: 2 }}
                 disabled={loading}
               >
-                {loading ? 'Creating account...' : 'Register'}
+                {loading ? "Creating account..." : "Register"}
               </Button>
             </Box>
           </TabPanel>

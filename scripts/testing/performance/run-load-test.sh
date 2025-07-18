@@ -35,7 +35,7 @@ usage() {
 }
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         -u|--users)
             USERS="$2"
@@ -77,19 +77,19 @@ fi
 
 # Display test configuration
 echo -e "${YELLOW}Load Test Configuration:${NC}"
-echo "  Gateway URL:    $GATEWAY_URL"
-echo "  Users:          $USERS"
-echo "  Ramp Duration:  $RAMP_DURATION seconds"
-echo "  Test Duration:  $TEST_DURATION seconds"
-echo "  Simulation:     $SIMULATION"
+echo "  Gateway URL:    ""$GATEWAY_URL"""
+echo "  Users:          ""$USERS"""
+echo "  Ramp Duration:  ""$RAMP_DURATION"" seconds"
+echo "  Test Duration:  ""$TEST_DURATION"" seconds"
+echo "  Simulation:     ""$SIMULATION"""
 echo ""
 
 # Check if gateway is reachable
 echo -e "${YELLOW}Checking gateway connectivity...${NC}"
-if curl -s -o /dev/null -w "%{http_code}" "$GATEWAY_URL/actuator/health" | grep -q "200"; then
+if curl -s -o /dev/null -w "%{http_code}" """$GATEWAY_URL""/actuator/health" | grep -q "200"; then
     echo -e "${GREEN}✓ Gateway is reachable${NC}"
 else
-    echo -e "${RED}✗ Gateway is not reachable at $GATEWAY_URL${NC}"
+    echo -e "${RED}✗ Gateway is not reachable at ""$GATEWAY_URL""${NC}"
     echo "Please ensure the gateway is running and accessible."
     exit 1
 fi
@@ -97,10 +97,10 @@ fi
 # Create test users if needed
 echo -e "${YELLOW}Preparing test data...${NC}"
 for i in {1..10}; do
-    ORG_ID="org-$i"
-    curl -s -X POST "$GATEWAY_URL/api/v1/auth/register" \
+    ORG_ID="org-""$i"""
+    curl -s -X POST """$GATEWAY_URL""/api/v1/auth/register" \
         -H "Content-Type: application/json" \
-        -d "{\"username\": \"loadtest-$ORG_ID\", \"password\": \"test123\", \"organizationId\": \"$ORG_ID\"}" \
+        -d "{\"username\": \"loadtest-""$ORG_ID""\", \"password\": \"test123\", \"organizationId\": \"""$ORG_ID""\"}" \
         > /dev/null 2>&1 || true
 done
 echo -e "${GREEN}✓ Test data prepared${NC}"
@@ -108,7 +108,7 @@ echo -e "${GREEN}✓ Test data prepared${NC}"
 # Run the load test
 echo ""
 echo -e "${YELLOW}Starting load test...${NC}"
-echo "This will take approximately $TEST_DURATION seconds"
+echo "This will take approximately ""$TEST_DURATION"" seconds"
 echo ""
 
 # Export environment variables
@@ -121,21 +121,21 @@ export TEST_DURATION
 mvn gatling:test -Dgatling.simulationClass=com.zamaz.mcp.loadtest.$SIMULATION
 
 # Check exit code
-if [ $? -eq 0 ]; then
+if [ "$?" -eq 0 ]; then
     echo ""
     echo -e "${GREEN}✓ Load test completed successfully${NC}"
     echo "Results are available in: target/gatling/results/"
     
     # Find the latest report
     LATEST_REPORT=$(ls -t target/gatling/results/ | head -1)
-    if [ -n "$LATEST_REPORT" ]; then
-        echo "Latest report: target/gatling/results/$LATEST_REPORT/index.html"
+    if [ -n """$LATEST_REPORT""" ]; then
+        echo "Latest report: target/gatling/results/""$LATEST_REPORT""/index.html"
         
         # Try to open report in browser
         if command -v open &> /dev/null; then
-            open "target/gatling/results/$LATEST_REPORT/index.html"
+            open "target/gatling/results/""$LATEST_REPORT""/index.html"
         elif command -v xdg-open &> /dev/null; then
-            xdg-open "target/gatling/results/$LATEST_REPORT/index.html"
+            xdg-open "target/gatling/results/""$LATEST_REPORT""/index.html"
         fi
     fi
 else

@@ -23,15 +23,15 @@ test_endpoint() {
     local expected_status=$2
     local description=$3
     
-    echo -n "Testing $description... "
+    echo -n "Testing ""$description""... "
     
-    status=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
+    status=$(curl -s -o /dev/null -w "%{http_code}" """$url""" || echo "000")
     
-    if [ "$status" = "$expected_status" ]; then
-        echo -e "${GREEN}✓ PASS${NC} (Status: $status)"
+    if [ """$status""" = """$expected_status""" ]; then
+        echo -e "${GREEN}✓ PASS${NC} (Status: ""$status"")"
         return 0
     else
-        echo -e "${RED}✗ FAIL${NC} (Expected: $expected_status, Got: $status)"
+        echo -e "${RED}✗ FAIL${NC} (Expected: ""$expected_status"", Got: ""$status"")"
         return 1
     fi
 }
@@ -44,15 +44,15 @@ test_endpoint_with_body() {
     local expected_status=$4
     local description=$5
     
-    echo -n "Testing $description... "
+    echo -n "Testing ""$description""... "
     
-    status=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" -H "Content-Type: application/json" -d "$body" "$url" || echo "000")
+    status=$(curl -s -o /dev/null -w "%{http_code}" -X """$method""" -H "Content-Type: application/json" -d """$body""" """$url""" || echo "000")
     
-    if [ "$status" = "$expected_status" ]; then
-        echo -e "${GREEN}✓ PASS${NC} (Status: $status)"
+    if [ """$status""" = """$expected_status""" ]; then
+        echo -e "${GREEN}✓ PASS${NC} (Status: ""$status"")"
         return 0
     else
-        echo -e "${RED}✗ FAIL${NC} (Expected: $expected_status, Got: $status)"
+        echo -e "${RED}✗ FAIL${NC} (Expected: ""$expected_status"", Got: ""$status"")"
         return 1
     fi
 }
@@ -60,39 +60,39 @@ test_endpoint_with_body() {
 echo ""
 echo "1️⃣ Testing MCP Organization Service (Java)"
 echo "----------------------------------------"
-test_endpoint "$ORG_URL/actuator/health" "200" "Health check"
-test_endpoint "$ORG_URL/swagger-ui.html" "200" "Swagger UI"
-test_endpoint "$ORG_URL/api-docs" "200" "OpenAPI docs"
+test_endpoint """$ORG_URL""/actuator/health" "200" "Health check"
+test_endpoint """$ORG_URL""/swagger-ui.html" "200" "Swagger UI"
+test_endpoint """$ORG_URL""/api-docs" "200" "OpenAPI docs"
 
 # Test MCP tools
 echo ""
 echo "Testing MCP Tools endpoints:"
-test_endpoint_with_body "$ORG_URL/tools/create_organization" "POST" '{"name":"Test Org","description":"Test organization"}' "401" "Create organization (should require auth)"
-test_endpoint "$ORG_URL/tools/resources/organizations" "200" "List organizations resource"
+test_endpoint_with_body """$ORG_URL""/tools/create_organization" "POST" '{"name":"Test Org","description":"Test organization"}' "401" "Create organization (should require auth)"
+test_endpoint """$ORG_URL""/tools/resources/organizations" "200" "List organizations resource"
 
 echo ""
 echo "2️⃣ Testing MCP LLM Service (Java)"
 echo "--------------------------------"
-test_endpoint "$LLM_URL/actuator/health" "200" "Health check"
-test_endpoint "$LLM_URL/swagger-ui.html" "200" "Swagger UI"
-test_endpoint "$LLM_URL/api-docs" "200" "OpenAPI docs"
+test_endpoint """$LLM_URL""/actuator/health" "200" "Health check"
+test_endpoint """$LLM_URL""/swagger-ui.html" "200" "Swagger UI"
+test_endpoint """$LLM_URL""/api-docs" "200" "OpenAPI docs"
 
 # Test provider endpoints
 echo ""
 echo "Testing Provider endpoints:"
-test_endpoint "$LLM_URL/api/v1/providers" "200" "List providers"
+test_endpoint """$LLM_URL""/api/v1/providers" "200" "List providers"
 
 echo ""
 echo "3️⃣ Testing MCP Controller Service (Java)"
 echo "---------------------------------------"
-test_endpoint "$CONTROLLER_URL/actuator/health" "200" "Health check"
-test_endpoint "$CONTROLLER_URL/swagger-ui.html" "200" "Swagger UI"
-test_endpoint "$CONTROLLER_URL/api-docs" "200" "OpenAPI docs"
+test_endpoint """$CONTROLLER_URL""/actuator/health" "200" "Health check"
+test_endpoint """$CONTROLLER_URL""/swagger-ui.html" "200" "Swagger UI"
+test_endpoint """$CONTROLLER_URL""/api-docs" "200" "OpenAPI docs"
 
 # Test debate endpoints
 echo ""
 echo "Testing Debate endpoints:"
-test_endpoint "$CONTROLLER_URL/api/v1/debates" "200" "List debates"
+test_endpoint """$CONTROLLER_URL""/api/v1/debates" "200" "List debates"
 
 echo ""
 echo "4️⃣ Testing Service Integration"
@@ -100,14 +100,14 @@ echo "-----------------------------"
 
 # Create a test organization (this would normally require auth)
 echo -n "Creating test organization... "
-org_response=$(curl -s -X POST "$ORG_URL/tools/create_organization" \
+org_response=$(curl -s -X POST """$ORG_URL""/tools/create_organization" \
     -H "Content-Type: application/json" \
     -d '{"name":"Integration Test Org","description":"Test organization for integration"}' 2>/dev/null || echo '{"error":"failed"}')
-echo "$org_response" | jq '.' 2>/dev/null || echo -e "${YELLOW}⚠️  Skipped (auth required)${NC}"
+echo """$org_response""" | jq '.' 2>/dev/null || echo -e "${YELLOW}⚠️  Skipped (auth required)${NC}"
 
 # Test LLM completion (basic test)
 echo -n "Testing LLM completion... "
-llm_response=$(curl -s -X POST "$LLM_URL/api/v1/completions" \
+llm_response=$(curl -s -X POST """$LLM_URL""/api/v1/completions" \
     -H "Content-Type: application/json" \
     -d '{
         "provider": "claude",
@@ -115,7 +115,7 @@ llm_response=$(curl -s -X POST "$LLM_URL/api/v1/completions" \
         "maxTokens": 10
     }' 2>/dev/null || echo '{"error":"failed"}')
 
-if echo "$llm_response" | grep -q "error"; then
+if echo """$llm_response""" | grep -q "error"; then
     echo -e "${YELLOW}⚠️  Skipped (API key required)${NC}"
 else
     echo -e "${GREEN}✓ PASS${NC}"
@@ -123,7 +123,7 @@ fi
 
 # Test debate creation
 echo -n "Creating test debate... "
-debate_response=$(curl -s -X POST "$CONTROLLER_URL/api/v1/debates" \
+debate_response=$(curl -s -X POST """$CONTROLLER_URL""/api/v1/debates" \
     -H "Content-Type: application/json" \
     -d '{
         "organizationId": "00000000-0000-0000-0000-000000000000",
@@ -133,10 +133,10 @@ debate_response=$(curl -s -X POST "$CONTROLLER_URL/api/v1/debates" \
         "maxRounds": 3
     }' 2>/dev/null || echo '{"error":"failed"}')
 
-if echo "$debate_response" | grep -q '"id"'; then
+if echo """$debate_response""" | grep -q '"id"'; then
     echo -e "${GREEN}✓ PASS${NC}"
-    debate_id=$(echo "$debate_response" | jq -r '.id')
-    echo "   Created debate ID: $debate_id"
+    debate_id=$(echo """$debate_response""" | jq -r '.id')
+    echo "   Created debate ID: ""$debate_id"""
 else
     echo -e "${RED}✗ FAIL${NC}"
 fi
@@ -144,9 +144,9 @@ fi
 echo ""
 echo "5️⃣ Testing Prometheus Metrics"
 echo "----------------------------"
-test_endpoint "$ORG_URL/actuator/prometheus" "200" "Organization metrics"
-test_endpoint "$LLM_URL/actuator/prometheus" "200" "LLM metrics"
-test_endpoint "$CONTROLLER_URL/actuator/prometheus" "200" "Controller metrics"
+test_endpoint """$ORG_URL""/actuator/prometheus" "200" "Organization metrics"
+test_endpoint """$LLM_URL""/actuator/prometheus" "200" "LLM metrics"
+test_endpoint """$CONTROLLER_URL""/actuator/prometheus" "200" "Controller metrics"
 
 echo ""
 echo "📊 Summary"

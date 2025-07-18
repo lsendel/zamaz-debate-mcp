@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Paper,
@@ -17,38 +17,36 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Delete as DeleteIcon,
   Add as AddIcon,
   ContentCopy as ContentCopyIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-} from '@mui/icons-material';
-import { useAppSelector, useAppDispatch } from '../store';
-import {
-  generateApiKey,
-} from '../store/slices/organizationSlice';
-import { addNotification } from '../store/slices/uiSlice';
-import organizationClient from '../api/organizationClient';
+} from "@mui/icons-material";
+import { useAppSelector, useAppDispatch } from "../store";
+import { generateApiKey } from "../store/slices/organizationSlice";
+import { addNotification } from "../store/slices/uiSlice";
+import organizationClient from "../api/organizationClient";
 
 const SettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { currentOrganization } = useAppSelector((state) => state.organization);
   const { user } = useAppSelector((state) => state.auth);
-  
+
   const [showApiKey, setShowApiKey] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({
-    username: '',
-    email: '',
-    password: '',
-    role: 'member',
+    username: "",
+    email: "",
+    password: "",
+    role: "member",
   });
   const [orgSettings, setOrgSettings] = useState({
-    name: currentOrganization?.name || '',
-    description: currentOrganization?.description || '',
+    name: currentOrganization?.name || "",
+    description: currentOrganization?.description || "",
   });
 
   React.useEffect(() => {
@@ -58,7 +56,7 @@ const SettingsPage: React.FC = () => {
           const userList = await organizationClient.listUsers();
           setUsers(userList);
         } catch (error) {
-          console.error('Failed to load users:', error);
+          console.error("Failed to load users:", error);
         }
       }
     };
@@ -68,25 +66,31 @@ const SettingsPage: React.FC = () => {
   const handleGenerateApiKey = async () => {
     try {
       await dispatch(generateApiKey()).unwrap();
-      dispatch(addNotification({
-        type: 'success',
-        message: 'API key generated successfully',
-      }));
+      dispatch(
+        addNotification({
+          type: "success",
+          message: "API key generated successfully",
+        }),
+      );
     } catch (error) {
-      dispatch(addNotification({
-        type: 'error',
-        message: 'Failed to generate API key',
-      }));
+      dispatch(
+        addNotification({
+          type: "error",
+          message: "Failed to generate API key",
+        }),
+      );
     }
   };
 
   const handleCopyApiKey = () => {
     if (currentOrganization?.apiKey) {
       navigator.clipboard.writeText(currentOrganization.apiKey);
-      dispatch(addNotification({
-        type: 'success',
-        message: 'API key copied to clipboard',
-      }));
+      dispatch(
+        addNotification({
+          type: "success",
+          message: "API key copied to clipboard",
+        }),
+      );
     }
   };
 
@@ -95,49 +99,64 @@ const SettingsPage: React.FC = () => {
       const user = await organizationClient.addUser(newUser);
       setUsers([...users, user]);
       setAddUserDialogOpen(false);
-      setNewUser({ username: '', email: '', password: '', role: 'member' });
-      dispatch(addNotification({
-        type: 'success',
-        message: 'User added successfully',
-      }));
+      setNewUser({ username: "", email: "", password: "", role: "member" });
+      dispatch(
+        addNotification({
+          type: "success",
+          message: "User added successfully",
+        }),
+      );
     } catch (error) {
-      dispatch(addNotification({
-        type: 'error',
-        message: 'Failed to add user',
-      }));
+      dispatch(
+        addNotification({
+          type: "error",
+          message: "Failed to add user",
+        }),
+      );
     }
   };
 
   const handleRemoveUser = async (userId: string) => {
     try {
       await organizationClient.removeUser(userId);
-      setUsers(users.filter(u => u.id !== userId));
-      dispatch(addNotification({
-        type: 'success',
-        message: 'User removed successfully',
-      }));
+      setUsers(users.filter((u) => u.id !== userId));
+      dispatch(
+        addNotification({
+          type: "success",
+          message: "User removed successfully",
+        }),
+      );
     } catch (error) {
-      dispatch(addNotification({
-        type: 'error',
-        message: 'Failed to remove user',
-      }));
+      dispatch(
+        addNotification({
+          type: "error",
+          message: "Failed to remove user",
+        }),
+      );
     }
   };
 
   const handleUpdateOrganization = async () => {
     if (!currentOrganization) return;
-    
+
     try {
-      await organizationClient.updateOrganization(currentOrganization.id, orgSettings);
-      dispatch(addNotification({
-        type: 'success',
-        message: 'Organization settings updated',
-      }));
+      await organizationClient.updateOrganization(
+        currentOrganization.id,
+        orgSettings,
+      );
+      dispatch(
+        addNotification({
+          type: "success",
+          message: "Organization settings updated",
+        }),
+      );
     } catch (error) {
-      dispatch(addNotification({
-        type: 'error',
-        message: 'Failed to update organization settings',
-      }));
+      dispatch(
+        addNotification({
+          type: "error",
+          message: "Failed to update organization settings",
+        }),
+      );
     }
   };
 
@@ -166,14 +185,18 @@ const SettingsPage: React.FC = () => {
           fullWidth
           label="Organization Name"
           value={orgSettings.name}
-          onChange={(e) => setOrgSettings({ ...orgSettings, name: e.target.value })}
+          onChange={(e) =>
+            setOrgSettings({ ...orgSettings, name: e.target.value })
+          }
           margin="normal"
         />
         <TextField
           fullWidth
           label="Description"
           value={orgSettings.description}
-          onChange={(e) => setOrgSettings({ ...orgSettings, description: e.target.value })}
+          onChange={(e) =>
+            setOrgSettings({ ...orgSettings, description: e.target.value })
+          }
           margin="normal"
           multiline
           rows={3}
@@ -191,12 +214,12 @@ const SettingsPage: React.FC = () => {
         <Typography variant="h6" gutterBottom>
           API Configuration
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <TextField
             fullWidth
             label="API Key"
-            value={currentOrganization.apiKey || 'No API key generated'}
-            type={showApiKey ? 'text' : 'password'}
+            value={currentOrganization.apiKey || "No API key generated"}
+            type={showApiKey ? "text" : "password"}
             InputProps={{
               readOnly: true,
               endAdornment: (
@@ -216,22 +239,20 @@ const SettingsPage: React.FC = () => {
               ),
             }}
           />
-          <Button
-            variant="outlined"
-            onClick={handleGenerateApiKey}
-          >
-            {currentOrganization.apiKey ? 'Regenerate' : 'Generate'}
+          <Button variant="outlined" onClick={handleGenerateApiKey}>
+            {currentOrganization.apiKey ? "Regenerate" : "Generate"}
           </Button>
         </Box>
         {currentOrganization.apiKey && (
           <Alert severity="warning" sx={{ mt: 2 }}>
-            Keep your API key secure. It provides full access to your organization's resources.
+            Keep your API key secure. It provides full access to your
+            organization's resources.
           </Alert>
         )}
       </Paper>
 
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Users
           </Typography>
@@ -247,14 +268,11 @@ const SettingsPage: React.FC = () => {
         <List>
           {users.map((u) => (
             <ListItem key={u.id}>
-              <ListItemText
-                primary={u.username}
-                secondary={u.email}
-              />
+              <ListItemText primary={u.username} secondary={u.email} />
               <Chip
                 label={u.role}
                 size="small"
-                color={u.role === 'admin' ? 'primary' : 'default'}
+                color={u.role === "admin" ? "primary" : "default"}
                 sx={{ mr: 2 }}
               />
               <ListItemSecondaryAction>
@@ -285,7 +303,9 @@ const SettingsPage: React.FC = () => {
             fullWidth
             label="Username"
             value={newUser.username}
-            onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+            onChange={(e) =>
+              setNewUser({ ...newUser, username: e.target.value })
+            }
             margin="normal"
           />
           <TextField
@@ -301,7 +321,9 @@ const SettingsPage: React.FC = () => {
             label="Password"
             type="password"
             value={newUser.password}
-            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+            onChange={(e) =>
+              setNewUser({ ...newUser, password: e.target.value })
+            }
             margin="normal"
           />
           <TextField

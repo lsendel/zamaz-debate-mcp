@@ -1,5 +1,5 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React from "react";
+import { Outlet } from "react-router-dom";
 import {
   Box,
   Drawer,
@@ -13,19 +13,19 @@ import {
   ListItemText,
   ListItemButton,
   Divider,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   Forum as ForumIcon,
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../store';
-import { toggleSidebar } from '../store/slices/uiSlice';
-import { logout } from '../store/slices/authSlice';
-import OrganizationSwitcher from './OrganizationSwitcher';
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useAppSelector, useAppDispatch } from "../store";
+import { toggleSidebar } from "../store/slices/uiSlice";
+import { logout } from "../store/slices/authSlice";
+import OrganizationSwitcher from "./OrganizationSwitcher";
 
 const drawerWidth = 240;
 
@@ -37,23 +37,23 @@ const Layout: React.FC = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
+    navigate("/login");
   };
 
   const menuItems = [
-    { text: 'Debates', icon: <ForumIcon />, path: '/debates' },
-    { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { text: "Debates", icon: <ForumIcon />, path: "/debates" },
+    { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
+    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <AppBar
         position="fixed"
         sx={{
           width: `calc(100% - ${sidebarOpen ? drawerWidth : 0}px)`,
           ml: `${sidebarOpen ? drawerWidth : 0}px`,
-          transition: 'width 0.3s, margin 0.3s',
+          transition: "width 0.3s, margin 0.3s",
         }}
       >
         <Toolbar>
@@ -80,9 +80,9 @@ const Layout: React.FC = () => {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          '& .MuiDrawer-paper': {
+          "& .MuiDrawer-paper": {
             width: drawerWidth,
-            boxSizing: 'border-box',
+            boxSizing: "border-box",
           },
         }}
         variant="persistent"
@@ -90,7 +90,7 @@ const Layout: React.FC = () => {
         open={sidebarOpen}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: "auto" }}>
           <Box sx={{ p: 2 }}>
             <OrganizationSwitcher />
           </Box>
@@ -122,11 +122,11 @@ const Layout: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          bgcolor: 'background.default',
+          bgcolor: "background.default",
           p: 3,
-          transition: 'margin 0.3s',
+          transition: "margin 0.3s",
           marginLeft: sidebarOpen ? `${drawerWidth}px` : 0,
-          minHeight: '100vh',
+          minHeight: "100vh",
         }}
       >
         <Toolbar />

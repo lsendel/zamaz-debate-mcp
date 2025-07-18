@@ -1,4 +1,4 @@
-import BaseApiClient from './baseClient';
+import BaseApiClient from "./baseClient";
 
 export interface Participant {
   id: string;
@@ -22,14 +22,14 @@ export interface Response {
 export interface Round {
   roundNumber: number;
   responses: Response[];
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
 }
 
 export interface Debate {
   id: string;
   topic: string;
   description?: string;
-  status: 'created' | 'in_progress' | 'completed' | 'cancelled';
+  status: "created" | "in_progress" | "completed" | "cancelled";
   participants: Participant[];
   rounds: Round[];
   maxRounds: number;
@@ -59,7 +59,12 @@ export interface CreateDebateRequest {
 }
 
 export interface DebateEvent {
-  type: 'debate_started' | 'round_started' | 'response_received' | 'round_completed' | 'debate_completed';
+  type:
+    | "debate_started"
+    | "round_started"
+    | "response_received"
+    | "round_completed"
+    | "debate_completed";
   debateId: string;
   data: any;
   timestamp: string;
@@ -67,15 +72,16 @@ export interface DebateEvent {
 
 class DebateClient extends BaseApiClient {
   private ws: WebSocket | null = null;
-  private eventHandlers: Map<string, Set<(event: DebateEvent) => void>> = new Map();
+  private eventHandlers: Map<string, Set<(event: DebateEvent) => void>> =
+    new Map();
 
   constructor() {
-    super('/api/debate');
+    super("/api/debate");
   }
 
   // Debate management
   async createDebate(data: CreateDebateRequest): Promise<Debate> {
-    return this.callTool('create_debate', data);
+    return this.callTool("create_debate", data);
   }
 
   async getDebate(id: string): Promise<Debate> {
@@ -83,37 +89,47 @@ class DebateClient extends BaseApiClient {
     return response.data;
   }
 
-  async listDebates(params?: { status?: string; limit?: number; offset?: number }): Promise<Debate[]> {
-    const response = await this.client.get('/debates', { params });
+  async listDebates(params?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Debate[]> {
+    const response = await this.client.get("/debates", { params });
     return response.data;
   }
 
   async startDebate(debateId: string): Promise<void> {
-    return this.callTool('start_debate', { debate_id: debateId });
+    return this.callTool("start_debate", { debate_id: debateId });
   }
 
   async pauseDebate(debateId: string): Promise<void> {
-    return this.callTool('pause_debate', { debate_id: debateId });
+    return this.callTool("pause_debate", { debate_id: debateId });
   }
 
   async resumeDebate(debateId: string): Promise<void> {
-    return this.callTool('resume_debate', { debate_id: debateId });
+    return this.callTool("resume_debate", { debate_id: debateId });
   }
 
   async cancelDebate(debateId: string): Promise<void> {
-    return this.callTool('cancel_debate', { debate_id: debateId });
+    return this.callTool("cancel_debate", { debate_id: debateId });
   }
 
   // Participant management
-  async addParticipant(debateId: string, participant: Omit<Participant, 'id'>): Promise<Participant> {
-    return this.callTool('add_participant', {
+  async addParticipant(
+    debateId: string,
+    participant: Omit<Participant, "id">,
+  ): Promise<Participant> {
+    return this.callTool("add_participant", {
       debate_id: debateId,
       ...participant,
     });
   }
 
-  async removeParticipant(debateId: string, participantId: string): Promise<void> {
-    return this.callTool('remove_participant', {
+  async removeParticipant(
+    debateId: string,
+    participantId: string,
+  ): Promise<void> {
+    return this.callTool("remove_participant", {
       debate_id: debateId,
       participant_id: participantId,
     });
@@ -122,28 +138,34 @@ class DebateClient extends BaseApiClient {
   async updateParticipant(
     debateId: string,
     participantId: string,
-    updates: Partial<Participant>
+    updates: Partial<Participant>,
   ): Promise<Participant> {
     const response = await this.client.put(
       `/debates/${debateId}/participants/${participantId}`,
-      updates
+      updates,
     );
     return response.data;
   }
 
   // Response management
-  async getResponses(debateId: string, roundNumber?: number): Promise<Response[]> {
-    const params = roundNumber !== undefined ? { round: roundNumber } : undefined;
-    const response = await this.client.get(`/debates/${debateId}/responses`, { params });
+  async getResponses(
+    debateId: string,
+    roundNumber?: number,
+  ): Promise<Response[]> {
+    const params =
+      roundNumber !== undefined ? { round: roundNumber } : undefined;
+    const response = await this.client.get(`/debates/${debateId}/responses`, {
+      params,
+    });
     return response.data;
   }
 
   async submitResponse(
     debateId: string,
     participantId: string,
-    content: string
+    content: string,
   ): Promise<Response> {
-    return this.callTool('submit_response', {
+    return this.callTool("submit_response", {
       debate_id: debateId,
       participant_id: participantId,
       content,
@@ -156,11 +178,13 @@ class DebateClient extends BaseApiClient {
       this.ws.close();
     }
 
-    const wsUrl = `ws://localhost:5013/ws/debates/${debateId}`;
+    // Use environment variable or fall back to default
+    const wsBase = import.meta.env.VITE_WS_URL || "ws://localhost:5013";
+    const wsUrl = `${wsBase}/ws/debates/${debateId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected for debate:', debateId);
+      console.log("WebSocket connected for debate:", debateId);
     };
 
     this.ws.onmessage = (event) => {
@@ -168,16 +192,16 @@ class DebateClient extends BaseApiClient {
         const debateEvent: DebateEvent = JSON.parse(event.data);
         this.emitEvent(debateEvent.type, debateEvent);
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        console.error("Failed to parse WebSocket message:", error);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
     };
 
     this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
+      console.log("WebSocket disconnected");
       this.ws = null;
     };
   }
@@ -207,7 +231,7 @@ class DebateClient extends BaseApiClient {
   private emitEvent(eventType: string, event: DebateEvent): void {
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
-      handlers.forEach(handler => handler(event));
+      handlers.forEach((handler) => handler(event));
     }
   }
 
@@ -217,10 +241,13 @@ class DebateClient extends BaseApiClient {
     return response.data;
   }
 
-  async exportDebate(debateId: string, format: 'json' | 'pdf' | 'markdown' = 'json'): Promise<Blob> {
+  async exportDebate(
+    debateId: string,
+    format: "json" | "pdf" | "markdown" = "json",
+  ): Promise<Blob> {
     const response = await this.client.get(`/debates/${debateId}/export`, {
       params: { format },
-      responseType: 'blob',
+      responseType: "blob",
     });
     return response.data;
   }

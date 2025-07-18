@@ -18,12 +18,12 @@ TEST_DEBATE_NAME="Test Debate $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 
 echo -e "${BLUE}=== MCP Controller Service (Java) Detailed Test ===${NC}"
-echo -e "${BLUE}Testing service at: $BASE_URL${NC}"
+echo -e "${BLUE}Testing service at: ""$BASE_URL""${NC}"
 echo ""
 
 # Test 1: Health Check
 echo -e "${YELLOW}Test 1: Health Check${NC}"
-if curl -s "$BASE_URL/actuator/health" | grep -q "UP"; then
+if curl -s """$BASE_URL""/actuator/health" | grep -q "UP"; then
     echo -e "${GREEN}✓ Health check passed${NC}"
 else
     echo -e "${RED}✗ Health check failed${NC}"
@@ -33,13 +33,13 @@ echo ""
 
 # Test 2: Check API Documentation
 echo -e "${YELLOW}Test 2: Check API Documentation${NC}"
-if curl -s "$BASE_URL/swagger-ui.html" > /dev/null; then
+if curl -s """$BASE_URL""/swagger-ui.html" > /dev/null; then
     echo -e "${GREEN}✓ Swagger UI available${NC}"
 else
     echo -e "${YELLOW}⚠ Swagger UI may not be available${NC}"
 fi
 
-if curl -s "$BASE_URL/api-docs" | jq -e '.paths' > /dev/null; then
+if curl -s """$BASE_URL""/api-docs" | jq -e '.paths' > /dev/null; then
     echo -e "${GREEN}✓ OpenAPI documentation available${NC}"
 else
     echo -e "${YELLOW}⚠ OpenAPI documentation not available${NC}"
@@ -48,11 +48,11 @@ echo ""
 
 # Test 3: Create Debate
 echo -e "${YELLOW}Test 3: Create Debate${NC}"
-CREATE_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/debates" \
+CREATE_DEBATE_RESPONSE=$(curl -s -X POST """$BASE_URL""/api/v1/debates" \
     -H "Content-Type: application/json" \
     -d "{
-        \"organizationId\": \"$TEST_ORG_ID\",
-        \"title\": \"$TEST_DEBATE_NAME\",
+        \"organizationId\": \"""$TEST_ORG_ID""\",
+        \"title\": \"""$TEST_DEBATE_NAME""\",
         \"topic\": \"Should AI development be regulated?\",
             \"participants\": [
                 {
@@ -85,53 +85,53 @@ CREATE_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/debates" \
         }
     }")
 
-if echo "$CREATE_DEBATE_RESPONSE" | jq -e '.id' > /dev/null; then
-    DEBATE_ID=$(echo "$CREATE_DEBATE_RESPONSE" | jq -r '.id')
-    echo -e "${GREEN}✓ Debate created with ID: $DEBATE_ID${NC}"
-    echo "Response: $(echo "$CREATE_DEBATE_RESPONSE" | jq -c '.result')"
+if echo """$CREATE_DEBATE_RESPONSE""" | jq -e '.id' > /dev/null; then
+    DEBATE_ID=$(echo """$CREATE_DEBATE_RESPONSE""" | jq -r '.id')
+    echo -e "${GREEN}✓ Debate created with ID: ""$DEBATE_ID""${NC}"
+    echo "Response: $(echo """$CREATE_DEBATE_RESPONSE""" | jq -c '.result')"
 else
     echo -e "${RED}✗ Failed to create debate${NC}"
-    echo "Response: $CREATE_DEBATE_RESPONSE"
+    echo "Response: ""$CREATE_DEBATE_RESPONSE"""
     exit 1
 fi
 echo ""
 
 # Test 4: Get Debate Status
 echo -e "${YELLOW}Test 4: Get Debate Status${NC}"
-STATUS_RESPONSE=$(curl -s "$BASE_URL/api/v1/debates/$DEBATE_ID")
+STATUS_RESPONSE=$(curl -s """$BASE_URL""/api/v1/debates/""$DEBATE_ID""")
 
-if echo "$STATUS_RESPONSE" | jq -e '.status' > /dev/null; then
-    STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
-    echo -e "${GREEN}✓ Debate status: $STATUS${NC}"
-    echo "Details: $(echo "$STATUS_RESPONSE" | jq -c '.result')"
+if echo """$STATUS_RESPONSE""" | jq -e '.status' > /dev/null; then
+    STATUS=$(echo """$STATUS_RESPONSE""" | jq -r '.status')
+    echo -e "${GREEN}✓ Debate status: ""$STATUS""${NC}"
+    echo "Details: $(echo """$STATUS_RESPONSE""" | jq -c '.result')"
 else
     echo -e "${RED}✗ Failed to get debate status${NC}"
-    echo "Response: $STATUS_RESPONSE"
+    echo "Response: ""$STATUS_RESPONSE"""
 fi
 echo ""
 
 # Test 5: Start Debate
 echo -e "${YELLOW}Test 5: Start Debate${NC}"
-START_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/start_debate" \
+START_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/start_debate" \
     -H "Content-Type: application/json" \
-    -d "{\"arguments\": {\"debate_id\": \"$DEBATE_ID\"}}")
+    -d "{\"arguments\": {\"debate_id\": \"""$DEBATE_ID""\"}}")
 
-if echo "$START_RESPONSE" | jq -e '.result.success' | grep -q "true"; then
+if echo """$START_RESPONSE""" | jq -e '.result.success' | grep -q "true"; then
     echo -e "${GREEN}✓ Debate started successfully${NC}"
-    echo "Current turn: $(echo "$START_RESPONSE" | jq -r '.result.current_turn // 1')"
+    echo "Current turn: $(echo """$START_RESPONSE""" | jq -r '.result.current_turn // 1')"
 else
     echo -e "${YELLOW}⚠ Could not start debate (may already be started)${NC}"
-    echo "Response: $START_RESPONSE"
+    echo "Response: ""$START_RESPONSE"""
 fi
 echo ""
 
 # Test 6: Add Turn
 echo -e "${YELLOW}Test 6: Add Turn to Debate${NC}"
-ADD_TURN_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/add_turn" \
+ADD_TURN_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/add_turn" \
     -H "Content-Type: application/json" \
     -d "{
         \"arguments\": {
-            \"debate_id\": \"$DEBATE_ID\",
+            \"debate_id\": \"""$DEBATE_ID""\",
             \"participant_id\": \"participant-1\",
             \"content\": \"AI development should be regulated to ensure safety and ethical use. Without proper oversight, AI could pose significant risks to society.\",
             \"metadata\": {
@@ -141,42 +141,42 @@ ADD_TURN_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/add_turn" \
         }
     }")
 
-if echo "$ADD_TURN_RESPONSE" | jq -e '.result.turn_id' > /dev/null; then
-    TURN_ID=$(echo "$ADD_TURN_RESPONSE" | jq -r '.result.turn_id')
-    echo -e "${GREEN}✓ Turn added with ID: $TURN_ID${NC}"
-    echo "Turn number: $(echo "$ADD_TURN_RESPONSE" | jq -r '.result.turn_number // "unknown"')"
+if echo """$ADD_TURN_RESPONSE""" | jq -e '.result.turn_id' > /dev/null; then
+    TURN_ID=$(echo """$ADD_TURN_RESPONSE""" | jq -r '.result.turn_id')
+    echo -e "${GREEN}✓ Turn added with ID: ""$TURN_ID""${NC}"
+    echo "Turn number: $(echo """$ADD_TURN_RESPONSE""" | jq -r '.result.turn_number // "unknown"')"
 else
     echo -e "${YELLOW}⚠ Could not add turn (debate may not be active)${NC}"
-    echo "Response: $ADD_TURN_RESPONSE"
+    echo "Response: ""$ADD_TURN_RESPONSE"""
 fi
 echo ""
 
 # Test 7: Get Next Turn (Auto-orchestration)
 echo -e "${YELLOW}Test 7: Get Next Turn (Auto-orchestration)${NC}"
-NEXT_TURN_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/get_next_turn" \
+NEXT_TURN_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/get_next_turn" \
     -H "Content-Type: application/json" \
-    -d "{\"arguments\": {\"debate_id\": \"$DEBATE_ID\"}}")
+    -d "{\"arguments\": {\"debate_id\": \"""$DEBATE_ID""\"}}")
 
-if echo "$NEXT_TURN_RESPONSE" | jq -e '.result.turn' > /dev/null; then
+if echo """$NEXT_TURN_RESPONSE""" | jq -e '.result.turn' > /dev/null; then
     echo -e "${GREEN}✓ Next turn generated${NC}"
-    echo "Participant: $(echo "$NEXT_TURN_RESPONSE" | jq -r '.result.turn.participant_name // "unknown"')"
-    echo "Content preview: $(echo "$NEXT_TURN_RESPONSE" | jq -r '.result.turn.content' | head -c 100)..."
+    echo "Participant: $(echo """$NEXT_TURN_RESPONSE""" | jq -r '.result.turn.participant_name // "unknown"')"
+    echo "Content preview: $(echo """$NEXT_TURN_RESPONSE""" | jq -r '.result.turn.content' | head -c 100)..."
 else
     echo -e "${YELLOW}⚠ Auto-orchestration may not be implemented${NC}"
-    echo "Response: $NEXT_TURN_RESPONSE"
+    echo "Response: ""$NEXT_TURN_RESPONSE"""
 fi
 echo ""
 
 # Test 8: List Debates
 echo -e "${YELLOW}Test 8: List Debates${NC}"
-LIST_DEBATES_RESPONSE=$(curl -s "$BASE_URL/api/v1/debates")
+LIST_DEBATES_RESPONSE=$(curl -s """$BASE_URL""/api/v1/debates")
 
-if echo "$LIST_DEBATES_RESPONSE" | jq -e '.' > /dev/null && [ "$LIST_DEBATES_RESPONSE" != "[]" ]; then
-    DEBATE_COUNT=$(echo "$LIST_DEBATES_RESPONSE" | jq '. | length')
-    echo -e "${GREEN}✓ Found $DEBATE_COUNT debates${NC}"
+if echo """$LIST_DEBATES_RESPONSE""" | jq -e '.' > /dev/null && [ """$LIST_DEBATES_RESPONSE""" != "[]" ]; then
+    DEBATE_COUNT=$(echo """$LIST_DEBATES_RESPONSE""" | jq '. | length')
+    echo -e "${GREEN}✓ Found ""$DEBATE_COUNT"" debates${NC}"
     
     # Check if our test debate is in the list
-    if echo "$LIST_DEBATES_RESPONSE" | jq -e ".[] | select(.id == \"$DEBATE_ID\")" > /dev/null; then
+    if echo """$LIST_DEBATES_RESPONSE""" | jq -e ".[] | select(.id == \"""$DEBATE_ID""\")" > /dev/null; then
         echo -e "${GREEN}✓ Test debate found in list${NC}"
     fi
 else
@@ -186,54 +186,54 @@ echo ""
 
 # Test 9: Pause Debate
 echo -e "${YELLOW}Test 9: Pause Debate${NC}"
-PAUSE_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/pause_debate" \
+PAUSE_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/pause_debate" \
     -H "Content-Type: application/json" \
-    -d "{\"arguments\": {\"debate_id\": \"$DEBATE_ID\"}}")
+    -d "{\"arguments\": {\"debate_id\": \"""$DEBATE_ID""\"}}")
 
-if echo "$PAUSE_RESPONSE" | jq -e '.result.success' | grep -q "true"; then
+if echo """$PAUSE_RESPONSE""" | jq -e '.result.success' | grep -q "true"; then
     echo -e "${GREEN}✓ Debate paused successfully${NC}"
 else
     echo -e "${YELLOW}⚠ Could not pause debate${NC}"
-    echo "Response: $PAUSE_RESPONSE"
+    echo "Response: ""$PAUSE_RESPONSE"""
 fi
 echo ""
 
 # Test 10: Resume Debate
 echo -e "${YELLOW}Test 10: Resume Debate${NC}"
-RESUME_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/resume_debate" \
+RESUME_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/resume_debate" \
     -H "Content-Type: application/json" \
-    -d "{\"arguments\": {\"debate_id\": \"$DEBATE_ID\"}}")
+    -d "{\"arguments\": {\"debate_id\": \"""$DEBATE_ID""\"}}")
 
-if echo "$RESUME_RESPONSE" | jq -e '.result.success' | grep -q "true"; then
+if echo """$RESUME_RESPONSE""" | jq -e '.result.success' | grep -q "true"; then
     echo -e "${GREEN}✓ Debate resumed successfully${NC}"
 else
     echo -e "${YELLOW}⚠ Could not resume debate${NC}"
-    echo "Response: $RESUME_RESPONSE"
+    echo "Response: ""$RESUME_RESPONSE"""
 fi
 echo ""
 
 # Test 11: Summarize Debate
 echo -e "${YELLOW}Test 11: Summarize Debate${NC}"
-SUMMARY_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/summarize_debate" \
+SUMMARY_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/summarize_debate" \
     -H "Content-Type: application/json" \
     -d "{
         \"arguments\": {
-            \"debate_id\": \"$DEBATE_ID\",
+            \"debate_id\": \"""$DEBATE_ID""\",
             \"style\": \"executive\",
             \"include_analysis\": true
         }
     }")
 
-if echo "$SUMMARY_RESPONSE" | jq -e '.result.summary' > /dev/null; then
+if echo """$SUMMARY_RESPONSE""" | jq -e '.result.summary' > /dev/null; then
     echo -e "${GREEN}✓ Debate summary generated${NC}"
-    echo "Summary preview: $(echo "$SUMMARY_RESPONSE" | jq -r '.result.summary' | head -c 200)..."
+    echo "Summary preview: $(echo """$SUMMARY_RESPONSE""" | jq -r '.result.summary' | head -c 200)..."
     
-    if echo "$SUMMARY_RESPONSE" | jq -e '.result.analysis' > /dev/null; then
+    if echo """$SUMMARY_RESPONSE""" | jq -e '.result.analysis' > /dev/null; then
         echo -e "${GREEN}✓ Analysis included${NC}"
     fi
 else
     echo -e "${YELLOW}⚠ Summary generation may not be implemented${NC}"
-    echo "Response: $SUMMARY_RESPONSE"
+    echo "Response: ""$SUMMARY_RESPONSE"""
 fi
 echo ""
 
@@ -250,11 +250,11 @@ echo ""
 
 # Test 13: Debate Templates
 echo -e "${YELLOW}Test 13: Debate Templates${NC}"
-TEMPLATES_RESPONSE=$(curl -s "$BASE_URL/resources/debate://templates/read")
+TEMPLATES_RESPONSE=$(curl -s """$BASE_URL""/resources/debate://templates/read")
 
-if echo "$TEMPLATES_RESPONSE" | jq -e '.contents' > /dev/null; then
-    TEMPLATE_COUNT=$(echo "$TEMPLATES_RESPONSE" | jq '.contents | length')
-    echo -e "${GREEN}✓ Found $TEMPLATE_COUNT debate templates${NC}"
+if echo """$TEMPLATES_RESPONSE""" | jq -e '.contents' > /dev/null; then
+    TEMPLATE_COUNT=$(echo """$TEMPLATES_RESPONSE""" | jq '.contents | length')
+    echo -e "${GREEN}✓ Found ""$TEMPLATE_COUNT"" debate templates${NC}"
 else
     echo -e "${YELLOW}⚠ Debate templates may not be implemented${NC}"
 fi
@@ -265,13 +265,13 @@ echo -e "${YELLOW}Test 14: Complex Debate Scenario${NC}"
 echo -e "  Creating multi-round debate..."
 
 # Create a more complex debate
-COMPLEX_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_debate" \
+COMPLEX_DEBATE_RESPONSE=$(curl -s -X POST """$BASE_URL""/tools/create_debate" \
     -H "Content-Type: application/json" \
     -d "{
         \"arguments\": {
             \"name\": \"Complex Debate Test\",
             \"topic\": \"The future of work in an AI-driven economy\",
-            \"organization_id\": \"$TEST_ORG_ID\",
+            \"organization_id\": \"""$TEST_ORG_ID""\",
             \"participants\": [
                 {
                     \"id\": \"optimist\",
@@ -317,7 +317,7 @@ COMPLEX_DEBATE_RESPONSE=$(curl -s -X POST "$BASE_URL/tools/create_debate" \
         }
     }")
 
-if echo "$COMPLEX_DEBATE_RESPONSE" | jq -e '.result.debate_id' > /dev/null; then
+if echo """$COMPLEX_DEBATE_RESPONSE""" | jq -e '.result.debate_id' > /dev/null; then
     echo -e "${GREEN}✓ Complex debate created successfully${NC}"
 else
     echo -e "${YELLOW}⚠ Complex debate creation failed${NC}"

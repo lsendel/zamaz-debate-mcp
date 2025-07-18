@@ -21,8 +21,8 @@ HARDCODED_PATTERNS=(
 FOUND_ISSUES=0
 
 for pattern in "${HARDCODED_PATTERNS[@]}"; do
-    if grep -r -E "$pattern" --include="*.java" --include="*.yml" --include="*.yaml" --include="*.properties" . | grep -v ".env" | grep -v "test" | grep -v "example"; then
-        echo "❌ Found potential hardcoded secret: $pattern"
+    if grep -r -E """$pattern""" --include="*.java" --include="*.yml" --include="*.yaml" --include="*.properties" . | grep -v ".env" | grep -v "test" | grep -v "example"; then
+        echo "❌ Found potential hardcoded secret: ""$pattern"""
         FOUND_ISSUES=1
     fi
 done
@@ -38,7 +38,7 @@ if grep -r "mcp_pass" --include="*.java" --include="*.yml" --include="*.yaml" --
     FOUND_ISSUES=1
 fi
 
-if [ $FOUND_ISSUES -eq 1 ]; then
+if [ ""$FOUND_ISSUES"" -eq 1 ]; then
     echo ""
     echo "🚨 SECURITY ISSUE: Hardcoded secrets found!"
     echo "Please use environment variables instead. Example:"

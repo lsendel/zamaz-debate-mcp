@@ -12,7 +12,7 @@ spring:
       - redis-medium-throughput
 
 server:
-  port: ${SERVER_PORT:5002}
+  port: ${MCP_LLM_PORT:${SERVER_PORT:5002}}
   servlet:
     context-path: /
 

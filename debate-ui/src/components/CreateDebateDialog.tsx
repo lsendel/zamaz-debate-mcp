@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -16,16 +16,19 @@ import {
   Slider,
   Paper,
   Chip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Close as CloseIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
-} from '@mui/icons-material';
-import { useAppSelector, useAppDispatch } from '../store';
-import { closeCreateDebateDialog, addNotification } from '../store/slices/uiSlice';
-import { createDebate } from '../store/slices/debateSlice';
-import llmClient, { LLMProvider } from '../api/llmClient';
+} from "@mui/icons-material";
+import { useAppSelector, useAppDispatch } from "../store";
+import {
+  closeCreateDebateDialog,
+  addNotification,
+} from "../store/slices/uiSlice";
+import { createDebate } from "../store/slices/debateSlice";
+import llmClient, { LLMProvider } from "../api/llmClient";
 
 interface Participant {
   name: string;
@@ -41,25 +44,27 @@ const CreateDebateDialog: React.FC = () => {
   const { createDebateDialogOpen } = useAppSelector((state) => state.ui);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  const [topic, setTopic] = useState('');
-  const [description, setDescription] = useState('');
+
+  const [topic, setTopic] = useState("");
+  const [description, setDescription] = useState("");
   const [maxRounds, setMaxRounds] = useState(5);
   const [turnTimeLimit, setTurnTimeLimit] = useState(60);
   const [participants, setParticipants] = useState<Participant[]>([
     {
-      name: 'Participant 1',
-      llmProvider: 'claude',
-      model: 'claude-3-opus-20240229',
-      systemPrompt: 'You are a thoughtful debater who provides well-reasoned arguments.',
+      name: "Participant 1",
+      llmProvider: "claude",
+      model: "claude-3-opus-20240229",
+      systemPrompt:
+        "You are a thoughtful debater who provides well-reasoned arguments.",
       temperature: 0.7,
       maxTokens: 1000,
     },
     {
-      name: 'Participant 2',
-      llmProvider: 'openai',
-      model: 'gpt-4',
-      systemPrompt: 'You are a critical thinker who challenges assumptions and provides counterarguments.',
+      name: "Participant 2",
+      llmProvider: "openai",
+      model: "gpt-4",
+      systemPrompt:
+        "You are a critical thinker who challenges assumptions and provides counterarguments.",
       temperature: 0.7,
       maxTokens: 1000,
     },
@@ -71,10 +76,10 @@ const CreateDebateDialog: React.FC = () => {
         const providerList = await llmClient.listProviders();
         setProviders(providerList);
       } catch (error) {
-        console.error('Failed to load providers:', error);
+        console.error("Failed to load providers:", error);
       }
     };
-    
+
     if (createDebateDialogOpen) {
       loadProviders();
     }
@@ -83,24 +88,26 @@ const CreateDebateDialog: React.FC = () => {
   const handleClose = () => {
     dispatch(closeCreateDebateDialog());
     // Reset form
-    setTopic('');
-    setDescription('');
+    setTopic("");
+    setDescription("");
     setMaxRounds(5);
     setTurnTimeLimit(60);
     setParticipants([
       {
-        name: 'Participant 1',
-        llmProvider: 'claude',
-        model: 'claude-3-opus-20240229',
-        systemPrompt: 'You are a thoughtful debater who provides well-reasoned arguments.',
+        name: "Participant 1",
+        llmProvider: "claude",
+        model: "claude-3-opus-20240229",
+        systemPrompt:
+          "You are a thoughtful debater who provides well-reasoned arguments.",
         temperature: 0.7,
         maxTokens: 1000,
       },
       {
-        name: 'Participant 2',
-        llmProvider: 'openai',
-        model: 'gpt-4',
-        systemPrompt: 'You are a critical thinker who challenges assumptions and provides counterarguments.',
+        name: "Participant 2",
+        llmProvider: "openai",
+        model: "gpt-4",
+        systemPrompt:
+          "You are a critical thinker who challenges assumptions and provides counterarguments.",
         temperature: 0.7,
         maxTokens: 1000,
       },
@@ -109,40 +116,50 @@ const CreateDebateDialog: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!topic || participants.length < 2) {
-      dispatch(addNotification({
-        type: 'error',
-        message: 'Please provide a topic and at least 2 participants',
-      }));
+      dispatch(
+        addNotification({
+          type: "error",
+          message: "Please provide a topic and at least 2 participants",
+        }),
+      );
       return;
     }
 
     setLoading(true);
     try {
-      const resultAction = await dispatch(createDebate({
-        topic,
-        description,
-        participants,
-        maxRounds,
-        turnTimeLimit,
-      }));
-      
+      const resultAction = await dispatch(
+        createDebate({
+          topic,
+          description,
+          participants,
+          maxRounds,
+          turnTimeLimit,
+        }),
+      );
+
       // Check if the action was fulfilled successfully
       if (createDebate.fulfilled.match(resultAction)) {
-        dispatch(addNotification({
-          type: 'success',
-          message: 'Debate created successfully',
-        }));
+        dispatch(
+          addNotification({
+            type: "success",
+            message: "Debate created successfully",
+          }),
+        );
         handleClose();
       } else {
         // Handle rejected case
-        const errorMessage = resultAction.error?.message || 'Failed to create debate';
+        const errorMessage =
+          resultAction.error?.message || "Failed to create debate";
         throw new Error(errorMessage);
       }
     } catch (error) {
-      dispatch(addNotification({
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to create debate',
-      }));
+      dispatch(
+        addNotification({
+          type: "error",
+          message:
+            error instanceof Error ? error.message : "Failed to create debate",
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -153,9 +170,9 @@ const CreateDebateDialog: React.FC = () => {
       ...participants,
       {
         name: `Participant ${participants.length + 1}`,
-        llmProvider: 'claude',
-        model: 'claude-3-opus-20240229',
-        systemPrompt: '',
+        llmProvider: "claude",
+        model: "claude-3-opus-20240229",
+        systemPrompt: "",
         temperature: 0.7,
         maxTokens: 1000,
       },
@@ -166,14 +183,18 @@ const CreateDebateDialog: React.FC = () => {
     setParticipants(participants.filter((_, i) => i !== index));
   };
 
-  const updateParticipant = (index: number, field: keyof Participant, value: any) => {
+  const updateParticipant = (
+    index: number,
+    field: keyof Participant,
+    value: any,
+  ) => {
     const updated = [...participants];
     updated[index] = { ...updated[index], [field]: value };
     setParticipants(updated);
   };
 
   const getAvailableModels = (provider: string) => {
-    const providerInfo = providers.find(p => p.name === provider);
+    const providerInfo = providers.find((p) => p.name === provider);
     return providerInfo?.models || [];
   };
 
@@ -185,7 +206,13 @@ const CreateDebateDialog: React.FC = () => {
       fullWidth
     >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Typography variant="h6">Create New Debate</Typography>
           <IconButton onClick={handleClose}>
             <CloseIcon />
@@ -211,7 +238,7 @@ const CreateDebateDialog: React.FC = () => {
             multiline
             rows={3}
           />
-          
+
           <Box sx={{ mt: 3, mb: 2 }}>
             <Typography gutterBottom>Max Rounds: {maxRounds}</Typography>
             <Slider
@@ -225,23 +252,25 @@ const CreateDebateDialog: React.FC = () => {
           </Box>
 
           <Box sx={{ mb: 3 }}>
-            <Typography gutterBottom>Turn Time Limit: {turnTimeLimit} seconds</Typography>
+            <Typography gutterBottom>
+              Turn Time Limit: {turnTimeLimit} seconds
+            </Typography>
             <Slider
               value={turnTimeLimit}
               onChange={(_, value) => setTurnTimeLimit(value as number)}
               min={30}
               max={300}
               marks={[
-                { value: 30, label: '30s' },
-                { value: 60, label: '1m' },
-                { value: 120, label: '2m' },
-                { value: 300, label: '5m' },
+                { value: 30, label: "30s" },
+                { value: 60, label: "1m" },
+                { value: 120, label: "2m" },
+                { value: 300, label: "5m" },
               ]}
               step={30}
             />
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Participants
             </Typography>
@@ -256,11 +285,13 @@ const CreateDebateDialog: React.FC = () => {
 
           {participants.map((participant, index) => (
             <Paper key={index} sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <TextField
                   label="Name"
                   value={participant.name}
-                  onChange={(e) => updateParticipant(index, 'name', e.target.value)}
+                  onChange={(e) =>
+                    updateParticipant(index, "name", e.target.value)
+                  }
                   size="small"
                   sx={{ flexGrow: 1, mr: 1 }}
                 />
@@ -274,20 +305,24 @@ const CreateDebateDialog: React.FC = () => {
                   </IconButton>
                 )}
               </Box>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+
+              <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                   <InputLabel>Provider</InputLabel>
                   <Select
                     value={participant.llmProvider}
-                    onChange={(e) => updateParticipant(index, 'llmProvider', e.target.value)}
+                    onChange={(e) =>
+                      updateParticipant(index, "llmProvider", e.target.value)
+                    }
                     label="Provider"
                   >
                     {providers.map((provider) => (
                       <MenuItem key={provider.name} value={provider.name}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           {provider.name}
-                          {provider.status !== 'available' && (
+                          {provider.status !== "available" && (
                             <Chip
                               label={provider.status}
                               size="small"
@@ -300,19 +335,23 @@ const CreateDebateDialog: React.FC = () => {
                     ))}
                   </Select>
                 </FormControl>
-                
+
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                   <InputLabel>Model</InputLabel>
                   <Select
                     value={participant.model}
-                    onChange={(e) => updateParticipant(index, 'model', e.target.value)}
+                    onChange={(e) =>
+                      updateParticipant(index, "model", e.target.value)
+                    }
                     label="Model"
                   >
-                    {getAvailableModels(participant.llmProvider).map((model) => (
-                      <MenuItem key={model} value={model}>
-                        {model}
-                      </MenuItem>
-                    ))}
+                    {getAvailableModels(participant.llmProvider).map(
+                      (model) => (
+                        <MenuItem key={model} value={model}>
+                          {model}
+                        </MenuItem>
+                      ),
+                    )}
                   </Select>
                 </FormControl>
               </Box>
@@ -321,19 +360,25 @@ const CreateDebateDialog: React.FC = () => {
                 fullWidth
                 label="System Prompt"
                 value={participant.systemPrompt}
-                onChange={(e) => updateParticipant(index, 'systemPrompt', e.target.value)}
+                onChange={(e) =>
+                  updateParticipant(index, "systemPrompt", e.target.value)
+                }
                 size="small"
                 multiline
                 rows={2}
                 sx={{ mb: 2 }}
               />
 
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: "flex", gap: 2 }}>
                 <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="caption">Temperature: {participant.temperature}</Typography>
+                  <Typography variant="caption">
+                    Temperature: {participant.temperature}
+                  </Typography>
                   <Slider
                     value={participant.temperature}
-                    onChange={(_, value) => updateParticipant(index, 'temperature', value)}
+                    onChange={(_, value) =>
+                      updateParticipant(index, "temperature", value)
+                    }
                     min={0}
                     max={2}
                     step={0.1}
@@ -341,10 +386,14 @@ const CreateDebateDialog: React.FC = () => {
                   />
                 </Box>
                 <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="caption">Max Tokens: {participant.maxTokens}</Typography>
+                  <Typography variant="caption">
+                    Max Tokens: {participant.maxTokens}
+                  </Typography>
                   <Slider
                     value={participant.maxTokens}
-                    onChange={(_, value) => updateParticipant(index, 'maxTokens', value)}
+                    onChange={(_, value) =>
+                      updateParticipant(index, "maxTokens", value)
+                    }
                     min={100}
                     max={4000}
                     step={100}
@@ -363,7 +412,7 @@ const CreateDebateDialog: React.FC = () => {
           variant="contained"
           disabled={loading || !topic || participants.length < 2}
         >
-          {loading ? 'Creating...' : 'Create Debate'}
+          {loading ? "Creating..." : "Create Debate"}
         </Button>
       </DialogActions>
     </Dialog>

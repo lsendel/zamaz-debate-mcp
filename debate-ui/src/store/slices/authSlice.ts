@@ -1,5 +1,8 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import organizationClient, { User, AuthRequest } from '../../api/organizationClient';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import organizationClient, {
+  User,
+  AuthRequest,
+} from "../../api/organizationClient";
 
 interface AuthState {
   user: User | null;
@@ -11,39 +14,39 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('authToken'),
-  isAuthenticated: !!localStorage.getItem('authToken'),
+  token: localStorage.getItem("authToken"),
+  isAuthenticated: !!localStorage.getItem("authToken"),
   loading: false,
   error: null,
 };
 
 export const login = createAsyncThunk(
-  'auth/login',
+  "auth/login",
   async (credentials: AuthRequest) => {
     const response = await organizationClient.login(credentials);
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('currentOrgId', response.organization.id);
+    localStorage.setItem("authToken", response.token);
+    localStorage.setItem("currentOrgId", response.organization.id);
     return response;
-  }
+  },
 );
 
 export const register = createAsyncThunk(
-  'auth/register',
+  "auth/register",
   async (data: AuthRequest & { email: string; organizationName: string }) => {
     const response = await organizationClient.register(data);
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('currentOrgId', response.organization.id);
+    localStorage.setItem("authToken", response.token);
+    localStorage.setItem("currentOrgId", response.organization.id);
     return response;
-  }
+  },
 );
 
-export const logout = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('currentOrgId');
+export const logout = createAsyncThunk("auth/logout", async () => {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("currentOrgId");
 });
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -65,7 +68,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Login failed';
+        state.error = action.error.message || "Login failed";
       });
 
     // Register
@@ -82,7 +85,7 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Registration failed';
+        state.error = action.error.message || "Registration failed";
       });
 
     // Logout

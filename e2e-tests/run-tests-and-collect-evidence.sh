@@ -10,8 +10,8 @@ echo "=================================================="
 
 # Create test evidence directory structure
 TIMESTAMP=$(date +"%Y-%m-%d-%H-%M-%S")
-TEST_RUN_DIR="test-evidence/test-runs/$TIMESTAMP"
-mkdir -p "$TEST_RUN_DIR"/{screenshots,videos,logs,artifacts,performance}
+TEST_RUN_DIR="test-evidence/test-runs/""$TIMESTAMP"""
+mkdir -p """$TEST_RUN_DIR"""/{screenshots,videos,logs,artifacts,performance}
 
 # Export environment variables
 export NODE_ENV=test
@@ -40,23 +40,23 @@ npx playwright test \
   --screenshot=on \
   --video=on \
   --trace=on \
-  2>&1 | tee "$TEST_RUN_DIR/logs/test-execution.log"
+  2>&1 | tee """$TEST_RUN_DIR""/logs/test-execution.log"
 
 # Copy test results
 echo "📁 Collecting test results..."
-cp -r test-results/* "$TEST_RUN_DIR/"
+cp -r test-results/* """$TEST_RUN_DIR""/"
 
 # Generate summary report
 echo "📊 Generating evidence summary..."
-node generate-evidence-summary.js "$TEST_RUN_DIR"
+node generate-evidence-summary.js """$TEST_RUN_DIR"""
 
 # Open HTML report
 echo "🌐 Opening test report..."
 npx playwright show-report
 
 echo "✅ Test execution complete!"
-echo "📍 Evidence collected at: $TEST_RUN_DIR"
+echo "📍 Evidence collected at: ""$TEST_RUN_DIR"""
 echo ""
 echo "Summary:"
 echo "--------"
-cat "$TEST_RUN_DIR/executive-summary.txt"
+cat """$TEST_RUN_DIR""/executive-summary.txt"

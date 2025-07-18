@@ -56,7 +56,7 @@ show_help() {
 }
 
 # Parse arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         setup|start|stop|status|report)
             ACTION="$1"
@@ -84,14 +84,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate arguments
-if [[ -z "$ACTION" ]]; then
+if [[ -z """$ACTION""" ]]; then
     log_error "No action specified"
     show_help
     exit 1
 fi
 
 # Create configuration directory if it doesn't exist
-mkdir -p "$CONFIG_DIR"
+mkdir -p """$CONFIG_DIR"""
 
 # Function to check if Docker is running
 check_docker() {
@@ -113,9 +113,9 @@ check_docker_compose() {
 create_prometheus_config() {
     log_info "Creating Prometheus configuration"
     
-    mkdir -p "$CONFIG_DIR/prometheus"
+    mkdir -p """$CONFIG_DIR""/prometheus"
     
-    cat > "$CONFIG_DIR/prometheus/prometheus.yml" << EOF
+    cat > """$CONFIG_DIR""/prometheus/prometheus.yml" << EOF
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -148,7 +148,7 @@ scrape_configs:
       - targets: ['cadvisor:8080']
 EOF
 
-    cat > "$CONFIG_DIR/prometheus/alert_rules.yml" << EOF
+    cat > """$CONFIG_DIR""/prometheus/alert_rules.yml" << EOF
 groups:
   - name: security_alerts
     rules:
@@ -177,7 +177,7 @@ groups:
           severity: warning
         annotations:
           summary: "Container high CPU usage"
-          description: "Container {{ \$labels.name }} CPU usage is above 80%"
+          description: "Container {{ \""$labels"".name }} CPU usage is above 80%"
 
       - alert: ContainerHighMemory
         expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""} * 100) > 80
@@ -186,7 +186,7 @@ groups:
           severity: warning
         annotations:
           summary: "Container high memory usage"
-          description: "Container {{ \$labels.name }} memory usage is above 80%"
+          description: "Container {{ \""$labels"".name }} memory usage is above 80%"
 
       - alert: HighRateLimit
         expr: rate(rate_limit_exceeded_total[5m]) > 0.1
@@ -205,9 +205,9 @@ EOF
 create_alertmanager_config() {
     log_info "Creating Alertmanager configuration"
     
-    mkdir -p "$CONFIG_DIR/alertmanager"
+    mkdir -p """$CONFIG_DIR""/alertmanager"
     
-    cat > "$CONFIG_DIR/alertmanager/config.yml" << EOF
+    cat > """$CONFIG_DIR""/alertmanager/config.yml" << EOF
 global:
   resolve_timeout: 5m
 
@@ -252,11 +252,11 @@ EOF
 create_grafana_config() {
     log_info "Creating Grafana configuration"
     
-    mkdir -p "$CONFIG_DIR/grafana/dashboards"
-    mkdir -p "$CONFIG_DIR/grafana/provisioning/dashboards"
-    mkdir -p "$CONFIG_DIR/grafana/provisioning/datasources"
+    mkdir -p """$CONFIG_DIR""/grafana/dashboards"
+    mkdir -p """$CONFIG_DIR""/grafana/provisioning/dashboards"
+    mkdir -p """$CONFIG_DIR""/grafana/provisioning/datasources"
     
-    cat > "$CONFIG_DIR/grafana/provisioning/datasources/datasource.yml" << EOF
+    cat > """$CONFIG_DIR""/grafana/provisioning/datasources/datasource.yml" << EOF
 apiVersion: 1
 
 datasources:
@@ -268,7 +268,7 @@ datasources:
     editable: false
 EOF
 
-    cat > "$CONFIG_DIR/grafana/provisioning/dashboards/dashboard.yml" << EOF
+    cat > """$CONFIG_DIR""/grafana/provisioning/dashboards/dashboard.yml" << EOF
 apiVersion: 1
 
 providers:
@@ -282,7 +282,7 @@ providers:
       path: /etc/grafana/dashboards
 EOF
 
-    cat > "$CONFIG_DIR/grafana/dashboards/security-dashboard.json" << EOF
+    cat > """$CONFIG_DIR""/grafana/dashboards/security-dashboard.json" << EOF
 {
   "annotations": {
     "list": [
@@ -710,7 +710,7 @@ EOF
 create_docker_compose_config() {
     log_info "Creating Docker Compose configuration"
     
-    cat > "$CONFIG_DIR/security-monitoring-config.yml" << EOF
+    cat > """$CONFIG_DIR""/security-monitoring-config.yml" << EOF
 version: '3.8'
 
 services:
@@ -807,7 +807,7 @@ EOF
 }
 
 # Execute action
-case $ACTION in
+case ""$ACTION"" in
     setup)
         log_info "Setting up security monitoring"
         
@@ -833,7 +833,7 @@ case $ACTION in
         check_docker_compose
         
         # Start monitoring stack
-        cd "$CONFIG_DIR" && docker-compose -f security-monitoring-config.yml up -d
+        cd """$CONFIG_DIR""" && docker-compose -f security-monitoring-config.yml up -d
         
         log_success "Security monitoring started"
         log_info "Prometheus: http://localhost:9090"
@@ -849,7 +849,7 @@ case $ACTION in
         check_docker_compose
         
         # Stop monitoring stack
-        cd "$CONFIG_DIR" && docker-compose -f security-monitoring-config.yml down
+        cd """$CONFIG_DIR""" && docker-compose -f security-monitoring-config.yml down
         
         log_success "Security monitoring stopped"
         ;;
@@ -862,7 +862,7 @@ case $ACTION in
         check_docker_compose
         
         # Check monitoring stack status
-        cd "$CONFIG_DIR" && docker-compose -f security-monitoring-config.yml ps
+        cd """$CONFIG_DIR""" && docker-compose -f security-monitoring-config.yml ps
         
         log_success "Security monitoring status checked"
         ;;
@@ -877,7 +877,7 @@ case $ACTION in
         # Generate report
         REPORT_FILE="security-monitoring-report-$(date +%Y%m%d-%H%M%S).md"
         
-        cat > "$REPORT_FILE" << EOF
+        cat > """$REPORT_FILE""" << EOF
 # Security Monitoring Report
 
 - **Date:** $(date +"%Y-%m-%d %H:%M:%S")
@@ -889,12 +889,12 @@ EOF
         
         # Get alerts from Prometheus
         if curl -s http://localhost:9090/api/v1/alerts > /dev/null; then
-            curl -s http://localhost:9090/api/v1/alerts | jq -r '.data.alerts[] | "- **" + .labels.alertname + "**: " + .annotations.description' >> "$REPORT_FILE" || echo "- No alerts found" >> "$REPORT_FILE"
+            curl -s http://localhost:9090/api/v1/alerts | jq -r '.data.alerts[] | "- **" + .labels.alertname + "**: " + .annotations.description' >> """$REPORT_FILE""" || echo "- No alerts found" >> """$REPORT_FILE"""
         else
-            echo "- Failed to connect to Prometheus" >> "$REPORT_FILE"
+            echo "- Failed to connect to Prometheus" >> """$REPORT_FILE"""
         fi
         
-        cat >> "$REPORT_FILE" << EOF
+        cat >> """$REPORT_FILE""" << EOF
 
 ## System Health
 
@@ -902,16 +902,16 @@ EOF
         
         # Get system health metrics
         if curl -s http://localhost:9090/api/v1/query?query=up > /dev/null; then
-            echo "### Services Status" >> "$REPORT_FILE"
-            echo "" >> "$REPORT_FILE"
-            echo "| Service | Status |" >> "$REPORT_FILE"
-            echo "|---------|--------|" >> "$REPORT_FILE"
-            curl -s http://localhost:9090/api/v1/query?query=up | jq -r '.data.result[] | "| " + .metric.job + " | " + if .value[1] == "1" then "✅ Up" else "❌ Down" end + " |"' >> "$REPORT_FILE" || echo "| Failed to get service status |" >> "$REPORT_FILE"
+            echo "### Services Status" >> """$REPORT_FILE"""
+            echo "" >> """$REPORT_FILE"""
+            echo "| Service | Status |" >> """$REPORT_FILE"""
+            echo "|---------|--------|" >> """$REPORT_FILE"""
+            curl -s http://localhost:9090/api/v1/query?query=up | jq -r '.data.result[] | "| " + .metric.job + " | " + if .value[1] == "1" then "✅ Up" else "❌ Down" end + " |"' >> """$REPORT_FILE""" || echo "| Failed to get service status |" >> """$REPORT_FILE"""
         else
-            echo "Failed to connect to Prometheus" >> "$REPORT_FILE"
+            echo "Failed to connect to Prometheus" >> """$REPORT_FILE"""
         fi
         
-        cat >> "$REPORT_FILE" << EOF
+        cat >> """$REPORT_FILE""" << EOF
 
 ## Security Metrics
 
@@ -919,18 +919,18 @@ EOF
         
         # Get security metrics
         if curl -s http://localhost:9090/api/v1/query?query=rate\(http_server_requests_seconds_count{status=\"5xx\"}[1h]\) > /dev/null; then
-            echo "### HTTP 5xx Error Rate (1h)" >> "$REPORT_FILE"
-            echo "" >> "$REPORT_FILE"
-            echo "| Instance | Rate |" >> "$REPORT_FILE"
-            echo "|----------|------|" >> "$REPORT_FILE"
-            curl -s http://localhost:9090/api/v1/query?query=rate\(http_server_requests_seconds_count{status=\"5xx\"}[1h]\) | jq -r '.data.result[] | "| " + .metric.instance + " | " + .value[1] + " |"' >> "$REPORT_FILE" || echo "| No data available |" >> "$REPORT_FILE"
+            echo "### HTTP 5xx Error Rate (1h)" >> """$REPORT_FILE"""
+            echo "" >> """$REPORT_FILE"""
+            echo "| Instance | Rate |" >> """$REPORT_FILE"""
+            echo "|----------|------|" >> """$REPORT_FILE"""
+            curl -s http://localhost:9090/api/v1/query?query=rate\(http_server_requests_seconds_count{status=\"5xx\"}[1h]\) | jq -r '.data.result[] | "| " + .metric.instance + " | " + .value[1] + " |"' >> """$REPORT_FILE""" || echo "| No data available |" >> """$REPORT_FILE"""
         fi
         
-        log_success "Security monitoring report generated: $REPORT_FILE"
+        log_success "Security monitoring report generated: ""$REPORT_FILE"""
         ;;
     
     *)
-        log_error "Unknown action: $ACTION"
+        log_error "Unknown action: ""$ACTION"""
         show_help
         exit 1
         ;;

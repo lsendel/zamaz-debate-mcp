@@ -55,9 +55,9 @@ curl -s -X POST http://localhost:5002/api/v1/completions \
 echo ""
 echo "=== Summary ==="
 RUNNING=0
-[ $(curl -s -o /dev/null -w "%{http_code}" http://localhost:5005/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
-[ $(curl -s -o /dev/null -w "%{http_code}" http://localhost:5013/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
-[ $(curl -s -o /dev/null -w "%{http_code}" http://localhost:5002/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
-[ $(curl -s -o /dev/null -w "%{http_code}" http://localhost:5004/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
-[ $(curl -s -o /dev/null -w "%{http_code}" http://localhost:5006/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
-echo "Services running: $RUNNING / 5"
+[ "$(curl" -s -o /dev/null -w "%{http_code}" http://localhost:5005/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
+[ "$(curl" -s -o /dev/null -w "%{http_code}" http://localhost:5013/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
+[ "$(curl" -s -o /dev/null -w "%{http_code}" http://localhost:5002/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
+[ "$(curl" -s -o /dev/null -w "%{http_code}" http://localhost:5004/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
+[ "$(curl" -s -o /dev/null -w "%{http_code}" http://localhost:5006/actuator/health 2>/dev/null) = "200" ] && RUNNING=$((RUNNING + 1))
+echo "Services running: ""$RUNNING"" / 5"

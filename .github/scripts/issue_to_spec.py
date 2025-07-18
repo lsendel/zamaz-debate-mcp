@@ -4,76 +4,72 @@ Script to convert GitHub issues to Kiro specs.
 This script is triggered by the issue-to-spec.yml GitHub Action workflow.
 """
 
+import contextlib
 import os
 import re
-import json
-import requests
-import yaml
 from pathlib import Path
 
+import requests
+
 # Get environment variables
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-ISSUE_NUMBER = os.environ.get('ISSUE_NUMBER')
-ISSUE_TITLE = os.environ.get('ISSUE_TITLE')
-ISSUE_BODY = os.environ.get('ISSUE_BODY')
-REPO_NAME = os.environ.get('REPO_NAME')
-KIRO_API_KEY = os.environ.get('KIRO_API_KEY')
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+ISSUE_NUMBER = os.environ.get("ISSUE_NUMBER")
+ISSUE_TITLE = os.environ.get("ISSUE_TITLE")
+ISSUE_BODY = os.environ.get("ISSUE_BODY")
+REPO_NAME = os.environ.get("REPO_NAME")
+KIRO_API_KEY = os.environ.get("KIRO_API_KEY")
 
 # Constants
 GITHUB_API_URL = "https://api.github.com"
 KIRO_API_URL = "https://api.kiro.ai"  # Replace with actual Kiro API URL if available
 
+
 def create_feature_name(title):
     """Convert issue title to kebab-case feature name."""
     # Remove special characters and convert to lowercase
-    name = re.sub(r'[^a-zA-Z0-9\s]', '', title).lower()
+    name = re.sub(r"[^a-zA-Z0-9\s]", "", title).lower()
     # Replace spaces with hyphens
-    name = re.sub(r'\s+', '-', name)
+    name = re.sub(r"\s+", "-", name)
     return name
+
 
 def get_issue_details():
     """Get detailed information about the issue from GitHub API."""
     url = f"{GITHUB_API_URL}/repos/{REPO_NAME}/issues/{ISSUE_NUMBER}"
-    headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    response = requests.get(url, headers=headers)
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    response = requests.get(url, headers=headers, timeout=30)
     response.raise_for_status()
     return response.json()
+
 
 def get_linked_issues(issue_body):
     """Extract references to other issues from the issue body."""
     # Look for patterns like #123 or owner/repo#123
-    issue_refs = re.findall(r'(?:^|\s)(?:#(\d+)|([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)#(\d+))', issue_body)
+    issue_refs = re.findall(r"(?:^|\s)(?:#(\d+)|([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)#(\d+))", issue_body)
     linked_issues = []
-    
+
     for ref in issue_refs:
         if ref[0]:  # Format: #123
-            linked_issues.append({
-                "repo": REPO_NAME,
-                "number": ref[0]
-            })
+            linked_issues.append({"repo": REPO_NAME, "number": ref[0]})
         elif ref[1] and ref[2]:  # Format: owner/repo#123
-            linked_issues.append({
-                "repo": ref[1],
-                "number": ref[2]
-            })
-    
+            linked_issues.append({"repo": ref[1], "number": ref[2]})
+
     return linked_issues
+
 
 def extract_capabilities(issue_body):
     """Extract capabilities or key points from the issue body."""
     capabilities = []
-    
+
     # Look for bullet points or numbered lists
-    bullet_matches = re.findall(r'(?:^|\n)[\s]*[-*][\s]+(.*?)(?:\n|$)', issue_body)
-    numbered_matches = re.findall(r'(?:^|\n)[\s]*\d+\.[\s]+(.*?)(?:\n|$)', issue_body)
-    
+    bullet_matches = re.findall(r"(?:^|\n)[\s]*[-*][\s]+(.*?)(?:\n|$)", issue_body)
+    numbered_matches = re.findall(r"(?:^|\n)[\s]*\d+\.[\s]+(.*?)(?:\n|$)", issue_body)
+
     capabilities.extend(bullet_matches)
     capabilities.extend(numbered_matches)
-    
+
     return capabilities
+
 
 def generate_spec_with_kiro_api(feature_name, issue_details, capabilities):
     """
@@ -84,9 +80,9 @@ def generate_spec_with_kiro_api(feature_name, issue_details, capabilities):
     if KIRO_API_KEY:
         try:
             # Prepare the prompt for Kiro
-            title = issue_details.get('title', 'Unknown Feature')
-            body = issue_details.get('body', '')
-            
+            title = issue_details.get("title", "Unknown Feature")
+            body = issue_details.get("body", "")
+
             prompt = f"""
 Hi Kiro, I'd like to create a new feature spec for {title}.
 
@@ -97,64 +93,51 @@ Some key capabilities I'm thinking about include:
 """
             for capability in capabilities:
                 prompt += f"- {capability}\n"
-                
+
             prompt += "\nCan you help me create a complete spec for this feature?"
-            
+
             # Call Kiro API
-            headers = {
-                "Authorization": f"Bearer {KIRO_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            
+            headers = {"Authorization": f"Bearer {KIRO_API_KEY}", "Content-Type": "application/json"}
+
             payload = {
                 "prompt": prompt,
                 "feature_name": feature_name,
-                "spec_type": "full"  # Request all three documents
+                "spec_type": "full",  # Request all three documents
             }
-            
-            response = requests.post(
-                f"{KIRO_API_URL}/v1/specs/generate",
-                headers=headers,
-                json=payload
-            )
-            
+
+            response = requests.post(f"{KIRO_API_URL}/v1/specs/generate", headers=headers, json=payload, timeout=30)
+
             if response.status_code == 200:
                 result = response.json()
-                print("Successfully generated spec with Kiro API")
                 return {
                     "requirements.md": result.get("requirements", "# Requirements Document\n\n(Generated by Kiro)"),
                     "design.md": result.get("design", "# Design Document\n\n(Generated by Kiro)"),
-                    "tasks.md": result.get("tasks", "# Implementation Plan\n\n(Generated by Kiro)")
+                    "tasks.md": result.get("tasks", "# Implementation Plan\n\n(Generated by Kiro)"),
                 }
             else:
-                print(f"Kiro API returned status code {response.status_code}")
-                print(f"Response: {response.text}")
+                pass
                 # Fall back to placeholder documents
-        except Exception as e:
-            print(f"Error calling Kiro API: {str(e)}")
-            print("Falling back to placeholder documents")
+        except Exception:
+            pass
     else:
-        print("No Kiro API key available, using placeholder documents")
-    
+        pass
+
     # Create placeholder documents
     requirements_md = generate_requirements_doc(feature_name, issue_details, capabilities)
     design_md = generate_design_doc(feature_name)
     tasks_md = generate_tasks_doc(feature_name)
-    
-    return {
-        "requirements.md": requirements_md,
-        "design.md": design_md,
-        "tasks.md": tasks_md
-    }
+
+    return {"requirements.md": requirements_md, "design.md": design_md, "tasks.md": tasks_md}
+
 
 def generate_requirements_doc(feature_name, issue_details, capabilities):
     """Generate a basic requirements document based on the issue."""
-    title = issue_details.get('title', 'Unknown Feature')
-    body = issue_details.get('body', '')
-    
+    title = issue_details.get("title", "Unknown Feature")
+    body = issue_details.get("body", "")
+
     # Extract the first paragraph as an introduction
-    intro = body.split('\n\n')[0] if '\n\n' in body else body
-    
+    intro = body.split("\n\n")[0] if "\n\n" in body else body
+
     requirements = []
     for i, capability in enumerate(capabilities, 1):
         requirements.append(f"""
@@ -168,7 +151,7 @@ def generate_requirements_doc(feature_name, issue_details, capabilities):
 2. IF [precondition] THEN the system SHALL [response]
 3. WHEN [event] THEN the system SHALL [response]
 """)
-    
+
     return f"""# Requirements Document
 
 ## Introduction
@@ -176,8 +159,9 @@ def generate_requirements_doc(feature_name, issue_details, capabilities):
 This document outlines the requirements for implementing {title}. {intro}
 
 ## Requirements
-{''.join(requirements)}
+{"".join(requirements)}
 """
+
 
 def generate_design_doc(feature_name):
     """Generate a placeholder design document."""
@@ -208,9 +192,10 @@ This document outlines the design for implementing the {feature_name} feature.
 (Add testing strategy details here)
 """
 
+
 def generate_tasks_doc(feature_name):
     """Generate a placeholder tasks document."""
-    return f"""# Implementation Plan
+    return """# Implementation Plan
 
 - [ ] 1. Set up project structure
   - Create directory structure
@@ -238,97 +223,94 @@ def generate_tasks_doc(feature_name):
   - _Requirements: 3.2_
 """
 
+
 def create_spec_files(feature_name, spec_content):
     """Create the spec files in the repository."""
     # Create the spec directory
     spec_dir = Path(f".kiro/specs/{feature_name}")
     spec_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Write the spec files
     for filename, content in spec_content.items():
-        with open(spec_dir / filename, 'w') as f:
+        with open(spec_dir / filename, "w") as f:
             f.write(content)
-    
-    print(f"Created spec files in {spec_dir}")
+
 
 def add_comment_to_issue(issue_number, comment):
     """Add a comment to the GitHub issue."""
     url = f"{GITHUB_API_URL}/repos/{REPO_NAME}/issues/{issue_number}/comments"
-    headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    data = {
-        "body": comment
-    }
-    response = requests.post(url, headers=headers, json=data)
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    data = {"body": comment}
+    response = requests.post(url, headers=headers, json=data, timeout=30)
     response.raise_for_status()
-    print(f"Added comment to issue #{issue_number}")
+
 
 def extract_tasks_from_markdown(tasks_md):
     """Extract tasks from the tasks markdown document."""
     tasks = []
-    
+
     # Regular expression to match top-level tasks (those with single digit numbers)
     # Format: "- [ ] 1. Task title"
-    task_pattern = re.compile(r'- \[ \] (\d+)\. (.*?)$', re.MULTILINE)
-    
+    task_pattern = re.compile(r"- \[ \] (\d+)\. (.*?)$", re.MULTILINE)
+
     # Find all top-level tasks
     matches = task_pattern.findall(tasks_md)
-    
+
     for task_num, task_title in matches:
         # Find the task description (everything between this task and the next task)
         task_start = tasks_md.find(f"- [ ] {task_num}. {task_title}")
         next_task_match = task_pattern.search(tasks_md, task_start + 1)
-        
+
         if next_task_match:
             task_end = next_task_match.start()
             task_content = tasks_md[task_start:task_end]
         else:
             task_content = tasks_md[task_start:]
-        
+
         # Extract requirements references
-        req_match = re.search(r'_Requirements: (.*?)_', task_content)
+        req_match = re.search(r"_Requirements: (.*?)_", task_content)
         requirements = req_match.group(1) if req_match else "N/A"
-        
+
         # Extract subtasks
-        subtasks = []
-        subtask_pattern = re.compile(r'  - (.*?)$', re.MULTILINE)
+        subtask_pattern = re.compile(r"  - (.*?)$", re.MULTILINE)
         subtask_matches = subtask_pattern.findall(task_content)
-        
-        tasks.append({
-            "number": task_num,
-            "title": task_title,
-            "content": task_content,
-            "requirements": requirements,
-            "subtasks": subtask_matches
-        })
-    
+
+        tasks.append(
+            {
+                "number": task_num,
+                "title": task_title,
+                "content": task_content,
+                "requirements": requirements,
+                "subtasks": subtask_matches,
+            }
+        )
+
     return tasks
+
 
 def create_sub_issues(parent_issue_number, feature_name, tasks):
     """Create GitHub issues for each task in the tasks document."""
     created_issues = []
-    
+
     for task in tasks:
         # Create issue title
         issue_title = f"[{feature_name}] {task['title']}"
-        
+
         # Create issue body
         issue_body = f"""
 This is a sub-task for the {feature_name} feature.
 
 ## Description
-{task['title']}
+{task["title"]}
 
 ## Subtasks
 """
-        for subtask in task['subtasks']:
+        for subtask in task["subtasks"]:
             issue_body += f"- [ ] {subtask}\n"
-        
+
         issue_body += f"""
 ## Requirements
-{task['requirements']}
+{task["requirements"]}
 
 ## Parent Issue
 #{parent_issue_number}
@@ -336,65 +318,48 @@ This is a sub-task for the {feature_name} feature.
 ## Spec Location
 `.kiro/specs/{feature_name}/`
 """
-        
+
         # Create the issue via GitHub API
         url = f"{GITHUB_API_URL}/repos/{REPO_NAME}/issues"
-        headers = {
-            "Authorization": f"token {GITHUB_TOKEN}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        data = {
-            "title": issue_title,
-            "body": issue_body,
-            "labels": ["task", feature_name]
-        }
-        
+        headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+        data = {"title": issue_title, "body": issue_body, "labels": ["task", feature_name]}
+
         try:
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data, timeout=30)
             response.raise_for_status()
             issue = response.json()
-            created_issues.append({
-                "number": issue["number"],
-                "title": issue["title"],
-                "html_url": issue["html_url"]
-            })
-            print(f"Created sub-issue #{issue['number']}: {issue['title']}")
-        except Exception as e:
-            print(f"Error creating sub-issue: {str(e)}")
-    
+            created_issues.append({"number": issue["number"], "title": issue["title"], "html_url": issue["html_url"]})
+        except Exception:
+            pass
+
     return created_issues
+
 
 def main():
     try:
-        print(f"Processing issue #{ISSUE_NUMBER}: {ISSUE_TITLE}")
-        
         # Get detailed issue information
         issue_details = get_issue_details()
-        
+
         # Create feature name from issue title
         feature_name = create_feature_name(ISSUE_TITLE)
-        print(f"Feature name: {feature_name}")
-        
+
         # Extract capabilities from issue body
         capabilities = extract_capabilities(ISSUE_BODY)
-        print(f"Extracted {len(capabilities)} capabilities")
-        
+
         # Generate spec content
         spec_content = generate_spec_with_kiro_api(feature_name, issue_details, capabilities)
-        
+
         # Create spec files
         create_spec_files(feature_name, spec_content)
-        
+
         # Extract tasks from the tasks document
         tasks = extract_tasks_from_markdown(spec_content["tasks.md"])
-        print(f"Extracted {len(tasks)} tasks from tasks document")
-        
+
         # Create sub-issues for each task
         created_issues = []
-        if os.environ.get('CREATE_SUB_ISSUES', 'false').lower() == 'true':
+        if os.environ.get("CREATE_SUB_ISSUES", "false").lower() == "true":
             created_issues = create_sub_issues(ISSUE_NUMBER, feature_name, tasks)
-            print(f"Created {len(created_issues)} sub-issues")
-        
+
         # Add comment to the issue
         comment = f"""
 I've created a spec for this feature:
@@ -409,35 +374,31 @@ The spec includes:
 
 A pull request has been created with these changes.
 """
-        
+
         # Add information about created sub-issues
         if created_issues:
             comment += "\n\nI've also created the following sub-issues for each task:\n"
             for issue in created_issues:
                 comment += f"- #{issue['number']}: [{issue['title']}]({issue['html_url']})\n"
-        
+
         add_comment_to_issue(ISSUE_NUMBER, comment)
-        
-        print("Successfully created spec from issue")
-        
+
     except Exception as e:
-        print(f"Error: {str(e)}")
         # Add error comment to issue
         error_comment = f"""
 I encountered an error while trying to create a spec for this issue:
 
 ```
-{str(e)}
+{e!s}
 ```
 
 Please check the GitHub Action logs for more details.
 """
-        try:
+        with contextlib.suppress(Exception):
             add_comment_to_issue(ISSUE_NUMBER, error_comment)
-        except:
-            print("Failed to add error comment to issue")
-        
+
         raise
+
 
 if __name__ == "__main__":
     main()

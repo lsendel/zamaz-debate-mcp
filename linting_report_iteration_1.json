@@ -1,0 +1,677 @@
+{
+  "iteration": 1,
+  "timestamp": "2025-07-18T08:53:36.802249",
+  "summary": {
+    "total_issues": 8604,
+    "python_issues": 2340,
+    "shell_issues": 6260,
+    "typescript_issues": 4
+  },
+  "python_by_type": {
+    "N999": 7,
+    "TID252": 109,
+    "PLR2004": 117,
+    "PTH118": 39,
+    "PTH120": 25,
+    "PTH103": 7,
+    "PTH123": 105,
+    "PLW1508": 2,
+    "S104": 3,
+    "S201": 1,
+    "B904": 8,
+    "F401": 16,
+    "E722": 19,
+    "S110": 14,
+    "PLR0912": 7,
+    "B007": 7,
+    "SIM105": 1,
+    "ERA001": 8,
+    "S603": 22,
+    "S607": 20,
+    "PTH110": 11,
+    "PTH204": 2,
+    "PTH122": 6,
+    "PTH119": 3,
+    "PTH116": 2,
+    "PLR0915": 8,
+    "PLW2901": 2,
+    "ARG002": 66,
+    "F821": 20,
+    "B008": 13,
+    "RUF006": 2,
+    "S113": 4,
+    "W293": 418,
+    "null": 3,
+    "W292": 5,
+    "N818": 1,
+    "RUF012": 1,
+    "PLR0911": 4,
+    "B018": 1,
+    "SIM102": 3,
+    "PTH101": 2,
+    "PTH107": 1,
+    "ARG001": 4,
+    "SIM108": 2,
+    "PTH100": 1,
+    "PLW0603": 7,
+    "PLW0602": 1,
+    "E402": 3,
+    "S608": 8,
+    "W291": 7,
+    "S106": 1,
+    "S108": 2,
+    "S311": 15,
+    "S318": 1,
+    "I001": 3,
+    "UP035": 5,
+    "Q000": 1018,
+    "UP006": 20,
+    "UP015": 12,
+    "E741": 9,
+    "UP038": 2,
+    "T201": 69,
+    "PTH201": 6,
+    "PLW1510": 10,
+    "UP007": 1,
+    "C401": 3,
+    "F541": 12,
+    "F841": 1,
+    "S602": 2
+  },
+  "critical_issues": [
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analytics_dashboard.py",
+      "line": 540,
+      "code": "S104",
+      "message": "Possible binding to all interfaces"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analytics_dashboard.py",
+      "line": 540,
+      "code": "S201",
+      "message": "Use of `debug=True` in Flask app detected"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analyzers/documentation_analyzer.py",
+      "line": 1003,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analyzers/documentation_analyzer.py",
+      "line": 1225,
+      "code": "SIM105",
+      "message": "Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analyzers/documentation_analyzer.py",
+      "line": 1229,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analyzers/documentation_analyzer.py",
+      "line": 1323,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/analyzers/documentation_analyzer.py",
+      "line": 1324,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 228,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 228,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 260,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 261,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 304,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 304,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 351,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 351,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 384,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 384,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 441,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 442,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 483,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 483,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 512,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 513,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 561,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/code_analyzer.py",
+      "line": 562,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/config_cli.py",
+      "line": 163,
+      "code": "S113",
+      "message": "Probable use of `requests` call without timeout"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/config_manager.py",
+      "line": 299,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/fix_suggester.py",
+      "line": 270,
+      "code": "SIM102",
+      "message": "Use a single `if` statement instead of nested `if` statements"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/fix_suggester.py",
+      "line": 336,
+      "code": "SIM102",
+      "message": "Use a single `if` statement instead of nested `if` statements"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/github_event_handlers.py",
+      "line": 91,
+      "code": "S113",
+      "message": "Probable use of `requests` call without timeout"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/issue_to_spec.py",
+      "line": 120,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/issue_to_spec.py",
+      "line": 332,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/kiro_task_implementation.py",
+      "line": 1494,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/learning_system.py",
+      "line": 235,
+      "code": "SIM108",
+      "message": "Use ternary operator `feedback_score = positive_feedback / total_feedback if total_feedback > 0 else 0.5` instead of `if`-`else`-block"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/learning_system.py",
+      "line": 242,
+      "code": "SIM108",
+      "message": "Use ternary operator `suggestion_score = suggestions_applied / total_suggestions if total_suggestions > 0 else 0.5` instead of `if`-`else`-block"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/learning_system.py",
+      "line": 582,
+      "code": "SIM102",
+      "message": "Use a single `if` statement instead of nested `if` statements"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/main_with_diagnostics.py",
+      "line": 217,
+      "code": "S104",
+      "message": "Possible binding to all interfaces"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/pr_processor.py",
+      "line": 143,
+      "code": "S113",
+      "message": "Probable use of `requests` call without timeout"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 56,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 72,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 120,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 140,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 153,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 160,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/repositories/base_repository.py",
+      "line": 182,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/scripts/webhook_server.py",
+      "line": 111,
+      "code": "S104",
+      "message": "Possible binding to all interfaces"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/tests/run_tests.py",
+      "line": 36,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/.github/tests/test_refactored_services.py",
+      "line": 209,
+      "code": "S106",
+      "message": "Possible hardcoded password assigned to argument: \"secret_key\""
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/docker/docker_integration.py",
+      "line": 60,
+      "code": "S108",
+      "message": "Probable insecure usage of temporary file or directory: \"/tmp/performance-test-artifacts\""
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/docker/docker_integration.py",
+      "line": 548,
+      "code": "S108",
+      "message": "Probable insecure usage of temporary file or directory: \"/tmp/artifacts.tar.gz\""
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/docker/docker_integration.py",
+      "line": 555,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/docker/docker_integration.py",
+      "line": 555,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/framework/base/performance_test_base.py",
+      "line": 629,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/framework/base/performance_test_base.py",
+      "line": 630,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/framework/base/performance_test_base.py",
+      "line": 632,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/framework/reporting/test_reporter.py",
+      "line": 186,
+      "code": "S113",
+      "message": "Probable use of `requests` call without timeout"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/jmeter/jmeter_integration.py",
+      "line": 382,
+      "code": "S318",
+      "message": "Using `xml` to parse untrusted data is known to be vulnerable to XML attacks; use `defusedxml` equivalents"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/jmeter/jmeter_integration.py",
+      "line": 434,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/jmeter/jmeter_integration.py",
+      "line": 474,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/jmeter/jmeter_integration.py",
+      "line": 474,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/jmeter/jmeter_integration.py",
+      "line": 477,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/database_load_tests.py",
+      "line": 1049,
+      "code": "S608",
+      "message": "Possible SQL injection vector through string-based query construction"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/github_api_simulation.py",
+      "line": 296,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/github_api_simulation.py",
+      "line": 315,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/github_api_simulation.py",
+      "line": 449,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 284,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 319,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 406,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 452,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 453,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 454,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 459,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 459,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/performance-testing/tests/load_tests.py",
+      "line": 694,
+      "code": "S311",
+      "message": "Standard pseudo-random generators are not suitable for cryptographic purposes"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 229,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 230,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 239,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 240,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 502,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 503,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 664,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 665,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 854,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 855,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-comprehensive-linting-report.py",
+      "line": 913,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-detailed-linting-report.py",
+      "line": 66,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-detailed-linting-report.py",
+      "line": 67,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-detailed-linting-report.py",
+      "line": 110,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-detailed-linting-report.py",
+      "line": 111,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-detailed-linting-report.py",
+      "line": 153,
+      "code": "S603",
+      "message": "`subprocess` call: check for execution of untrusted input"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-detailed-linting-report.py",
+      "line": 154,
+      "code": "S607",
+      "message": "Starting a process with a partial executable path"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-simple-linting-report.py",
+      "line": 14,
+      "code": "S602",
+      "message": "`subprocess` call with `shell=True` identified, security issue"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-simple-linting-report.py",
+      "line": 17,
+      "code": "S602",
+      "message": "`subprocess` call with `shell=True` identified, security issue"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-simple-linting-report.py",
+      "line": 75,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-simple-linting-report.py",
+      "line": 97,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-simple-linting-report.py",
+      "line": 141,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/generate-simple-linting-report.py",
+      "line": 167,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/simple-mcp-test-runner.py",
+      "line": 25,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    },
+    {
+      "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/simple-mcp-test-runner.py",
+      "line": 65,
+      "code": "S110",
+      "message": "`try`-`except`-`pass` detected, consider logging the exception"
+    }
+  ]
+}

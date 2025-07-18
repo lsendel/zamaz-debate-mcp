@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Grid,
@@ -7,14 +7,14 @@ import {
   Card,
   CardContent,
   LinearProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   TrendingUp as TrendingUpIcon,
   Forum as ForumIcon,
   Timer as TimerIcon,
   Group as GroupIcon,
-} from '@mui/icons-material';
-import { useAppSelector } from '../store';
+} from "@mui/icons-material";
+import { useAppSelector } from "../store";
 
 interface StatCardProps {
   title: string;
@@ -26,7 +26,7 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
   <Card>
     <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
         <Box
           sx={{
             p: 1,
@@ -55,13 +55,24 @@ const AnalyticsPage: React.FC = () => {
 
   // Calculate statistics
   const totalDebates = debates.length;
-  const completedDebates = debates.filter(d => d.status === 'completed').length;
-  const inProgressDebates = debates.filter(d => d.status === 'in_progress').length;
-  const totalParticipants = debates.reduce((acc, d) => acc + d.participants.length, 0);
-  const avgParticipants = totalDebates > 0 ? (totalParticipants / totalDebates).toFixed(1) : 0;
-  const avgRounds = totalDebates > 0
-    ? (debates.reduce((acc, d) => acc + d.maxRounds, 0) / totalDebates).toFixed(1)
-    : 0;
+  const completedDebates = debates.filter(
+    (d) => d.status === "completed",
+  ).length;
+  const inProgressDebates = debates.filter(
+    (d) => d.status === "in_progress",
+  ).length;
+  const totalParticipants = debates.reduce(
+    (acc, d) => acc + d.participants.length,
+    0,
+  );
+  const avgParticipants =
+    totalDebates > 0 ? (totalParticipants / totalDebates).toFixed(1) : 0;
+  const avgRounds =
+    totalDebates > 0
+      ? (
+          debates.reduce((acc, d) => acc + d.maxRounds, 0) / totalDebates
+        ).toFixed(1)
+      : 0;
 
   return (
     <Box>
@@ -114,25 +125,37 @@ const AnalyticsPage: React.FC = () => {
               Debate Status Distribution
             </Typography>
             <Box sx={{ mt: 3 }}>
-              {['created', 'in_progress', 'completed', 'cancelled'].map((status) => {
-                const count = debates.filter(d => d.status === status).length;
-                const percentage = totalDebates > 0 ? (count / totalDebates) * 100 : 0;
-                return (
-                  <Box key={status} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">
-                        {status.replace('_', ' ').charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
-                      </Typography>
-                      <Typography variant="body2">{count}</Typography>
+              {["created", "in_progress", "completed", "cancelled"].map(
+                (status) => {
+                  const count = debates.filter(
+                    (d) => d.status === status,
+                  ).length;
+                  const percentage =
+                    totalDebates > 0 ? (count / totalDebates) * 100 : 0;
+                  return (
+                    <Box key={status} sx={{ mb: 2 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 1,
+                        }}
+                      >
+                        <Typography variant="body2">
+                          {status.replace("_", " ").charAt(0).toUpperCase() +
+                            status.slice(1).replace("_", " ")}
+                        </Typography>
+                        <Typography variant="body2">{count}</Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={percentage}
+                        sx={{ height: 8, borderRadius: 1 }}
+                      />
                     </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={percentage}
-                      sx={{ height: 8, borderRadius: 1 }}
-                    />
-                  </Box>
-                );
-              })}
+                  );
+                },
+              )}
             </Box>
           </Paper>
         </Grid>
@@ -149,7 +172,8 @@ const AnalyticsPage: React.FC = () => {
                     {debate.topic}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(debate.createdAt).toLocaleDateString()} - {debate.status.replace('_', ' ')}
+                    {new Date(debate.createdAt).toLocaleDateString()} -{" "}
+                    {debate.status.replace("_", " ")}
                   </Typography>
                 </Box>
               ))}
@@ -173,7 +197,7 @@ const AnalyticsPage: React.FC = () => {
               Average Debate Duration
             </Typography>
             <Typography variant="h5">
-              {completedDebates > 0 ? 'N/A' : '-'}
+              {completedDebates > 0 ? "N/A" : "-"}
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
@@ -189,7 +213,7 @@ const AnalyticsPage: React.FC = () => {
             <Typography variant="h5">
               {totalDebates > 0
                 ? `${((completedDebates / totalDebates) * 100).toFixed(1)}%`
-                : '-'}
+                : "-"}
             </Typography>
           </Grid>
         </Grid>

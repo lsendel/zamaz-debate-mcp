@@ -11,7 +11,7 @@ if [ -f .env ]; then
 fi
 
 # Check if SONAR_TOKEN is set
-if [ -z "$SONAR_TOKEN" ]; then
+if [ -z """$SONAR_TOKEN""" ]; then
     echo "⚠️  SONAR_TOKEN not set, skipping quality check"
     exit 0
 fi
@@ -25,15 +25,15 @@ export SONAR_ORGANIZATION="lsendel"
 echo "📊 Checking SonarCloud quality gate..."
 
 # Get quality gate status
-QUALITY_GATE_STATUS=$(curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
-    "$SONAR_URL/api/qualitygates/project_status?projectKey=$SONAR_PROJECT_KEY" | \
+QUALITY_GATE_STATUS=$(curl -s -H "Authorization: Bearer ""$SONAR_TOKEN""" \
+    """$SONAR_URL""/api/qualitygates/project_status?projectKey=""$SONAR_PROJECT_KEY""" | \
     jq -r '.projectStatus.status')
 
-echo "Quality Gate Status: $QUALITY_GATE_STATUS"
+echo "Quality Gate Status: ""$QUALITY_GATE_STATUS"""
 
-if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
+if [ """$QUALITY_GATE_STATUS""" != "OK" ]; then
     echo "❌ SonarQube Quality Gate failed!"
-    echo "Please fix issues at: $SONAR_URL/project/overview?id=$SONAR_PROJECT_KEY"
+    echo "Please fix issues at: ""$SONAR_URL""/project/overview?id=""$SONAR_PROJECT_KEY"""
     exit 1
 fi
 

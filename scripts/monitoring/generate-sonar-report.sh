@@ -8,7 +8,7 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname """$SCRIPT_DIR""")"
 REPORTS_DIR="${PROJECT_ROOT}/sonar-reports"
 TOOLS_DIR="${PROJECT_ROOT}/tools"
 CNES_REPORT_JAR="${TOOLS_DIR}/sonar-cnes-report.jar"
@@ -63,9 +63,9 @@ check_prerequisites() {
     
     # Check Java version
     JAVA_VERSION=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f1-2)
-    JAVA_MAJOR=$(echo $JAVA_VERSION | cut -d'.' -f1)
-    if [[ $JAVA_MAJOR -lt 8 ]]; then
-        log_error "Java 8 or higher is required. Current version: $JAVA_VERSION"
+    JAVA_MAJOR=$(echo ""$JAVA_VERSION"" | cut -d'.' -f1)
+    if [[ ""$JAVA_MAJOR"" -lt 8 ]]; then
+        log_error "Java 8 or higher is required. Current version: ""$JAVA_VERSION"""
         exit 1
     fi
     
@@ -74,23 +74,23 @@ check_prerequisites() {
 
 # Download CNES Report tool if not present
 download_cnes_report() {
-    if [ ! -f "$CNES_REPORT_JAR" ]; then
+    if [ ! -f """$CNES_REPORT_JAR""" ]; then
         log_info "Downloading CNES Report tool v${CNES_REPORT_VERSION}..."
         
-        mkdir -p "$TOOLS_DIR"
+        mkdir -p """$TOOLS_DIR"""
         
         DOWNLOAD_URL="https://github.com/cnescatlab/sonar-cnes-report/releases/download/${CNES_REPORT_VERSION}/sonar-cnes-report-${CNES_REPORT_VERSION}.jar"
         
         if command -v wget &> /dev/null; then
-            wget -q "$DOWNLOAD_URL" -O "$CNES_REPORT_JAR"
+            wget -q """$DOWNLOAD_URL""" -O """$CNES_REPORT_JAR"""
         elif command -v curl &> /dev/null; then
-            curl -sL "$DOWNLOAD_URL" -o "$CNES_REPORT_JAR"
+            curl -sL """$DOWNLOAD_URL""" -o """$CNES_REPORT_JAR"""
         else
             log_error "Neither wget nor curl is available. Please install one of them."
             exit 1
         fi
         
-        if [ -f "$CNES_REPORT_JAR" ]; then
+        if [ -f """$CNES_REPORT_JAR""" ]; then
             log_success "CNES Report tool downloaded successfully"
         else
             log_error "Failed to download CNES Report tool"
@@ -105,17 +105,17 @@ download_cnes_report() {
 validate_sonarqube_connection() {
     log_info "Validating SonarQube connection..."
     
-    if [ -z "$SONAR_TOKEN" ]; then
+    if [ -z """$SONAR_TOKEN""" ]; then
         log_warning "SONAR_TOKEN not set. Trying anonymous access..."
         AUTH_HEADER=""
     else
-        AUTH_HEADER="Authorization: Bearer $SONAR_TOKEN"
+        AUTH_HEADER="Authorization: Bearer ""$SONAR_TOKEN"""
     fi
     
     # Test connection
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" "${SONAR_URL}/api/system/status")
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H """$AUTH_HEADER""" "${SONAR_URL}/api/system/status")
     
-    if [ "$HTTP_CODE" != "200" ]; then
+    if [ """$HTTP_CODE""" != "200" ]; then
         log_error "Cannot connect to SonarQube at ${SONAR_URL}. HTTP Code: ${HTTP_CODE}"
         log_error "Please check your SONAR_URL and SONAR_TOKEN environment variables"
         exit 1
@@ -127,44 +127,44 @@ validate_sonarqube_connection() {
 # Generate report
 generate_report() {
     log_info "Generating SonarQube report..."
-    log_info "Project: $SONAR_PROJECT_KEY"
-    log_info "Branch: $SONAR_BRANCH"
+    log_info "Project: ""$SONAR_PROJECT_KEY"""
+    log_info "Branch: ""$SONAR_BRANCH"""
     log_info "Output format: Markdown"
     
-    mkdir -p "$REPORTS_DIR"
+    mkdir -p """$REPORTS_DIR"""
     
     # Build command
-    CMD="java -jar $CNES_REPORT_JAR"
-    CMD="$CMD -s $SONAR_URL"
-    CMD="$CMD -p $SONAR_PROJECT_KEY"
-    CMD="$CMD -o $REPORTS_DIR"
-    CMD="$CMD -l $REPORT_LANGUAGE"
-    CMD="$CMD -a \"$REPORT_AUTHOR\""
-    CMD="$CMD -b $SONAR_BRANCH"
-    CMD="$CMD -r $REPORT_FILENAME"
+    CMD="java -jar ""$CNES_REPORT_JAR"""
+    CMD="""$CMD"" -s ""$SONAR_URL"""
+    CMD="""$CMD"" -p ""$SONAR_PROJECT_KEY"""
+    CMD="""$CMD"" -o ""$REPORTS_DIR"""
+    CMD="""$CMD"" -l ""$REPORT_LANGUAGE"""
+    CMD="""$CMD"" -a \"""$REPORT_AUTHOR""\""
+    CMD="""$CMD"" -b ""$SONAR_BRANCH"""
+    CMD="""$CMD"" -r ""$REPORT_FILENAME"""
     
-    if [ -n "$SONAR_TOKEN" ]; then
-        CMD="$CMD -t $SONAR_TOKEN"
+    if [ -n """$SONAR_TOKEN""" ]; then
+        CMD="""$CMD"" -t ""$SONAR_TOKEN"""
     fi
     
     # Execute command
-    log_info "Executing: $CMD"
+    log_info "Executing: ""$CMD"""
     
-    if $CMD; then
+    if ""$CMD""; then
         log_success "Report generated successfully"
         
         # Find the generated markdown file
-        MARKDOWN_FILE=$(find "$REPORTS_DIR" -name "${REPORT_FILENAME}*.md" -type f -print -quit)
+        MARKDOWN_FILE=$(find """$REPORTS_DIR""" -name "${REPORT_FILENAME}*.md" -type f -print -quit)
         
-        if [ -n "$MARKDOWN_FILE" ]; then
-            log_success "Markdown report: $MARKDOWN_FILE"
+        if [ -n """$MARKDOWN_FILE""" ]; then
+            log_success "Markdown report: ""$MARKDOWN_FILE"""
             
             # Create a latest symlink
             LATEST_LINK="${REPORTS_DIR}/latest-sonar-report.md"
-            ln -sf "$(basename "$MARKDOWN_FILE")" "$LATEST_LINK"
-            log_info "Latest report link: $LATEST_LINK"
+            ln -sf "$(basename """$MARKDOWN_FILE""")" """$LATEST_LINK"""
+            log_info "Latest report link: ""$LATEST_LINK"""
         else
-            log_warning "Markdown file not found. Check other formats in $REPORTS_DIR"
+            log_warning "Markdown file not found. Check other formats in ""$REPORTS_DIR"""
         fi
     else
         log_error "Failed to generate report"
@@ -178,18 +178,18 @@ create_summary() {
     
     SUMMARY_FILE="${REPORTS_DIR}/report-summary.json"
     
-    cat > "$SUMMARY_FILE" << EOF
+    cat > """$SUMMARY_FILE""" << EOF
 {
   "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "project_key": "$SONAR_PROJECT_KEY",
-  "branch": "$SONAR_BRANCH",
-  "sonar_url": "$SONAR_URL",
-  "report_file": "$(basename "$MARKDOWN_FILE")",
-  "author": "$REPORT_AUTHOR"
+  "project_key": """$SONAR_PROJECT_KEY""",
+  "branch": """$SONAR_BRANCH""",
+  "sonar_url": """$SONAR_URL""",
+  "report_file": "$(basename """$MARKDOWN_FILE""")",
+  "author": """$REPORT_AUTHOR"""
 }
 EOF
     
-    log_success "Summary created: $SUMMARY_FILE"
+    log_success "Summary created: ""$SUMMARY_FILE"""
 }
 
 # Main execution
@@ -220,11 +220,11 @@ Generate SonarQube reports in markdown format.
 
 OPTIONS:
     -h, --help              Show this help message
-    -u, --url URL           SonarQube server URL (default: $SONAR_URL)
+    -u, --url URL           SonarQube server URL (default: ""$SONAR_URL"")
     -t, --token TOKEN       SonarQube authentication token
-    -p, --project KEY       Project key (default: $SONAR_PROJECT_KEY)
-    -b, --branch BRANCH     Branch name (default: $SONAR_BRANCH)
-    -a, --author AUTHOR     Report author (default: $REPORT_AUTHOR)
+    -p, --project KEY       Project key (default: ""$SONAR_PROJECT_KEY"")
+    -b, --branch BRANCH     Branch name (default: ""$SONAR_BRANCH"")
+    -a, --author AUTHOR     Report author (default: ""$REPORT_AUTHOR"")
 
 ENVIRONMENT VARIABLES:
     SONAR_URL               SonarQube server URL
@@ -247,7 +247,7 @@ EOF
 }
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help)
             usage

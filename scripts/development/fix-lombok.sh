@@ -14,11 +14,11 @@ services=(
 )
 
 for service in "${services[@]}"; do
-    echo "Updating $service/pom.xml..."
+    echo "Updating ""$service""/pom.xml..."
     
     # Check if maven-compiler-plugin is already configured
-    if grep -q "maven-compiler-plugin" "$service/pom.xml"; then
-        echo "  maven-compiler-plugin already configured in $service"
+    if grep -q "maven-compiler-plugin" """$service""/pom.xml"; then
+        echo "  maven-compiler-plugin already configured in ""$service"""
     else
         # Add maven-compiler-plugin configuration before the closing </plugins> tag
         sed -i.bak '/<\/plugins>/i\
@@ -36,7 +36,7 @@ for service in "${services[@]}"; do
                         </path>\
                     </annotationProcessorPaths>\
                 </configuration>\
-            </plugin>' "$service/pom.xml"
+            </plugin>' """$service""/pom.xml"
         
         echo "  ✓ Added maven-compiler-plugin configuration"
     fi

@@ -93,14 +93,14 @@ start_pact_broker() {
     docker run -d --name pact-broker \
         -p 9292:9292 \
         -e PACT_BROKER_DATABASE_URL=sqlite:///tmp/pact_broker.sqlite \
-        -e PACT_BROKER_BASIC_AUTH_USERNAME=$PACT_BROKER_USERNAME \
-        -e PACT_BROKER_BASIC_AUTH_PASSWORD=$PACT_BROKER_PASSWORD \
+        -e PACT_BROKER_BASIC_AUTH_USERNAME=""$PACT_BROKER_USERNAME"" \
+        -e PACT_BROKER_BASIC_AUTH_PASSWORD=""$PACT_BROKER_PASSWORD"" \
         pactfoundation/pact-broker:latest
     
     # Wait for Pact Broker to be ready
     log_info "Waiting for Pact Broker to be ready..."
     for i in {1..30}; do
-        if curl -s -u $PACT_BROKER_USERNAME:$PACT_BROKER_PASSWORD $PACT_BROKER_URL/health &> /dev/null; then
+        if curl -s -u ""$PACT_BROKER_USERNAME"":""$PACT_BROKER_PASSWORD"" ""$PACT_BROKER_URL""/health &> /dev/null; then
             log_success "Pact Broker is ready"
             return 0
         fi
@@ -120,7 +120,7 @@ build_services() {
     
     # Build each service
     for service in "${!SERVICES[@]}"; do
-        log_info "Building $service..."
+        log_info "Building ""$service""..."
         cd $service
         mvn clean compile test-compile
         cd ..
@@ -136,20 +136,20 @@ run_consumer_tests() {
     local failed_tests=()
     
     for service in "${!CONSUMER_TESTS[@]}"; do
-        local test_class="${CONSUMER_TESTS[$service]}"
-        log_info "Running consumer tests for $service ($test_class)..."
+        local test_class="${CONSUMER_TESTS[""$service""]}"
+        log_info "Running consumer tests for ""$service"" (""$test_class"")..."
         
         cd $service
-        if mvn test -Dtest=$test_class -Dpact.provider.version=$VERSION; then
-            log_success "Consumer tests passed for $service"
+        if mvn test -Dtest=""$test_class"" -Dpact.provider.version=""$VERSION""; then
+            log_success "Consumer tests passed for ""$service"""
         else
-            log_error "Consumer tests failed for $service"
-            failed_tests+=("$service")
+            log_error "Consumer tests failed for ""$service"""
+            failed_tests+=("""$service""")
         fi
         cd ..
     done
     
-    if [ ${#failed_tests[@]} -gt 0 ]; then
+    if [ "${#failed_tests[@]}" -gt 0 ]; then
         log_error "Consumer tests failed for: ${failed_tests[*]}"
         return 1
     fi
@@ -162,14 +162,14 @@ publish_contracts() {
     log_info "Publishing contracts to Pact Broker..."
     
     for service in "${!CONSUMER_TESTS[@]}"; do
-        log_info "Publishing contracts for $service..."
+        log_info "Publishing contracts for ""$service""..."
         
         cd $service
         mvn pact:publish \
-            -Dpact.broker.url=$PACT_BROKER_URL \
-            -Dpact.broker.username=$PACT_BROKER_USERNAME \
-            -Dpact.broker.password=$PACT_BROKER_PASSWORD \
-            -Dpact.consumer.version=$VERSION \
+            -Dpact.broker.url=""$PACT_BROKER_URL"" \
+            -Dpact.broker.username=""$PACT_BROKER_USERNAME"" \
+            -Dpact.broker.password=""$PACT_BROKER_PASSWORD"" \
+            -Dpact.consumer.version=""$VERSION"" \
             -Dpact.consumer.tags=$ENVIRONMENT
         cd ..
     done
@@ -182,20 +182,20 @@ start_services() {
     log_info "Starting services for provider verification..."
     
     for service in "${!SERVICES[@]}"; do
-        local port="${SERVICES[$service]}"
-        log_info "Starting $service on port $port..."
+        local port="${SERVICES[""$service""]}"
+        log_info "Starting ""$service"" on port ""$port""..."
         
         cd $service
         # Start service in background
-        nohup mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=$port" > ../logs/$service.log 2>&1 &
-        echo $! > ../logs/$service.pid
+        nohup mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=""$port""" > ../logs/""$service"".log 2>&1 &
+        echo $! > ../logs/""$service"".pid
         cd ..
         
         # Wait for service to be ready
-        log_info "Waiting for $service to be ready..."
+        log_info "Waiting for ""$service"" to be ready..."
         for i in {1..60}; do
-            if curl -s http://localhost:$port/health &> /dev/null; then
-                log_success "$service is ready on port $port"
+            if curl -s http://localhost:""$port""/health &> /dev/null; then
+                log_success """$service"" is ready on port ""$port"""
                 break
             fi
             sleep 2
@@ -210,29 +210,29 @@ run_provider_tests() {
     local failed_tests=()
     
     for service in "${!PROVIDER_TESTS[@]}"; do
-        local test_class="${PROVIDER_TESTS[$service]}"
-        local port="${SERVICES[$service]}"
+        local test_class="${PROVIDER_TESTS[""$service""]}"
+        local port="${SERVICES[""$service""]}"
         
-        log_info "Running provider verification for $service ($test_class)..."
+        log_info "Running provider verification for ""$service"" (""$test_class"")..."
         
         cd $service
-        if mvn test -Dtest=$test_class \
+        if mvn test -Dtest=""$test_class"" \
             -Dpact.verifier.publishResults=true \
-            -Dpact.provider.version=$VERSION \
-            -Dpact.provider.tag=$ENVIRONMENT \
-            -Dpact.broker.url=$PACT_BROKER_URL \
-            -Dpact.broker.username=$PACT_BROKER_USERNAME \
-            -Dpact.broker.password=$PACT_BROKER_PASSWORD \
-            -Dtest.server.port=$port; then
-            log_success "Provider verification passed for $service"
+            -Dpact.provider.version=""$VERSION"" \
+            -Dpact.provider.tag=""$ENVIRONMENT"" \
+            -Dpact.broker.url=""$PACT_BROKER_URL"" \
+            -Dpact.broker.username=""$PACT_BROKER_USERNAME"" \
+            -Dpact.broker.password=""$PACT_BROKER_PASSWORD"" \
+            -Dtest.server.port=""$port""; then
+            log_success "Provider verification passed for ""$service"""
         else
-            log_error "Provider verification failed for $service"
-            failed_tests+=("$service")
+            log_error "Provider verification failed for ""$service"""
+            failed_tests+=("""$service""")
         fi
         cd ..
     done
     
-    if [ ${#failed_tests[@]} -gt 0 ]; then
+    if [ "${#failed_tests[@]}" -gt 0 ]; then
         log_error "Provider verification failed for: ${failed_tests[*]}"
         return 1
     fi
@@ -245,12 +245,12 @@ stop_services() {
     log_info "Stopping services..."
     
     for service in "${!SERVICES[@]}"; do
-        if [ -f "logs/$service.pid" ]; then
-            local pid=$(cat "logs/$service.pid")
-            if kill -0 $pid 2>/dev/null; then
-                log_info "Stopping $service (PID: $pid)..."
+        if [ -f "logs/""$service"".pid" ]; then
+            local pid=$(cat "logs/""$service"".pid")
+            if kill -0 ""$pid"" 2>/dev/null; then
+                log_info "Stopping ""$service"" (PID: ""$pid"")..."
                 kill $pid
-                rm "logs/$service.pid"
+                rm "logs/""$service"".pid"
             fi
         fi
     done
@@ -275,7 +275,7 @@ generate_report() {
     
     local report_file="contract-test-report.html"
     
-    cat > $report_file << EOF
+    cat > ""$report_file"" << EOF
 <!DOCTYPE html>
 <html>
 <head>
@@ -296,8 +296,8 @@ generate_report() {
     <div class="header">
         <h1>MCP Contract Test Report</h1>
         <p>Generated: $(date)</p>
-        <p>Version: $VERSION</p>
-        <p>Environment: $ENVIRONMENT</p>
+        <p>Version: ""$VERSION""</p>
+        <p>Environment: ""$ENVIRONMENT""</p>
     </div>
     
     <div class="section">
@@ -311,31 +311,31 @@ EOF
         local provider_status="N/A"
         local overall_status="✅ Pass"
         
-        if [[ -n "${CONSUMER_TESTS[$service]}" ]]; then
+        if [[ -n "${CONSUMER_TESTS[""$service""]}" ]]; then
             consumer_status="✅ Pass"
         fi
         
-        if [[ -n "${PROVIDER_TESTS[$service]}" ]]; then
+        if [[ -n "${PROVIDER_TESTS[""$service""]}" ]]; then
             provider_status="✅ Pass"
         fi
         
-        cat >> $report_file << EOF
+        cat >> ""$report_file"" << EOF
             <tr>
-                <td>$service</td>
-                <td>$consumer_status</td>
-                <td>$provider_status</td>
-                <td>$overall_status</td>
+                <td>""$service""</td>
+                <td>""$consumer_status""</td>
+                <td>""$provider_status""</td>
+                <td>""$overall_status""</td>
             </tr>
 EOF
     done
     
-    cat >> $report_file << EOF
+    cat >> ""$report_file"" << EOF
         </table>
     </div>
     
     <div class="section">
         <h2>Contract Matrix</h2>
-        <p>View detailed contract interactions at: <a href="$PACT_BROKER_URL">$PACT_BROKER_URL</a></p>
+        <p>View detailed contract interactions at: <a href="""$PACT_BROKER_URL""">""$PACT_BROKER_URL""</a></p>
     </div>
     
     <div class="section">
@@ -346,7 +346,7 @@ EOF
 </html>
 EOF
 
-    log_success "Contract test report generated: $report_file"
+    log_success "Contract test report generated: ""$report_file"""
 }
 
 # Cleanup function
@@ -366,7 +366,7 @@ main() {
     # Setup cleanup trap
     trap cleanup EXIT
     
-    case $action in
+    case ""$action"" in
         "consumer")
             log_info "Running consumer contract tests only..."
             check_prerequisites
@@ -409,7 +409,7 @@ main() {
             exit 0
             ;;
         *)
-            log_error "Unknown action: $action"
+            log_error "Unknown action: ""$action"""
             echo "Use '$0 help' for usage information"
             exit 1
             ;;

@@ -4,157 +4,148 @@ Analytics dashboard for Kiro GitHub integration.
 This module provides a web-based dashboard for viewing analytics and insights.
 """
 
-import os
-import json
 import logging
+import os
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from flask import Flask, render_template, request, jsonify
-from analytics_collector import (
-    get_review_stats,
-    get_feedback_stats,
-    get_metrics,
-    get_top_issues
-)
+
+from analytics_collector import get_feedback_stats, get_metrics, get_review_stats, get_top_issues
+from flask import Flask, jsonify, render_template, request
 from learning_system import get_learning_insights, get_rule_recommendations
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('kiro_dashboard.log')
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("kiro_dashboard.log")],
 )
-logger = logging.getLogger('kiro_dashboard')
+logger = logging.getLogger("kiro_dashboard")
 
 # Initialize Flask app
 app = Flask(__name__)
 
-@app.route('/')
+
+@app.route("/")
 def dashboard():
     """Main dashboard page."""
-    return render_template('dashboard.html')
+    return render_template("dashboard.html")
 
-@app.route('/api/stats')
+
+@app.route("/api/stats")
 def get_stats():
     """Get review statistics."""
-    repo_owner = request.args.get('repo_owner')
-    repo_name = request.args.get('repo_name')
-    days = int(request.args.get('days', 30))
-    
+    repo_owner = request.args.get("repo_owner")
+    repo_name = request.args.get("repo_name")
+    days = int(request.args.get("days", 30))
+
     try:
         # Get review stats
         review_stats = get_review_stats(repo_owner, repo_name, days)
-        
+
         # Get feedback stats
         feedback_stats = get_feedback_stats(repo_owner, repo_name, days)
-        
+
         # Get top issues
         top_issues = get_top_issues(repo_owner, repo_name, days, 10)
-        
+
         # Combine stats
         stats = {
-            'review_stats': review_stats,
-            'feedback_stats': feedback_stats,
-            'top_issues': top_issues,
-            'period': {
-                'days': days,
-                'start_date': (datetime.now() - timedelta(days=days)).isoformat(),
-                'end_date': datetime.now().isoformat()
-            }
+            "review_stats": review_stats,
+            "feedback_stats": feedback_stats,
+            "top_issues": top_issues,
+            "period": {
+                "days": days,
+                "start_date": (datetime.now() - timedelta(days=days)).isoformat(),
+                "end_date": datetime.now().isoformat(),
+            },
         }
-        
-        return jsonify(stats)
-    
-    except Exception as e:
-        logger.error(f"Error getting stats: {str(e)}")
-        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/insights')
+        return jsonify(stats)
+
+    except Exception as e:
+        logger.error(f"Error getting stats: {e!s}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/insights")
 def get_insights():
     """Get learning insights."""
-    repo_owner = request.args.get('repo_owner')
-    repo_name = request.args.get('repo_name')
-    
+    repo_owner = request.args.get("repo_owner")
+    repo_name = request.args.get("repo_name")
+
     try:
         insights = get_learning_insights(repo_owner, repo_name)
         return jsonify(insights)
-    
-    except Exception as e:
-        logger.error(f"Error getting insights: {str(e)}")
-        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/recommendations')
+    except Exception as e:
+        logger.error(f"Error getting insights: {e!s}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/recommendations")
 def get_recommendations():
     """Get rule recommendations."""
-    repo_owner = request.args.get('repo_owner')
-    repo_name = request.args.get('repo_name')
-    developer = request.args.get('developer')
-    
+    repo_owner = request.args.get("repo_owner")
+    repo_name = request.args.get("repo_name")
+    developer = request.args.get("developer")
+
     try:
         recommendations = get_rule_recommendations(repo_owner, repo_name, developer)
-        return jsonify({'recommendations': recommendations})
-    
-    except Exception as e:
-        logger.error(f"Error getting recommendations: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"recommendations": recommendations})
 
-@app.route('/api/metrics')
+    except Exception as e:
+        logger.error(f"Error getting recommendations: {e!s}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/metrics")
 def get_metrics_api():
     """Get metrics data."""
-    repo_owner = request.args.get('repo_owner')
-    repo_name = request.args.get('repo_name')
-    metric_name = request.args.get('metric_name')
-    days = int(request.args.get('days', 30))
-    
+    repo_owner = request.args.get("repo_owner")
+    repo_name = request.args.get("repo_name")
+    metric_name = request.args.get("metric_name")
+    days = int(request.args.get("days", 30))
+
     try:
         metrics = get_metrics(repo_owner, repo_name, metric_name, days)
-        return jsonify({'metrics': metrics})
-    
-    except Exception as e:
-        logger.error(f"Error getting metrics: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"metrics": metrics})
 
-@app.route('/api/repositories')
+    except Exception as e:
+        logger.error(f"Error getting metrics: {e!s}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/repositories")
 def get_repositories():
     """Get list of repositories with analytics data."""
     try:
         from analytics_collector import AnalyticsCollector
-        
+
         collector = AnalyticsCollector()
         conn = collector._get_connection()
         cursor = conn.cursor()
-        
-        cursor.execute('''
+
+        cursor.execute("""
         SELECT DISTINCT repo_owner, repo_name, COUNT(*) as review_count
         FROM reviews
         GROUP BY repo_owner, repo_name
         ORDER BY review_count DESC
-        ''')
-        
+        """)
+
         results = cursor.fetchall()
         conn.close()
-        
-        repositories = [
-            {
-                'repo_owner': row[0],
-                'repo_name': row[1],
-                'review_count': row[2]
-            }
-            for row in results
-        ]
-        
-        return jsonify({'repositories': repositories})
-    
+
+        repositories = [{"repo_owner": row[0], "repo_name": row[1], "review_count": row[2]} for row in results]
+
+        return jsonify({"repositories": repositories})
+
     except Exception as e:
-        logger.error(f"Error getting repositories: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error getting repositories: {e!s}")
+        return jsonify({"error": str(e)}), 500
+
 
 def create_dashboard_html():
     """Create the dashboard HTML template."""
-    html_content = '''
+    html_content = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -375,10 +366,10 @@ def create_dashboard_html():
 
         function loadData() {
             showLoading();
-            
+
             const days = document.getElementById('days-select').value;
             const params = new URLSearchParams({ days });
-            
+
             if (currentRepo.owner) {
                 params.append('repo_owner', currentRepo.owner);
                 params.append('repo_name', currentRepo.name);
@@ -403,12 +394,12 @@ def create_dashboard_html():
         function loadRecommendations() {
             const developer = document.getElementById('developer-input').value;
             const params = new URLSearchParams();
-            
+
             if (currentRepo.owner) {
                 params.append('repo_owner', currentRepo.owner);
                 params.append('repo_name', currentRepo.name);
             }
-            
+
             if (developer) {
                 params.append('developer', developer);
             }
@@ -421,23 +412,23 @@ def create_dashboard_html():
 
         function updateStats(data) {
             const stats = data.review_stats;
-            
+
             document.getElementById('total-reviews').textContent = stats.total_reviews || 0;
-            
+
             const avgTime = stats.avg_review_time_seconds;
-            document.getElementById('avg-review-time').textContent = 
+            document.getElementById('avg-review-time').textContent =
                 avgTime ? Math.round(avgTime / 60) : 0;
-            
+
             document.getElementById('total-issues').textContent = stats.total_issues || 0;
-            
+
             const acceptance = stats.suggestion_acceptance_rate;
-            document.getElementById('suggestion-acceptance').textContent = 
+            document.getElementById('suggestion-acceptance').textContent =
                 acceptance ? Math.round(acceptance * 100) + '%' : '0%';
         }
 
         function updateCharts(data) {
             const stats = data.review_stats;
-            
+
             // Severity chart
             if (charts.severity) charts.severity.destroy();
             const severityCtx = document.getElementById('severity-chart').getContext('2d');
@@ -483,7 +474,7 @@ def create_dashboard_html():
 
         function updateRecommendations(recommendations) {
             const container = document.getElementById('recommendations-list');
-            
+
             if (!recommendations || recommendations.length === 0) {
                 container.innerHTML = '<div class="loading">No recommendations available</div>';
                 return;
@@ -493,7 +484,7 @@ def create_dashboard_html():
                 <div class="recommendation-item">
                     <div><strong>${rec.rule_id}</strong> (${rec.category})</div>
                     <div class="recommendation-score">Score: ${(rec.combined_score * 100).toFixed(1)}%</div>
-                    <div>Effectiveness: ${(rec.effectiveness_score * 100).toFixed(1)}% | 
+                    <div>Effectiveness: ${(rec.effectiveness_score * 100).toFixed(1)}% |
                          Occurrences: ${rec.total_occurrences}</div>
                 </div>
             `).join('');
@@ -528,24 +519,26 @@ def create_dashboard_html():
     </script>
 </body>
 </html>
-    '''
-    
+    """
+
     # Create templates directory
-    templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    templates_dir = os.path.join(os.path.dirname(__file__), "templates")
     os.makedirs(templates_dir, exist_ok=True)
-    
+
     # Write the HTML template
-    with open(os.path.join(templates_dir, 'dashboard.html'), 'w') as f:
+    with open(os.path.join(templates_dir, "dashboard.html"), "w") as f:
         f.write(html_content)
+
 
 def main():
     """Run the analytics dashboard."""
     # Create the HTML template
     create_dashboard_html()
-    
-    # Run the Flask app
-    port = int(os.environ.get('DASHBOARD_PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=True)
 
-if __name__ == '__main__':
+    # Run the Flask app
+    port = int(os.environ.get("DASHBOARD_PORT", 5001))
+    app.run(host="0.0.0.0", port=port, debug=True)
+
+
+if __name__ == "__main__":
     main()

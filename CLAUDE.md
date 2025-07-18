@@ -8,6 +8,12 @@
 - If backend services are not running, help start them instead of creating mocks
 - The user explicitly stated: "dont mock things i want real information all the time"
 
+### Port Configuration Requirements
+- **NO hardcoded ports in the application**
+- All ports must be defined in the .env file
+- Use environment variables for all service URLs and ports
+- The user explicitly stated: "make sure all ports are defined in the.env file there is no harcoded port on the app"
+
 ### Testing Requirements
 - Use automated tools (like Puppeteer) to verify screens and flows before asking user to check
 - Test all UI components, not just login

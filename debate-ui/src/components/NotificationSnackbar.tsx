@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { Snackbar, Alert } from '@mui/material';
-import { useAppSelector, useAppDispatch } from '../store';
-import { removeNotification } from '../store/slices/uiSlice';
+import React, { useEffect } from "react";
+import { Snackbar, Alert } from "@mui/material";
+import { useAppSelector, useAppDispatch } from "../store";
+import { removeNotification } from "../store/slices/uiSlice";
 
 const NotificationSnackbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -24,13 +24,13 @@ const NotificationSnackbar: React.FC = () => {
   return (
     <Snackbar
       open={true}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       onClose={() => dispatch(removeNotification(currentNotification.id))}
     >
       <Alert
         onClose={() => dispatch(removeNotification(currentNotification.id))}
         severity={currentNotification.type}
-        sx={{ width: '100%' }}
+        sx={{ width: "100%" }}
       >
         {currentNotification.message}
       </Alert>

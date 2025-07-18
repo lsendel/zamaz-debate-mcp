@@ -74,7 +74,7 @@ check_zap() {
 }
 
 # Parse arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         -t|--target)
             TARGET_URL="$2"
@@ -118,7 +118,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Create output directory
-mkdir -p "$REPORT_DIR"
+mkdir -p """$REPORT_DIR"""
 
 # Check if ZAP is available
 check_zap
@@ -127,61 +127,61 @@ check_zap
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # Run ZAP scan based on scan type
-case $SCAN_TYPE in
+case ""$SCAN_TYPE"" in
     baseline)
-        log_info "Running ZAP baseline scan against $TARGET_URL"
+        log_info "Running ZAP baseline scan against ""$TARGET_URL"""
         
-        if [[ "$ZAP_CMD" == "zap" ]]; then
-            zap-baseline.py -t "$TARGET_URL" -r "$REPORT_DIR/zap-baseline-$TIMESTAMP.html" -J "$REPORT_DIR/zap-baseline-$TIMESTAMP.json" $ZAP_OPTIONS
+        if [[ """$ZAP_CMD""" == "zap" ]]; then
+            zap-baseline.py -t """$TARGET_URL""" -r """$REPORT_DIR""/zap-baseline-""$TIMESTAMP"".html" -J """$REPORT_DIR""/zap-baseline-""$TIMESTAMP"".json" $ZAP_OPTIONS
         else
-            docker run --rm -v "$(pwd)/$REPORT_DIR:/zap/wrk/:rw" owasp/zap2docker-stable zap-baseline.py -t "$TARGET_URL" -r /zap/wrk/zap-baseline-$TIMESTAMP.html -J /zap/wrk/zap-baseline-$TIMESTAMP.json $ZAP_OPTIONS
+            docker run --rm -v "$(pwd)/""$REPORT_DIR"":/zap/wrk/:rw" owasp/zap2docker-stable zap-baseline.py -t """$TARGET_URL""" -r /zap/wrk/zap-baseline-""$TIMESTAMP"".html -J /zap/wrk/zap-baseline-""$TIMESTAMP"".json $ZAP_OPTIONS
         fi
         ;;
     
     full)
-        log_info "Running ZAP full scan against $TARGET_URL"
+        log_info "Running ZAP full scan against ""$TARGET_URL"""
         
-        if [[ "$ZAP_CMD" == "zap" ]]; then
-            zap-full-scan.py -t "$TARGET_URL" -r "$REPORT_DIR/zap-full-$TIMESTAMP.html" -J "$REPORT_DIR/zap-full-$TIMESTAMP.json" $ZAP_OPTIONS
+        if [[ """$ZAP_CMD""" == "zap" ]]; then
+            zap-full-scan.py -t """$TARGET_URL""" -r """$REPORT_DIR""/zap-full-""$TIMESTAMP"".html" -J """$REPORT_DIR""/zap-full-""$TIMESTAMP"".json" $ZAP_OPTIONS
         else
-            docker run --rm -v "$(pwd)/$REPORT_DIR:/zap/wrk/:rw" owasp/zap2docker-stable zap-full-scan.py -t "$TARGET_URL" -r /zap/wrk/zap-full-$TIMESTAMP.html -J /zap/wrk/zap-full-$TIMESTAMP.json $ZAP_OPTIONS
+            docker run --rm -v "$(pwd)/""$REPORT_DIR"":/zap/wrk/:rw" owasp/zap2docker-stable zap-full-scan.py -t """$TARGET_URL""" -r /zap/wrk/zap-full-""$TIMESTAMP"".html -J /zap/wrk/zap-full-""$TIMESTAMP"".json $ZAP_OPTIONS
         fi
         ;;
     
     api)
-        if [[ -z "$API_SPEC_FILE" ]]; then
+        if [[ -z """$API_SPEC_FILE""" ]]; then
             log_error "API scan requires an OpenAPI/Swagger specification file"
             exit 1
         fi
         
-        log_info "Running ZAP API scan against $TARGET_URL using spec $API_SPEC_FILE"
+        log_info "Running ZAP API scan against ""$TARGET_URL"" using spec ""$API_SPEC_FILE"""
         
         # Create directory for API spec file
-        mkdir -p "$REPORT_DIR/specs"
-        cp "$API_SPEC_FILE" "$REPORT_DIR/specs/"
-        SPEC_FILENAME=$(basename "$API_SPEC_FILE")
+        mkdir -p """$REPORT_DIR""/specs"
+        cp """$API_SPEC_FILE""" """$REPORT_DIR""/specs/"
+        SPEC_FILENAME=$(basename """$API_SPEC_FILE""")
         
-        if [[ "$ZAP_CMD" == "zap" ]]; then
-            zap-api-scan.py -t "$TARGET_URL" -f "$API_SPEC_FILE" -r "$REPORT_DIR/zap-api-$TIMESTAMP.html" -J "$REPORT_DIR/zap-api-$TIMESTAMP.json" $ZAP_OPTIONS
+        if [[ """$ZAP_CMD""" == "zap" ]]; then
+            zap-api-scan.py -t """$TARGET_URL""" -f """$API_SPEC_FILE""" -r """$REPORT_DIR""/zap-api-""$TIMESTAMP"".html" -J """$REPORT_DIR""/zap-api-""$TIMESTAMP"".json" $ZAP_OPTIONS
         else
-            docker run --rm -v "$(pwd)/$REPORT_DIR:/zap/wrk/:rw" owasp/zap2docker-stable zap-api-scan.py -t "$TARGET_URL" -f "/zap/wrk/specs/$SPEC_FILENAME" -r /zap/wrk/zap-api-$TIMESTAMP.html -J /zap/wrk/zap-api-$TIMESTAMP.json $ZAP_OPTIONS
+            docker run --rm -v "$(pwd)/""$REPORT_DIR"":/zap/wrk/:rw" owasp/zap2docker-stable zap-api-scan.py -t """$TARGET_URL""" -f "/zap/wrk/specs/""$SPEC_FILENAME""" -r /zap/wrk/zap-api-""$TIMESTAMP"".html -J /zap/wrk/zap-api-""$TIMESTAMP"".json $ZAP_OPTIONS
         fi
         ;;
     
     *)
-        log_error "Unknown scan type: $SCAN_TYPE"
+        log_error "Unknown scan type: ""$SCAN_TYPE"""
         show_help
         exit 1
         ;;
 esac
 
 # Check scan results
-if [[ -f "$REPORT_DIR/zap-$SCAN_TYPE-$TIMESTAMP.json" ]]; then
+if [[ -f """$REPORT_DIR""/zap-""$SCAN_TYPE""-""$TIMESTAMP"".json" ]]; then
     # Parse JSON to check for high/critical alerts
     if command -v jq &> /dev/null; then
-        HIGH_ALERTS=$(jq '.site[0].alerts[] | select(.riskcode >= 3) | .instances | length' "$REPORT_DIR/zap-$SCAN_TYPE-$TIMESTAMP.json" 2>/dev/null | awk '{sum+=$1} END {print sum}')
-        MEDIUM_ALERTS=$(jq '.site[0].alerts[] | select(.riskcode == 2) | .instances | length' "$REPORT_DIR/zap-$SCAN_TYPE-$TIMESTAMP.json" 2>/dev/null | awk '{sum+=$1} END {print sum}')
-        LOW_ALERTS=$(jq '.site[0].alerts[] | select(.riskcode == 1) | .instances | length' "$REPORT_DIR/zap-$SCAN_TYPE-$TIMESTAMP.json" 2>/dev/null | awk '{sum+=$1} END {print sum}')
+        HIGH_ALERTS=$(jq '.site[0].alerts[] | select(.riskcode >= 3) | .instances | length' """$REPORT_DIR""/zap-""$SCAN_TYPE""-""$TIMESTAMP"".json" 2>/dev/null | awk '{sum+=$1} END {print sum}')
+        MEDIUM_ALERTS=$(jq '.site[0].alerts[] | select(.riskcode == 2) | .instances | length' """$REPORT_DIR""/zap-""$SCAN_TYPE""-""$TIMESTAMP"".json" 2>/dev/null | awk '{sum+=$1} END {print sum}')
+        LOW_ALERTS=$(jq '.site[0].alerts[] | select(.riskcode == 1) | .instances | length' """$REPORT_DIR""/zap-""$SCAN_TYPE""-""$TIMESTAMP"".json" 2>/dev/null | awk '{sum+=$1} END {print sum}')
         
         log_info "Scan results:"
         log_info "- High/Critical alerts: ${HIGH_ALERTS:-0}"
@@ -189,13 +189,13 @@ if [[ -f "$REPORT_DIR/zap-$SCAN_TYPE-$TIMESTAMP.json" ]]; then
         log_info "- Low alerts: ${LOW_ALERTS:-0}"
         
         # Generate markdown report
-        cat > "$REPORT_DIR/zap-summary-$TIMESTAMP.md" << EOF
+        cat > """$REPORT_DIR""/zap-summary-""$TIMESTAMP"".md" << EOF
 # ZAP Security Scan Summary
 
 - **Date:** $(date +"%Y-%m-%d %H:%M:%S")
 - **Target:** $TARGET_URL
 - **Scan Type:** $SCAN_TYPE
-- **Report:** [HTML Report](./zap-$SCAN_TYPE-$TIMESTAMP.html) | [JSON Report](./zap-$SCAN_TYPE-$TIMESTAMP.json)
+- **Report:** [HTML Report](./zap-""$SCAN_TYPE""-""$TIMESTAMP"".html) | [JSON Report](./zap-""$SCAN_TYPE""-""$TIMESTAMP"".json)
 
 ## Alerts Summary
 
@@ -215,7 +215,7 @@ if [[ -f "$REPORT_DIR/zap-$SCAN_TYPE-$TIMESTAMP.json" ]]; then
 EOF
         
         # Check if we should fail based on severity
-        case $FAIL_ON_SEVERITY in
+        case ""$FAIL_ON_SEVERITY"" in
             CRITICAL)
                 # ZAP doesn't distinguish between high and critical, so we use high (3+)
                 if [[ "${HIGH_ALERTS:-0}" -gt 0 ]]; then
@@ -242,7 +242,7 @@ EOF
                 fi
                 ;;
             *)
-                log_warning "Unknown severity level: $FAIL_ON_SEVERITY. Not failing build."
+                log_warning "Unknown severity level: ""$FAIL_ON_SEVERITY"". Not failing build."
                 ;;
         esac
     else
@@ -252,4 +252,4 @@ else
     log_warning "No JSON report found. Cannot analyze results."
 fi
 
-log_success "API security scan completed. Reports saved to $REPORT_DIR"
+log_success "API security scan completed. Reports saved to ""$REPORT_DIR"""

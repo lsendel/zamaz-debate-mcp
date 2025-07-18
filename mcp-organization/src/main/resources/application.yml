@@ -63,7 +63,7 @@ spring:
           protocol: smtp
 
 server:
-  port: ${SERVER_PORT:5005}
+  port: ${MCP_ORGANIZATION_PORT:${SERVER_PORT:5005}}
   error:
     include-message: always
     include-binding-errors: always
@@ -98,7 +98,7 @@ logging:
 
 app:
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:${UI_PORT:3001},http://localhost:${MCP_GATEWAY_PORT:8080}}
     allowed-methods: GET,POST,PUT,DELETE,OPTIONS
     allowed-headers: "*"
     allow-credentials: true

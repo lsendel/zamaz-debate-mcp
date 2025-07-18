@@ -17,8 +17,8 @@ export QDRANT_PORT=6333
 # Function to check if port is available
 check_port() {
     local port=$1
-    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "⚠️  Port $port is already in use"
+    if lsof -Pi :""$port"" -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "⚠️  Port ""$port"" is already in use"
         return 1
     fi
     return 0
@@ -31,18 +31,18 @@ wait_for_service() {
     local max_attempts=30
     local attempt=1
     
-    echo "⏳ Waiting for $service_name to be ready..."
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s "$url" > /dev/null 2>&1; then
-            echo "✅ $service_name is ready!"
+    echo "⏳ Waiting for ""$service_name"" to be ready..."
+    while [ ""$attempt"" -le ""$max_attempts"" ]; do
+        if curl -s """$url""" > /dev/null 2>&1; then
+            echo "✅ ""$service_name"" is ready!"
             return 0
         fi
-        echo "   Attempt $attempt/$max_attempts - waiting..."
+        echo "   Attempt ""$attempt""/""$max_attempts"" - waiting..."
         sleep 2
         attempt=$((attempt + 1))
     done
     
-    echo "❌ $service_name failed to start within timeout"
+    echo "❌ ""$service_name"" failed to start within timeout"
     return 1
 }
 
@@ -100,14 +100,14 @@ RAG_PID=$!
 cd ..
 
 # Store PIDs for cleanup
-echo "$ORG_PID $CONTEXT_PID $LLM_PID $CONTROLLER_PID $RAG_PID" > mcp-services.pids
+echo """$ORG_PID"" ""$CONTEXT_PID"" ""$LLM_PID"" ""$CONTROLLER_PID"" ""$RAG_PID""" > mcp-services.pids
 
 echo "📝 Service PIDs:"
-echo "   Organization: $ORG_PID"
-echo "   Context: $CONTEXT_PID"
-echo "   LLM: $LLM_PID"
-echo "   Controller: $CONTROLLER_PID"
-echo "   RAG: $RAG_PID"
+echo "   Organization: ""$ORG_PID"""
+echo "   Context: ""$CONTEXT_PID"""
+echo "   LLM: ""$LLM_PID"""
+echo "   Controller: ""$CONTROLLER_PID"""
+echo "   RAG: ""$RAG_PID"""
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to start..."

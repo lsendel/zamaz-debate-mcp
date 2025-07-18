@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname """$SCRIPT_DIR""")"
 REPORTS_DIR="${PROJECT_ROOT}/sonar-reports"
 
 # SonarCloud Configuration
@@ -59,7 +59,7 @@ check_prerequisites() {
         exit 1
     fi
     
-    if [ -z "$SONAR_TOKEN" ]; then
+    if [ -z """$SONAR_TOKEN""" ]; then
         log_error "SONAR_TOKEN environment variable is required"
         exit 1
     fi
@@ -70,7 +70,7 @@ check_prerequisites() {
 # API call helper
 api_call() {
     local endpoint=$1
-    curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+    curl -s -H "Authorization: Bearer ""$SONAR_TOKEN""" \
          "${SONAR_URL}/api/${endpoint}"
 }
 
@@ -104,23 +104,23 @@ format_metric() {
     local key=$1
     local value=$2
     
-    case $key in
+    case ""$key"" in
         coverage|duplicated_lines_density)
             echo "${value}%"
             ;;
         sqale_index)
             # Convert minutes to days/hours
             local minutes=${value%.*}
-            if [ $minutes -lt 60 ]; then
+            if [ ""$minutes"" -lt 60 ]; then
                 echo "${minutes}min"
-            elif [ $minutes -lt 1440 ]; then
+            elif [ ""$minutes"" -lt 1440 ]; then
                 echo "$((minutes / 60))h $((minutes % 60))min"
             else
                 echo "$((minutes / 1440))d $((minutes % 1440 / 60))h"
             fi
             ;;
         *)
-            echo "$value"
+            echo """$value"""
             ;;
     esac
 }
@@ -129,7 +129,7 @@ format_metric() {
 generate_report() {
     log_info "Generating markdown report..."
     
-    mkdir -p "$REPORTS_DIR"
+    mkdir -p """$REPORTS_DIR"""
     
     # Fetch all data
     local project_info=$(get_project_info)
@@ -138,7 +138,7 @@ generate_report() {
     local quality_gate=$(get_quality_gate)
     
     # Start writing report
-    cat > "$REPORT_PATH" << EOF
+    cat > """$REPORT_PATH""" << EOF
 # SonarCloud Analysis Report
 
 **Project**: ${SONAR_PROJECT_KEY}  
@@ -153,37 +153,37 @@ generate_report() {
 EOF
 
     # Add quality gate status
-    local qg_status=$(echo "$quality_gate" | jq -r '.projectStatus.status')
-    if [ "$qg_status" = "OK" ]; then
-        echo "✅ **PASSED**" >> "$REPORT_PATH"
+    local qg_status=$(echo """$quality_gate""" | jq -r '.projectStatus.status')
+    if [ """$qg_status""" = "OK" ]; then
+        echo "✅ **PASSED**" >> """$REPORT_PATH"""
     else
-        echo "❌ **FAILED**" >> "$REPORT_PATH"
+        echo "❌ **FAILED**" >> """$REPORT_PATH"""
     fi
     
-    echo "" >> "$REPORT_PATH"
-    echo "## Key Metrics" >> "$REPORT_PATH"
-    echo "" >> "$REPORT_PATH"
+    echo "" >> """$REPORT_PATH"""
+    echo "## Key Metrics" >> """$REPORT_PATH"""
+    echo "" >> """$REPORT_PATH"""
     
     # Create metrics table
-    cat >> "$REPORT_PATH" << EOF
+    cat >> """$REPORT_PATH""" << EOF
 | Metric | Value | Rating |
 |--------|-------|--------|
 EOF
 
     # Extract and format metrics
-    local bugs=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="bugs") | .value // "0"')
-    local vulnerabilities=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="vulnerabilities") | .value // "0"')
-    local code_smells=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="code_smells") | .value // "0"')
-    local coverage=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="coverage") | .value // "N/A"')
-    local duplications=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="duplicated_lines_density") | .value // "0"')
-    local debt=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="sqale_index") | .value // "0"')
-    local security_hotspots=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="security_hotspots") | .value // "0"')
-    local ncloc=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="ncloc") | .value // "0"')
+    local bugs=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="bugs") | .value // "0"')
+    local vulnerabilities=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="vulnerabilities") | .value // "0"')
+    local code_smells=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="code_smells") | .value // "0"')
+    local coverage=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="coverage") | .value // "N/A"')
+    local duplications=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="duplicated_lines_density") | .value // "0"')
+    local debt=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="sqale_index") | .value // "0"')
+    local security_hotspots=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="security_hotspots") | .value // "0"')
+    local ncloc=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="ncloc") | .value // "0"')
     
     # Ratings
-    local reliability_rating=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="reliability_rating") | .value // "1"')
-    local security_rating=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="security_rating") | .value // "1"')
-    local maintainability_rating=$(echo "$measures" | jq -r '.component.measures[] | select(.metric=="sqale_rating") | .value // "1"')
+    local reliability_rating=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="reliability_rating") | .value // "1"')
+    local security_rating=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="security_rating") | .value // "1"')
+    local maintainability_rating=$(echo """$measures""" | jq -r '.component.measures[] | select(.metric=="sqale_rating") | .value // "1"')
     
     # Convert ratings to letters
     rating_to_letter() {
@@ -198,45 +198,45 @@ EOF
     }
     
     # Write metrics
-    echo "| **Bugs** | $bugs | $(rating_to_letter $reliability_rating) |" >> "$REPORT_PATH"
-    echo "| **Vulnerabilities** | $vulnerabilities | $(rating_to_letter $security_rating) |" >> "$REPORT_PATH"
-    echo "| **Security Hotspots** | $security_hotspots | - |" >> "$REPORT_PATH"
-    echo "| **Code Smells** | $code_smells | $(rating_to_letter $maintainability_rating) |" >> "$REPORT_PATH"
-    echo "| **Coverage** | $(format_metric coverage $coverage) | - |" >> "$REPORT_PATH"
-    echo "| **Duplications** | $(format_metric duplicated_lines_density $duplications) | - |" >> "$REPORT_PATH"
-    echo "| **Technical Debt** | $(format_metric sqale_index $debt) | - |" >> "$REPORT_PATH"
-    echo "| **Lines of Code** | $ncloc | - |" >> "$REPORT_PATH"
+    echo "| **Bugs** | ""$bugs"" | $(rating_to_letter ""$reliability_rating"") |" >> """$REPORT_PATH"""
+    echo "| **Vulnerabilities** | ""$vulnerabilities"" | $(rating_to_letter ""$security_rating"") |" >> """$REPORT_PATH"""
+    echo "| **Security Hotspots** | ""$security_hotspots"" | - |" >> """$REPORT_PATH"""
+    echo "| **Code Smells** | ""$code_smells"" | $(rating_to_letter ""$maintainability_rating"") |" >> """$REPORT_PATH"""
+    echo "| **Coverage** | $(format_metric coverage ""$coverage"") | - |" >> """$REPORT_PATH"""
+    echo "| **Duplications** | $(format_metric duplicated_lines_density ""$duplications"") | - |" >> """$REPORT_PATH"""
+    echo "| **Technical Debt** | $(format_metric sqale_index ""$debt"") | - |" >> """$REPORT_PATH"""
+    echo "| **Lines of Code** | ""$ncloc"" | - |" >> """$REPORT_PATH"""
     
     # Add issues breakdown
-    echo "" >> "$REPORT_PATH"
-    echo "## Issues Breakdown" >> "$REPORT_PATH"
-    echo "" >> "$REPORT_PATH"
+    echo "" >> """$REPORT_PATH"""
+    echo "## Issues Breakdown" >> """$REPORT_PATH"""
+    echo "" >> """$REPORT_PATH"""
     
     # Extract facets
-    local severities=$(echo "$issues" | jq -r '.facets[] | select(.property=="severities") | .values')
+    local severities=$(echo """$issues""" | jq -r '.facets[] | select(.property=="severities") | .values')
     
-    echo "### By Severity" >> "$REPORT_PATH"
-    echo "" >> "$REPORT_PATH"
-    echo "| Severity | Count |" >> "$REPORT_PATH"
-    echo "|----------|-------|" >> "$REPORT_PATH"
+    echo "### By Severity" >> """$REPORT_PATH"""
+    echo "" >> """$REPORT_PATH"""
+    echo "| Severity | Count |" >> """$REPORT_PATH"""
+    echo "|----------|-------|" >> """$REPORT_PATH"""
     
     for severity in BLOCKER CRITICAL MAJOR MINOR INFO; do
-        local count=$(echo "$severities" | jq -r ".[] | select(.val==\"$severity\") | .count // 0")
-        if [ "$count" != "0" ] && [ -n "$count" ]; then
-            echo "| $severity | $count |" >> "$REPORT_PATH"
+        local count=$(echo """$severities""" | jq -r ".[] | select(.val==\"""$severity""\") | .count // 0")
+        if [ """$count""" != "0" ] && [ -n """$count""" ]; then
+            echo "| ""$severity"" | ""$count"" |" >> """$REPORT_PATH"""
         fi
     done
     
     # Add project link
-    echo "" >> "$REPORT_PATH"
-    echo "---" >> "$REPORT_PATH"
-    echo "" >> "$REPORT_PATH"
-    echo "📊 [View Full Analysis on SonarCloud](https://sonarcloud.io/project/overview?id=${SONAR_PROJECT_KEY})" >> "$REPORT_PATH"
+    echo "" >> """$REPORT_PATH"""
+    echo "---" >> """$REPORT_PATH"""
+    echo "" >> """$REPORT_PATH"""
+    echo "📊 [View Full Analysis on SonarCloud](https://sonarcloud.io/project/overview?id=${SONAR_PROJECT_KEY})" >> """$REPORT_PATH"""
     
     # Create symlink to latest
-    ln -sf "$REPORT_FILENAME" "${REPORTS_DIR}/latest-sonarcloud-report.md"
+    ln -sf """$REPORT_FILENAME""" "${REPORTS_DIR}/latest-sonarcloud-report.md"
     
-    log_success "Report generated: $REPORT_PATH"
+    log_success "Report generated: ""$REPORT_PATH"""
 }
 
 # Main execution

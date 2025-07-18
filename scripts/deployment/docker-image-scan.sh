@@ -67,7 +67,7 @@ check_trivy() {
         log_warning "Trivy not installed. Attempting to install..."
         
         # Check OS and install Trivy
-        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if [[ """$OSTYPE""" == "linux-gnu"* ]]; then
             # Linux
             if command -v apt-get &> /dev/null; then
                 # Debian/Ubuntu
@@ -86,7 +86,7 @@ check_trivy() {
                 log_error "Unsupported Linux distribution. Please install Trivy manually."
                 exit 1
             fi
-        elif [[ "$OSTYPE" == "darwin"* ]]; then
+        elif [[ """$OSTYPE""" == "darwin"* ]]; then
             # macOS
             if command -v brew &> /dev/null; then
                 log_info "Installing Trivy on macOS..."
@@ -111,7 +111,7 @@ check_trivy() {
 }
 
 # Parse arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         -r|--registry)
             REGISTRY="$2"
@@ -144,8 +144,8 @@ while [[ $# -gt 0 ]]; do
         -a|--all)
             # Find all services with Dockerfiles
             while IFS= read -r dockerfile; do
-                service=$(echo "$dockerfile" | sed 's|./\([^/]*\)/.*|\1|')
-                SERVICES+=("$service")
+                service=$(echo """$dockerfile""" | sed 's|./\([^/]*\)/.*|\1|')
+                SERVICES+=("""$service""")
             done < <(find . -name "Dockerfile" -path "./mcp-*" | sort)
             shift
             ;;
@@ -166,67 +166,67 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate arguments
-if [[ ${#SERVICES[@]} -eq 0 ]]; then
+if [[ "${#SERVICES[@]}" -eq 0 ]]; then
     log_error "No services specified"
     show_help
     exit 1
 fi
 
 # Create output directory
-mkdir -p "$OUTPUT_DIR"
+mkdir -p """$OUTPUT_DIR"""
 
 # Check if Trivy is installed
 check_trivy
 
 # Scan images
 log_info "Scanning Docker images for vulnerabilities: ${SERVICES[*]}"
-log_info "Severity levels: $SEVERITY"
-log_info "Output format: $OUTPUT_FORMAT"
-log_info "Output directory: $OUTPUT_DIR"
+log_info "Severity levels: ""$SEVERITY"""
+log_info "Output format: ""$OUTPUT_FORMAT"""
+log_info "Output directory: ""$OUTPUT_DIR"""
 
 FAILED=0
 
 for service in "${SERVICES[@]}"; do
-    IMAGE="$REGISTRY/$REGISTRY_BASE/$service:$VERSION"
-    OUTPUT_FILE="$OUTPUT_DIR/$service-$VERSION-$(date +%Y%m%d-%H%M%S)"
+    IMAGE="""$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION"""
+    OUTPUT_FILE="""$OUTPUT_DIR""/""$service""-""$VERSION""-$(date +%Y%m%d-%H%M%S)"
     
-    log_info "Scanning $IMAGE"
+    log_info "Scanning ""$IMAGE"""
     
-    case $OUTPUT_FORMAT in
+    case ""$OUTPUT_FORMAT"" in
         json)
-            OUTPUT_FILE="$OUTPUT_FILE.json"
-            trivy image --format json --output "$OUTPUT_FILE" --severity "$SEVERITY" "$IMAGE"
+            OUTPUT_FILE="""$OUTPUT_FILE"".json"
+            trivy image --format json --output """$OUTPUT_FILE""" --severity """$SEVERITY""" """$IMAGE"""
             ;;
         sarif)
-            OUTPUT_FILE="$OUTPUT_FILE.sarif"
-            trivy image --format sarif --output "$OUTPUT_FILE" --severity "$SEVERITY" "$IMAGE"
+            OUTPUT_FILE="""$OUTPUT_FILE"".sarif"
+            trivy image --format sarif --output """$OUTPUT_FILE""" --severity """$SEVERITY""" """$IMAGE"""
             ;;
         *)
-            OUTPUT_FILE="$OUTPUT_FILE.txt"
-            trivy image --format table --output "$OUTPUT_FILE" --severity "$SEVERITY" "$IMAGE"
+            OUTPUT_FILE="""$OUTPUT_FILE"".txt"
+            trivy image --format table --output """$OUTPUT_FILE""" --severity """$SEVERITY""" """$IMAGE"""
             ;;
     esac
     
     # Check for vulnerabilities at the specified fail level
-    if trivy image --quiet --severity "$FAIL_ON_SEVERITY" "$IMAGE" 2>/dev/null; then
-        log_success "No $FAIL_ON_SEVERITY vulnerabilities found in $service:$VERSION"
+    if trivy image --quiet --severity """$FAIL_ON_SEVERITY""" """$IMAGE""" 2>/dev/null; then
+        log_success "No ""$FAIL_ON_SEVERITY"" vulnerabilities found in ""$service"":""$VERSION"""
     else
-        log_error "$FAIL_ON_SEVERITY vulnerabilities found in $service:$VERSION"
+        log_error """$FAIL_ON_SEVERITY"" vulnerabilities found in ""$service"":""$VERSION"""
         FAILED=1
     fi
     
-    log_info "Scan report saved to $OUTPUT_FILE"
+    log_info "Scan report saved to ""$OUTPUT_FILE"""
 done
 
 # Generate summary report
-SUMMARY_FILE="$OUTPUT_DIR/vulnerability-summary-$(date +%Y%m%d-%H%M%S).md"
-log_info "Generating summary report: $SUMMARY_FILE"
+SUMMARY_FILE="""$OUTPUT_DIR""/vulnerability-summary-$(date +%Y%m%d-%H%M%S).md"
+log_info "Generating summary report: ""$SUMMARY_FILE"""
 
-cat > "$SUMMARY_FILE" << EOF
+cat > """$SUMMARY_FILE""" << EOF
 # Docker Image Vulnerability Scan Summary
 
 - **Date:** $(date +"%Y-%m-%d %H:%M:%S")
-- **Registry:** $REGISTRY/$REGISTRY_BASE
+- **Registry:** ""$REGISTRY""/$REGISTRY_BASE
 - **Version:** $VERSION
 - **Severity Levels:** $SEVERITY
 
@@ -237,19 +237,19 @@ cat > "$SUMMARY_FILE" << EOF
 EOF
 
 for service in "${SERVICES[@]}"; do
-    LATEST_REPORT=$(ls -t "$OUTPUT_DIR/$service-$VERSION-"* 2>/dev/null | head -n1)
-    REPORT_NAME=$(basename "$LATEST_REPORT")
+    LATEST_REPORT=$(ls -t """$OUTPUT_DIR""/""$service""-""$VERSION""-"* 2>/dev/null | head -n1)
+    REPORT_NAME=$(basename """$LATEST_REPORT""")
     
-    if trivy image --quiet --severity "$FAIL_ON_SEVERITY" "$REGISTRY/$REGISTRY_BASE/$service:$VERSION" 2>/dev/null; then
+    if trivy image --quiet --severity """$FAIL_ON_SEVERITY""" """$REGISTRY""/""$REGISTRY_BASE""/""$service"":""$VERSION""" 2>/dev/null; then
         STATUS="✅ Pass"
     else
         STATUS="❌ Fail"
     fi
     
-    echo "| $service | $STATUS | [$REPORT_NAME]($REPORT_NAME) |" >> "$SUMMARY_FILE"
+    echo "| ""$service"" | ""$STATUS"" | [""$REPORT_NAME""](""$REPORT_NAME"") |" >> """$SUMMARY_FILE"""
 done
 
-cat >> "$SUMMARY_FILE" << EOF
+cat >> """$SUMMARY_FILE""" << EOF
 
 ## Summary
 
@@ -273,9 +273,9 @@ For any failed images, please review the detailed reports and address the vulner
 - Update images and rescan to verify fixes
 EOF
 
-log_info "Summary report generated: $SUMMARY_FILE"
+log_info "Summary report generated: ""$SUMMARY_FILE"""
 
-if [[ $FAILED -eq 0 ]]; then
+if [[ ""$FAILED"" -eq 0 ]]; then
     log_success "All images passed vulnerability scanning"
     exit 0
 else

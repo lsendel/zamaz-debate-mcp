@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}Step 1: Listing available LLM providers...${NC}"
 echo ""
 
-curl -s -X GET "$LLM_URL/api/v1/providers" | jq '.'
+curl -s -X GET """$LLM_URL""/api/v1/providers" | jq '.'
 echo ""
 
 # Now let's ask each provider the same question
@@ -30,7 +30,7 @@ echo ""
 
 # Ask Claude
 echo -e "${PURPLE}=== Asking Claude ===${NC}"
-curl -X POST "$LLM_URL/api/v1/completions" \
+curl -X POST """$LLM_URL""/api/v1/completions" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "claude",
@@ -43,7 +43,7 @@ echo ""
 
 # Ask OpenAI
 echo -e "${GREEN}=== Asking OpenAI (GPT-4) ===${NC}"
-curl -X POST "$LLM_URL/api/v1/completions" \
+curl -X POST """$LLM_URL""/api/v1/completions" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "openai",
@@ -57,7 +57,7 @@ echo ""
 
 # Ask Gemini
 echo -e "${YELLOW}=== Asking Google Gemini ===${NC}"
-curl -X POST "$LLM_URL/api/v1/completions" \
+curl -X POST """$LLM_URL""/api/v1/completions" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "gemini",
@@ -73,7 +73,7 @@ echo -e "${BLUE}Step 3: Asking with streaming enabled...${NC}"
 echo ""
 
 echo -e "${PURPLE}=== Streaming response from Claude ===${NC}"
-curl -X POST "$LLM_URL/api/completions/stream" \
+curl -X POST """$LLM_URL""/api/completions/stream" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
@@ -93,7 +93,7 @@ echo ""
 
 for provider in claude openai gemini ollama; do
   echo -e "Checking ${provider}..."
-  curl -s -X GET "$LLM_URL/api/v1/providers/$provider/status" | jq '.'
+  curl -s -X GET """$LLM_URL""/api/v1/providers/""$provider""/status" | jq '.'
   echo ""
 done
 

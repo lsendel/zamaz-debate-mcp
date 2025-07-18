@@ -12,7 +12,7 @@ else
 fi
 
 # Check if DB_PASSWORD is set
-if [ -z "$DB_PASSWORD" ]; then
+if [ -z """$DB_PASSWORD""" ]; then
     echo "Error: DB_PASSWORD not set in .env file"
     exit 1
 fi
@@ -20,7 +20,7 @@ fi
 echo "Database password loaded from .env file"
 
 # Run the specified service or command
-if [ $# -eq 0 ]; then
+if [ "$#" -eq 0 ]; then
     echo "Usage: ./run-with-env.sh <service-name>"
     echo "Examples:"
     echo "  ./run-with-env.sh mcp-rag"
@@ -31,7 +31,7 @@ fi
 
 SERVICE=$1
 
-case $SERVICE in
+case ""$SERVICE"" in
     mcp-rag)
         echo "Starting mcp-rag service..."
         cd mcp-rag && mvn spring-boot:run
@@ -49,7 +49,7 @@ case $SERVICE in
         docker-compose up
         ;;
     *)
-        echo "Unknown service: $SERVICE"
+        echo "Unknown service: ""$SERVICE"""
         echo "Available services: mcp-rag, mcp-template, mcp-modulith, all"
         exit 1
         ;;

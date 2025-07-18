@@ -14,19 +14,19 @@ DEBATE_JSON='{
   "topic": "Should I use Airtable and DAG in the system?",
   "description": "Evaluating Airtable as database and DAG for workflows",
   "format": "OXFORD",
-  "organizationId": "'$ORG_ID'",
+  "organizationId": "'""$ORG_ID""'",
   "maxRounds": 3,
   "maxResponseLength": 500
 }'
 
 echo "Request:"
-echo "$DEBATE_JSON" | jq .
+echo """$DEBATE_JSON""" | jq .
 echo ""
 
 echo "Response:"
 curl -X POST http://localhost:5013/api/v1/debates \
   -H "Content-Type: application/json" \
-  -d "$DEBATE_JSON"
+  -d """$DEBATE_JSON"""
 
 echo ""
 echo ""

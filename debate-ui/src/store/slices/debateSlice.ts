@@ -1,5 +1,9 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import debateClient, { Debate, CreateDebateRequest, DebateEvent } from '../../api/debateClient';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import debateClient, {
+  Debate,
+  CreateDebateRequest,
+  DebateEvent,
+} from "../../api/debateClient";
 
 interface DebateState {
   debates: Debate[];
@@ -18,95 +22,95 @@ const initialState: DebateState = {
 };
 
 export const fetchDebates = createAsyncThunk(
-  'debate/fetchAll',
+  "debate/fetchAll",
   async (params?: { status?: string; limit?: number; offset?: number }) => {
     const debates = await debateClient.listDebates(params);
     return debates;
-  }
+  },
 );
 
 export const fetchDebate = createAsyncThunk(
-  'debate/fetchOne',
+  "debate/fetchOne",
   async (debateId: string) => {
     const debate = await debateClient.getDebate(debateId);
     return debate;
-  }
+  },
 );
 
 export const createDebate = createAsyncThunk(
-  'debate/create',
+  "debate/create",
   async (data: CreateDebateRequest) => {
     const debate = await debateClient.createDebate(data);
     return debate;
-  }
+  },
 );
 
 export const startDebate = createAsyncThunk(
-  'debate/start',
+  "debate/start",
   async (debateId: string) => {
     await debateClient.startDebate(debateId);
     const debate = await debateClient.getDebate(debateId);
     return debate;
-  }
+  },
 );
 
 export const pauseDebate = createAsyncThunk(
-  'debate/pause',
+  "debate/pause",
   async (debateId: string) => {
     await debateClient.pauseDebate(debateId);
     const debate = await debateClient.getDebate(debateId);
     return debate;
-  }
+  },
 );
 
 export const cancelDebate = createAsyncThunk(
-  'debate/cancel',
+  "debate/cancel",
   async (debateId: string) => {
     await debateClient.cancelDebate(debateId);
     const debate = await debateClient.getDebate(debateId);
     return debate;
-  }
+  },
 );
 
 export const connectToDebate = createAsyncThunk(
-  'debate/connect',
+  "debate/connect",
   async (debateId: string, { dispatch }) => {
     debateClient.connectWebSocket(debateId);
-    
+
     // Set up event handlers
-    debateClient.on('debate_started', (event) => {
+    debateClient.on("debate_started", (event) => {
       dispatch(handleDebateEvent(event));
     });
-    
-    debateClient.on('round_started', (event) => {
+
+    debateClient.on("round_started", (event) => {
       dispatch(handleDebateEvent(event));
     });
-    
-    debateClient.on('response_received', (event) => {
+
+    debateClient.on("response_received", (event) => {
       dispatch(handleDebateEvent(event));
     });
-    
-    debateClient.on('round_completed', (event) => {
+
+    debateClient.on("round_completed", (event) => {
       dispatch(handleDebateEvent(event));
     });
-    
-    debateClient.on('debate_completed', (event) => {
+
+    debateClient.on("debate_completed", (event) => {
       dispatch(handleDebateEvent(event));
     });
-    
+
     return debateId;
-  }
+  },
 );
 
 export const disconnectFromDebate = createAsyncThunk(
-  'debate/disconnect',
+  "debate/disconnect",
   async () => {
     debateClient.disconnectWebSocket();
-  }
+  },
 );
 
 const debateSlice = createSlice({
-  name: 'debate',
+  name: "debate",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -114,16 +118,16 @@ const debateSlice = createSlice({
     },
     handleDebateEvent: (state, action: PayloadAction<DebateEvent>) => {
       const event = action.payload;
-      
+
       // Update current debate if it matches
       if (state.currentDebate && state.currentDebate.id === event.debateId) {
         // This is a simplified update - in reality, we'd need to merge the event data
         // more carefully based on the event type
         Object.assign(state.currentDebate, event.data);
       }
-      
+
       // Update debate in list
-      const index = state.debates.findIndex(d => d.id === event.debateId);
+      const index = state.debates.findIndex((d) => d.id === event.debateId);
       if (index !== -1) {
         Object.assign(state.debates[index], event.data);
       }
@@ -142,7 +146,7 @@ const debateSlice = createSlice({
       })
       .addCase(fetchDebates.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch debates';
+        state.error = action.error.message || "Failed to fetch debates";
       });
 
     // Fetch single debate
@@ -154,34 +158,34 @@ const debateSlice = createSlice({
       .addCase(fetchDebate.fulfilled, (state, action) => {
         state.loading = false;
         state.currentDebate = action.payload;
-        
+
         // Update in list too
-        const index = state.debates.findIndex(d => d.id === action.payload.id);
+        const index = state.debates.findIndex(
+          (d) => d.id === action.payload.id,
+        );
         if (index !== -1) {
           state.debates[index] = action.payload;
         }
       })
       .addCase(fetchDebate.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch debate';
+        state.error = action.error.message || "Failed to fetch debate";
       });
 
     // Create debate
-    builder
-      .addCase(createDebate.fulfilled, (state, action) => {
-        state.debates.unshift(action.payload);
-        state.currentDebate = action.payload;
-      });
+    builder.addCase(createDebate.fulfilled, (state, action) => {
+      state.debates.unshift(action.payload);
+      state.currentDebate = action.payload;
+    });
 
     // Start debate
-    builder
-      .addCase(startDebate.fulfilled, (state, action) => {
-        state.currentDebate = action.payload;
-        const index = state.debates.findIndex(d => d.id === action.payload.id);
-        if (index !== -1) {
-          state.debates[index] = action.payload;
-        }
-      });
+    builder.addCase(startDebate.fulfilled, (state, action) => {
+      state.currentDebate = action.payload;
+      const index = state.debates.findIndex((d) => d.id === action.payload.id);
+      if (index !== -1) {
+        state.debates[index] = action.payload;
+      }
+    });
 
     // WebSocket connection
     builder

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // Custom middleware to handle URI malformed errors
@@ -49,13 +49,17 @@ const uriFixMiddleware = () => {
   };
 };
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Load env file based on mode
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  return {
   plugins: [
     react(),
     uriFixMiddleware()
   ],
   server: {
-    port: 3001,
+    port: parseInt(env.VITE_PORT || '3001'),
     host: true,
     strictPort: false,
     // Add middleware to handle errors
@@ -64,7 +68,7 @@ export default defineConfig({
     },
     proxy: {
       '/api/organization': {
-        target: 'http://localhost:5005',
+        target: env.VITE_ORGANIZATION_API_URL || 'http://localhost:5005',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/organization/, ''),
@@ -75,7 +79,7 @@ export default defineConfig({
         }
       },
       '/api/llm': {
-        target: 'http://localhost:5002',
+        target: env.VITE_LLM_API_URL || 'http://localhost:5002',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/llm/, ''),
@@ -86,7 +90,7 @@ export default defineConfig({
         }
       },
       '/api/debate': {
-        target: 'http://localhost:5013',
+        target: env.VITE_DEBATE_API_URL || 'http://localhost:5013',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/debate/, ''),
@@ -97,7 +101,7 @@ export default defineConfig({
         }
       },
       '/api/rag': {
-        target: 'http://localhost:5004',
+        target: env.VITE_RAG_API_URL || 'http://localhost:5004',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/rag/, ''),
@@ -124,5 +128,6 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': '"development"'
+  }
   }
 })

@@ -5,11 +5,11 @@ echo "🛑 Stopping all MCP services..."
 
 if [ -f mcp-services.pids ]; then
     PIDS=$(cat mcp-services.pids)
-    echo "📝 Found PIDs: $PIDS"
+    echo "📝 Found PIDs: ""$PIDS"""
     
-    for pid in $PIDS; do
-        if kill -0 $pid 2>/dev/null; then
-            echo "🔄 Stopping process $pid..."
+    for pid in ""$PIDS""; do
+        if kill -0 ""$pid"" 2>/dev/null; then
+            echo "🔄 Stopping process ""$pid""..."
             kill -TERM $pid
         fi
     done
@@ -18,9 +18,9 @@ if [ -f mcp-services.pids ]; then
     sleep 5
     
     # Force kill if necessary
-    for pid in $PIDS; do
-        if kill -0 $pid 2>/dev/null; then
-            echo "💀 Force killing process $pid..."
+    for pid in ""$PIDS""; do
+        if kill -0 ""$pid"" 2>/dev/null; then
+            echo "💀 Force killing process ""$pid""..."
             kill -KILL $pid
         fi
     done

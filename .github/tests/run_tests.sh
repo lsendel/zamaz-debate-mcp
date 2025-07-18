@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+PROJECT_ROOT="$(dirname "$(dirname """$SCRIPT_DIR""")")"
 
 # Colors for output
 RED='\033[0;31m'
@@ -43,7 +43,7 @@ show_help() {
 }
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         -t|--type)
             TEST_TYPE="$2"
@@ -77,7 +77,7 @@ done
 export PYTHONPATH="${PROJECT_ROOT}/.github/scripts:${PYTHONPATH}"
 
 # Change to test directory
-cd "$SCRIPT_DIR"
+cd """$SCRIPT_DIR"""
 
 # Install test dependencies if needed
 echo -e "${BLUE}Checking test dependencies...${NC}"
@@ -87,66 +87,66 @@ pip install -q pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock
 PYTEST_CMD="python -m pytest"
 
 # Add coverage if requested
-if [ "$COVERAGE" = true ]; then
-    PYTEST_CMD="$PYTEST_CMD --cov=../scripts --cov-report=html --cov-report=term"
+if [ """$COVERAGE""" = true ]; then
+    PYTEST_CMD="""$PYTEST_CMD"" --cov=../scripts --cov-report=html --cov-report=term"
 fi
 
 # Add verbose if requested
-if [ "$VERBOSE" = true ]; then
-    PYTEST_CMD="$PYTEST_CMD -vv"
+if [ """$VERBOSE""" = true ]; then
+    PYTEST_CMD="""$PYTEST_CMD"" -vv"
 fi
 
 # Add test selection based on type
-case $TEST_TYPE in
+case ""$TEST_TYPE"" in
     unit)
         echo -e "${BLUE}Running unit tests...${NC}"
-        PYTEST_CMD="$PYTEST_CMD -m unit"
+        PYTEST_CMD="""$PYTEST_CMD"" -m unit"
         ;;
     integration)
         echo -e "${BLUE}Running integration tests...${NC}"
-        PYTEST_CMD="$PYTEST_CMD -m integration"
+        PYTEST_CMD="""$PYTEST_CMD"" -m integration"
         ;;
     e2e)
         echo -e "${BLUE}Running end-to-end tests...${NC}"
-        PYTEST_CMD="$PYTEST_CMD -m e2e"
+        PYTEST_CMD="""$PYTEST_CMD"" -m e2e"
         ;;
     performance)
         echo -e "${BLUE}Running performance tests...${NC}"
-        PYTEST_CMD="$PYTEST_CMD -m 'performance or load or stress'"
+        PYTEST_CMD="""$PYTEST_CMD"" -m 'performance or load or stress'"
         ;;
     all)
         echo -e "${BLUE}Running all tests...${NC}"
         # No marker filter
         ;;
     *)
-        echo -e "${RED}Invalid test type: $TEST_TYPE${NC}"
+        echo -e "${RED}Invalid test type: ""$TEST_TYPE""${NC}"
         show_help
         exit 1
         ;;
 esac
 
 # Add custom markers if specified
-if [ -n "$MARKERS" ]; then
-    PYTEST_CMD="$PYTEST_CMD -m '$MARKERS'"
+if [ -n """$MARKERS""" ]; then
+    PYTEST_CMD="""$PYTEST_CMD"" -m '""$MARKERS""'"
 fi
 
 # Show test configuration
 echo -e "${YELLOW}Test Configuration:${NC}"
-echo "  Test Type: $TEST_TYPE"
-echo "  Coverage: $COVERAGE"
-echo "  Verbose: $VERBOSE"
-[ -n "$MARKERS" ] && echo "  Markers: $MARKERS"
+echo "  Test Type: ""$TEST_TYPE"""
+echo "  Coverage: ""$COVERAGE"""
+echo "  Verbose: ""$VERBOSE"""
+[ -n """$MARKERS""" ] && echo "  Markers: ""$MARKERS"""
 echo
 
 # Run tests
-echo -e "${BLUE}Executing: $PYTEST_CMD${NC}"
+echo -e "${BLUE}Executing: ""$PYTEST_CMD""${NC}"
 echo
 
-if $PYTEST_CMD; then
+if ""$PYTEST_CMD""; then
     echo
     echo -e "${GREEN}✅ All tests passed!${NC}"
     
-    if [ "$COVERAGE" = true ]; then
+    if [ """$COVERAGE""" = true ]; then
         echo
         echo -e "${BLUE}Coverage report generated in htmlcov/index.html${NC}"
     fi

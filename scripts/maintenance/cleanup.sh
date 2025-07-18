@@ -38,8 +38,8 @@ REDIS_PORT=${REDIS_PORT:-6379}
 
 # Logging
 LOG_FILE="/var/log/mcp/cleanup-$(date +%Y%m%d_%H%M%S).log"
-mkdir -p "$(dirname "$LOG_FILE")"
-exec 1> >(tee -a "$LOG_FILE")
+mkdir -p "$(dirname """$LOG_FILE""")"
+exec 1> >(tee -a """$LOG_FILE""")
 exec 2>&1
 
 log() {
@@ -57,7 +57,7 @@ warning() {
 
 # Execute command with dry run support
 execute() {
-    if [ "$DRY_RUN" = "true" ]; then
+    if [ """$DRY_RUN""" = "true" ]; then
         log "DRY RUN: $*"
     else
         log "EXECUTING: $*"
@@ -67,43 +67,43 @@ execute() {
 
 # Clean up old log files
 cleanup_logs() {
-    log "Starting log cleanup (retention: $LOG_RETENTION_DAYS days)..."
+    log "Starting log cleanup (retention: ""$LOG_RETENTION_DAYS"" days)..."
     
     local total_freed=0
     
     for log_dir in "${LOG_DIRS[@]}"; do
-        if [ ! -d "$log_dir" ]; then
+        if [ ! -d """$log_dir""" ]; then
             continue
         fi
         
-        log "Cleaning logs in: $log_dir"
+        log "Cleaning logs in: ""$log_dir"""
         
         # Calculate size before cleanup
-        local size_before=$(du -sb "$log_dir" 2>/dev/null | cut -f1 || echo "0")
+        local size_before=$(du -sb """$log_dir""" 2>/dev/null | cut -f1 || echo "0")
         
         # Find and remove old log files
-        local old_logs=$(find "$log_dir" -name "*.log*" -type f -mtime +$LOG_RETENTION_DAYS 2>/dev/null || echo "")
+        local old_logs=$(find """$log_dir""" -name "*.log*" -type f -mtime +""$LOG_RETENTION_DAYS"" 2>/dev/null || echo "")
         
-        if [ -n "$old_logs" ]; then
-            echo "$old_logs" | while read -r logfile; do
-                local file_size=$(du -b "$logfile" 2>/dev/null | cut -f1 || echo "0")
-                execute "rm -f '$logfile'"
+        if [ -n """$old_logs""" ]; then
+            echo """$old_logs""" | while read -r logfile; do
+                local file_size=$(du -b """$logfile""" 2>/dev/null | cut -f1 || echo "0")
+                execute "rm -f '""$logfile""'"
                 total_freed=$((total_freed + file_size))
             done
         fi
         
         # Compress large current log files (> 100MB)
-        find "$log_dir" -name "*.log" -type f -size +100M -not -name "*.gz" 2>/dev/null | while read -r logfile; do
-            log "Compressing large log file: $logfile"
-            execute "gzip '$logfile'"
+        find """$log_dir""" -name "*.log" -type f -size +100M -not -name "*.gz" 2>/dev/null | while read -r logfile; do
+            log "Compressing large log file: ""$logfile"""
+            execute "gzip '""$logfile""'"
         done
         
         # Clean up empty directories
-        find "$log_dir" -type d -empty -delete 2>/dev/null || true
+        find """$log_dir""" -type d -empty -delete 2>/dev/null || true
     done
     
-    if [ "$total_freed" -gt 0 ]; then
-        log "Log cleanup completed. Freed: $(numfmt --to=iec $total_freed)"
+    if [ """$total_freed""" -gt 0 ]; then
+        log "Log cleanup completed. Freed: $(numfmt --to=iec ""$total_freed"")"
     else
         log "Log cleanup completed. No old logs found."
     fi
@@ -117,13 +117,13 @@ cleanup_temp_files() {
     
     for temp_pattern in "${TEMP_DIRS[@]}"; do
         # Find matching directories/files
-        local temp_items=$(find /tmp /var/tmp -name "$(basename "$temp_pattern")" -mtime +1 2>/dev/null || echo "")
+        local temp_items=$(find /tmp /var/tmp -name "$(basename """$temp_pattern""")" -mtime +1 2>/dev/null || echo "")
         
-        if [ -n "$temp_items" ]; then
-            echo "$temp_items" | while read -r item; do
-                if [ -e "$item" ]; then
-                    local item_size=$(du -sb "$item" 2>/dev/null | cut -f1 || echo "0")
-                    execute "rm -rf '$item'"
+        if [ -n """$temp_items""" ]; then
+            echo """$temp_items""" | while read -r item; do
+                if [ -e """$item""" ]; then
+                    local item_size=$(du -sb """$item""" 2>/dev/null | cut -f1 || echo "0")
+                    execute "rm -rf '""$item""'"
                     total_freed=$((total_freed + item_size))
                 fi
             done
@@ -136,8 +136,8 @@ cleanup_temp_files() {
     # Clean up old download files
     find /tmp -name "*.tmp" -name "*.download" -mtime +1 -delete 2>/dev/null || true
     
-    if [ "$total_freed" -gt 0 ]; then
-        log "Temp cleanup completed. Freed: $(numfmt --to=iec $total_freed)"
+    if [ """$total_freed""" -gt 0 ]; then
+        log "Temp cleanup completed. Freed: $(numfmt --to=iec ""$total_freed"")"
     else
         log "Temp cleanup completed. No temp files found."
     fi
@@ -145,7 +145,7 @@ cleanup_temp_files() {
 
 # Docker system cleanup
 cleanup_docker() {
-    if [ "$DOCKER_CLEANUP" != "true" ] || ! command -v docker >/dev/null 2>&1; then
+    if [ """$DOCKER_CLEANUP""" != "true" ] || ! command -v docker >/dev/null 2>&1; then
         log "Skipping Docker cleanup"
         return
     fi
@@ -158,19 +158,19 @@ cleanup_docker() {
     
     # Remove stopped containers
     local stopped_containers=$(docker ps -aq --filter status=exited 2>/dev/null || echo "")
-    if [ -n "$stopped_containers" ]; then
+    if [ -n """$stopped_containers""" ]; then
         log "Removing stopped containers..."
-        echo "$stopped_containers" | while read -r container; do
-            execute "docker rm '$container'"
+        echo """$stopped_containers""" | while read -r container; do
+            execute "docker rm '""$container""'"
         done
     fi
     
     # Remove dangling images
     local dangling_images=$(docker images -f "dangling=true" -q 2>/dev/null || echo "")
-    if [ -n "$dangling_images" ]; then
+    if [ -n """$dangling_images""" ]; then
         log "Removing dangling images..."
-        echo "$dangling_images" | while read -r image; do
-            execute "docker rmi '$image'"
+        echo """$dangling_images""" | while read -r image; do
+            execute "docker rmi '""$image""'"
         done
     fi
     
@@ -192,7 +192,7 @@ cleanup_docker() {
 
 # Database maintenance
 maintain_database() {
-    if [ "$DATABASE_MAINTENANCE" != "true" ]; then
+    if [ """$DATABASE_MAINTENANCE""" != "true" ]; then
         log "Skipping database maintenance"
         return
     fi
@@ -200,18 +200,18 @@ maintain_database() {
     log "Starting database maintenance..."
     
     # Check if PostgreSQL is accessible
-    if ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" >/dev/null 2>&1; then
+    if ! pg_isready -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" >/dev/null 2>&1; then
         warning "PostgreSQL not accessible, skipping database maintenance"
         return
     fi
     
     # Vacuum and analyze
     log "Running VACUUM ANALYZE..."
-    execute "PGPASSWORD='$DB_PASSWORD' psql -h '$DB_HOST' -p '$DB_PORT' -U '$DB_USER' -d '$DB_NAME' -c 'VACUUM ANALYZE;'"
+    execute "PGPASSWORD='""$DB_PASSWORD""' psql -h '""$DB_HOST""' -p '""$DB_PORT""' -U '""$DB_USER""' -d '""$DB_NAME""' -c 'VACUUM ANALYZE;'"
     
     # Update table statistics
     log "Updating table statistics..."
-    execute "PGPASSWORD='$DB_PASSWORD' psql -h '$DB_HOST' -p '$DB_PORT' -U '$DB_USER' -d '$DB_NAME' -c 'ANALYZE;'"
+    execute "PGPASSWORD='""$DB_PASSWORD""' psql -h '""$DB_HOST""' -p '""$DB_PORT""' -U '""$DB_USER""' -d '""$DB_NAME""' -c 'ANALYZE;'"
     
     # Reindex if needed (check for bloat first)
     log "Checking for index bloat..."
@@ -223,7 +223,7 @@ maintain_database() {
     WHERE schemaname = 'public'
     ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;"
     
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "$bloat_query" || true
+    PGPASSWORD="""$DB_PASSWORD""" psql -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d """$DB_NAME""" -c """$bloat_query""" || true
     
     # Clean up old debate data (older than 1 year)
     log "Cleaning up old debate data..."
@@ -239,10 +239,10 @@ maintain_database() {
     WHERE created_at < NOW() - INTERVAL '1 year'
     AND status = 'COMPLETED';"
     
-    if [ "$DRY_RUN" = "true" ]; then
+    if [ """$DRY_RUN""" = "true" ]; then
         log "DRY RUN: Would clean up old debate data"
     else
-        local deleted_count=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "
+        local deleted_count=$(PGPASSWORD="""$DB_PASSWORD""" psql -h """$DB_HOST""" -p """$DB_PORT""" -U """$DB_USER""" -d """$DB_NAME""" -t -c "
         WITH deleted_messages AS (
             DELETE FROM debate_messages 
             WHERE debate_id IN (
@@ -261,7 +261,7 @@ maintain_database() {
             (SELECT COUNT(*) FROM deleted_messages) as messages,
             (SELECT COUNT(*) FROM deleted_debates) as debates;" | xargs)
         
-        log "Cleaned up old data: $deleted_count"
+        log "Cleaned up old data: ""$deleted_count"""
     fi
     
     log "Database maintenance completed"
@@ -269,7 +269,7 @@ maintain_database() {
 
 # Redis optimization
 optimize_redis() {
-    if [ "$REDIS_OPTIMIZATION" != "true" ]; then
+    if [ """$REDIS_OPTIMIZATION""" != "true" ]; then
         log "Skipping Redis optimization"
         return
     fi
@@ -277,38 +277,38 @@ optimize_redis() {
     log "Starting Redis optimization..."
     
     # Check if Redis is accessible
-    if ! redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping >/dev/null 2>&1; then
+    if ! redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""" ping >/dev/null 2>&1; then
         warning "Redis not accessible, skipping optimization"
         return
     fi
     
     # Get Redis info
-    local redis_info=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" INFO memory | grep -E "(used_memory_human|used_memory_peak_human|mem_fragmentation_ratio)")
-    log "Redis memory info: $redis_info"
+    local redis_info=$(redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""" INFO memory | grep -E "(used_memory_human|used_memory_peak_human|mem_fragmentation_ratio)")
+    log "Redis memory info: ""$redis_info"""
     
     # Clean up expired keys
     log "Cleaning up expired keys..."
-    execute "redis-cli -h '$REDIS_HOST' -p '$REDIS_PORT' --eval 'return redis.call(\"SCAN\", 0, \"COUNT\", 1000)' 0"
+    execute "redis-cli -h '""$REDIS_HOST""' -p '""$REDIS_PORT""' --eval 'return redis.call(\"SCAN\", 0, \"COUNT\", 1000)' 0"
     
     # Defragment if fragmentation ratio is high
-    local frag_ratio=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" INFO memory | grep mem_fragmentation_ratio | cut -d: -f2 | tr -d '\r')
-    if (( $(echo "$frag_ratio > 1.5" | bc -l) )); then
-        log "High fragmentation detected ($frag_ratio), starting defragmentation..."
-        execute "redis-cli -h '$REDIS_HOST' -p '$REDIS_PORT' MEMORY DOCTOR"
+    local frag_ratio=$(redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""" INFO memory | grep mem_fragmentation_ratio | cut -d: -f2 | tr -d '\r')
+    if (( $(echo """$frag_ratio"" > 1.5" | bc -l) )); then
+        log "High fragmentation detected (""$frag_ratio""), starting defragmentation..."
+        execute "redis-cli -h '""$REDIS_HOST""' -p '""$REDIS_PORT""' MEMORY DOCTOR"
         
         # Active defragmentation (Redis 4.0+)
-        execute "redis-cli -h '$REDIS_HOST' -p '$REDIS_PORT' CONFIG SET activedefrag yes"
+        execute "redis-cli -h '""$REDIS_HOST""' -p '""$REDIS_PORT""' CONFIG SET activedefrag yes"
     fi
     
     # Clean up old cache entries (older than 24 hours)
     log "Cleaning up old cache entries..."
-    local cache_keys=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" --scan --pattern "*cache*" | head -1000)
-    if [ -n "$cache_keys" ]; then
-        echo "$cache_keys" | while read -r key; do
-            local ttl=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" TTL "$key")
-            if [ "$ttl" -eq -1 ]; then
+    local cache_keys=$(redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""" --scan --pattern "*cache*" | head -1000)
+    if [ -n """$cache_keys""" ]; then
+        echo """$cache_keys""" | while read -r key; do
+            local ttl=$(redis-cli -h """$REDIS_HOST""" -p """$REDIS_PORT""" TTL """$key""")
+            if [ """$ttl""" -eq -1 ]; then
                 # Key without expiration, set a reasonable TTL
-                execute "redis-cli -h '$REDIS_HOST' -p '$REDIS_PORT' EXPIRE '$key' 86400"
+                execute "redis-cli -h '""$REDIS_HOST""' -p '""$REDIS_PORT""' EXPIRE '""$key""' 86400"
             fi
         done
     fi
@@ -318,7 +318,7 @@ optimize_redis() {
 
 # Clean up old backups
 cleanup_backups() {
-    log "Starting backup cleanup (retention: $BACKUP_RETENTION_DAYS days)..."
+    log "Starting backup cleanup (retention: ""$BACKUP_RETENTION_DAYS"" days)..."
     
     local backup_dirs=(
         "/backups"
@@ -329,26 +329,26 @@ cleanup_backups() {
     local total_freed=0
     
     for backup_dir in "${backup_dirs[@]}"; do
-        if [ ! -d "$backup_dir" ]; then
+        if [ ! -d """$backup_dir""" ]; then
             continue
         fi
         
-        log "Cleaning backups in: $backup_dir"
+        log "Cleaning backups in: ""$backup_dir"""
         
         # Find old backup files
-        local old_backups=$(find "$backup_dir" -name "mcp-debate_*" -type f -mtime +$BACKUP_RETENTION_DAYS 2>/dev/null || echo "")
+        local old_backups=$(find """$backup_dir""" -name "mcp-debate_*" -type f -mtime +""$BACKUP_RETENTION_DAYS"" 2>/dev/null || echo "")
         
-        if [ -n "$old_backups" ]; then
-            echo "$old_backups" | while read -r backup; do
-                local file_size=$(du -b "$backup" 2>/dev/null | cut -f1 || echo "0")
-                execute "rm -f '$backup'"
+        if [ -n """$old_backups""" ]; then
+            echo """$old_backups""" | while read -r backup; do
+                local file_size=$(du -b """$backup""" 2>/dev/null | cut -f1 || echo "0")
+                execute "rm -f '""$backup""'"
                 total_freed=$((total_freed + file_size))
             done
         fi
     done
     
-    if [ "$total_freed" -gt 0 ]; then
-        log "Backup cleanup completed. Freed: $(numfmt --to=iec $total_freed)"
+    if [ """$total_freed""" -gt 0 ]; then
+        log "Backup cleanup completed. Freed: $(numfmt --to=iec ""$total_freed"")"
     else
         log "Backup cleanup completed. No old backups found."
     fi
@@ -360,7 +360,7 @@ perform_health_check() {
     
     # Check disk space
     local disk_usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
-    if [ "$disk_usage" -gt 90 ]; then
+    if [ """$disk_usage""" -gt 90 ]; then
         warning "Disk usage still high after cleanup: ${disk_usage}%"
     else
         log "Disk usage OK: ${disk_usage}%"
@@ -368,7 +368,7 @@ perform_health_check() {
     
     # Check memory usage
     local mem_usage=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
-    if [ "$mem_usage" -gt 90 ]; then
+    if [ """$mem_usage""" -gt 90 ]; then
         warning "Memory usage high: ${mem_usage}%"
     else
         log "Memory usage OK: ${mem_usage}%"
@@ -376,15 +376,15 @@ perform_health_check() {
     
     # Check system load
     local load_avg=$(uptime | awk -F'load average:' '{print $2}' | cut -d',' -f1 | xargs)
-    log "System load average: $load_avg"
+    log "System load average: ""$load_avg"""
     
     # Check key services
     local services=("docker" "postgresql" "redis-server")
     for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service" 2>/dev/null; then
-            log "Service $service is running"
+        if systemctl is-active --quiet """$service""" 2>/dev/null; then
+            log "Service ""$service"" is running"
         else
-            warning "Service $service is not running"
+            warning "Service ""$service"" is not running"
         fi
     done
 }
@@ -393,15 +393,15 @@ perform_health_check() {
 generate_report() {
     local report_file="/var/log/mcp/cleanup-report-$(date +%Y%m%d_%H%M%S).txt"
     
-    cat > "$report_file" <<EOF
+    cat > """$report_file""" <<EOF
 MCP System Cleanup Report
 ========================
 Generated: $(date)
 Cleanup Duration: $(($(date +%s) - start_time)) seconds
 
 Settings:
-- Log Retention: $LOG_RETENTION_DAYS days
-- Backup Retention: $BACKUP_RETENTION_DAYS days
+- Log Retention: ""$LOG_RETENTION_DAYS"" days
+- Backup Retention: ""$BACKUP_RETENTION_DAYS"" days
 - Docker Cleanup: $DOCKER_CLEANUP
 - Database Maintenance: $DATABASE_MAINTENANCE
 - Redis Optimization: $REDIS_OPTIMIZATION
@@ -415,8 +415,8 @@ System Status After Cleanup:
 Cleanup Log: $LOG_FILE
 EOF
     
-    log "Cleanup report generated: $report_file"
-    cat "$report_file"
+    log "Cleanup report generated: ""$report_file"""
+    cat """$report_file"""
 }
 
 # Send cleanup notification
@@ -427,13 +427,13 @@ send_notification() {
     # Slack notification
     if [ -n "${SLACK_WEBHOOK:-}" ]; then
         curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"🧹 MCP Cleanup $status: $message\"}" \
-            "$SLACK_WEBHOOK" >/dev/null 2>&1 || true
+            --data "{\"text\":\"🧹 MCP Cleanup ""$status"": ""$message""\"}" \
+            """$SLACK_WEBHOOK""" >/dev/null 2>&1 || true
     fi
     
     # Email notification
     if [ -n "${EMAIL_TO:-}" ] && command -v mail >/dev/null 2>&1; then
-        echo "$message" | mail -s "MCP Cleanup $status" "$EMAIL_TO" || true
+        echo """$message""" | mail -s "MCP Cleanup ""$status""" """$EMAIL_TO""" || true
     fi
 }
 
@@ -442,7 +442,7 @@ main() {
     local start_time=$(date +%s)
     
     log "Starting MCP system cleanup..."
-    log "Mode: $([ "$DRY_RUN" = "true" ] && echo "DRY RUN" || echo "LIVE")"
+    log "Mode: $([ """$DRY_RUN""" = "true" ] && echo "DRY RUN" || echo "LIVE")"
     
     # Trap for cleanup on exit
     trap 'log "Cleanup process interrupted"' INT TERM
@@ -469,7 +469,7 @@ main() {
 }
 
 # Parse command line arguments
-while [[ $# -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         --dry-run)
             DRY_RUN=true

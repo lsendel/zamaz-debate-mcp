@@ -14,12 +14,12 @@ NC='\033[0m'
 
 # Script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname """$SCRIPT_DIR""")"
 
 # Configuration
 SETUP_MODE="${1:-full}"
-ENV_FILE="$PROJECT_ROOT/.env"
-ENV_EXAMPLE="$PROJECT_ROOT/.env.example"
+ENV_FILE="""$PROJECT_ROOT""/.env"
+ENV_EXAMPLE="""$PROJECT_ROOT""/.env.example"
 
 # Functions
 print_header() {
@@ -51,7 +51,7 @@ check_prerequisites() {
     local missing_tools=()
     
     # Check Java
-    if ! command -v java &> /dev/null || [[ $(java -version 2>&1 | grep -oE '[0-9]+' | head -1) -lt 21 ]]; then
+    if ! command -v java &> /dev/null || [[ "$(java" -version 2>&1 | grep -oE '[0-9]+' | head -1) -lt 21 ]]; then
         missing_tools+=("Java 21+")
     else
         print_success "Java 21+ found"
@@ -79,7 +79,7 @@ check_prerequisites() {
     fi
     
     # Check Node.js (for UI)
-    if ! command -v node &> /dev/null || [[ $(node -v | grep -oE '[0-9]+' | head -1) -lt 16 ]]; then
+    if ! command -v node &> /dev/null || [[ "$(node" -v | grep -oE '[0-9]+' | head -1) -lt 16 ]]; then
         missing_tools+=("Node.js 16+")
     else
         print_success "Node.js found"
@@ -92,7 +92,7 @@ check_prerequisites() {
         print_success "npm found"
     fi
     
-    if [ ${#missing_tools[@]} -ne 0 ]; then
+    if [ "${#missing_tools[@]}" -ne 0 ]; then
         print_error "Missing required tools: ${missing_tools[*]}"
         print_info "Please install the missing tools and run this script again"
         exit 1
@@ -105,9 +105,9 @@ check_prerequisites() {
 setup_environment() {
     print_header "Setting up Environment"
     
-    if [ ! -f "$ENV_EXAMPLE" ]; then
+    if [ ! -f """$ENV_EXAMPLE""" ]; then
         print_warning "Creating .env.example file"
-        cat > "$ENV_EXAMPLE" << 'EOF'
+        cat > """$ENV_EXAMPLE""" << 'EOF'
 # Database Configuration
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
@@ -154,16 +154,16 @@ JAEGER_ENABLED=false
 EOF
     fi
     
-    if [ ! -f "$ENV_FILE" ]; then
+    if [ ! -f """$ENV_FILE""" ]; then
         print_info "Creating .env file from template"
-        cp "$ENV_EXAMPLE" "$ENV_FILE"
+        cp """$ENV_EXAMPLE""" """$ENV_FILE"""
         
         # Generate secure JWT secret
         JWT_SECRET=$(openssl rand -base64 32)
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/your-256-bit-secret-key-for-jwt-signing/$JWT_SECRET/" "$ENV_FILE"
+        if [[ """$OSTYPE""" == "darwin"* ]]; then
+            sed -i '' "s/your-256-bit-secret-key-for-jwt-signing/""$JWT_SECRET""/" """$ENV_FILE"""
         else
-            sed -i "s/your-256-bit-secret-key-for-jwt-signing/$JWT_SECRET/" "$ENV_FILE"
+            sed -i "s/your-256-bit-secret-key-for-jwt-signing/""$JWT_SECRET""/" """$ENV_FILE"""
         fi
         
         print_success ".env file created"
@@ -183,19 +183,19 @@ check_ports() {
     local used_ports=()
     
     for port in "${ports[@]}"; do
-        if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-            used_ports+=($port)
+        if lsof -Pi :""$port"" -sTCP:LISTEN -t >/dev/null 2>&1; then
+            used_ports+=(""$port"")
         fi
     done
     
-    if [ ${#used_ports[@]} -ne 0 ]; then
+    if [ "${#used_ports[@]}" -ne 0 ]; then
         print_error "The following ports are already in use: ${used_ports[*]}"
         print_info "Please stop the services using these ports or update the port configuration"
         
-        if [ "$SETUP_MODE" != "minimal" ]; then
+        if [ """$SETUP_MODE""" != "minimal" ]; then
             read -p "Continue anyway? (y/N) " -n 1 -r
             echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            if [[ ! ""$REPLY"" =~ ^[Yy]$ ]]; then
                 exit 1
             fi
         fi
@@ -210,9 +210,9 @@ check_ports() {
 build_projects() {
     print_header "Building Projects"
     
-    cd "$PROJECT_ROOT"
+    cd """$PROJECT_ROOT"""
     
-    if [ "$SETUP_MODE" == "minimal" ]; then
+    if [ """$SETUP_MODE""" == "minimal" ]; then
         print_info "Building only essential modules..."
         mvn clean install -DskipTests -pl mcp-common,mcp-security -am
     else
@@ -220,7 +220,7 @@ build_projects() {
         mvn clean install -DskipTests
     fi
     
-    if [ $? -eq 0 ]; then
+    if [ "$?" -eq 0 ]; then
         print_success "Build completed successfully"
     else
         print_error "Build failed"
@@ -234,7 +234,7 @@ build_projects() {
 setup_databases() {
     print_header "Setting up Databases"
     
-    cd "$PROJECT_ROOT"
+    cd """$PROJECT_ROOT"""
     
     # Start only database services
     print_info "Starting PostgreSQL and Redis..."
@@ -267,13 +267,13 @@ setup_databases() {
 setup_ui() {
     print_header "Setting up UI Dependencies"
     
-    if [ -d "$PROJECT_ROOT/debate-ui" ]; then
-        cd "$PROJECT_ROOT/debate-ui"
+    if [ -d """$PROJECT_ROOT""/debate-ui" ]; then
+        cd """$PROJECT_ROOT""/debate-ui"
         
         print_info "Installing UI dependencies..."
         npm install
         
-        if [ $? -eq 0 ]; then
+        if [ "$?" -eq 0 ]; then
             print_success "UI dependencies installed"
         else
             print_error "Failed to install UI dependencies"
@@ -283,7 +283,7 @@ setup_ui() {
         print_warning "UI directory not found, skipping UI setup"
     fi
     
-    cd "$PROJECT_ROOT"
+    cd """$PROJECT_ROOT"""
     echo
 }
 
@@ -325,7 +325,7 @@ show_next_steps() {
     echo "   ${BLUE}make logs service=mcp-llm${NC}  # Specific service"
     echo
     
-    if [ "$SETUP_MODE" == "minimal" ]; then
+    if [ """$SETUP_MODE""" == "minimal" ]; then
         echo "Note: You ran minimal setup. To complete full setup, run:"
         echo "   ${BLUE}./scripts/dev-setup.sh full${NC}"
     fi
@@ -334,14 +334,14 @@ show_next_steps() {
 # Main execution
 main() {
     print_header "MCP Development Environment Setup"
-    echo "Setup mode: $SETUP_MODE"
+    echo "Setup mode: ""$SETUP_MODE"""
     echo
     
     check_prerequisites
     setup_environment
     check_ports
     
-    if [ "$SETUP_MODE" != "minimal" ]; then
+    if [ """$SETUP_MODE""" != "minimal" ]; then
         build_projects
         setup_databases
         setup_ui
