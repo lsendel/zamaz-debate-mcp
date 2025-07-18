@@ -1,0 +1,53 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Type should be one of the following:
+# * feat: A new feature
+# * fix: A bug fix
+# * docs: Documentation only changes
+# * style: Changes that do not affect the meaning of the code
+# * refactor: A code change that neither fixes a bug nor adds a feature
+# * perf: A code change that improves performance
+# * test: Adding missing tests or correcting existing tests
+# * build: Changes that affect the build system or external dependencies
+# * ci: Changes to our CI configuration files and scripts
+# * chore: Other changes that don't modify src or test files
+# * revert: Reverts a previous commit
+
+# Scope should be one of the following (optional):
+# * mcp-organization: Organization service
+# * mcp-llm: LLM service
+# * mcp-controller: Controller service
+# * mcp-rag: RAG service
+# * mcp-template: Template service
+# * mcp-common: Common utilities
+# * github-integration: GitHub integration service
+# * debate-ui: Frontend application
+# * infrastructure: Docker, K8s, deployment
+# * docs: Documentation
+# * linting: Code quality and linting
+
+# Subject line rules:
+# * Use imperative mood ("Add feature" not "Added feature")
+# * Don't capitalize first letter
+# * No period at the end
+# * Limit to 50 characters
+
+# Body rules:
+# * Wrap at 72 characters
+# * Explain what and why, not how
+# * Can include multiple paragraphs
+
+# Footer rules:
+# * Reference issues: "Closes #123", "Fixes #456"
+# * Breaking changes: "BREAKING CHANGE: description"
+# * Co-authored-by: Name <email@example.com>
+
+# Examples:
+# feat(mcp-llm): add support for Claude 3.5 Sonnet
+# fix(debate-ui): resolve WebSocket connection timeout
+# docs(linting): add comprehensive setup guide
+# chore(deps): update Spring Boot to 3.3.6

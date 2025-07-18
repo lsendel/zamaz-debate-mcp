@@ -1,0 +1,119 @@
+{
+  "commitizen": {
+    "name": "cz_conventional_commits",
+    "version": "3.13.0"
+  },
+  "bump": {
+    "changelog_file": "CHANGELOG.md",
+    "version": "1.0.0",
+    "version_files": ["pom.xml:version", "debate-ui/package.json:version"]
+  },
+  "settings": {
+    "allowed_prefixes": ["Merge", "Revert", "Pull request", "Hotfix"]
+  },
+  "conventional_commits": {
+    "types": [
+      {
+        "value": "feat",
+        "name": "feat: A new feature",
+        "title": "Features"
+      },
+      {
+        "value": "fix",
+        "name": "fix: A bug fix",
+        "title": "Bug Fixes"
+      },
+      {
+        "value": "docs",
+        "name": "docs: Documentation only changes",
+        "title": "Documentation"
+      },
+      {
+        "value": "style",
+        "name": "style: Changes that do not affect the meaning of the code",
+        "title": "Styles"
+      },
+      {
+        "value": "refactor",
+        "name": "refactor: A code change that neither fixes a bug nor adds a feature",
+        "title": "Code Refactoring"
+      },
+      {
+        "value": "perf",
+        "name": "perf: A code change that improves performance",
+        "title": "Performance Improvements"
+      },
+      {
+        "value": "test",
+        "name": "test: Adding missing tests or correcting existing tests",
+        "title": "Tests"
+      },
+      {
+        "value": "build",
+        "name": "build: Changes that affect the build system or external dependencies",
+        "title": "Builds"
+      },
+      {
+        "value": "ci",
+        "name": "ci: Changes to our CI configuration files and scripts",
+        "title": "Continuous Integrations"
+      },
+      {
+        "value": "chore",
+        "name": "chore: Other changes that don't modify src or test files",
+        "title": "Chores"
+      },
+      {
+        "value": "revert",
+        "name": "revert: Reverts a previous commit",
+        "title": "Reverts"
+      }
+    ],
+    "scopes": [
+      {
+        "name": "mcp-organization",
+        "description": "Organization service"
+      },
+      {
+        "name": "mcp-llm",
+        "description": "LLM service"
+      },
+      {
+        "name": "mcp-controller",
+        "description": "Controller service"
+      },
+      {
+        "name": "mcp-rag",
+        "description": "RAG service"
+      },
+      {
+        "name": "mcp-template",
+        "description": "Template service"
+      },
+      {
+        "name": "mcp-common",
+        "description": "Common utilities"
+      },
+      {
+        "name": "github-integration",
+        "description": "GitHub integration service"
+      },
+      {
+        "name": "debate-ui",
+        "description": "Frontend application"
+      },
+      {
+        "name": "infrastructure",
+        "description": "Docker, K8s, deployment"
+      },
+      {
+        "name": "docs",
+        "description": "Documentation"
+      },
+      {
+        "name": "linting",
+        "description": "Code quality and linting"
+      }
+    ]
+  }
+}

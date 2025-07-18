@@ -1,8 +1,6 @@
 package com.zamaz.mcp.controller.adapter.persistence.entity;
 
-import org.hibernate.annotations.Type;
-
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +18,9 @@ public class DebateEntity {
     @Id
     @Column(name = "id", columnDefinition = "uuid")
     private UUID id;
+    
+    @Column(name = "organization_id", nullable = false, columnDefinition = "uuid")
+    private UUID organizationId;
     
     @Column(name = "topic", nullable = false, length = 1000)
     private String topic;
@@ -83,8 +84,9 @@ public class DebateEntity {
         // JPA constructor
     }
     
-    public DebateEntity(UUID id, String topic, String status, Instant createdAt) {
+    public DebateEntity(UUID id, UUID organizationId, String topic, String status, Instant createdAt) {
         this.id = id;
+        this.organizationId = organizationId;
         this.topic = topic;
         this.status = status;
         this.createdAt = createdAt;
@@ -97,6 +99,14 @@ public class DebateEntity {
     
     public void setId(UUID id) {
         this.id = id;
+    }
+    
+    public UUID getOrganizationId() {
+        return organizationId;
+    }
+    
+    public void setOrganizationId(UUID organizationId) {
+        this.organizationId = organizationId;
     }
     
     public String getTopic() {

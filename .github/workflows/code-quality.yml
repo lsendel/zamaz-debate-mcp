@@ -1,0 +1,413 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '18'
+  MAVEN_OPTS: '-Xmx2048m -XX:MaxMetaspaceSize=512m'
+
+jobs:
+  # Java linting job
+  java-linting:
+    name: Java Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Run Checkstyle
+      run: |
+        echo "::group::Running Checkstyle"
+        mvn checkstyle:check -q
+        echo "::endgroup::"
+
+    - name: Run SpotBugs
+      run: |
+        echo "::group::Running SpotBugs"
+        mvn spotbugs:check -q
+        echo "::endgroup::"
+
+    - name: Run PMD
+      run: |
+        echo "::group::Running PMD"
+        mvn pmd:check -q
+        echo "::endgroup::"
+
+    - name: Generate Java linting reports
+      if: always()
+      run: |
+        echo "::group::Generating Java Reports"
+        mkdir -p .linting/reports/java
+        mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q || true
+        echo "::endgroup::"
+
+    - name: Upload Java linting reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: java-linting-reports
+        path: |
+          target/site/checkstyle.html
+          target/site/spotbugs.html
+          target/site/pmd.html
+          **/target/checkstyle-result.xml
+          **/target/spotbugsXml.xml
+          **/target/pmd.xml
+        retention-days: 30
+
+  # Frontend linting job
+  frontend-linting:
+    name: Frontend Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: debate-ui/package-lock.json
+
+    - name: Install frontend dependencies
+      working-directory: debate-ui
+      run: npm ci
+
+    - name: Run ESLint
+      working-directory: debate-ui
+      run: |
+        echo "::group::Running ESLint"
+        npm run lint:check
+        echo "::endgroup::"
+
+    - name: Run Prettier check
+      working-directory: debate-ui
+      run: |
+        echo "::group::Running Prettier Check"
+        npm run format:check
+        echo "::endgroup::"
+
+    - name: Run TypeScript check
+      working-directory: debate-ui
+      run: |
+        echo "::group::Running TypeScript Check"
+        npm run type-check
+        echo "::endgroup::"
+
+    - name: Generate ESLint report
+      if: always()
+      working-directory: debate-ui
+      run: |
+        echo "::group::Generating ESLint Report"
+        mkdir -p ../.linting/reports/frontend
+        npm run lint -- --format json --output-file ../.linting/reports/frontend/eslint-report.json || true
+        npm run lint -- --format html --output-file ../.linting/reports/frontend/eslint-report.html || true
+        echo "::endgroup::"
+
+    - name: Upload frontend linting reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-linting-reports
+        path: .linting/reports/frontend/
+        retention-days: 30
+
+  # Configuration linting job
+  config-linting:
+    name: Configuration Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install linting tools
+      run: |
+        pip install yamllint
+        npm install -g markdownlint-cli
+
+    - name: Install hadolint
+      run: |
+        wget -O /tmp/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+        chmod +x /tmp/hadolint
+        sudo mv /tmp/hadolint /usr/local/bin/hadolint
+
+    - name: Run YAML linting
+      run: |
+        echo "::group::Running YAML Lint"
+        yamllint -c .linting/config/yaml-lint.yml . || true
+        echo "::endgroup::"
+
+    - name: Run JSON validation
+      run: |
+        echo "::group::Running JSON Validation"
+        find . -name "*.json" -not -path "./node_modules/*" -not -path "./target/*" -not -path "./build/*" | while read -r file; do
+          echo "Validating $file"
+          python -m json.tool "$file" > /dev/null || echo "Invalid JSON: $file"
+        done
+        echo "::endgroup::"
+
+    - name: Run Dockerfile linting
+      run: |
+        echo "::group::Running Dockerfile Lint"
+        find . -name "Dockerfile*" -not -path "./node_modules/*" | while read -r file; do
+          echo "Linting $file"
+          hadolint "$file" || true
+        done
+        echo "::endgroup::"
+
+  # Documentation linting job
+  docs-linting:
+    name: Documentation Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install documentation linting tools
+      run: |
+        npm install -g markdownlint-cli markdown-link-check
+
+    - name: Run Markdown linting
+      run: |
+        echo "::group::Running Markdown Lint"
+        markdownlint -c .linting/docs/markdownlint.json **/*.md || true
+        echo "::endgroup::"
+
+    - name: Run link checking
+      run: |
+        echo "::group::Running Link Check"
+        find . -name "*.md" -not -path "./node_modules/*" -not -path "./target/*" | while read -r file; do
+          echo "Checking links in $file"
+          markdown-link-check "$file" -c .linting/docs/link-check.json || true
+        done
+        echo "::endgroup::"
+
+  # Comprehensive linting report
+  linting-report:
+    name: Generate Linting Report
+    runs-on: ubuntu-latest
+    needs: [java-linting, frontend-linting, config-linting, docs-linting]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all linting artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: linting-artifacts
+
+    - name: Generate comprehensive report
+      run: |
+        echo "::group::Generating Comprehensive Report"
+        mkdir -p .linting/reports
+
+        # Create summary report
+        cat > .linting/reports/ci-summary.md << 'EOF'
+        # CI/CD Linting Report
+
+        **Generated:** $(date)
+        **Workflow:** ${{ github.workflow }}
+        **Run ID:** ${{ github.run_id }}
+        **Commit:** ${{ github.sha }}
+
+        ## Job Results
+
+        | Job | Status |
+        |-----|--------|
+        | Java Linting | ${{ needs.java-linting.result }} |
+        | Frontend Linting | ${{ needs.frontend-linting.result }} |
+        | Config Linting | ${{ needs.config-linting.result }} |
+        | Docs Linting | ${{ needs.docs-linting.result }} |
+
+        ## Artifacts
+
+        - Java linting reports available in artifacts
+        - Frontend linting reports available in artifacts
+        - Configuration and documentation checks completed
+
+        EOF
+
+        echo "Report generated successfully"
+        echo "::endgroup::"
+
+    - name: Upload comprehensive report
+      uses: actions/upload-artifact@v4
+      with:
+        name: linting-comprehensive-report
+        path: .linting/reports/
+        retention-days: 30
+
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          // Read the summary report
+          let reportContent = '';
+          try {
+            reportContent = fs.readFileSync('.linting/reports/ci-summary.md', 'utf8');
+          } catch (error) {
+            reportContent = '# Linting Report\n\nReport generation failed. Please check the workflow logs.';
+          }
+
+          // Create or update PR comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const botComment = comments.find(comment =>
+            comment.user.type === 'Bot' &&
+            comment.body.includes('CI/CD Linting Report')
+          );
+
+          const commentBody = `${reportContent}
+
+          ---
+          *This comment was automatically generated by the Code Quality workflow.*`;
+
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: commentBody
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+          }
+
+  # Quality gate enforcement
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: [java-linting, frontend-linting, config-linting, docs-linting]
+    if: always()
+    timeout-minutes: 2
+
+    steps:
+    - name: Check quality gate
+      run: |
+        echo "::group::Quality Gate Check"
+
+        # Check if any critical jobs failed
+        java_result="${{ needs.java-linting.result }}"
+        frontend_result="${{ needs.frontend-linting.result }}"
+        config_result="${{ needs.config-linting.result }}"
+        docs_result="${{ needs.docs-linting.result }}"
+
+        echo "Java linting: $java_result"
+        echo "Frontend linting: $frontend_result"
+        echo "Config linting: $config_result"
+        echo "Docs linting: $docs_result"
+
+        # Fail if any critical job failed
+        if [[ "$java_result" == "failure" || "$frontend_result" == "failure" ]]; then
+          echo "::error::Quality gate failed - critical linting errors found"
+          exit 1
+        fi
+
+        # Warn if non-critical jobs failed
+        if [[ "$config_result" == "failure" || "$docs_result" == "failure" ]]; then
+          echo "::warning::Non-critical linting issues found"
+        fi
+
+        echo "::notice::Quality gate passed"
+        echo "::endgroup::"
+
+    - name: Set status check
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const state = '${{ job.status }}' === 'success' ? 'success' : 'failure';
+          const description = state === 'success'
+            ? 'All linting checks passed'
+            : 'Linting checks failed';
+
+          await github.rest.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: context.sha,
+            state: state,
+            target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            description: description,
+            context: 'ci/code-quality'
+          });
+
+  # Security scanning (optional, runs on main branch)
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'

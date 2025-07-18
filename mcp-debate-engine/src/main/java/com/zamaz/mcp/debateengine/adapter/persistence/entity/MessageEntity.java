@@ -1,6 +1,6 @@
 package com.zamaz.mcp.debateengine.adapter.persistence.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

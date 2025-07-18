@@ -1,7 +1,7 @@
 package com.zamaz.mcp.controller.adapter.web.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.Map;
 

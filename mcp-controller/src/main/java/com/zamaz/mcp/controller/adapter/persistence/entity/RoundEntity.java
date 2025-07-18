@@ -1,6 +1,6 @@
 package com.zamaz.mcp.controller.adapter.persistence.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;

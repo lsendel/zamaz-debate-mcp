@@ -1,6 +1,6 @@
 package com.zamaz.mcp.debateengine.adapter.web.dto;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 /**
  * Request DTO for submitting a response in a debate round.

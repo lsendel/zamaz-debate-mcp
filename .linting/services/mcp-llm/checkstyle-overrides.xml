@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!-- Service-specific Checkstyle overrides for MCP LLM Service -->
+<module name="Checker">
+    <!-- Inherit from global configuration -->
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java, properties, xml"/>
+
+    <!-- Service-specific suppressions -->
+    <module name="SuppressionFilter">
+        <property name="file" value=".linting/services/mcp-llm/checkstyle-suppressions.xml"/>
+        <property name="optional" value="true"/>
+    </module>
+
+    <module name="TreeWalker">
+        <!-- LLM Service specific rules -->
+
+        <!-- Allow longer lines for LLM prompt templates -->
+        <module name="LineLength">
+            <property name="max" value="150"/>
+            <property name="ignorePattern" value="^.*@.*Prompt.*|^.*template.*|^.*prompt.*"/>
+        </module>
+
+        <!-- Allow more parameters for LLM configuration methods -->
+        <module name="ParameterNumber">
+            <property name="max" value="10"/>
+            <property name="tokens" value="METHOD_DEF"/>
+        </module>
+
+        <!-- Relax method length for LLM processing methods -->
+        <module name="MethodLength">
+            <property name="max" value="75"/>
+            <property name="tokens" value="METHOD_DEF"/>
+        </module>
+
+        <!-- Allow specific naming patterns for LLM-related classes -->
+        <module name="TypeName">
+            <property name="format" value="^[A-Z][a-zA-Z0-9]*$|^.*LLM.*$|^.*AI.*$"/>
+        </module>
+
+        <!-- Custom rules for reactive programming patterns -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="ReturnCount"/>
+            <property name="xpath" value="//METHOD_DEF[./IDENT[matches(@text, '.*(Mono|Flux).*')]]"/>
+        </module>
+
+        <!-- Allow complex boolean expressions in LLM condition checks -->
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="BooleanExpressionComplexity"/>
+            <property name="xpath" value="//METHOD_DEF[./IDENT[matches(@text, '.*(validate|check|process).*')]]"/>
+        </module>
+    </module>
+</module>

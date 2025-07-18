@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!-- Suppress false positives for development dependencies -->
+    <suppress>
+        <notes>Development and test dependencies with known false positives</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring-boot-starter-test@.*$</packageUrl>
+        <cve>CVE-2016-1000027</cve>
+    </suppress>
+
+    <!-- Suppress known issues in specific versions that are acceptable -->
+    <suppress>
+        <notes>Jackson databind - acceptable risk for our use case</notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson-databind@.*$</packageUrl>
+        <vulnerabilityName>CWE-502: Deserialization of Untrusted Data</vulnerabilityName>
+    </suppress>
+
+    <!-- Suppress issues in test-only dependencies -->
+    <suppress>
+        <notes>Test containers - only used in testing</notes>
+        <packageUrl regex="true">^pkg:maven/org\.testcontainers/.*@.*$</packageUrl>
+        <cve>CVE-2020-8908</cve>
+    </suppress>
+
+    <!-- Project-specific suppressions -->
+    <suppress>
+        <notes>MCP services use controlled deserialization</notes>
+        <packageUrl regex="true">^pkg:maven/com\.zamaz\.mcp/.*@.*$</packageUrl>
+        <cwe>502</cwe>
+    </suppress>
+
+    <!-- Suppress issues in frontend build tools -->
+    <suppress>
+        <notes>Node.js build dependencies</notes>
+        <packageUrl regex="true">^pkg:npm/.*@.*$</packageUrl>
+        <cvssBelow>7.0</cvssBelow>
+    </suppress>
+
+</suppressions>

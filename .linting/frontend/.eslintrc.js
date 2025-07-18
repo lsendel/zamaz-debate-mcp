@@ -105,16 +105,7 @@ module.exports = {
     'import/order': [
       'error',
       {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          'parent',
-          'sibling',
-          'index',
-          'object',
-          'type',
-        ],
+        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object', 'type'],
         'newlines-between': 'always',
         alphabetize: {
           order: 'asc',
@@ -139,24 +130,26 @@ module.exports = {
     'no-multiple-empty-lines': ['error', { max: 1 }],
     'eol-last': 'error',
     'comma-dangle': ['error', 'always-multiline'],
-    'semi': ['error', 'always'],
-    'quotes': ['error', 'single', { avoidEscape: true }],
+    semi: ['error', 'always'],
+    quotes: ['error', 'single', { avoidEscape: true }],
     'object-curly-spacing': ['error', 'always'],
     'array-bracket-spacing': ['error', 'never'],
 
     // Security rules
-    'security/detect-object-injection': 'warn',
+    'security/detect-object-injection': 'error',
     'security/detect-non-literal-regexp': 'warn',
     'security/detect-unsafe-regex': 'error',
     'security/detect-buffer-noassert': 'error',
-    'security/detect-child-process': 'warn',
+    'security/detect-child-process': 'error',
     'security/detect-disable-mustache-escape': 'error',
     'security/detect-eval-with-expression': 'error',
     'security/detect-no-csrf-before-method-override': 'error',
-    'security/detect-non-literal-fs-filename': 'warn',
-    'security/detect-non-literal-require': 'warn',
+    'security/detect-non-literal-fs-filename': 'error',
+    'security/detect-non-literal-require': 'error',
     'security/detect-possible-timing-attacks': 'warn',
     'security/detect-pseudoRandomBytes': 'error',
+    'security/detect-new-buffer': 'error',
+    'security/detect-bidi-characters': 'error',
 
     // SonarJS rules for code quality
     'sonarjs/cognitive-complexity': ['error', 15],

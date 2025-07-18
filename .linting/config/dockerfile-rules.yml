@@ -4,10 +4,10 @@
 # Ignored rules
 ignored:
   # Allow specific base images that might trigger warnings
-  - DL3006  # Always tag the version of an image explicitly
-  - DL3008  # Pin versions in apt get install
-  - DL3009  # Delete the apt-get lists after installing something
-  - DL3015  # Avoid additional packages by specifying --no-install-recommends
+  - DL3006 # Always tag the version of an image explicitly
+  - DL3008 # Pin versions in apt get install
+  - DL3009 # Delete the apt-get lists after installing something
+  - DL3015 # Avoid additional packages by specifying --no-install-recommends
 
 # Allowed registries for base images
 allowed-registries:
@@ -27,55 +27,97 @@ trusted-registries:
 # Custom rules for our project
 rules:
   # Security rules
-  - id: "MCP-001"
-    description: "Use non-root user in containers"
-    severity: "error"
-    pattern: "USER root"
-    message: "Avoid running containers as root user"
+  - id: 'MCP-001'
+    description: 'Use non-root user in containers'
+    severity: 'error'
+    pattern: 'USER root'
+    message: 'Avoid running containers as root user'
 
-  - id: "MCP-002"
-    description: "Use specific versions for base images"
-    severity: "warning"
-    pattern: "FROM .+:latest"
-    message: "Avoid using 'latest' tag for base images"
+  - id: 'MCP-002'
+    description: 'Use specific versions for base images'
+    severity: 'error'
+    pattern: 'FROM .+:latest'
+    message: "Avoid using 'latest' tag for base images - security risk"
 
-  - id: "MCP-003"
-    description: "Clean package manager cache"
-    severity: "warning"
-    pattern: "RUN.*apt-get.*install"
-    message: "Clean apt cache after installation"
+  - id: 'MCP-003'
+    description: 'Clean package manager cache'
+    severity: 'warning'
+    pattern: 'RUN.*apt-get.*install'
+    message: 'Clean apt cache after installation to reduce image size'
 
-  - id: "MCP-004"
-    description: "Use COPY instead of ADD when possible"
-    severity: "info"
+  - id: 'MCP-004'
+    description: 'Use COPY instead of ADD when possible'
+    severity: 'info'
     pattern: "ADD (?!.*\\.tar)"
-    message: "Use COPY instead of ADD for simple file copying"
+    message: 'Use COPY instead of ADD for simple file copying'
 
-  - id: "MCP-005"
-    description: "Set working directory"
-    severity: "warning"
-    pattern: "^(?!.*WORKDIR)"
-    message: "Set WORKDIR to organize filesystem"
+  - id: 'MCP-005'
+    description: 'Set working directory'
+    severity: 'warning'
+    pattern: '^(?!.*WORKDIR)'
+    message: 'Set WORKDIR to organize filesystem'
+
+  - id: 'MCP-006'
+    description: 'Avoid running as root'
+    severity: 'error'
+    pattern: 'RUN.*sudo'
+    message: 'Avoid using sudo in containers - security risk'
+
+  - id: 'MCP-007'
+    description: "Don't install unnecessary packages"
+    severity: 'warning'
+    pattern: 'RUN.*apt-get.*install.*-y.*curl.*wget'
+    message: 'Avoid installing curl and wget together - choose one'
+
+  - id: 'MCP-008'
+    description: 'Use specific user ID'
+    severity: 'warning'
+    pattern: 'USER [a-zA-Z]+'
+    message: 'Consider using numeric user ID for better security'
+
+  - id: 'MCP-009'
+    description: 'Avoid secrets in build args'
+    severity: 'error'
+    pattern: 'ARG.*(PASSWORD|SECRET|KEY|TOKEN)'
+    message: "Don't pass secrets as build arguments"
+
+  - id: 'MCP-010'
+    description: 'Use multi-stage builds'
+    severity: 'info'
+    pattern: 'FROM.*AS.*build'
+    message: 'Good practice: using multi-stage build'
+
+  - id: 'MCP-011'
+    description: 'Set health check'
+    severity: 'warning'
+    pattern: '^(?!.*HEALTHCHECK)'
+    message: 'Consider adding HEALTHCHECK instruction'
+
+  - id: 'MCP-012'
+    description: 'Avoid privileged containers'
+    severity: 'error'
+    pattern: '--privileged'
+    message: 'Avoid running privileged containers'
 
 # File patterns to check
 include:
-  - "**/Dockerfile"
-  - "**/Dockerfile.*"
-  - "**/*.dockerfile"
+  - '**/Dockerfile'
+  - '**/Dockerfile.*'
+  - '**/*.dockerfile'
 
 # File patterns to ignore
 exclude:
-  - "**/target/**"
-  - "**/build/**"
-  - "**/node_modules/**"
-  - "**/.git/**"
-  - "**/generated/**"
+  - '**/target/**'
+  - '**/build/**'
+  - '**/node_modules/**'
+  - '**/.git/**'
+  - '**/generated/**'
 
 # Severity levels: error, warning, info, style
-failure-threshold: "warning"
+failure-threshold: 'warning'
 
 # Format for output
-format: "json"
+format: 'json'
 
 # Enable/disable specific checks
 override:

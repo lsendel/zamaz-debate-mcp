@@ -1,6 +1,6 @@
 package com.zamaz.mcp.debateengine.adapter.web.dto;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.util.Map;
 
 /**
