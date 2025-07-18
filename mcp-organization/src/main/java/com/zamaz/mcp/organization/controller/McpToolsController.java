@@ -2,6 +2,8 @@ package com.zamaz.mcp.organization.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zamaz.mcp.common.security.McpSecurityService;
+import com.zamaz.mcp.common.security.McpSecurityException;
 import com.zamaz.mcp.organization.dto.OrganizationDto;
 import com.zamaz.mcp.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -27,11 +31,18 @@ public class McpToolsController {
     
     private final OrganizationService organizationService;
     private final ObjectMapper objectMapper;
+    private final McpSecurityService mcpSecurityService;
     
     @PostMapping("/create_organization")
     @Operation(summary = "Create organization (MCP Tool)")
-    public ResponseEntity<Map<String, Object>> createOrganization(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> createOrganization(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
         try {
+            // Validate required parameters
+            mcpSecurityService.validateRequiredParameter(params.get("name"), "name");
+            
             OrganizationDto.CreateOrganizationRequest request = OrganizationDto.CreateOrganizationRequest.builder()
                     .name((String) params.get("name"))
                     .description((String) params.get("description"))
@@ -43,40 +54,61 @@ public class McpToolsController {
             response.put("success", true);
             response.put("organization", organization);
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in create_organization: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error creating organization: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @PostMapping("/get_organization")
     @Operation(summary = "Get organization by ID (MCP Tool)")
-    public ResponseEntity<Map<String, Object>> getOrganization(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> getOrganization(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
         try {
-            UUID organizationId = UUID.fromString((String) params.get("organizationId"));
+            // Extract organization ID from authenticated user context instead of trusting client
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            
             OrganizationDto organization = organizationService.getOrganization(organizationId);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("organization", organization);
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in get_organization: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error getting organization: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @PostMapping("/update_organization")
     @Operation(summary = "Update organization (MCP Tool)")
-    public ResponseEntity<Map<String, Object>> updateOrganization(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> updateOrganization(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
         try {
-            UUID organizationId = UUID.fromString((String) params.get("organizationId"));
+            // Extract organization ID from authenticated user context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
             
             OrganizationDto.UpdateOrganizationRequest request = OrganizationDto.UpdateOrganizationRequest.builder()
                     .name((String) params.get("name"))
@@ -90,41 +122,61 @@ public class McpToolsController {
             response.put("success", true);
             response.put("organization", organization);
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in update_organization: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error updating organization: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @PostMapping("/delete_organization")
     @Operation(summary = "Delete organization (MCP Tool)")
-    public ResponseEntity<Map<String, Object>> deleteOrganization(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> deleteOrganization(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
         try {
-            UUID organizationId = UUID.fromString((String) params.get("organizationId"));
+            // Extract organization ID from authenticated user context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
             organizationService.deleteOrganization(organizationId);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Organization deleted successfully");
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in delete_organization: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error deleting organization: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @PostMapping("/add_user_to_organization")
     @Operation(summary = "Add user to organization (MCP Tool)")
-    public ResponseEntity<Map<String, Object>> addUserToOrganization(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> addUserToOrganization(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
         try {
-            UUID organizationId = UUID.fromString((String) params.get("organizationId"));
-            UUID userId = UUID.fromString((String) params.get("userId"));
+            // Extract organization ID from authenticated user context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            UUID userId = mcpSecurityService.validateUuidParameter(params.get("userId"), "userId");
             String role = (String) params.getOrDefault("role", "member");
             
             organizationService.addUserToOrganization(organizationId, userId, role);
@@ -133,21 +185,31 @@ public class McpToolsController {
             response.put("success", true);
             response.put("message", "User added to organization successfully");
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in add_user_to_organization: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error adding user to organization: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @PostMapping("/remove_user_from_organization")
     @Operation(summary = "Remove user from organization (MCP Tool)")
-    public ResponseEntity<Map<String, Object>> removeUserFromOrganization(@RequestBody Map<String, Object> params) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> removeUserFromOrganization(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
         try {
-            UUID organizationId = UUID.fromString((String) params.get("organizationId"));
-            UUID userId = UUID.fromString((String) params.get("userId"));
+            // Extract organization ID from authenticated user context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            UUID userId = mcpSecurityService.validateUuidParameter(params.get("userId"), "userId");
             
             organizationService.removeUserFromOrganization(organizationId, userId);
             
@@ -155,29 +217,45 @@ public class McpToolsController {
             response.put("success", true);
             response.put("message", "User removed from organization successfully");
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in remove_user_from_organization: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error removing user from organization: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
     @GetMapping("/resources/organizations")
     @Operation(summary = "List organizations (MCP Resource)")
-    public ResponseEntity<Map<String, Object>> listOrganizationsResource() {
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> listOrganizationsResource(Authentication authentication) {
         try {
-            List<OrganizationDto> organizations = organizationService.listOrganizations(Pageable.unpaged()).getContent();
+            // Only return the user's organization for security
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            OrganizationDto organization = organizationService.getOrganization(organizationId);
             
             Map<String, Object> response = new HashMap<>();
-            response.put("organizations", organizations);
-            response.put("count", organizations.size());
+            response.put("organizations", List.of(organization));
+            response.put("count", 1);
             return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in list_organizations: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
             log.error("Error listing organizations: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error");
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }

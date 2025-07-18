@@ -2,143 +2,259 @@ package com.zamaz.mcp.context.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.zamaz.mcp.common.security.McpSecurityService;
+import com.zamaz.mcp.common.security.McpSecurityException;
+import com.zamaz.mcp.context.dto.AppendMessageRequest;
+import com.zamaz.mcp.context.dto.ContextDto;
+import com.zamaz.mcp.context.dto.ContextWindowRequest;
+import com.zamaz.mcp.context.dto.ContextWindowResponse;
+import com.zamaz.mcp.context.dto.CreateContextRequest;
+import com.zamaz.mcp.context.dto.MessageDto;
+import com.zamaz.mcp.context.dto.ShareContextRequest;
+import com.zamaz.mcp.context.entity.SharedContext;
+import com.zamaz.mcp.context.service.ContextService;
+import com.zamaz.mcp.context.service.ContextSharingService;
+import com.zamaz.mcp.context.service.ContextWindowService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * MCP endpoint controller for the Context service.
- * Provides MCP protocol compatibility.
+ * Provides secure MCP protocol endpoints with proper authentication and organization validation.
  */
-@Slf4j
 @RestController
-@RequestMapping("/mcp")
+@RequestMapping("/tools")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@Slf4j
+@Tag(name = "MCP Context Tools", description = "MCP protocol tool endpoints for context management")
 public class McpEndpointController {
     
+    private final ContextService contextService;
+    private final ContextWindowService windowService;
+    private final ContextSharingService sharingService;
     private final ObjectMapper objectMapper;
-    private final McpToolsController mcpToolsController;
+    private final McpSecurityService mcpSecurityService;
     
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<JsonNode> getServerInfo() {
-        ObjectNode response = objectMapper.createObjectNode();
-        response.put("name", "mcp-context");
-        response.put("version", "1.0.0");
-        response.put("description", "Multi-tenant context management service for MCP system");
-        
-        ObjectNode capabilities = response.putObject("capabilities");
-        capabilities.put("tools", true);
-        capabilities.put("resources", true);
-        
-        return Mono.just(response);
+    @PostMapping("/create_context")
+    @Operation(summary = "Create context (MCP Tool)")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> createContext(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
+        try {
+            // Extract organization and user from authenticated context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            UUID userId = mcpSecurityService.getAuthenticatedUserId(authentication);
+            
+            // Validate required parameters
+            mcpSecurityService.validateRequiredParameter(params.get("name"), "name");
+            
+            CreateContextRequest request = CreateContextRequest.builder()
+                    .organizationId(organizationId)
+                    .userId(userId)
+                    .name((String) params.get("name"))
+                    .description((String) params.get("description"))
+                    .build();
+            
+            ContextDto context = contextService.createContext(request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("context", context);
+            return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in create_context: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error creating context: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
     
-    @PostMapping(value = "/list-tools", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<JsonNode> listTools() {
-        ObjectNode response = objectMapper.createObjectNode();
-        ArrayNode tools = response.putArray("tools");
-        
-        // Create context tool
-        ObjectNode createContext = tools.addObject();
-        createContext.put("name", "create_context");
-        createContext.put("description", "Create a new conversation context");
-        ObjectNode createContextParams = createContext.putObject("parameters");
-        createContextParams.put("type", "object");
-        ObjectNode createContextProps = createContextParams.putObject("properties");
-        createContextProps.putObject("organizationId").put("type", "string").put("description", "Organization ID");
-        createContextProps.putObject("userId").put("type", "string").put("description", "User ID");
-        createContextProps.putObject("name").put("type", "string").put("description", "Context name");
-        createContextProps.putObject("description").put("type", "string").put("description", "Context description");
-        createContextParams.putArray("required").add("organizationId").add("userId").add("name");
-        
-        // Append message tool
-        ObjectNode appendMessage = tools.addObject();
-        appendMessage.put("name", "append_message");
-        appendMessage.put("description", "Append a message to a context");
-        ObjectNode appendMessageParams = appendMessage.putObject("parameters");
-        appendMessageParams.put("type", "object");
-        ObjectNode appendMessageProps = appendMessageParams.putObject("properties");
-        appendMessageProps.putObject("contextId").put("type", "string").put("description", "Context ID");
-        appendMessageProps.putObject("organizationId").put("type", "string").put("description", "Organization ID");
-        appendMessageProps.putObject("role").put("type", "string").put("description", "Message role (user/assistant/system)");
-        appendMessageProps.putObject("content").put("type", "string").put("description", "Message content");
-        appendMessageParams.putArray("required").add("contextId").add("organizationId").add("role").add("content");
-        
-        // Get context window tool
-        ObjectNode getWindow = tools.addObject();
-        getWindow.put("name", "get_context_window");
-        getWindow.put("description", "Get a context window with token management");
-        ObjectNode getWindowParams = getWindow.putObject("parameters");
-        getWindowParams.put("type", "object");
-        ObjectNode getWindowProps = getWindowParams.putObject("properties");
-        getWindowProps.putObject("contextId").put("type", "string").put("description", "Context ID");
-        getWindowProps.putObject("organizationId").put("type", "string").put("description", "Organization ID");
-        getWindowProps.putObject("maxTokens").put("type", "integer").put("description", "Maximum tokens in window");
-        getWindowProps.putObject("messageLimit").put("type", "integer").put("description", "Maximum messages to return");
-        getWindowParams.putArray("required").add("contextId").add("organizationId");
-        
-        // Search contexts tool
-        ObjectNode searchContexts = tools.addObject();
-        searchContexts.put("name", "search_contexts");
-        searchContexts.put("description", "Search contexts by name or description");
-        ObjectNode searchParams = searchContexts.putObject("parameters");
-        searchParams.put("type", "object");
-        ObjectNode searchProps = searchParams.putObject("properties");
-        searchProps.putObject("organizationId").put("type", "string").put("description", "Organization ID");
-        searchProps.putObject("query").put("type", "string").put("description", "Search query");
-        searchParams.putArray("required").add("organizationId").add("query");
-        
-        // Share context tool
-        ObjectNode shareContext = tools.addObject();
-        shareContext.put("name", "share_context");
-        shareContext.put("description", "Share a context with another organization or user");
-        ObjectNode shareParams = shareContext.putObject("parameters");
-        shareParams.put("type", "object");
-        ObjectNode shareProps = shareParams.putObject("properties");
-        shareProps.putObject("contextId").put("type", "string").put("description", "Context ID");
-        shareProps.putObject("organizationId").put("type", "string").put("description", "Source organization ID");
-        shareProps.putObject("targetOrganizationId").put("type", "string").put("description", "Target organization ID");
-        shareProps.putObject("targetUserId").put("type", "string").put("description", "Target user ID");
-        shareProps.putObject("permission").put("type", "string").put("description", "Permission level (READ/WRITE/ADMIN)");
-        shareParams.putArray("required").add("contextId").add("organizationId").add("permission");
-        
-        return Mono.just(response);
+    @PostMapping("/append_message")
+    @Operation(summary = "Append message to context (MCP Tool)")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> appendMessage(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
+        try {
+            // Extract organization from authenticated context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            UUID contextId = mcpSecurityService.validateUuidParameter(params.get("contextId"), "contextId");
+            
+            // Validate required parameters
+            mcpSecurityService.validateRequiredParameter(params.get("role"), "role");
+            mcpSecurityService.validateRequiredParameter(params.get("content"), "content");
+            
+            AppendMessageRequest request = AppendMessageRequest.builder()
+                    .role((String) params.get("role"))
+                    .content((String) params.get("content"))
+                    .build();
+            
+            MessageDto message = contextService.appendMessage(contextId, organizationId, request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", message);
+            return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in append_message: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error appending message: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
     
-    @PostMapping(value = "/call-tool", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<JsonNode> callTool(@RequestBody JsonNode request) {
-        String toolName = request.get("name").asText();
-        JsonNode params = request.get("arguments");
-        
-        log.info("MCP tool call: {} with params: {}", toolName, params);
-        
-        // Delegate to the McpToolsController
-        return mcpToolsController.callTool(toolName, params)
-            .map(result -> {
-                ObjectNode response = objectMapper.createObjectNode();
-                response.set("result", result);
-                return (JsonNode) response;
-            })
-            .onErrorResume(error -> {
-                log.error("Error calling tool: {}", toolName, error);
-                ObjectNode errorResponse = objectMapper.createObjectNode();
-                errorResponse.put("error", error.getMessage());
-                return Mono.just((JsonNode) errorResponse);
-            });
+    @PostMapping("/get_context_window")
+    @Operation(summary = "Get context window (MCP Tool)")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> getContextWindow(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
+        try {
+            // Extract organization from authenticated context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            UUID contextId = mcpSecurityService.validateUuidParameter(params.get("contextId"), "contextId");
+            
+            ContextWindowRequest request = ContextWindowRequest.builder()
+                    .maxTokens(params.containsKey("maxTokens") ? (Integer) params.get("maxTokens") : 4096)
+                    .messageLimit(params.containsKey("messageLimit") ? (Integer) params.get("messageLimit") : null)
+                    .includeSystemMessages(params.containsKey("includeSystemMessages") ? 
+                            (Boolean) params.get("includeSystemMessages") : true)
+                    .preserveMessageBoundaries(params.containsKey("preserveMessageBoundaries") ? 
+                            (Boolean) params.get("preserveMessageBoundaries") : true)
+                    .build();
+            
+            ContextWindowResponse window = windowService.getContextWindow(contextId, organizationId, request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("window", window);
+            return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in get_context_window: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error getting context window: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
     
-    @GetMapping("/health")
-    public Mono<String> health() {
-        return Mono.just("OK");
+    @PostMapping("/search_contexts")
+    @Operation(summary = "Search contexts (MCP Tool)")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> searchContexts(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
+        try {
+            // Extract organization from authenticated context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            
+            // Validate required parameters
+            mcpSecurityService.validateRequiredParameter(params.get("query"), "query");
+            String query = (String) params.get("query");
+            
+            int page = params.containsKey("page") ? (Integer) params.get("page") : 0;
+            int size = params.containsKey("size") ? (Integer) params.get("size") : 20;
+            
+            Page<ContextDto> contexts = contextService.searchContexts(
+                    organizationId, query, PageRequest.of(page, size));
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("contexts", contexts.getContent());
+            response.put("totalElements", contexts.getTotalElements());
+            response.put("totalPages", contexts.getTotalPages());
+            return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in search_contexts: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error searching contexts: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+    
+    @PostMapping("/share_context")
+    @Operation(summary = "Share context (MCP Tool)")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> shareContext(
+            @RequestBody Map<String, Object> params,
+            Authentication authentication) {
+        try {
+            // Extract organization and user from authenticated context
+            UUID organizationId = mcpSecurityService.getAuthenticatedOrganizationId(authentication);
+            UUID sharedBy = mcpSecurityService.getAuthenticatedUserId(authentication);
+            UUID contextId = mcpSecurityService.validateUuidParameter(params.get("contextId"), "contextId");
+            
+            // Validate required parameters
+            mcpSecurityService.validateRequiredParameter(params.get("permission"), "permission");
+            
+            ShareContextRequest request = ShareContextRequest.builder()
+                    .targetOrganizationId(params.containsKey("targetOrganizationId") ? 
+                            mcpSecurityService.validateUuidParameter(params.get("targetOrganizationId"), "targetOrganizationId") : null)
+                    .targetUserId(params.containsKey("targetUserId") ? 
+                            mcpSecurityService.validateUuidParameter(params.get("targetUserId"), "targetUserId") : null)
+                    .permission((String) params.get("permission"))
+                    .build();
+            
+            SharedContext share = sharingService.shareContext(contextId, organizationId, sharedBy, request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("share", share);
+            return ResponseEntity.ok(response);
+        } catch (McpSecurityException e) {
+            log.warn("Security error in share_context: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Access denied");
+            return ResponseEntity.status(403).body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error sharing context: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }
