@@ -1,700 +1,347 @@
-# AI Debate System - User-Friendly Makefile
-# Type 'make help' to see all available commands
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                     ZAMAZ DEBATE MCP SYSTEM                     ║
+# ║                    Clean, User-Friendly Makefile                ║
+# ╚══════════════════════════════════════════════════════════════════╝
 
 # Load environment variables
 -include .env
 export
 
-# Default values
-UI_PORT ?= 3001
-DEBATE_API_PORT ?= 5013
-LLM_API_PORT ?= 5002
+# Configuration
+COMPOSE_FILE := infrastructure/docker-compose/docker-compose.yml
+COMPOSE_DIR := infrastructure/docker-compose
+PROJECT_NAME := zamaz-debate-mcp
 
 # Colors for output
 RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[1;33m
 BLUE := \033[0;34m
-NC := \033[0m # No Color
+PURPLE := \033[0;35m
+CYAN := \033[0;36m
+WHITE := \033[1;37m
+NC := \033[0m
 
-.PHONY: help start-all stop-all build restart start-ui test-all logs status clean setup start-with-ollama check-ports wait-for-services test-ui-only quick-test full-test
+# Default ports
+UI_PORT ?= 3001
+POSTGRES_PORT ?= 5432
+REDIS_PORT ?= 6379
+MCP_ORGANIZATION_PORT ?= 5005
+MCP_LLM_PORT ?= 5002
+MCP_DEBATE_PORT ?= 5013
+MCP_RAG_PORT ?= 5004
+MCP_TEMPLATE_PORT ?= 5006
+QDRANT_PORT ?= 6333
+JAEGER_UI_PORT ?= 16686
+PROMETHEUS_PORT ?= 9090
+GRAFANA_PORT ?= 3000
+LOKI_PORT ?= 3100
+OLLAMA_PORT ?= 11434
 
-help: ## Show this help message
-	@echo '╔══════════════════════════════════════════════════════════════════╗'
-	@echo '║                   AI DEBATE SYSTEM - QUICK START                 ║'
-	@echo '╚══════════════════════════════════════════════════════════════════╝'
-	@echo ''
-	@echo '🚀 GETTING STARTED:'
-	@echo '  make setup              - First time setup (do this once)'
-	@echo '  make start-all          - Start all services (Docker + UI)'
-	@echo '  make start-ui           - Start only the UI development server'
-	@echo '  make stop-all           - Stop all services'
-	@echo ''
-	@echo '🔧 DEVELOPMENT:'
-	@echo '  make logs               - View all logs'
-	@echo '  make logs service=debate - View specific service logs'
-	@echo '  make status             - Show service status'
-	@echo '  make check-health       - Check all services are healthy'
-	@echo ''
-	@echo '🤖 OLLAMA (Local LLMs):'
-	@echo '  make start-with-ollama  - Start everything including Ollama'
-	@echo '  make stop-ollama        - Stop Ollama container'
-	@echo ''
-	@echo '🧪 TESTING:'
-	@echo '  make test-setup         - Set up test environment'
-	@echo '  make test-unit          - Run unit tests for GitHub integration'
-	@echo '  make test-integration   - Run integration tests'
-	@echo '  make test-api           - Test API endpoints with curl'
-	@echo '  make test-docker        - Test Docker containers and health'
-	@echo '  make test-e2e-full      - Run full end-to-end tests'
-	@echo '  make test-performance   - Run performance and load tests'
-	@echo ''
-	@echo '🔍 CODE QUALITY & LINTING:'
-	@echo '  make lint-all           - Run all linting checks'
-	@echo '  make lint-java          - Lint Java code (Checkstyle, SpotBugs, PMD)'
-	@echo '  make lint-frontend      - Lint React TypeScript code'
-	@echo '  make lint-config        - Lint configuration files (YAML, JSON)'
-	@echo '  make lint-docs          - Lint documentation (Markdown)'
-	@echo '  make lint-fix           - Auto-fix linting issues where possible'
-	@echo '  make lint-report        - Generate comprehensive linting report'
-	@echo '  make test-security      - Run security tests'
-	@echo '  make test-all-github    - Run all GitHub integration tests'
-	@echo '  make test-report        - Generate test report with evidence'
-	@echo '  make quick-test         - Run quick UI tests'
-	@echo '  make full-test          - Run comprehensive E2E tests'
-	@echo '  make test-ui-only       - Test UI without backend services'
-	@echo '  make test-playwright    - Run Playwright tests'
-	@echo '  make test-mcp-all       - Test all MCP services'
-	@echo '  make test-mcp-detail    - Run detailed MCP service tests'
-	@echo '  make test-services      - Quick test of all services'
-	@echo '  make test-services-detail - Enhanced quick test with details'
-	@echo ''
-	@echo '🧹 CLEANUP:'
-	@echo '  make clean              - Remove all Docker containers/volumes'
-	@echo '  make clean-all          - Complete Docker cleanup (ALL data)'
-	@echo ''
-	@echo '📋 ALL COMMANDS:'
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
-	@echo ''
-	@echo '💡 EXAMPLES:'
-	@echo '  First time:  make setup && make start && make ui'
-	@echo '  Development: make ui (in separate terminal)'
-	@echo '  Check logs:  make logs service=debate'
+.PHONY: help setup start stop restart build clean test lint status logs ui health check-env install
 
-check-ports: ## Check if required ports are available
-	@echo "$(BLUE)Checking port availability...$(NC)"
-	@for port in $(UI_PORT) $(DEBATE_API_PORT) $(LLM_API_PORT) 5432 6379 6333; do \
-		if lsof -Pi :$$port -sTCP:LISTEN -t >/dev/null 2>&1 ; then \
-			echo "$(RED)✗ Port $$port is already in use$(NC)"; \
-			exit 1; \
-		else \
-			echo "$(GREEN)✓ Port $$port is available$(NC)"; \
-		fi \
-	done
+# =============================================================================
+# HELP & DOCUMENTATION
+# =============================================================================
 
-start-all: check-ports ## Start all services including UI
-	@echo "$(BLUE)🚀 Starting AI Debate System...$(NC)"
-	docker-compose up -d
-	@$(MAKE) wait-for-services
-	@echo "$(GREEN)✅ Backend services are ready!$(NC)"
-	@echo "$(YELLOW)🎨 Starting UI development server...$(NC)"
-	@$(MAKE) start-ui &
+help: ## 📚 Show this help message
+	@echo '$(CYAN)╔══════════════════════════════════════════════════════════════════╗$(NC)'
+	@echo '$(CYAN)║                   ZAMAZ DEBATE MCP SYSTEM                       ║$(NC)'
+	@echo '$(CYAN)║                     Quick Reference Guide                       ║$(NC)'
+	@echo '$(CYAN)╚══════════════════════════════════════════════════════════════════╝$(NC)'
+	@echo ''
+	@echo '$(WHITE)🚀 QUICK START (First Time):$(NC)'
+	@echo '  $(GREEN)make setup$(NC)     - Set up environment and install dependencies'
+	@echo '  $(GREEN)make start$(NC)     - Start all backend services'
+	@echo '  $(GREEN)make ui$(NC)        - Start UI development server (run in new terminal)'
+	@echo ''
+	@echo '$(WHITE)⚡ DAILY DEVELOPMENT:$(NC)'
+	@echo '  $(GREEN)make dev$(NC)       - Start everything (services + UI) for development'
+	@echo '  $(GREEN)make restart$(NC)   - Restart all services'
+	@echo '  $(GREEN)make stop$(NC)      - Stop all services'
+	@echo '  $(GREEN)make logs$(NC)      - View all service logs'
+	@echo ''
+	@echo '$(WHITE)🧪 TESTING & QUALITY:$(NC)'
+	@echo '  $(GREEN)make test$(NC)      - Run all tests (quick validation)'
+	@echo '  $(GREEN)make test-e2e$(NC)  - Run comprehensive end-to-end tests'
+	@echo '  $(GREEN)make test-ui$(NC)   - Run UI tests only'
+	@echo '  $(GREEN)make lint$(NC)      - Check code quality with incremental linting'
+	@echo ''
+	@echo '$(WHITE)📊 MONITORING & DEBUG:$(NC)'
+	@echo '  $(GREEN)make status$(NC)    - Show service status'
+	@echo '  $(GREEN)make health$(NC)    - Check service health'
+	@echo '  $(GREEN)make logs-ui$(NC)   - View UI logs only'
+	@echo '  $(GREEN)make logs-api$(NC)  - View API logs only'
+	@echo ''
+	@echo '$(WHITE)🔧 MAINTENANCE:$(NC)'
+	@echo '  $(GREEN)make clean$(NC)     - Clean up containers and volumes'
+	@echo '  $(GREEN)make reset$(NC)     - Complete reset (clean + fresh start)'
+	@echo '  $(GREEN)make build$(NC)     - Rebuild Docker images'
+	@echo ''
+	@echo '$(WHITE)🌍 ENVIRONMENTS:$(NC)'
+	@echo '  $(GREEN)make prod$(NC)      - Deploy to production mode'
+	@echo '  $(GREEN)make staging$(NC)   - Deploy to staging mode'
+	@echo ''
+	@echo '$(YELLOW)💡 Examples:$(NC)'
+	@echo '  New developer: $(CYAN)make setup && make dev$(NC)'
+	@echo '  Daily work:    $(CYAN)make restart && make ui$(NC)'
+	@echo '  Before commit: $(CYAN)make lint && make test$(NC)'
+	@echo ''
+	@echo '$(WHITE)📋 ALL COMMANDS:$(NC)'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(NC) %s\n", $$1, $$2}'
+
+# =============================================================================
+# SETUP & ENVIRONMENT
+# =============================================================================
+
+setup: check-deps check-env install ## 🛠️ Complete project setup (run this first!)
+	@echo "$(GREEN)✅ Project setup complete!$(NC)"
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Edit .env with your API keys if needed"
+	@echo "  2. Run '$(CYAN)make dev$(NC)' to start development"
+	@echo "  3. Open $(CYAN)http://localhost:$(UI_PORT)$(NC) in your browser"
+
+check-deps: ## 🔍 Check if required tools are installed
+	@echo "$(BLUE)Checking dependencies...$(NC)"
+	@command -v docker >/dev/null 2>&1 || (echo "$(RED)❌ Docker is required$(NC)" && exit 1)
+	@command -v docker-compose >/dev/null 2>&1 || (echo "$(RED)❌ Docker Compose is required$(NC)" && exit 1)
+	@command -v node >/dev/null 2>&1 || (echo "$(RED)❌ Node.js is required$(NC)" && exit 1)
+	@echo "$(GREEN)✅ All dependencies found$(NC)"
+
+check-env: ## 🔧 Check and create environment configuration
+	@echo "$(BLUE)Checking environment...$(NC)"
+	@if [ ! -f .env ]; then \
+		echo "$(YELLOW)Creating .env from template...$(NC)"; \
+		cp .env.example .env 2>/dev/null || echo "# Add your environment variables here" > .env; \
+		echo "$(GREEN)✅ .env file created$(NC)"; \
+	else \
+		echo "$(GREEN)✅ .env file exists$(NC)"; \
+	fi
+
+install: ## 📦 Install all dependencies
+	@echo "$(BLUE)Installing dependencies...$(NC)"
+	@if [ -d "debate-ui" ]; then \
+		echo "$(YELLOW)Installing UI dependencies...$(NC)"; \
+		cd debate-ui && npm install --silent; \
+	fi
+	@if [ -d "e2e-tests" ]; then \
+		echo "$(YELLOW)Installing E2E test dependencies...$(NC)"; \
+		cd e2e-tests && npm install --silent; \
+	fi
+	@echo "$(GREEN)✅ Dependencies installed$(NC)"
+
+# =============================================================================
+# DOCKER SERVICES
+# =============================================================================
+
+start: ## 🚀 Start all backend services
+	@echo "$(BLUE)Starting backend services...$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) up -d
 	@sleep 3
-	@echo "$(GREEN)✅ All services started!$(NC)"
-	@echo "$(BLUE)🌐 Open http://localhost:3001 in your browser$(NC)"
+	@echo "$(GREEN)✅ Backend services started!$(NC)"
+	@$(MAKE) show-urls
 
-start: start-all ## Alias for start-all (backward compatibility)
-
-wait-for-services: ## Wait for all services to be healthy
-	@echo "$(BLUE)Waiting for services to be healthy...$(NC)"
-	@echo -n "PostgreSQL: "
-	@timeout 30 bash -c 'until docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
-	@echo -n "Redis: "
-	@timeout 30 bash -c 'until docker-compose exec -T redis redis-cli ping > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
-	@echo -n "LLM Service: "
-	@timeout 30 bash -c 'until curl -s http://localhost:$(LLM_API_PORT)/actuator/health > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
-	@echo -n "Debate Service: "
-	@timeout 30 bash -c 'until curl -s http://localhost:$(DEBATE_API_PORT)/actuator/health > /dev/null 2>&1; do sleep 1; done' && echo "$(GREEN)✓$(NC)" || echo "$(RED)✗$(NC)"
-
-stop-all: ## Stop all services including UI
-	@echo "$(BLUE)🛑 Stopping all services...$(NC)"
-	docker-compose down
-	@pkill -f "npm run dev" || true
+stop: ## 🛑 Stop all services
+	@echo "$(BLUE)Stopping all services...$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) down
+	@pkill -f "npm run dev" 2>/dev/null || true
 	@echo "$(GREEN)✅ All services stopped$(NC)"
 
-stop: stop-all ## Alias for stop-all (backward compatibility)
+restart: stop start ## 🔄 Restart all services
 
-build: ## Build all services
-	@echo "$(BLUE)🏗️ Building services...$(NC)"
-	docker-compose build
+build: ## 🏗️ Build/rebuild all Docker images
+	@echo "$(BLUE)Building Docker images...$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) build
 	@echo "$(GREEN)✅ Build complete$(NC)"
 
-restart: stop start ## Restart all services
+# =============================================================================
+# DEVELOPMENT
+# =============================================================================
 
-start-ui: ## Start only the UI development server
-	@echo "$(BLUE)🎨 Starting UI development server...$(NC)"
-	@echo "$(YELLOW)Checking if port $(UI_PORT) is available...$(NC)"
-	@if lsof -Pi :$(UI_PORT) -sTCP:LISTEN -t >/dev/null 2>&1; then \
-		echo "$(RED)Port $(UI_PORT) is in use. Trying port 3001...$(NC)"; \
-		cd debate-ui && PORT=3001 npm run dev; \
-	else \
-		cd debate-ui && PORT=$(UI_PORT) npm run dev; \
-	fi
+dev: start ## 🎯 Start complete development environment
+	@echo "$(GREEN)🚀 Development environment ready!$(NC)"
+	@echo "$(YELLOW)Starting UI in development mode...$(NC)"
+	@echo "$(WHITE)💡 Open http://localhost:$(UI_PORT) in your browser$(NC)"
+	@$(MAKE) ui
 
-ui: start-ui ## Alias for start-ui (backward compatibility)
-
-check-health: ## Check health of all services
-	@echo "$(BLUE)🏥 Checking service health...$(NC)"
-	@echo -n "PostgreSQL: " && \
-		(docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "Redis: " && \
-		(docker-compose exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP Organization: " && \
-		(curl -s http://localhost:5005/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP Controller (Debate): " && \
-		(curl -s http://localhost:5013/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP LLM: " && \
-		(curl -s http://localhost:$(LLM_API_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP RAG: " && \
-		(curl -s http://localhost:5004/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "MCP Template: " && \
-		(curl -s http://localhost:5006/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Not responding$(NC)")
-	@echo -n "UI (if running): " && \
-		(curl -s http://localhost:$(UI_PORT) > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠ Not running (run 'make ui')$(NC)")
-
-full-test: ## Run comprehensive E2E tests
-	@echo "$(BLUE)🧪 Running comprehensive tests with Docker...$(NC)"
-	@echo "$(YELLOW)📁 Test results will be saved to: ./test_probe$(NC)"
-	@mkdir -p test_probe
-	docker-compose --profile test build test-runner
-	docker-compose --profile test run --rm test-runner
-	@echo "$(GREEN)✅ Test results saved to ./test_probe$(NC)"
-	@echo "$(BLUE)📊 View latest results: ls -la test_probe/$(NC)"
-
-test: full-test ## Alias for full-test (backward compatibility)
-
-quick-test: ## Run quick UI tests
-	@echo "$(BLUE)🧪 Running quick UI tests...$(NC)"
-	cd playwright-tests && npm run test:smoke
-
-test-ui-only: ## Run UI tests without backend (for UI-only testing)
-	@echo "$(BLUE)🧪 Running UI-only tests...$(NC)"
-	cd playwright-tests && npm test
-
-test-e2e: ## Run E2E tests locally (requires services running)
-	@echo "$(BLUE)🧪 Running E2E tests locally...$(NC)"
-	@echo "$(YELLOW)Checking if services are running...$(NC)"
-	@$(MAKE) check-health
-	cd e2e-tests && npm test
-
-test-playwright: ## Run Playwright tests locally
-	@echo "$(BLUE)🧪 Running Playwright tests...$(NC)"
-	cd playwright-tests && npm test
-
-test-llm: ## Test LLM service connectivity and functionality
-	@echo "$(BLUE)🤖 Testing LLM service...$(NC)"
-	@chmod +x test-llm.sh
-	@./test-llm.sh
-
-test-quick: ## Run quick smoke tests
-	@echo "$(BLUE)🚀 Running quick smoke tests...$(NC)"
-	cd playwright-tests && npm run test:smoke
-
-test-ui-headed: ## Run UI tests with headed browser
-	@echo "$(BLUE)🖥️ Running UI tests with visible browser...$(NC)"
-	cd playwright-tests && npm run test:headed
-
-test-debug: ## Run tests in debug mode
-	@echo "$(BLUE)🐛 Running tests in debug mode...$(NC)"
-	cd playwright-tests && npm run test:debug
-
-# MCP Service Testing Commands
-test-mcp-all: ## Test all MCP services
-	@echo "$(BLUE)🧪 Testing all MCP services...$(NC)"
-	@$(MAKE) test-mcp-organization
-	@$(MAKE) test-mcp-llm
-	@$(MAKE) test-mcp-controller
-	@$(MAKE) test-mcp-rag
-	@$(MAKE) test-mcp-template
-	@echo "$(GREEN)✅ All MCP service tests complete!$(NC)"
-
-test-mcp-organization: ## Test MCP Organization service
-	@echo "$(BLUE)🏢 Testing MCP Organization service...$(NC)"
-	@curl -s http://localhost:5005/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5005/api-docs > /dev/null 2>&1 && echo "$(GREEN)✓ API docs available$(NC)" || echo "$(RED)✗ API docs not available$(NC)"
-
-test-mcp-controller: ## Test MCP Controller service
-	@echo "$(BLUE)⚔️ Testing MCP Controller service...$(NC)"
-	@curl -s http://localhost:5013/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5013/api/v1/debates \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List debates test passed$(NC)" || echo "$(RED)✗ List debates test failed$(NC)"
-
-test-mcp-llm: ## Test MCP LLM service
-	@echo "$(BLUE)🤖 Testing MCP LLM service...$(NC)"
-	@curl -s http://localhost:5002/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5002/api/v1/providers \
-		| jq '.' 2>/dev/null && echo "$(GREEN)✓ List providers test passed$(NC)" || echo "$(RED)✗ List providers test failed$(NC)"
-
-
-test-mcp-rag: ## Test MCP RAG service
-	@echo "$(BLUE)🔍 Testing MCP RAG service...$(NC)"
-	@curl -s http://localhost:5004/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5004/api-docs > /dev/null 2>&1 && echo "$(GREEN)✓ API docs available$(NC)" || echo "$(RED)✗ API docs not available$(NC)"
-
-test-mcp-template: ## Test MCP Template service
-	@echo "$(BLUE)📋 Testing MCP Template service...$(NC)"
-	@curl -s http://localhost:5006/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"
-	@curl -s http://localhost:5006/api-docs > /dev/null 2>&1 && echo "$(GREEN)✓ API docs available$(NC)" || echo "$(RED)✗ API docs not available$(NC)"
-
-test-mcp-detail: ## Run detailed tests for all MCP services
-	@echo "$(BLUE)🧪 Running detailed MCP service tests...$(NC)"
-	@if [ ! -f mcp-tests/test-all-mcp-detailed.sh ]; then \
-		echo "$(RED)✗ Test scripts not found. Please ensure mcp-tests directory exists.$(NC)"; \
+ui: ## 🎨 Start UI development server
+	@echo "$(BLUE)Starting UI development server...$(NC)"
+	@if [ ! -d "debate-ui" ]; then \
+		echo "$(RED)❌ debate-ui directory not found$(NC)"; \
 		exit 1; \
 	fi
-	@bash mcp-tests/test-all-mcp-detailed.sh
+	@cd debate-ui && npm run dev
 
-test-mcp-detail-%: ## Run detailed test for specific MCP service (e.g., make test-mcp-detail-llm)
-	@echo "$(BLUE)🧪 Running detailed test for MCP $* service...$(NC)"
-	@if [ ! -f mcp-tests/test-mcp-$*.sh ]; then \
-		echo "$(RED)✗ Test script for $* not found.$(NC)"; \
+# =============================================================================
+# TESTING
+# =============================================================================
+
+test: ## 🧪 Run quick validation tests
+	@echo "$(BLUE)Running quick validation tests...$(NC)"
+	@$(MAKE) health
+	@if [ -f "scripts/testing/smoke-tests.sh" ]; then \
+		chmod +x scripts/testing/smoke-tests.sh && ./scripts/testing/smoke-tests.sh; \
+	else \
+		echo "$(GREEN)✅ Basic health checks passed$(NC)"; \
+	fi
+
+test-e2e: ## 🎭 Run comprehensive end-to-end tests
+	@echo "$(BLUE)Running E2E tests...$(NC)"
+	@if [ -d "e2e-tests" ]; then \
+		cd e2e-tests && npm test; \
+	else \
+		echo "$(YELLOW)⚠️ E2E tests directory not found$(NC)"; \
+	fi
+
+test-ui: ## 🖥️ Run UI tests only
+	@echo "$(BLUE)Running UI tests...$(NC)"
+	@if [ -d "e2e-tests" ]; then \
+		cd e2e-tests && npm run test:ui 2>/dev/null || npm test; \
+	else \
+		echo "$(YELLOW)⚠️ UI tests not available$(NC)"; \
+	fi
+
+test-services: ## 🔧 Test individual services
+	@echo "$(BLUE)Testing MCP services...$(NC)"
+	@if [ -f "scripts/testing/test-mcp-services.sh" ]; then \
+		chmod +x scripts/testing/test-mcp-services.sh && ./scripts/testing/test-mcp-services.sh; \
+	else \
+		$(MAKE) health; \
+	fi
+
+# =============================================================================
+# CODE QUALITY & LINTING
+# =============================================================================
+
+lint: ## 🔍 Run incremental linting (fast, smart analysis)
+	@echo "$(BLUE)Running incremental linting...$(NC)"
+	@if [ -f ".linting/scripts/incremental-lint.sh" ]; then \
+		chmod +x .linting/scripts/incremental-lint.sh && ./.linting/scripts/incremental-lint.sh --verbose; \
+	else \
+		echo "$(RED)❌ Incremental linting script not found$(NC)"; \
 		exit 1; \
 	fi
-	@bash mcp-tests/test-mcp-$*.sh
+	@echo "$(GREEN)✅ Linting complete$(NC)"
 
-test-services: ## Quick test of all services
-	@echo "$(BLUE)🚀 Running quick service test...$(NC)"
-	@if [ ! -x mcp-tests/quick-test.sh ]; then \
-		chmod +x mcp-tests/quick-test.sh; \
+lint-fix: ## 🔧 Auto-fix linting issues
+	@echo "$(BLUE)Auto-fixing linting issues...$(NC)"
+	@if [ -d "debate-ui" ]; then \
+		cd debate-ui && npm run lint:fix --silent 2>/dev/null || true; \
+		cd debate-ui && npm run format --silent 2>/dev/null || true; \
 	fi
-	@./mcp-tests/quick-test.sh
+	@echo "$(GREEN)✅ Auto-fixes applied$(NC)"
 
-test-services-detail: ## Enhanced quick test with details
-	@echo "$(BLUE)🚀 Running enhanced quick service test...$(NC)"
-	@if [ ! -x mcp-tests/quick-test-enhanced.sh ]; then \
-		chmod +x mcp-tests/quick-test-enhanced.sh; \
-	fi
-	@./mcp-tests/quick-test-enhanced.sh
+# =============================================================================
+# MONITORING & DEBUGGING
+# =============================================================================
 
-logs: ## Show logs (use service=NAME to filter)
-	@if [ -z "$(service)" ]; then \
-		docker-compose logs -f --tail=100; \
-	else \
-		docker-compose logs -f --tail=100 $(service); \
-	fi
+status: ## 📊 Show service status
+	@echo "$(BLUE)Service Status:$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) ps
 
-status: ## Show service status
-	@echo "$(BLUE)📊 Service Status:$(NC)"
-	@docker-compose ps
+health: ## 🏥 Check service health
+	@echo "$(BLUE)Health Check:$(NC)"
+	@echo -n "PostgreSQL: "
+	@timeout 5 docker-compose -f $(COMPOSE_FILE) exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@echo -n "Redis: "
+	@timeout 5 docker-compose -f $(COMPOSE_FILE) exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@echo -n "UI: "
+	@curl -s http://localhost:$(UI_PORT) > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Run 'make ui'$(NC)"
 
-clean: ## Clean up containers and volumes
-	@echo "$(YELLOW)🧹 Cleaning up...$(NC)"
-	@echo "$(RED)⚠️  This will delete all data! Continue? [y/N]$(NC)"
+logs: ## 📜 View all service logs
+	@echo "$(BLUE)Following all logs (Ctrl+C to stop)...$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) logs -f --tail=50
+
+logs-ui: ## 📱 View UI logs only
+	@echo "$(BLUE)UI Development Logs:$(NC)"
+	@echo "$(YELLOW)UI logs appear in the terminal where you ran 'make ui'$(NC)"
+
+logs-api: ## 🔌 View API logs only
+	@echo "$(BLUE)API Service Logs:$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) logs -f --tail=20
+
+# =============================================================================
+# CLEANUP & MAINTENANCE
+# =============================================================================
+
+clean: ## 🧹 Clean up containers and volumes
+	@echo "$(YELLOW)⚠️ This will remove all data. Continue? [y/N]$(NC)"
 	@read -r response && \
-	if [ "$$response" = "y" ]; then \
-		docker-compose down -v; \
+	if [ "$$response" = "y" ] || [ "$$response" = "Y" ]; then \
+		echo "$(BLUE)Cleaning up...$(NC)"; \
+		docker-compose -f $(COMPOSE_FILE) down -v --remove-orphans; \
 		docker system prune -f; \
 		echo "$(GREEN)✅ Cleanup complete$(NC)"; \
 	else \
 		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
 	fi
 
-clean-all: ## Complete Docker cleanup (removes ALL Docker data)
-	@echo "$(RED)🚨 COMPLETE DOCKER CLEANUP$(NC)"
-	@echo "$(RED)This will remove ALL Docker containers, images, volumes, and networks!$(NC)"
-	@echo "$(RED)This affects ALL Docker projects on your system, not just this one!$(NC)"
-	@echo "$(RED)Type 'yes' to confirm: $(NC)"
-	@read -r response && \
-	if [ "$$response" = "yes" ]; then \
-		./scripts/deployment/docker-cleanup.sh; \
-	else \
-		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
-	fi
+reset: clean start ## 🔄 Complete reset (clean + fresh start)
+	@echo "$(GREEN)✅ System reset complete$(NC)"
 
-setup: ## First time setup (install dependencies)
-	@echo "$(BLUE)📦 Setting up project...$(NC)"
-	@if [ ! -f .env ]; then \
-		echo "$(YELLOW)Creating .env file from template...$(NC)"; \
-		cp .env.example .env; \
-		echo "$(GREEN)✅ .env file created$(NC)"; \
-		echo "$(YELLOW)⚠️  Please edit .env file with your API keys$(NC)"; \
-	else \
-		echo "$(GREEN)✓ .env file already exists$(NC)"; \
-	fi
-	@echo "$(BLUE)Installing UI dependencies...$(NC)"
-	cd debate-ui && npm install
-	@echo "$(BLUE)Installing E2E test dependencies...$(NC)"
-	cd e2e-tests && npm install
-	@echo "$(BLUE)Installing Playwright test dependencies...$(NC)"
-	cd playwright-tests && npm install
-	@echo "$(GREEN)✅ Setup complete!$(NC)"
-	@echo "$(YELLOW)Next steps:$(NC)"
-	@echo "  1. Edit .env file with your API keys"
-	@echo "  2. Run 'make start' to start services"
-	@echo "  3. Run 'make ui' in a new terminal to start the UI"
+# =============================================================================
+# ENVIRONMENT DEPLOYMENTS
+# =============================================================================
 
-start-with-ollama: check-ports ## Start all services including Ollama
-	@echo "$(BLUE)🤖 Starting services with Ollama support...$(NC)"
-	docker-compose --profile llama up -d
-	@$(MAKE) wait-for-services
-	@echo "$(GREEN)✅ All services including Ollama are ready!$(NC)"
-	@echo "$(YELLOW)🎨 Starting UI development server...$(NC)"
-	@$(MAKE) start-ui &
-	@sleep 3
-	@echo "$(GREEN)✅ System ready with Ollama support!$(NC)"
-	@echo "Ollama: http://localhost:$${OLLAMA_PORT:-11434}"
+prod: ## 🌐 Deploy production environment
+	@echo "$(BLUE)Starting production environment...$(NC)"
+	@COMPOSE_FILE="$(COMPOSE_DIR)/docker-compose.yml:$(COMPOSE_DIR)/docker-compose.prod.yml" docker-compose up -d
+	@echo "$(GREEN)✅ Production environment started$(NC)"
 
-start-ollama: start-with-ollama ## Alias for start-with-ollama (backward compatibility)
+staging: ## 🎪 Deploy staging environment
+	@echo "$(BLUE)Starting staging environment...$(NC)"
+	@COMPOSE_FILE="$(COMPOSE_DIR)/docker-compose.yml:$(COMPOSE_DIR)/docker-compose.staging.yml" docker-compose up -d
+	@echo "$(GREEN)✅ Staging environment started$(NC)"
 
-stop-ollama: ## Stop all services including Ollama
-	@echo "$(BLUE)🛑 Stopping all services...$(NC)"
-	docker-compose --profile llama down
-	@echo "$(GREEN)✅ All services stopped$(NC)"
+# =============================================================================
+# ADVANCED OPERATIONS
+# =============================================================================
 
-# Individual MCP Service Commands
-start-mcp-organization: ## Start only MCP Organization service
-	@echo "$(BLUE)🏢 Starting MCP Organization service...$(NC)"
-	docker-compose up -d mcp-organization
-	@echo "$(GREEN)✅ MCP Organization service started$(NC)"
+shell-db: ## 💾 Open database shell
+	@docker-compose -f $(COMPOSE_FILE) exec postgres psql -U postgres
 
-stop-mcp-organization: ## Stop MCP Organization service
-	@echo "$(BLUE)🛑 Stopping MCP Organization service...$(NC)"
-	docker-compose stop mcp-organization
-	@echo "$(GREEN)✅ MCP Organization service stopped$(NC)"
+shell-redis: ## 🗄️ Open Redis CLI
+	@docker-compose -f $(COMPOSE_FILE) exec redis redis-cli
 
-start-mcp-controller: ## Start only MCP Controller service
-	@echo "$(BLUE)⚔️ Starting MCP Controller service...$(NC)"
-	docker-compose up -d postgres redis mcp-organization mcp-llm mcp-controller
-	@echo "$(GREEN)✅ MCP Controller service started$(NC)"
+backup: ## 💾 Backup database
+	@echo "$(BLUE)Creating database backup...$(NC)"
+	@mkdir -p backups
+	@docker-compose -f $(COMPOSE_FILE) exec postgres pg_dump -U postgres > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "$(GREEN)✅ Backup created in backups/$(NC)"
 
-stop-mcp-controller: ## Stop MCP Controller service
-	@echo "$(BLUE)🛑 Stopping MCP Controller service...$(NC)"
-	docker-compose stop mcp-controller
-	@echo "$(GREEN)✅ MCP Controller service stopped$(NC)"
+# =============================================================================
+# QUICK SHORTCUTS
+# =============================================================================
 
-start-mcp-llm: ## Start only MCP LLM service
-	@echo "$(BLUE)🤖 Starting MCP LLM service...$(NC)"
-	docker-compose up -d redis mcp-llm
-	@echo "$(GREEN)✅ MCP LLM service started$(NC)"
+up: start ## ⬆️ Alias for start
+down: stop ## ⬇️ Alias for stop
+rebuild: clean build start ## 🔨 Complete rebuild
 
-stop-mcp-llm: ## Stop MCP LLM service
-	@echo "$(BLUE)🛑 Stopping MCP LLM service...$(NC)"
-	docker-compose stop mcp-llm
-	@echo "$(GREEN)✅ MCP LLM service stopped$(NC)"
+# =============================================================================
+# UTILITIES
+# =============================================================================
 
-start-mcp-debate: ## Start only MCP Debate service (alias for controller)
-	@$(MAKE) start-mcp-controller
+ports: ## 🔌 Show port usage
+	@echo "$(BLUE)Port Configuration:$(NC)"
+	@echo "  UI:         http://localhost:$(UI_PORT)"
+	@echo "  PostgreSQL: localhost:$(POSTGRES_PORT)"
+	@echo "  Redis:      localhost:$(REDIS_PORT)"
+	@echo ""
+	@echo "$(BLUE)Currently used ports:$(NC)"
+	@lsof -nP -i4TCP | grep LISTEN | awk '{print $$9}' | sort -u | grep -E ':(3001|5432|6379|500[0-9]|501[0-9])' || echo "No MCP ports in use"
 
-stop-mcp-debate: ## Stop MCP Debate service (alias for controller)
-	@$(MAKE) stop-mcp-controller
+info: ## ℹ️ Show project information
+	@echo "$(CYAN)Project: $(PROJECT_NAME)$(NC)"
+	@echo "$(CYAN)Compose File: $(COMPOSE_FILE)$(NC)"
+	@echo "$(CYAN)Status: $(NC)"
+	@$(MAKE) status --no-print-directory
 
-start-mcp-rag: ## Start only MCP RAG service
-	@echo "$(BLUE)🔍 Starting MCP RAG service...$(NC)"
-	docker-compose up -d qdrant redis mcp-llm mcp-rag
-	@echo "$(GREEN)✅ MCP RAG service started$(NC)"
+# Hidden debugging commands (not shown in help)
+debug-env:
+	@echo "COMPOSE_FILE: $(COMPOSE_FILE)"
+	@echo "UI_PORT: $(UI_PORT)"
+	@echo "POSTGRES_PORT: $(POSTGRES_PORT)"
+	@echo "REDIS_PORT: $(REDIS_PORT)"
 
-stop-mcp-rag: ## Stop MCP RAG service
-	@echo "$(BLUE)🛑 Stopping MCP RAG service...$(NC)"
-	docker-compose stop mcp-rag
-	@echo "$(GREEN)✅ MCP RAG service stopped$(NC)"
-
-start-mcp-template: ## Start only MCP Template service
-	@echo "$(BLUE)📋 Starting MCP Template service...$(NC)"
-	docker-compose up -d postgres mcp-organization mcp-template
-	@echo "$(GREEN)✅ MCP Template service started$(NC)"
-
-stop-mcp-template: ## Stop MCP Template service
-	@echo "$(BLUE)🛑 Stopping MCP Template service...$(NC)"
-	docker-compose stop mcp-template
-	@echo "$(GREEN)✅ MCP Template service stopped$(NC)"
-
-restart-mcp-%: ## Restart specific MCP service (e.g., make restart-mcp-llm)
-	@echo "$(BLUE)🔄 Restarting MCP $* service...$(NC)"
-	@$(MAKE) stop-mcp-$*
-	@sleep 2
-	@$(MAKE) start-mcp-$*
-	@echo "$(GREEN)✅ MCP $* service restarted$(NC)"
-
-# Development helpers
-shell-postgres: ## Open PostgreSQL shell
-	docker-compose exec postgres psql -U postgres
-
-shell-redis: ## Open Redis CLI
-	docker-compose exec redis redis-cli
-
-inspect-debates: ## Show debates in database
-	docker-compose exec postgres psql -U postgres -d debate_db -c "SELECT * FROM debates;"
-
-# Evidence collection for testing
-collect-evidence: ## Collect evidence of working system
-	@echo "$(BLUE)📸 Collecting evidence...$(NC)"
-	@mkdir -p evidence/$(shell date +%Y%m%d_%H%M%S)
-	@echo "$(YELLOW)Taking screenshots and collecting data...$(NC)"
-	cd playwright-tests && npm run screenshots
-	@echo "$(GREEN)✅ Evidence collected in evidence/ directory$(NC)"
-
-# Troubleshooting commands
-fix-ui: ## Fix common UI issues
-	@echo "$(BLUE)🔧 Fixing common UI issues...$(NC)"
-	@echo "$(YELLOW)Restarting UI service...$(NC)"
-	@pkill -f "npm run dev" || true
-	@sleep 2
-	@$(MAKE) start-ui &
-	@echo "$(GREEN)✅ UI restarted$(NC)"
-
-reset-db: ## Reset all databases (WARNING: deletes all data)
-	@echo "$(RED)⚠️  This will delete all data! Continue? [y/N]$(NC)"
-	@read -r response && \
-	if [ "$$response" = "y" ]; then \
-		docker-compose down -v; \
-		docker volume rm zamaz-debate-mcp_postgres_data zamaz-debate-mcp_redis_data 2>/dev/null || true; \
-		echo "$(GREEN)✅ Databases reset$(NC)"; \
-	else \
-		echo "$(YELLOW)Reset cancelled$(NC)"; \
-	fi
-
-# GitHub Integration Testing Commands
-test-setup: ## Set up test environment
-	@echo "$(BLUE)🔧 Setting up test environment...$(NC)"
-	@chmod +x .github/tests/setup_test_env.sh
-	@./.github/tests/setup_test_env.sh
-	@echo "$(GREEN)✅ Test environment ready$(NC)"
-
-test-unit: ## Run unit tests for GitHub integration
-	@echo "$(BLUE)🧪 Running unit tests...$(NC)"
-	@cd .github/tests && python -m pytest test_*.py -v --cov=../scripts --cov-report=html --html=../test-results/unit/report.html --self-contained-html
-	@echo "$(GREEN)✅ Unit tests complete. Report: test-results/unit/report.html$(NC)"
-
-test-integration: ## Run integration tests
-	@echo "$(BLUE)🔗 Running integration tests...$(NC)"
-	@cd .github/tests && python -m pytest integration/ -v -m integration --html=../test-results/integration/report.html --self-contained-html
-	@echo "$(GREEN)✅ Integration tests complete$(NC)"
-
-test-api: ## Test API endpoints with curl
-	@echo "$(BLUE)🌐 Testing API endpoints...$(NC)"
-	@chmod +x .github/tests/api_tests.sh
-	@./.github/tests/api_tests.sh
-	@echo "$(GREEN)✅ API tests complete$(NC)"
-
-test-docker: ## Test Docker containers and health
-	@echo "$(BLUE)🐳 Testing Docker containers...$(NC)"
-	@chmod +x .github/tests/test_docker.sh
-	@./.github/tests/test_docker.sh
-	@echo "$(GREEN)✅ Docker tests complete$(NC)"
-
-test-e2e-full: ## Run full end-to-end tests
-	@echo "$(BLUE)🚀 Running full E2E tests...$(NC)"
-	@cd .github/tests && python -m pytest e2e/ -v --html=../test-results/e2e/report.html --self-contained-html
-	@echo "$(GREEN)✅ E2E tests complete$(NC)"
-
-test-performance: ## Run performance and load tests
-	@echo "$(BLUE)⚡ Running performance tests...$(NC)"
-	@cd .github/tests && python -m pytest performance/ -v --benchmark-only --benchmark-autosave
-	@echo "$(GREEN)✅ Performance tests complete$(NC)"
-
-test-security: ## Run security tests
-	@echo "$(BLUE)🔒 Running security tests...$(NC)"
-	@bandit -r .github/scripts -f json -o test-results/security/bandit-report.json
-	@safety check --json > test-results/security/safety-report.json || true
-	@echo "$(GREEN)✅ Security tests complete$(NC)"
-
-test-all-github: test-setup test-unit test-integration test-api test-docker test-e2e-full test-performance test-security ## Run all GitHub integration tests
-	@echo "$(GREEN)✅ All GitHub integration tests complete!$(NC)"
-	@$(MAKE) test-report
-
-test-report: ## Generate test report with evidence
-	@echo "$(BLUE)📊 Generating test report...$(NC)"
-	@mkdir -p test-evidence/reports
-	@echo "# Test Report - $(shell date)" > test-evidence/reports/summary.md
-	@echo "" >> test-evidence/reports/summary.md
-	@echo "## Test Results Summary" >> test-evidence/reports/summary.md
-	@echo "" >> test-evidence/reports/summary.md
-	@if [ -f test-results/unit/report.html ]; then echo "- ✅ Unit Tests: [View Report](../test-results/unit/report.html)" >> test-evidence/reports/summary.md; fi
-	@if [ -f test-results/integration/report.html ]; then echo "- ✅ Integration Tests: [View Report](../test-results/integration/report.html)" >> test-evidence/reports/summary.md; fi
-	@if [ -f test-evidence/api/api_test_results_*.txt ]; then echo "- ✅ API Tests: Completed" >> test-evidence/reports/summary.md; fi
-	@if [ -f test-results/e2e/report.html ]; then echo "- ✅ E2E Tests: [View Report](../test-results/e2e/report.html)" >> test-evidence/reports/summary.md; fi
-	@echo "" >> test-evidence/reports/summary.md
-	@echo "## Evidence Location" >> test-evidence/reports/summary.md
-	@echo "- Screenshots: test-evidence/screenshots/" >> test-evidence/reports/summary.md
-	@echo "- Logs: test-evidence/logs/" >> test-evidence/reports/summary.md
-	@echo "- API Responses: test-evidence/api/" >> test-evidence/reports/summary.md
-	@echo "$(GREEN)✅ Test report generated: test-evidence/reports/summary.md$(NC)"
-
-test-github-quick: ## Quick smoke test for GitHub integration
-	@echo "$(BLUE)🚀 Running quick GitHub integration tests...$(NC)"
-	@# Check if test environment is set up
-	@if [ ! -f .env.test ]; then $(MAKE) test-setup; fi
-	@# Run basic health checks
-	@echo "Testing webhook handler..."
-	@curl -s -f http://localhost:8080/health || echo "$(YELLOW)⚠️  Webhook handler not running$(NC)"
-	@echo "Testing metrics..."
-	@curl -s -f http://localhost:9090/metrics || echo "$(YELLOW)⚠️  Metrics not available$(NC)"
-	@# Run quick unit tests
-	@cd .github/tests && python -m pytest test_webhook_handler.py -v -k "test_webhook_signature_validation"
-	@echo "$(GREEN)✅ Quick tests complete$(NC)"
-
-test-playwright-github: ## Run Playwright tests for GitHub UI
-	@echo "$(BLUE)🎭 Running Playwright tests for GitHub integration...$(NC)"
-	@cd .github/tests && npx playwright test --project=chromium
-	@echo "$(GREEN)✅ Playwright tests complete$(NC)"
-
-test-github-monitoring: ## Test monitoring stack (Prometheus, Grafana, Loki)
-	@echo "$(BLUE)📊 Testing monitoring stack...$(NC)"
-	@echo -n "Prometheus: "
-	@curl -s http://localhost:9091/api/v1/query?query=up > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
-	@echo -n "Grafana: "
-	@curl -s http://localhost:3000/api/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
-	@echo -n "Loki: "
-	@curl -s http://localhost:3100/ready > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
-	@echo "$(GREEN)✅ Monitoring stack test complete$(NC)"
-
-# Code Quality and Linting Commands
-lint-all: ## Run all linting checks
-	@echo "$(BLUE)🔍 Running comprehensive linting...$(NC)"
-	@$(MAKE) lint-java
-	@$(MAKE) lint-frontend
-	@$(MAKE) lint-config
-	@$(MAKE) lint-docs
-	@echo "$(GREEN)✅ All linting checks complete!$(NC)"
-
-lint-java: ## Lint Java code (Checkstyle, SpotBugs, PMD)
-	@echo "$(BLUE)☕ Linting Java code...$(NC)"
-	@echo "$(YELLOW)Running Checkstyle...$(NC)"
-	@mvn checkstyle:check -q || (echo "$(RED)✗ Checkstyle issues found$(NC)" && exit 1)
-	@echo "$(GREEN)✓ Checkstyle passed$(NC)"
-	@echo "$(YELLOW)Running SpotBugs...$(NC)"
-	@mvn spotbugs:check -q || (echo "$(RED)✗ SpotBugs issues found$(NC)" && exit 1)
-	@echo "$(GREEN)✓ SpotBugs passed$(NC)"
-	@echo "$(YELLOW)Running PMD...$(NC)"
-	@mvn pmd:check -q || (echo "$(RED)✗ PMD issues found$(NC)" && exit 1)
-	@echo "$(GREEN)✓ PMD passed$(NC)"
-	@echo "$(GREEN)✅ Java linting complete$(NC)"
-
-lint-java-report: ## Generate Java linting reports
-	@echo "$(BLUE)📊 Generating Java linting reports...$(NC)"
-	@mkdir -p .linting/reports/java
-	@mvn checkstyle:checkstyle -q
-	@mvn spotbugs:spotbugs -q
-	@mvn pmd:pmd -q
-	@echo "$(GREEN)✅ Java reports generated in target/site/$(NC)"
-
-lint-frontend: ## Lint React TypeScript code
-	@echo "$(BLUE)⚛️ Linting frontend code...$(NC)"
-	@if [ ! -d "debate-ui/node_modules" ]; then \
-		echo "$(YELLOW)Installing frontend dependencies...$(NC)"; \
-		cd debate-ui && npm install; \
-	fi
-	@echo "$(YELLOW)Running ESLint...$(NC)"
-	@cd debate-ui && npm run lint:check || (echo "$(RED)✗ ESLint issues found$(NC)" && exit 1)
-	@echo "$(GREEN)✓ ESLint passed$(NC)"
-	@echo "$(YELLOW)Running Prettier check...$(NC)"
-	@cd debate-ui && npm run format:check || (echo "$(RED)✗ Prettier formatting issues found$(NC)" && exit 1)
-	@echo "$(GREEN)✓ Prettier check passed$(NC)"
-	@echo "$(YELLOW)Running TypeScript check...$(NC)"
-	@cd debate-ui && npm run type-check || (echo "$(RED)✗ TypeScript issues found$(NC)" && exit 1)
-	@echo "$(GREEN)✓ TypeScript check passed$(NC)"
-	@echo "$(GREEN)✅ Frontend linting complete$(NC)"
-
-lint-config: ## Lint configuration files (YAML, JSON, Docker)
-	@echo "$(BLUE)⚙️ Linting configuration files...$(NC)"
-	@echo "$(YELLOW)Checking YAML files...$(NC)"
-	@if command -v yamllint >/dev/null 2>&1; then \
-		yamllint -c .linting/config/yaml-lint.yml . || (echo "$(RED)✗ YAML linting issues found$(NC)" && exit 1); \
-		echo "$(GREEN)✓ YAML files passed$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠️ yamllint not installed, skipping YAML checks$(NC)"; \
-	fi
-	@echo "$(YELLOW)Checking JSON files...$(NC)"
-	@find . -name "*.json" -not -path "./node_modules/*" -not -path "./target/*" -not -path "./build/*" | while read -r file; do \
-		if ! python -m json.tool "$$file" > /dev/null 2>&1; then \
-			echo "$(RED)✗ Invalid JSON: $$file$(NC)"; \
-			exit 1; \
-		fi; \
-	done && echo "$(GREEN)✓ JSON files passed$(NC)"
-	@echo "$(YELLOW)Checking Dockerfile syntax...$(NC)"
-	@if command -v hadolint >/dev/null 2>&1; then \
-		find . -name "Dockerfile*" -not -path "./node_modules/*" | while read -r file; do \
-			hadolint "$$file" || (echo "$(RED)✗ Dockerfile issues in $$file$(NC)" && exit 1); \
-		done && echo "$(GREEN)✓ Dockerfiles passed$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠️ hadolint not installed, skipping Dockerfile checks$(NC)"; \
-	fi
-	@echo "$(GREEN)✅ Configuration linting complete$(NC)"
-
-lint-docs: ## Lint documentation (Markdown)
-	@echo "$(BLUE)📚 Linting documentation...$(NC)"
-	@echo "$(YELLOW)Checking Markdown files...$(NC)"
-	@if command -v markdownlint >/dev/null 2>&1; then \
-		markdownlint -c .linting/docs/markdownlint.json **/*.md || (echo "$(RED)✗ Markdown linting issues found$(NC)" && exit 1); \
-		echo "$(GREEN)✓ Markdown files passed$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠️ markdownlint not installed, skipping Markdown checks$(NC)"; \
-	fi
-	@echo "$(YELLOW)Checking for broken links...$(NC)"
-	@if command -v markdown-link-check >/dev/null 2>&1; then \
-		find . -name "*.md" -not -path "./node_modules/*" -not -path "./target/*" | while read -r file; do \
-			markdown-link-check "$$file" -c .linting/docs/link-check.json || (echo "$(RED)✗ Broken links in $$file$(NC)" && exit 1); \
-		done && echo "$(GREEN)✓ Link check passed$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠️ markdown-link-check not installed, skipping link checks$(NC)"; \
-	fi
-	@echo "$(GREEN)✅ Documentation linting complete$(NC)"
-
-lint-fix: ## Auto-fix linting issues where possible
-	@echo "$(BLUE)🔧 Auto-fixing linting issues...$(NC)"
-	@echo "$(YELLOW)Fixing frontend code...$(NC)"
-	@cd debate-ui && npm run lint:fix || true
-	@cd debate-ui && npm run format || true
-	@echo "$(GREEN)✓ Frontend auto-fixes applied$(NC)"
-	@echo "$(YELLOW)Note: Java issues need manual fixing$(NC)"
-	@echo "$(GREEN)✅ Auto-fix complete$(NC)"
-
-lint-report: ## Generate comprehensive linting report
-	@echo "$(BLUE)📊 Generating comprehensive linting report...$(NC)"
-	@mkdir -p .linting/reports
-	@echo "# Linting Report - $(shell date)" > .linting/reports/summary.md
-	@echo "" >> .linting/reports/summary.md
-	@echo "## Java Linting" >> .linting/reports/summary.md
-	@$(MAKE) lint-java-report || echo "- ❌ Java linting failed" >> .linting/reports/summary.md
-	@echo "- ✅ Java linting completed" >> .linting/reports/summary.md
-	@echo "" >> .linting/reports/summary.md
-	@echo "## Frontend Linting" >> .linting/reports/summary.md
-	@$(MAKE) lint-frontend || echo "- ❌ Frontend linting failed" >> .linting/reports/summary.md
-	@echo "- ✅ Frontend linting completed" >> .linting/reports/summary.md
-	@echo "" >> .linting/reports/summary.md
-	@echo "## Configuration Linting" >> .linting/reports/summary.md
-	@$(MAKE) lint-config || echo "- ❌ Configuration linting failed" >> .linting/reports/summary.md
-	@echo "- ✅ Configuration linting completed" >> .linting/reports/summary.md
-	@echo "" >> .linting/reports/summary.md
-	@echo "## Documentation Linting" >> .linting/reports/summary.md
-	@$(MAKE) lint-docs || echo "- ❌ Documentation linting failed" >> .linting/reports/summary.md
-	@echo "- ✅ Documentation linting completed" >> .linting/reports/summary.md
-	@echo "$(GREEN)✅ Linting report generated: .linting/reports/summary.md$(NC)"
-
-lint-setup: ## Install linting tools
-	@echo "$(BLUE)🔧 Installing linting tools...$(NC)"
-	@echo "$(YELLOW)Installing Node.js linting tools...$(NC)"
-	@npm install -g markdownlint-cli markdown-link-check
-	@echo "$(YELLOW)Installing Python linting tools...$(NC)"
-	@pip install yamllint
-	@echo "$(YELLOW)Installing Docker linting tools...$(NC)"
-	@if command -v brew >/dev/null 2>&1; then \
-		brew install hadolint; \
-	elif command -v apt-get >/dev/null 2>&1; then \
-		wget -O /tmp/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 && \
-		chmod +x /tmp/hadolint && \
-		sudo mv /tmp/hadolint /usr/local/bin/hadolint; \
-	else \
-		echo "$(YELLOW)⚠️ Please install hadolint manually$(NC)"; \
-	fi
-	@echo "$(GREEN)✅ Linting tools installation complete$(NC)"
-
-lint-service-%: ## Lint specific service (e.g., make lint-service-mcp-llm)
-	@echo "$(BLUE)🔍 Linting service: $*$(NC)"
-	@if [ -d "$*" ]; then \
-		cd $* && mvn checkstyle:check spotbugs:check pmd:check -q; \
-		echo "$(GREEN)✅ Service $* linting complete$(NC)"; \
-	else \
-		echo "$(RED)✗ Service directory $* not found$(NC)"; \
-		exit 1; \
-	fi
+# Default target
+.DEFAULT_GOAL := help
