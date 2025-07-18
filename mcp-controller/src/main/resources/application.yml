@@ -85,7 +85,35 @@ mcp:
     organization-service-url: ${ORGANIZATION_SERVICE_URL:http://mcp-organization:5005}
     llm-service-url: ${LLM_SERVICE_URL:http://mcp-llm:5002}
     
+    # Hexagonal Architecture Configuration
+    hexagonal:
+      domain:
+        event-publishing: ${DOMAIN_EVENT_PUBLISHING:true}
+        validation-strict: ${DOMAIN_VALIDATION_STRICT:true}
+      
+      application:
+        transaction-timeout: ${APP_TRANSACTION_TIMEOUT:30}
+        retry-attempts: ${APP_RETRY_ATTEMPTS:3}
+        use-case-logging: ${USE_CASE_LOGGING:true}
+      
+      adapters:
+        web:
+          validation-enabled: ${WEB_VALIDATION:true}
+          swagger-enabled: ${SWAGGER_ENABLED:true}
+          cors-enabled: ${CORS_ENABLED:true}
+        
+        persistence:
+          optimistic-locking: ${OPTIMISTIC_LOCKING:true}
+          batch-processing: ${BATCH_PROCESSING:true}
+          audit-enabled: ${AUDIT_ENABLED:true}
+    
     debate:
+      # Enhanced debate configuration with hexagonal architecture support
+      max-concurrent-debates: ${MAX_CONCURRENT_DEBATES:100}
+      default-response-timeout: ${DEFAULT_RESPONSE_TIMEOUT:300}
+      cleanup-completed-debates: ${CLEANUP_COMPLETED_DEBATES:true}
+      cleanup-after-days: ${CLEANUP_AFTER_DAYS:30}
+      
       formats:
         standard:
           max-rounds: 10
@@ -105,8 +133,25 @@ mcp:
           turn-timeout-seconds: 180
           rules:
             - "free_participation"
+        quick:
+          max-rounds: 3
+          turn-timeout-seconds: 120
+          rules:
+            - "fast_paced"
+            - "auto_advance"
+        ai_only:
+          max-rounds: 8
+          turn-timeout-seconds: 60
+          rules:
+            - "ai_participants_only"
+            - "auto_advance"
       
       default-format: "standard"
+      
+      quality-assessment:
+        enabled: ${QUALITY_ASSESSMENT_ENABLED:true}
+        real-time: ${REAL_TIME_QUALITY:false}
+        provider: ${QUALITY_PROVIDER:internal}
       
       summarization:
         default-strategy: "key_points"
@@ -115,3 +160,45 @@ mcp:
           - "pro_con"
           - "chronological"
           - "thematic"
+    
+    websocket:
+      enabled: ${WEBSOCKET_ENABLED:true}
+      max-sessions: ${MAX_WEBSOCKET_SESSIONS:1000}
+      heartbeat-interval: ${WEBSOCKET_HEARTBEAT:30}
+    
+    security:
+      cors:
+        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
+        allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+        allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+        allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+      
+      api-key:
+        header-name: ${API_KEY_HEADER:X-API-Key}
+        required: ${API_KEY_REQUIRED:false}
+    
+    external:
+      llm-service:
+        url: ${LLM_SERVICE_URL:http://mcp-llm:5002}
+        timeout: ${LLM_SERVICE_TIMEOUT:30000}
+        retry-attempts: ${LLM_SERVICE_RETRIES:3}
+      
+      context-service:
+        url: ${CONTEXT_SERVICE_URL:http://mcp-context:5001}
+        timeout: ${CONTEXT_SERVICE_TIMEOUT:10000}
+        retry-attempts: ${CONTEXT_SERVICE_RETRIES:2}
+
+# OpenAPI/Swagger Configuration for Hexagonal Architecture
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  info:
+    title: MCP Debate Controller API
+    description: Hexagonal Architecture API for managing debates, participants, and responses
+    version: 2.0.0
+    contact:
+      name: MCP Team
+      email: support@zamaz.com
