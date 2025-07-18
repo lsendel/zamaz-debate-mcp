@@ -97,7 +97,7 @@ services:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.13.2
     container_name: mcp-postgres-exporter
     environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:${DB_PASSWORD:-postgres}@postgres:5432/postgres?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://postgres:${DB_PASSWORD}@postgres:5432/postgres?sslmode=disable
     ports:
       - "9187:9187"
     networks:

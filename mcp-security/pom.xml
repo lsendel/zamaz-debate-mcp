@@ -24,12 +24,6 @@
             <version>${project.version}</version>
         </dependency>
         
-        <!-- MCP Organization -->
-        <dependency>
-            <groupId>com.zamaz.mcp</groupId>
-            <artifactId>mcp-organization</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         
         <!-- Spring Security -->
         <dependency>
