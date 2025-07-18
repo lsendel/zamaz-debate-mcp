@@ -313,21 +313,21 @@ class DockerPerformanceTestRunner:
             test_script = self._generate_test_script(test_module, test_config)
             test_script_path = Path(temp_dir) / "run_tests.py"
 
-            with open(test_script_path, "w") as f:
+            with test_script_path.open("w") as f:
                 f.write(test_script)
 
             # Create requirements.txt
             requirements = self._generate_requirements()
             requirements_path = Path(temp_dir) / "requirements.txt"
 
-            with open(requirements_path, "w") as f:
+            with requirements_path.open("w") as f:
                 f.write(requirements)
 
             # Create Dockerfile
             dockerfile = self._generate_dockerfile()
             dockerfile_path = Path(temp_dir) / "Dockerfile"
 
-            with open(dockerfile_path, "w") as f:
+            with dockerfile_path.open("w") as f:
                 f.write(dockerfile)
 
             # Build test image
@@ -455,7 +455,7 @@ async def main():
         reporter = PerformanceReporter('/artifacts')
 
         # Save results
-        with open('/artifacts/test_results.json', 'w') as f:
+        with Path('/artifacts/test_results.json').open('w') as f:
             json.dump(all_results, f, indent=2, default=str)
 
         logger.info("Tests completed successfully")
@@ -547,7 +547,7 @@ CMD ["python", "run_tests.py"]
         # Copy artifacts
         bits, _ = temp_container.get_archive("/tmp/artifacts.tar.gz")
 
-        with open(Path(temp_dir) / "artifacts.tar.gz", "wb") as f:
+        with (Path(temp_dir) / "artifacts.tar.gz").open("wb") as f:
             for chunk in bits:
                 f.write(chunk)
 
@@ -571,7 +571,7 @@ CMD ["python", "run_tests.py"]
                 # Load test results
                 results_file = Path(temp_dir) / "test_results.json"
                 if results_file.exists():
-                    with open(results_file) as f:
+                    with results_file.open() as f:
                         return json.load(f)
 
             finally:

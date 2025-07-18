@@ -1148,7 +1148,7 @@ class DocumentationCoverageAnalyzer:
 
             for file in files:
                 if file.endswith((".java", ".py", ".js", ".ts", ".jsx", ".tsx")):
-                    code_files.append(os.path.join(root, file))
+                    code_files.append(str(Path(root) / file))
 
         coverage_data["total_files"] = len(code_files)
 
@@ -1342,7 +1342,7 @@ class OutdatedDocumentationDetector:
                     for doc_path in doc_candidates:
                         if os.path.exists(doc_path):
                             # Check if documentation is older than code
-                            code_mtime = os.path.getmtime(os.path.join(project_path, code_file))
+                            code_mtime = os.path.getmtime(str(Path(project_path) / code_file))
                             doc_mtime = os.path.getmtime(doc_path)
 
                             if doc_mtime < code_mtime:
@@ -1373,10 +1373,10 @@ class OutdatedDocumentationDetector:
         candidates = []
 
         # Look for documentation files with similar names
-        for root, _dirs, files in os.walk(os.path.join(project_path, "docs")):
+        for root, _dirs, files in os.walk(str(Path(project_path) / "docs")):
             for file in files:
                 if file.endswith((".md", ".rst", ".adoc")) and base_name.lower() in file.lower():
-                    candidates.append(os.path.join(root, file))
+                    candidates.append(str(Path(root) / file))
 
         return candidates
 
@@ -1388,7 +1388,7 @@ class OutdatedDocumentationDetector:
         for root, _dirs, files in os.walk(project_path):
             for file in files:
                 if file.endswith((".md", ".rst", ".adoc")):
-                    file_path = os.path.join(root, file)
+                    file_path = str(Path(root) / file)
 
                     try:
                         with open(file_path, encoding="utf-8") as f:
@@ -1403,9 +1403,9 @@ class OutdatedDocumentationDetector:
                             if not url.startswith(("http://", "https://", "mailto:")):
                                 # Resolve relative path
                                 if url.startswith("/"):
-                                    target_path = os.path.join(project_path, url[1:])
+                                    target_path = str(Path(project_path) / url[1:])
                                 else:
-                                    target_path = os.path.join(os.path.dirname(file_path), url)
+                                    target_path = str(Path(file_path).parent / url)
 
                                 # Remove anchor
                                 if "#" in target_path:
@@ -1436,7 +1436,7 @@ class OutdatedDocumentationDetector:
         for root, _dirs, files in os.walk(project_path):
             for file in files:
                 if file.endswith((".java", ".py", ".js", ".ts")):
-                    file_path = os.path.join(root, file)
+                    file_path = str(Path(root) / file)
 
                     try:
                         code_file = self.code_extractor.extract_from_file(file_path)
@@ -1447,10 +1447,10 @@ class OutdatedDocumentationDetector:
 
         # Check if API documentation exists
         api_doc_files = []
-        for root, _dirs, files in os.walk(os.path.join(project_path, "docs")):
+        for root, _dirs, files in os.walk(str(Path(project_path) / "docs")):
             for file in files:
                 if "api" in file.lower() and file.endswith((".md", ".rst", ".adoc")):
-                    api_doc_files.append(os.path.join(root, file))
+                    api_doc_files.append(str(Path(root) / file))
 
         if api_endpoints and not api_doc_files:
             issues.append(
@@ -1809,7 +1809,7 @@ class DocumentationAnalysisSystem:
             dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "target", "build"}]
 
             for file in files:
-                file_path = os.path.join(root, file)
+                file_path = str(Path(root) / file)
                 file_extension = Path(file).suffix.lower()
 
                 # Determine parser
@@ -1858,7 +1858,7 @@ class DocumentationAnalysisSystem:
 
             for file in files:
                 if file.endswith((".java", ".py", ".js", ".ts", ".jsx", ".tsx")):
-                    file_path = os.path.join(root, file)
+                    file_path = str(Path(root) / file)
 
                     # Check if file actually exists
                     if not os.path.exists(file_path):

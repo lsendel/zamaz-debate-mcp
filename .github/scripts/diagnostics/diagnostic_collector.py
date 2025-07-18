@@ -311,7 +311,7 @@ class ErrorAnalyzer:
             "suggestions": self._get_suggestions(error_type, root_cause),
         }
 
-    def _identify_root_cause(self, error: Exception, context: dict[str, Any]) -> str:
+    def _identify_root_cause(self, error: Exception, _context: dict[str, Any]) -> str:
         """Identify likely root cause of error."""
         type(error).__name__
         error_msg = str(error).lower()
@@ -334,7 +334,7 @@ class ErrorAnalyzer:
         else:
             return "unknown"
 
-    def _get_suggestions(self, error_type: str, root_cause: str) -> list[str]:
+    def _get_suggestions(self, _error_type: str, root_cause: str) -> list[str]:
         """Get suggestions for fixing the error."""
         suggestions = []
 

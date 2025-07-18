@@ -28,7 +28,7 @@ import {
   addNotification,
 } from "../store/slices/uiSlice";
 import { createDebate } from "../store/slices/debateSlice";
-import llmClient, { LLMProvider } from "../api/llmClient";
+import llmClient, { LLMProvider, LLMModel } from "../api/llmClient";
 
 interface Participant {
   name: string;
@@ -52,8 +52,8 @@ const CreateDebateDialog: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([
     {
       name: "Participant 1",
-      llmProvider: "claude",
-      model: "claude-3-opus-20240229",
+      llmProvider: "",
+      model: "",
       systemPrompt:
         "You are a thoughtful debater who provides well-reasoned arguments.",
       temperature: 0.7,
@@ -61,8 +61,8 @@ const CreateDebateDialog: React.FC = () => {
     },
     {
       name: "Participant 2",
-      llmProvider: "openai",
-      model: "gpt-4",
+      llmProvider: "",
+      model: "",
       systemPrompt:
         "You are a critical thinker who challenges assumptions and provides counterarguments.",
       temperature: 0.7,
@@ -75,6 +75,23 @@ const CreateDebateDialog: React.FC = () => {
       try {
         const providerList = await llmClient.listProviders();
         setProviders(providerList);
+        
+        // Set default providers and models after loading
+        if (providerList.length > 0) {
+          const updatedParticipants = participants.map((participant, index) => {
+            if (!participant.llmProvider) {
+              const defaultProvider = providerList[index % providerList.length];
+              const defaultModel = defaultProvider.models[0];
+              return {
+                ...participant,
+                llmProvider: defaultProvider.id,
+                model: defaultModel.id
+              };
+            }
+            return participant;
+          });
+          setParticipants(updatedParticipants);
+        }
       } catch (error) {
         console.error("Failed to load providers:", error);
       }
@@ -95,8 +112,8 @@ const CreateDebateDialog: React.FC = () => {
     setParticipants([
       {
         name: "Participant 1",
-        llmProvider: "claude",
-        model: "claude-3-opus-20240229",
+        llmProvider: "",
+        model: "",
         systemPrompt:
           "You are a thoughtful debater who provides well-reasoned arguments.",
         temperature: 0.7,
@@ -104,8 +121,8 @@ const CreateDebateDialog: React.FC = () => {
       },
       {
         name: "Participant 2",
-        llmProvider: "openai",
-        model: "gpt-4",
+        llmProvider: "",
+        model: "",
         systemPrompt:
           "You are a critical thinker who challenges assumptions and provides counterarguments.",
         temperature: 0.7,
@@ -170,8 +187,8 @@ const CreateDebateDialog: React.FC = () => {
       ...participants,
       {
         name: `Participant ${participants.length + 1}`,
-        llmProvider: "claude",
-        model: "claude-3-opus-20240229",
+        llmProvider: providers.length > 0 ? providers[0].id : "",
+        model: providers.length > 0 && providers[0].models.length > 0 ? providers[0].models[0].id : "",
         systemPrompt: "",
         temperature: 0.7,
         maxTokens: 1000,
@@ -190,11 +207,20 @@ const CreateDebateDialog: React.FC = () => {
   ) => {
     const updated = [...participants];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // If changing provider, also update the model to first available model
+    if (field === 'llmProvider') {
+      const provider = providers.find(p => p.id === value);
+      if (provider && provider.models.length > 0) {
+        updated[index] = { ...updated[index], model: provider.models[0].id };
+      }
+    }
+    
     setParticipants(updated);
   };
 
-  const getAvailableModels = (provider: string) => {
-    const providerInfo = providers.find((p) => p.name === provider);
+  const getAvailableModels = (providerId: string) => {
+    const providerInfo = providers.find((p) => p.id === providerId);
     return providerInfo?.models || [];
   };
 
@@ -317,12 +343,12 @@ const CreateDebateDialog: React.FC = () => {
                     label="Provider"
                   >
                     {providers.map((provider) => (
-                      <MenuItem key={provider.name} value={provider.name}>
+                      <MenuItem key={provider.id} value={provider.id}>
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
                           {provider.name}
-                          {provider.status !== "available" && (
+                          {provider.status !== "ACTIVE" && (
                             <Chip
                               label={provider.status}
                               size="small"
@@ -347,8 +373,8 @@ const CreateDebateDialog: React.FC = () => {
                   >
                     {getAvailableModels(participant.llmProvider).map(
                       (model) => (
-                        <MenuItem key={model} value={model}>
-                          {model}
+                        <MenuItem key={model.id} value={model.id}>
+                          {model.name}
                         </MenuItem>
                       ),
                     )}

@@ -1,0 +1,222 @@
+{
+  "defaultUser": {
+    "email": "demo@zamaz.com",
+    "password": "demo123",
+    "name": "Demo User",
+    "role": "USER",
+    "organizationId": "test-org-id"
+  },
+  "adminUser": {
+    "email": "admin@zamaz.com",
+    "password": "admin123",
+    "name": "Admin User",
+    "role": "ADMIN",
+    "organizationId": "test-org-id"
+  },
+  "testUsers": [
+    {
+      "email": "alice@zamaz.com",
+      "password": "AlicePass123!",
+      "name": "Alice Johnson",
+      "role": "USER",
+      "preferences": {
+        "emailNotifications": true,
+        "pushNotifications": false,
+        "debateInvitations": true,
+        "weeklyDigest": true,
+        "theme": "light",
+        "language": "en"
+      },
+      "profile": {
+        "bio": "Passionate about political discussions and social issues",
+        "expertise": ["Politics", "Social Issues", "Economics"],
+        "debateStyle": "analytical",
+        "preferredTopics": ["politics", "social-issues", "economics"]
+      }
+    },
+    {
+      "email": "bob@zamaz.com",
+      "password": "BobPass123!",
+      "name": "Bob Smith",
+      "role": "USER",
+      "preferences": {
+        "emailNotifications": false,
+        "pushNotifications": true,
+        "debateInvitations": true,
+        "weeklyDigest": false,
+        "theme": "dark",
+        "language": "en"
+      },
+      "profile": {
+        "bio": "Tech enthusiast interested in AI and future of work",
+        "expertise": ["Technology", "AI", "Future of Work"],
+        "debateStyle": "pragmatic",
+        "preferredTopics": ["technology", "artificial-intelligence", "future-of-work"]
+      }
+    },
+    {
+      "email": "charlie@zamaz.com",
+      "password": "CharliePass123!",
+      "name": "Charlie Brown",
+      "role": "MODERATOR",
+      "permissions": [
+        "MANAGE_DEBATES",
+        "MODERATE_DEBATES",
+        "VIEW_ANALYTICS",
+        "MANAGE_PARTICIPANTS"
+      ],
+      "preferences": {
+        "emailNotifications": true,
+        "pushNotifications": true,
+        "debateInvitations": true,
+        "weeklyDigest": true,
+        "theme": "auto",
+        "language": "en"
+      },
+      "profile": {
+        "bio": "Experienced debate moderator with background in philosophy",
+        "expertise": ["Philosophy", "Ethics", "Logic"],
+        "debateStyle": "neutral",
+        "preferredTopics": ["philosophy", "ethics", "logic", "reasoning"]
+      }
+    },
+    {
+      "email": "diana@zamaz.com",
+      "password": "DianaPass123!",
+      "name": "Diana Prince",
+      "role": "ADMIN",
+      "permissions": [
+        "MANAGE_ORGANIZATION",
+        "MANAGE_USERS",
+        "MANAGE_DEBATES",
+        "VIEW_ANALYTICS",
+        "MANAGE_SETTINGS",
+        "MANAGE_BILLING"
+      ],
+      "preferences": {
+        "emailNotifications": true,
+        "pushNotifications": true,
+        "debateInvitations": false,
+        "weeklyDigest": true,
+        "theme": "light",
+        "language": "en"
+      },
+      "profile": {
+        "bio": "Organization administrator with focus on community building",
+        "expertise": ["Management", "Community Building", "Communication"],
+        "debateStyle": "collaborative",
+        "preferredTopics": ["management", "leadership", "communication"]
+      }
+    },
+    {
+      "email": "eve@zamaz.com",
+      "password": "EvePass123!",
+      "name": "Eve Wilson",
+      "role": "USER",
+      "preferences": {
+        "emailNotifications": true,
+        "pushNotifications": false,
+        "debateInvitations": true,
+        "weeklyDigest": false,
+        "theme": "dark",
+        "language": "en"
+      },
+      "profile": {
+        "bio": "Environmental scientist passionate about climate change",
+        "expertise": ["Environment", "Climate Change", "Science"],
+        "debateStyle": "evidence-based",
+        "preferredTopics": ["environment", "climate-change", "science", "sustainability"]
+      }
+    }
+  ],
+  "specialTestUsers": [
+    {
+      "email": "inactive@zamaz.com",
+      "password": "InactivePass123!",
+      "name": "Inactive User",
+      "role": "USER",
+      "active": false,
+      "deactivatedAt": "2024-01-15T10:00:00Z",
+      "deactivationReason": "User requested account deactivation"
+    },
+    {
+      "email": "suspended@zamaz.com",
+      "password": "SuspendedPass123!",
+      "name": "Suspended User",
+      "role": "USER",
+      "active": false,
+      "suspended": true,
+      "suspendedAt": "2024-02-20T14:30:00Z",
+      "suspensionReason": "Violation of community guidelines",
+      "suspensionExpires": "2024-03-20T14:30:00Z"
+    },
+    {
+      "email": "unverified@zamaz.com",
+      "password": "UnverifiedPass123!",
+      "name": "Unverified User",
+      "role": "USER",
+      "emailVerified": false,
+      "verificationToken": "verify-token-123",
+      "verificationTokenExpires": "2024-12-31T23:59:59Z"
+    }
+  ],
+  "userValidationRules": {
+    "email": {
+      "required": true,
+      "format": "email",
+      "unique": true,
+      "maxLength": 255
+    },
+    "password": {
+      "required": true,
+      "minLength": 8,
+      "maxLength": 128,
+      "patterns": [
+        "(?=.*[a-z])",
+        "(?=.*[A-Z])",
+        "(?=.*\\d)",
+        "(?=.*[!@#$%^&*])"
+      ]
+    },
+    "name": {
+      "required": true,
+      "minLength": 2,
+      "maxLength": 100,
+      "pattern": "^[a-zA-Z\\s'-]+$"
+    },
+    "role": {
+      "required": true,
+      "enum": ["USER", "MODERATOR", "ADMIN", "VIEWER"]
+    }
+  },
+  "userStatistics": {
+    "totalUsers": 50000,
+    "activeUsers": 45000,
+    "newUsersThisMonth": 2500,
+    "averageDebatesPerUser": 12.5,
+    "averageSessionDuration": 1800,
+    "topUsersByDebates": [
+      {
+        "userId": "user-001",
+        "email": "alice@zamaz.com",
+        "debatesParticipated": 156,
+        "debatesWon": 89,
+        "winRate": 0.57
+      },
+      {
+        "userId": "user-002",
+        "email": "bob@zamaz.com",
+        "debatesParticipated": 143,
+        "debatesWon": 81,
+        "winRate": 0.57
+      },
+      {
+        "userId": "user-003",
+        "email": "charlie@zamaz.com",
+        "debatesParticipated": 134,
+        "debatesWon": 78,
+        "winRate": 0.58
+      }
+    ]
+  }
+}

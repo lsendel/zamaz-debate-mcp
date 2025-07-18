@@ -235,17 +235,17 @@ class WebhookService:
 
         return {"processed": False, "reason": "no_kiro_mention"}
 
-    async def _handle_pull_request_review(self, event: WebhookEvent) -> dict[str, Any]:
+    async def _handle_pull_request_review(self, _event: WebhookEvent) -> dict[str, Any]:
         """Handle pull request review events."""
         # Implementation for review events
         return {"processed": True, "action": "review_recorded"}
 
-    async def _handle_push(self, event: WebhookEvent) -> dict[str, Any]:
+    async def _handle_push(self, _event: WebhookEvent) -> dict[str, Any]:
         """Handle push events."""
         # Implementation for push events
         return {"processed": False, "reason": "push_events_not_supported"}
 
-    async def _handle_release(self, event: WebhookEvent) -> dict[str, Any]:
+    async def _handle_release(self, _event: WebhookEvent) -> dict[str, Any]:
         """Handle release events."""
         # Implementation for release events
         return {"processed": False, "reason": "release_events_not_supported"}

@@ -2,108 +2,139 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: 'mcp-production'
-    env: 'production'
+    monitor: 'zamaz-mcp-monitor'
+    environment: 'production'
 
-# Alertmanager configuration
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  # MCP Sidecar metrics
+  - job_name: 'mcp-sidecar'
+    static_configs:
+      - targets: ['mcp-sidecar:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: mcp-sidecar:8080
+
+  # MCP Security service metrics (RBAC)
+  - job_name: 'mcp-security'
+    static_configs:
+      - targets: ['mcp-security:8082']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # Organization service metrics
+  - job_name: 'mcp-organization'
+    static_configs:
+      - targets: ['mcp-organization:5005']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # LLM service metrics
+  - job_name: 'mcp-llm'
+    static_configs:
+      - targets: ['mcp-llm:5002']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # Controller service metrics
+  - job_name: 'mcp-controller'
+    static_configs:
+      - targets: ['mcp-controller:5013']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # RAG service metrics
+  - job_name: 'mcp-rag'
+    static_configs:
+      - targets: ['mcp-rag:5004']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # Template service metrics
+  - job_name: 'mcp-template'
+    static_configs:
+      - targets: ['mcp-template:5003']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # Context service metrics
+  - job_name: 'mcp-context'
+    static_configs:
+      - targets: ['mcp-context:5006']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # Gateway service metrics
+  - job_name: 'mcp-gateway'
+    static_configs:
+      - targets: ['mcp-gateway:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+# Alerting configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - alertmanager:9093
+          - alertmanager:9093
 
-# Load rules files
-rule_files:
-  - "alert_rules.yml"
-
-# Scrape configurations
-scrape_configs:
-  # Prometheus self-monitoring
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-
-  # Node exporter
-  - job_name: 'node'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # Redis exporter
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-
-  # Postgres exporter
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
-
-  # MCP Gateway
-  - job_name: 'mcp-gateway'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-gateway:8080']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'gateway'
-
-  # MCP Organization Service
-  - job_name: 'mcp-organization'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-organization:5005']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'organization'
-
-  # MCP Context Service
-  - job_name: 'mcp-context'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-context:5001']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'context'
-
-  # MCP LLM Service
-  - job_name: 'mcp-llm'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-llm:5002']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'llm'
-
-  # MCP Controller Service
-  - job_name: 'mcp-controller'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-controller:5013']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'controller'
-
-  # MCP RAG Service
-  - job_name: 'mcp-rag'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-rag:5004']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'rag'
-
-  # MCP Template Service
-  - job_name: 'mcp-template'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['mcp-template:5006']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'template'
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 30d
+    retention.size: 50GB

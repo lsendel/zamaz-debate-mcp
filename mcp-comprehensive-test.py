@@ -10,6 +10,7 @@ import sys
 import time
 import traceback
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -583,12 +584,12 @@ SERVICE BREAKDOWN
 
         report = self.generate_report(analysis)
 
-        with open(filename, "w") as f:
+        with Path(filename).open("w") as f:
             f.write(report)
 
         # Save JSON data
         json_filename = filename.replace(".txt", ".json")
-        with open(json_filename, "w") as f:
+        with Path(json_filename).open("w") as f:
             json.dump(analysis, f, indent=2)
 
 

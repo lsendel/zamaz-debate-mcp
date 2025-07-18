@@ -125,7 +125,7 @@ const DebatesPage: React.FC = () => {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {debates.map((debate) => (
+          {(debates || []).map((debate) => (
             <Grid size={{ xs: 12, md: 6, lg: 4 }} key={debate.id}>
               <Card
                 sx={{

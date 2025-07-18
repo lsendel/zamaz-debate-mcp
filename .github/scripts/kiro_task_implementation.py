@@ -17,7 +17,7 @@ class TaskImplementation:
             dir_path = base_path / dir_name
             dir_path.mkdir(parents=True, exist_ok=True)
 
-    def write_file(self, file_path: Path, content: str, description: str):
+    def write_file(self, file_path: Path, content: str, _description: str):
         """Write content to a file."""
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content)

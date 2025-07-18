@@ -63,7 +63,7 @@ class CommentGenerator:
 
         return {"summary_comment": summary_comment, "file_comments": file_comments}
 
-    def _generate_comment_for_line(self, file_path: str, line_number: int, issues: list[dict[str, Any]]) -> str:
+    def _generate_comment_for_line(self, file_path: str, _line_number: int, issues: list[dict[str, Any]]) -> str:
         """Generate a comment for a specific line with issues."""
         if not issues:
             return ""
@@ -140,7 +140,7 @@ class CommentGenerator:
         else:
             return self._get_general_explanation(rule_id, file_ext)
 
-    def _get_security_explanation(self, rule_id: str, file_ext: str) -> str:
+    def _get_security_explanation(self, rule_id: str, _file_ext: str) -> str:
         """Get an explanation for a security issue."""
         explanations = {
             "hardcoded-password": "Hardcoded passwords in source code are a security risk. If the code is ever exposed (e.g., in a public repository), credentials could be compromised. Instead, use environment variables, secure vaults, or configuration files that are not checked into version control.",
@@ -157,7 +157,7 @@ class CommentGenerator:
             "Security issues can lead to vulnerabilities in your application. Always follow security best practices to protect your application and user data.",
         )
 
-    def _get_performance_explanation(self, rule_id: str, file_ext: str) -> str:
+    def _get_performance_explanation(self, rule_id: str, _file_ext: str) -> str:
         """Get an explanation for a performance issue."""
         explanations = {
             "nested-loops": "Nested loops can lead to O(n²) time complexity or worse, which can cause performance issues with large datasets. Consider if there's a more efficient algorithm or data structure that could be used instead.",
@@ -224,7 +224,7 @@ class CommentGenerator:
             "Syntax errors prevent code from being parsed or compiled correctly. Fixing these issues is necessary for the code to run.",
         )
 
-    def _get_general_explanation(self, rule_id: str, file_ext: str) -> str:
+    def _get_general_explanation(self, rule_id: str, _file_ext: str) -> str:
         """Get a general explanation for an issue."""
         explanations = {
             "best-practice": "Following best practices improves code quality, maintainability, and reduces the likelihood of bugs."

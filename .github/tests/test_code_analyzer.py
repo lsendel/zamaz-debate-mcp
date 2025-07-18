@@ -5,12 +5,13 @@ Unit tests for the code analyzer module.
 
 import os
 import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+sys.path.insert(0, str(Path(__file__).parent / ".." / "scripts"))
 
 from code_analyzer import AnalysisResult, CodeAnalyzer, IssueSeverity, IssueType
 

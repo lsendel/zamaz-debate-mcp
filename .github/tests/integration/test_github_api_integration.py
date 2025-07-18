@@ -36,7 +36,7 @@ class MockGitHubClient(GitHubClientInterface):
             raise ValueError(f"Pull request {key} not found")
         return self.pull_requests[key]
 
-    async def get_pr_files(self, owner: str, repo: str, pr_number: int) -> list[dict[str, Any]]:
+    async def get_pr_files(self, _owner: str, _repo: str, _pr_number: int) -> list[dict[str, Any]]:
         """Get mock PR files."""
         # Return test files
         return [
@@ -58,7 +58,7 @@ class MockGitHubClient(GitHubClientInterface):
             },
         ]
 
-    async def create_review(self, owner: str, repo: str, pr_number: int, review_data: dict[str, Any]) -> dict[str, Any]:
+    async def create_review(self, _owner: str, _repo: str, pr_number: int, review_data: dict[str, Any]) -> dict[str, Any]:
         """Create mock review."""
         review_id = f"review-{len(self.reviews) + 1}"
         review = {
@@ -72,7 +72,7 @@ class MockGitHubClient(GitHubClientInterface):
         self.reviews[review_id] = review
         return review
 
-    async def create_issue_comment(self, owner: str, repo: str, issue_number: int, body: str) -> dict[str, Any]:
+    async def create_issue_comment(self, _owner: str, _repo: str, issue_number: int, body: str) -> dict[str, Any]:
         """Create mock issue comment."""
         comment_id = f"comment-{len(self.comments) + 1}"
         comment = {
@@ -283,7 +283,7 @@ class TestWebhookScenarios:
     """Test various webhook scenarios."""
 
     @pytest.mark.asyncio
-    async def test_pr_synchronize_event(self, mock_github_client):
+    async def test_pr_synchronize_event(self, _mock_github_client):
         """Test handling PR synchronization (new commits)."""
         payload = {
             "action": "synchronize",
@@ -301,7 +301,7 @@ class TestWebhookScenarios:
         assert payload["pull_request"]["head"]["sha"] == "def456"
 
     @pytest.mark.asyncio
-    async def test_review_requested_event(self, mock_github_client):
+    async def test_review_requested_event(self, _mock_github_client):
         """Test handling review request event."""
         payload = {
             "action": "review_requested",
@@ -314,7 +314,7 @@ class TestWebhookScenarios:
         assert any(r["login"] == "kiro-ai" for r in payload["pull_request"]["requested_reviewers"])
 
     @pytest.mark.asyncio
-    async def test_comment_mention_event(self, mock_github_client):
+    async def test_comment_mention_event(self, _mock_github_client):
         """Test handling @kiro-ai mentions in comments."""
         payload = {
             "action": "created",

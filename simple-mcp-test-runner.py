@@ -7,6 +7,7 @@ Tests MCP endpoints and validates testing framework functionality
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 import requests
 
@@ -126,7 +127,7 @@ def validate_test_framework_components():
     available_components = 0
     for _component_name, file_path in components:
         full_path = f"/Users/lsendel/IdeaProjects/zamaz-debate-mcp/{file_path}"
-        if os.path.exists(full_path):
+        if Path(full_path).exists():
             available_components += 1
         else:
             pass

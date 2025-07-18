@@ -1,0 +1,36 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - button "open drawer"
+  - text: Zamaz Debate System
+- heading "Organization" [level=6]
+- combobox:
+  - paragraph: ZAMAZ
+  - text: API
+- separator
+- list:
+  - listitem:
+    - button "Debates"
+  - listitem:
+    - button "Analytics"
+  - listitem:
+    - button "Settings"
+- separator
+- list:
+  - listitem:
+    - button "Logout"
+- main:
+  - heading "Debates" [level=1]
+  - button "Refresh"
+  - button "Create Debate"
+  - heading "Should AI make medical decisions?" [level=6]
+  - paragraph: No description
+  - text: COMPLETED Round undefined/undefined 2 participants
+  - heading "Is nuclear energy the answer?" [level=6]
+  - paragraph: No description
+  - text: IN PROGRESS Round undefined/undefined 2 participants
+  - heading "Will automation replace human jobs?" [level=6]
+  - paragraph: No description
+  - text: CREATED Round undefined/undefined 2 participants
+```

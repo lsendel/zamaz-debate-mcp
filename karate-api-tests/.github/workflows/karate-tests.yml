@@ -1,0 +1,483 @@
+name: Karate API Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'karate-api-tests/**'
+      - 'mcp-*/**'
+      - 'infrastructure/**'
+      - 'debate-ui/**'
+      - '.github/workflows/karate-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'karate-api-tests/**'
+      - 'mcp-*/**'
+      - 'infrastructure/**'
+      - 'debate-ui/**'
+      - '.github/workflows/karate-tests.yml'
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_tags:
+        description: 'Test tags to run (e.g., @smoke, @regression)'
+        required: false
+        default: '@smoke'
+      parallel_threads:
+        description: 'Number of parallel threads'
+        required: false
+        default: '4'
+      test_environment:
+        description: 'Test environment'
+        required: false
+        default: 'ci'
+        type: choice
+        options:
+          - ci
+          - performance
+          - security
+
+env:
+  MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
+  JAVA_VERSION: '21'
+  NODE_VERSION: '18'
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set up test matrix
+        id: set-matrix
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "matrix={\"include\":[{\"tags\":\"@smoke\",\"profile\":\"ci\",\"parallel\":4},{\"tags\":\"@regression\",\"profile\":\"ci\",\"parallel\":4},{\"tags\":\"@security\",\"profile\":\"security\",\"parallel\":2}]}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "matrix={\"include\":[{\"tags\":\"${{ github.event.inputs.test_tags }}\",\"profile\":\"${{ github.event.inputs.test_environment }}\",\"parallel\":${{ github.event.inputs.parallel_threads }}}]}" >> $GITHUB_OUTPUT
+          else
+            echo "matrix={\"include\":[{\"tags\":\"@smoke\",\"profile\":\"ci\",\"parallel\":4}]}" >> $GITHUB_OUTPUT
+          fi
+
+  test:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+      fail-fast: false
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_debate_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+      
+      qdrant:
+        image: qdrant/qdrant:v1.7.0
+        env:
+          QDRANT__SERVICE__HTTP_PORT: 6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+      
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: test_user
+          RABBITMQ_DEFAULT_PASS: test_password
+        options: >-
+          --health-cmd "rabbitmqctl status"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'debate-ui/package-lock.json'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq postgresql-client redis-tools
+
+      - name: Setup test databases
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d test_debate_db -c "
+            CREATE DATABASE IF NOT EXISTS test_organization_db;
+            CREATE DATABASE IF NOT EXISTS test_context_db;
+            CREATE DATABASE IF NOT EXISTS test_rag_db;
+            CREATE DATABASE IF NOT EXISTS test_template_db;
+            CREATE TABLE IF NOT EXISTS test_organizations (
+              id SERIAL PRIMARY KEY,
+              name VARCHAR(100) NOT NULL UNIQUE,
+              description TEXT,
+              settings JSONB,
+              tier VARCHAR(20) DEFAULT 'BASIC',
+              active BOOLEAN DEFAULT TRUE,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS test_users (
+              id SERIAL PRIMARY KEY,
+              email VARCHAR(255) NOT NULL UNIQUE,
+              name VARCHAR(100) NOT NULL,
+              password_hash VARCHAR(255) NOT NULL,
+              role VARCHAR(20) DEFAULT 'USER',
+              organization_id INTEGER,
+              active BOOLEAN DEFAULT TRUE,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO test_organizations (name, description, settings, tier) VALUES
+            ('Test Organization', 'Default test organization', '{\"allowPublicDebates\": true}', 'ENTERPRISE')
+            ON CONFLICT (name) DO NOTHING;
+            INSERT INTO test_users (email, name, password_hash, role, organization_id) VALUES
+            ('demo@zamaz.com', 'Demo User', '\$2a\$10\$demoHash', 'USER', 1),
+            ('admin@zamaz.com', 'Admin User', '\$2a\$10\$adminHash', 'ADMIN', 1)
+            ON CONFLICT (email) DO NOTHING;
+          "
+
+      - name: Build Java services
+        run: |
+          mvn clean compile -DskipTests
+          # Build specific MCP services
+          for service in mcp-gateway mcp-organization mcp-llm mcp-controller mcp-rag mcp-template mcp-context; do
+            if [ -d "$service" ]; then
+              echo "Building $service..."
+              cd "$service"
+              mvn clean compile -DskipTests
+              cd ..
+            fi
+          done
+
+      - name: Build UI
+        run: |
+          cd debate-ui
+          npm ci
+          npm run build
+          cd ..
+
+      - name: Create test environment configuration
+        run: |
+          cd karate-api-tests
+          cat > .env.test << EOF
+          NODE_ENV=test
+          DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_debate_db
+          REDIS_URL=redis://localhost:6379
+          QDRANT_URL=http://localhost:6333
+          RABBITMQ_URL=amqp://localhost:5672
+          
+          # Service Ports
+          MCP_GATEWAY_PORT=8080
+          MCP_ORGANIZATION_PORT=5005
+          MCP_LLM_PORT=5002
+          MCP_CONTROLLER_PORT=5013
+          MCP_RAG_PORT=5004
+          MCP_TEMPLATE_PORT=5006
+          MCP_CONTEXT_PORT=5007
+          
+          # Test API Keys
+          CLAUDE_API_KEY=test-claude-key
+          OPENAI_API_KEY=test-openai-key
+          GEMINI_API_KEY=test-gemini-key
+          
+          # JWT Configuration
+          JWT_SECRET=test-jwt-secret-key-for-ci-testing
+          JWT_EXPIRATION=3600
+          EOF
+
+      - name: Start application services
+        run: |
+          # Start services in background
+          for service in mcp-gateway mcp-organization mcp-llm mcp-controller mcp-rag mcp-template; do
+            if [ -d "$service" ]; then
+              echo "Starting $service..."
+              cd "$service"
+              mvn spring-boot:run -Dspring-boot.run.profiles=test &
+              cd ..
+              sleep 5
+            fi
+          done
+          
+          # Wait for services to start
+          sleep 30
+
+      - name: Wait for services to be ready
+        run: |
+          # Wait for services with retries
+          services=(
+            "http://localhost:8080/health:Gateway"
+            "http://localhost:5005/health:Organization"
+            "http://localhost:5002/health:LLM"
+            "http://localhost:5013/health:Controller"
+            "http://localhost:5004/health:RAG"
+            "http://localhost:5006/health:Template"
+          )
+          
+          for service in "${services[@]}"; do
+            IFS=':' read -r url name <<< "$service"
+            echo "Waiting for $name service at $url..."
+            
+            for i in {1..30}; do
+              if curl -sf "$url" > /dev/null 2>&1; then
+                echo "✓ $name service is ready"
+                break
+              fi
+              echo "Waiting for $name service... ($i/30)"
+              sleep 5
+            done
+          done
+
+      - name: Run Karate tests
+        run: |
+          cd karate-api-tests
+          chmod +x scripts/run-tests.sh
+          ./scripts/run-tests.sh \
+            --profile ${{ matrix.profile }} \
+            --tags "${{ matrix.tags }}" \
+            --parallel ${{ matrix.parallel }}
+        env:
+          KARATE_ENV: ${{ matrix.profile }}
+          PARALLEL_THREADS: ${{ matrix.parallel }}
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          cd karate-api-tests
+          if [ -f "target/karate-reports/karate-summary.json" ]; then
+            echo "## Test Results (${{ matrix.tags }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **Profile**: ${{ matrix.profile }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Parallel Threads**: ${{ matrix.parallel }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Total Scenarios**: $(jq '.scenarioCount' target/karate-reports/karate-summary.json)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Passed**: $(jq '.scenariosPassed' target/karate-reports/karate-summary.json)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Failed**: $(jq '.scenariosFailed' target/karate-reports/karate-summary.json)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Execution Time**: $(jq '.elapsedTime' target/karate-reports/karate-summary.json)ms" >> $GITHUB_STEP_SUMMARY
+            
+            # Add failure details if any
+            if [ "$(jq '.scenariosFailed' target/karate-reports/karate-summary.json)" -gt 0 ]; then
+              echo "### Failed Scenarios" >> $GITHUB_STEP_SUMMARY
+              jq -r '.featureResults[] | select(.scenarioCount > .scenariosPassed) | "- **\(.packageQualifiedName)**: \(.scenarioCount - .scenariosPassed) failed"' target/karate-reports/karate-summary.json >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: karate-test-reports-${{ matrix.tags }}-${{ matrix.profile }}
+          path: |
+            karate-api-tests/target/karate-reports/
+            karate-api-tests/target/surefire-reports/
+            karate-api-tests/target/failsafe-reports/
+          retention-days: 7
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: application-logs-${{ matrix.tags }}-${{ matrix.profile }}
+          path: |
+            */target/logs/
+            */logs/
+            karate-api-tests/target/karate.log
+          retention-days: 3
+
+      - name: Comment PR with test results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'karate-api-tests/target/karate-reports/karate-summary.json';
+            
+            if (fs.existsSync(path)) {
+              const results = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const status = results.scenariosFailed > 0 ? '❌' : '✅';
+              
+              const comment = `
+              ## ${status} Karate Test Results (${{ matrix.tags }})
+              
+              - **Profile**: ${{ matrix.profile }}
+              - **Total Scenarios**: ${results.scenarioCount}
+              - **Passed**: ${results.scenariosPassed}
+              - **Failed**: ${results.scenariosFailed}
+              - **Execution Time**: ${results.elapsedTime}ms
+              
+              ${results.scenariosFailed > 0 ? '### ❌ Some tests failed. Please check the detailed reports.' : '### ✅ All tests passed!'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  performance-baseline:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_environment == 'performance')
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Run performance baseline tests
+        run: |
+          cd karate-api-tests
+          ./scripts/run-tests.sh \
+            --profile performance \
+            --tags @performance \
+            --parallel 8
+      
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-reports
+          path: karate-api-tests/target/performance-reports/
+          retention-days: 30
+
+  security-scan:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_environment == 'security')
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Run security tests
+        run: |
+          cd karate-api-tests
+          ./scripts/run-tests.sh \
+            --profile security \
+            --tags @security \
+            --parallel 2
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: karate-api-tests/target/security-reports/
+          retention-days: 30
+
+  notify:
+    needs: [test, performance-baseline, security-scan]
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const testResult = '${{ needs.test.result }}';
+            const perfResult = '${{ needs.performance-baseline.result }}';
+            const secResult = '${{ needs.security-scan.result }}';
+            
+            const status = [testResult, perfResult, secResult].includes('failure') ? '❌ FAILED' : '✅ PASSED';
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `${status} Nightly Karate Test Results - ${new Date().toISOString().split('T')[0]}`,
+              body: `
+              ## Nightly Test Results
+              
+              - **Smoke Tests**: ${testResult}
+              - **Performance Tests**: ${perfResult}
+              - **Security Tests**: ${secResult}
+              
+              View detailed reports in the [Actions tab](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).
+              `,
+              labels: ['testing', 'nightly-build']
+            });
+
+  cleanup:
+    needs: [test, performance-baseline, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Cleanup artifacts
+        run: |
+          echo "Cleaning up temporary files and resources..."
+          # This step can be used for any cleanup operations
+          # For example, cleaning up test data, temporary files, etc.

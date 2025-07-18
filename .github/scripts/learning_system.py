@@ -9,6 +9,7 @@ import os
 import re
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 # Configure logging
@@ -20,8 +21,8 @@ logging.basicConfig(
 logger = logging.getLogger("kiro_learning")
 
 # Constants
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "data", "analytics.db")
-LEARNING_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "data", "learning.db")
+DEFAULT_DB_PATH = str(Path(__file__).parent / ".." / ".." / ".kiro" / "data" / "analytics.db")
+LEARNING_DB_PATH = str(Path(__file__).parent / ".." / ".." / ".kiro" / "data" / "learning.db")
 
 
 class LearningSystem:
@@ -33,7 +34,7 @@ class LearningSystem:
         self.learning_db_path = learning_db_path or LEARNING_DB_PATH
 
         # Ensure directory exists
-        os.makedirs(os.path.dirname(self.learning_db_path), exist_ok=True)
+        os.makedirs(str(Path(self.learning_db_path).parent), exist_ok=True)
 
         # Initialize learning database
         self._init_learning_db()
@@ -671,7 +672,7 @@ class LearningSystem:
             logger.error(f"Error recording suggestion improvement: {e!s}")
             return False
 
-    def get_learning_insights(self, repo_owner: str | None = None, repo_name: str | None = None) -> dict[str, Any]:
+    def get_learning_insights(self, _repo_owner: str | None = None, _repo_name: str | None = None) -> dict[str, Any]:
         """Get insights from the learning system."""
         try:
             conn = sqlite3.connect(self.learning_db_path)

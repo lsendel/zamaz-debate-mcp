@@ -281,7 +281,7 @@ class ConcurrentLoadTest(PerformanceTestBase):
 
     async def think_time(self):
         """Simulate user think time."""
-        think_duration = random.uniform(self.scenario.think_time_min, self.scenario.think_time_max)
+        think_duration = random.uniform(self.scenario.think_time_min, self.scenario.think_time_max)  # noqa: S311 (using random for test simulation)
         await asyncio.sleep(think_duration)
 
 
@@ -316,7 +316,7 @@ class HTTPLoadTest(ConcurrentLoadTest):
                 break
 
             # Select endpoint
-            endpoint = random.choice(self.endpoints)
+            endpoint = random.choice(self.endpoints)  # noqa: S311 (using random for test simulation)
 
             # Get test data
             test_data = self.get_next_test_data()
@@ -403,7 +403,7 @@ class DatabaseLoadTest(ConcurrentLoadTest):
                     break
 
                 # Select operation
-                operation = random.choice(self.operations)
+                operation = random.choice(self.operations)  # noqa: S311 (using random for test simulation)
 
                 # Get test data
                 test_data = self.get_next_test_data()
@@ -449,14 +449,14 @@ class DatabaseLoadTest(ConcurrentLoadTest):
     def _prepare_insert_params(self, test_data: dict[str, Any]) -> list[Any]:
         """Prepare parameters for insert operation."""
         return [
-            test_data.get("name", f"user_data_{random.randint(1000, 9999)}"),
-            test_data.get("value", random.randint(1, 1000)),
-            test_data.get("data", f"test_data_{random.randint(1000, 9999)}"),
+            test_data.get("name", f"user_data_{random.randint(1000, 9999)}"),  # noqa: S311 (using random for test simulation)
+            test_data.get("value", random.randint(1, 1000)),  # noqa: S311 (using random for test simulation)
+            test_data.get("data", f"test_data_{random.randint(1000, 9999)}"),  # noqa: S311 (using random for test simulation)
         ]
 
     def _prepare_update_params(self, test_data: dict[str, Any]) -> list[Any]:
         """Prepare parameters for update operation."""
-        return [test_data.get("value", random.randint(1, 1000)), test_data.get("id", random.randint(1, 1000))]
+        return [test_data.get("value", random.randint(1, 1000)), test_data.get("id", random.randint(1, 1000))]  # noqa: S311 (using random for test simulation)
 
 
 class SpikeLoadTest(PerformanceTestBase):
@@ -691,7 +691,7 @@ class EnduranceTest(PerformanceTestBase):
                 )
 
                 # Variable think time to simulate realistic usage
-                await asyncio.sleep(random.uniform(0.1, 2.0))
+                await asyncio.sleep(random.uniform(0.1, 2.0))  # noqa: S311 (using random for test simulation)
 
             except asyncio.CancelledError:
                 break

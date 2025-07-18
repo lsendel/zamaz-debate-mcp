@@ -205,7 +205,7 @@ class SonarQubeAnalysisRunner:
 
         output_path = Path(self.report_generator.report_config.output_dir) / output_file
 
-        with open(output_path, "w") as f:
+        with output_path.open("w") as f:
             json.dump(results, f, indent=2, default=str)
 
         logger.info(f"Analysis results saved to: {output_path}")
@@ -260,7 +260,7 @@ def main():
             output_file = f"detailed_sonar_report_{timestamp}.md"
             output_path = Path(runner.report_generator.report_config.output_dir) / output_file
 
-            with open(output_path, "w") as f:
+            with output_path.open("w") as f:
                 f.write(report)
 
             print(f"Detailed report generated: {output_path}")

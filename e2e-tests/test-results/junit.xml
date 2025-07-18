@@ -1,0 +1,188 @@
+<testsuites id="" name="" tests="5" failures="3" skipped="0" errors="0" time="43.484242">
+<testsuite name="00-login-and-navigation.spec.ts" timestamp="2025-07-18T14:39:15.086Z" hostname="chromium" tests="5" failures="3" skipped="0" time="39.875" errors="0">
+<testcase name="Login and Navigation Flow › should login successfully and navigate to home page" classname="00-login-and-navigation.spec.ts" time="9.754">
+<failure message="00-login-and-navigation.spec.ts:19:7 should login successfully and navigate to home page" type="FAILURE">
+<![CDATA[  [chromium] › 00-login-and-navigation.spec.ts:19:7 › Login and Navigation Flow › should login successfully and navigate to home page 
+
+    Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('nav, [role="navigation"]')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('nav, [role="navigation"]')
+
+
+      49 |     
+      50 |     // Check for navigation elements
+    > 51 |     await expect(page.locator('nav, [role="navigation"]')).toBeVisible();
+         |                                                            ^
+      52 |     
+      53 |     // Step 8: Verify no JavaScript errors
+      54 |     const logs = [];
+        at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:51:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/video.webm]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/error-context.md]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Login and Navigation Flow › should navigate to debates page and load debates" classname="00-login-and-navigation.spec.ts" time="4.998">
+<failure message="00-login-and-navigation.spec.ts:74:7 should navigate to debates page and load debates" type="FAILURE">
+<![CDATA[  [chromium] › 00-login-and-navigation.spec.ts:74:7 › Login and Navigation Flow › should navigate to debates page and load debates 
+
+    Error: expect.toContainText: Error: strict mode violation: locator('button') resolved to 3 elements:
+        1) <button tabindex="0" type="button" aria-label="open drawer" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-edgeStart MuiIconButton-sizeMedium css-17cwzu3-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'open drawer' })
+        2) <button tabindex="0" type="button" aria-label="Refresh" data-mui-internal-clone-element="true" class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-1syrll4-MuiButtonBase-root-MuiIconButton-root">…</button> aka getByRole('button', { name: 'Refresh' })
+        3) <button tabindex="0" type="button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-52xubp-MuiButtonBase-root-MuiButton-root">…</button> aka getByRole('button', { name: 'Create Debate' })
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('button')
+
+
+      91 |     
+      92 |     // Look for debate-related elements
+    > 93 |     await expect(page.locator('button')).toContainText('Create Debate');
+         |                                          ^
+      94 |     
+      95 |     // Check for no critical errors
+      96 |     const logs = [];
+        at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:93:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/video.webm]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/error-context.md]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Login and Navigation Flow › should navigate to organization management page" classname="00-login-and-navigation.spec.ts" time="11.261">
+<failure message="00-login-and-navigation.spec.ts:113:7 should navigate to organization management page" type="FAILURE">
+<![CDATA[  [chromium] › 00-login-and-navigation.spec.ts:113:7 › Login and Navigation Flow › should navigate to organization management page 
+
+    Error: Timed out 5000ms waiting for expect(locator).toContainText(expected)
+
+    Locator: locator('h1, h2, h3, h4')
+    Expected string: "Organization Management"
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for locator('h1, h2, h3, h4')
+
+
+      130 |     
+      131 |     // Look for organization-related elements
+    > 132 |     await expect(page.locator('h1, h2, h3, h4')).toContainText('Organization Management');
+          |                                                  ^
+      133 |     
+      134 |     // Check for tabs
+      135 |     const tabs = page.locator('[role="tab"]');
+        at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:132:50
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/video.webm]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/error-context.md]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Login and Navigation Flow › should handle API errors gracefully" classname="00-login-and-navigation.spec.ts" time="5.05">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|00-login-and-navigation-Lo-26dea-andle-API-errors-gracefully-chromium/test-finished-1.png]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-26dea-andle-API-errors-gracefully-chromium/video.webm]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-26dea-andle-API-errors-gracefully-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Login and Navigation Flow › should maintain authentication state across page navigation" classname="00-login-and-navigation.spec.ts" time="8.812">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|00-login-and-navigation-Lo-5a22b-tate-across-page-navigation-chromium/test-finished-1.png]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-5a22b-tate-across-page-navigation-chromium/video.webm]]
+
+[[ATTACHMENT|00-login-and-navigation-Lo-5a22b-tate-across-page-navigation-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

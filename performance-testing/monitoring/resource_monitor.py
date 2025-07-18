@@ -371,7 +371,7 @@ class ResourceMonitor:
                 "summary": self.get_resource_summary(),
             }
 
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(data, f, indent=2)
 
     def generate_monitoring_report(self, output_dir: str):
@@ -398,7 +398,7 @@ class ResourceMonitor:
         }
 
         # Save report
-        with open(output_path / "monitoring_report.json", "w") as f:
+        with (output_path / "monitoring_report.json").open("w") as f:
             json.dump(report, f, indent=2)
 
         self.logger.info(f"Monitoring report generated: {output_path}")

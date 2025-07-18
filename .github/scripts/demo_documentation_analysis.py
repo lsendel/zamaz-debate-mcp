@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 # Add the current directory to the Python path
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, str(Path(__file__).parent))
 
 import contextlib
 

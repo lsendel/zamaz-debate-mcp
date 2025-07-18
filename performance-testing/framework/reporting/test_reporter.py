@@ -71,7 +71,7 @@ class PerformanceReporter:
 
         # Save report
         html_path = self.output_dir / f"{report_name}.html"
-        with open(html_path, "w") as f:
+        with html_path.open("w") as f:
             f.write(html_content)
 
         self.logger.info(f"HTML report generated: {html_path}")
@@ -91,7 +91,7 @@ class PerformanceReporter:
 
         # Save JSON
         json_path = self.output_dir / f"{report_name}.json"
-        with open(json_path, "w") as f:
+        with json_path.open("w") as f:
             json.dump(json_data, f, indent=2, default=str)
 
         self.logger.info(f"JSON report generated: {json_path}")
@@ -142,7 +142,7 @@ class PerformanceReporter:
         html_content = self._render_comparison_template(comparison_data)
 
         html_path = self.output_dir / f"{report_name}.html"
-        with open(html_path, "w") as f:
+        with html_path.open("w") as f:
             f.write(html_content)
 
         self.logger.info(f"Comparison report generated: {html_path}")
@@ -167,7 +167,7 @@ class PerformanceReporter:
         html_content = self._render_trend_template(trend_data, charts_dir)
 
         html_path = self.output_dir / f"{report_name}.html"
-        with open(html_path, "w") as f:
+        with html_path.open("w") as f:
             f.write(html_content)
 
         self.logger.info(f"Trend analysis report generated: {html_path}")

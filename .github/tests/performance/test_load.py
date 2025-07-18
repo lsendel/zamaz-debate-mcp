@@ -12,12 +12,13 @@ import statistics
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+sys.path.insert(0, str(Path(__file__).parent / ".." / ".." / "scripts"))
 
 
 @pytest.mark.load
@@ -59,12 +60,12 @@ class TestLoadScenarios:
         patch_lines = ["@@ -1,10 +1,20 @@"]
 
         for i in range(num_lines):
-            if random.random() < 0.7:  # 70% additions
+            if random.random() < 0.7:  # 70% additions  # noqa: S311 (using random for test simulation)
                 line = f"+    line_{i} = 'code here'"
                 # Randomly add issues
-                if random.random() < 0.1:  # 10% security issues
+                if random.random() < 0.1:  # 10% security issues  # noqa: S311 (using random for test simulation)
                     line = "+    password = 'hardcoded123'"
-                elif random.random() < 0.2:  # 20% style issues
+                elif random.random() < 0.2:  # 20% style issues  # noqa: S311 (using random for test simulation)
                     line = f"+line_{i}='no_spaces_around_equals'"
             else:  # 30% context/deletions
                 line = f" context line {i}"
@@ -186,7 +187,7 @@ class TestLoadScenarios:
         import gc
 
         gc.collect()
-        return random.uniform(100, 200)  # Simulated value
+        return random.uniform(100, 200)  # Simulated value  # noqa: S311 (using random for test simulation)
 
     @pytest.mark.asyncio
     async def test_api_rate_limit_handling(self):
@@ -245,7 +246,7 @@ class TestLoadScenarios:
                 start_time = time.time()
 
                 # Simulate PR processing with repo-specific config
-                await asyncio.sleep(random.uniform(0.1, 0.3))
+                await asyncio.sleep(random.uniform(0.1, 0.3))  # noqa: S311 (using random for test simulation)
 
                 repo_results.append({"repo": repo_name, "pr": pr_num, "time": time.time() - start_time})
 
@@ -358,7 +359,7 @@ class TestLoadScenarios:
         processing_time = base_time + (num_files * per_file_time)
 
         # Add some randomness
-        processing_time += random.uniform(-0.05, 0.05)
+        processing_time += random.uniform(-0.05, 0.05)  # noqa: S311 (using random for test simulation)
 
         await asyncio.sleep(processing_time)
 
@@ -402,8 +403,8 @@ class TestStressScenarios:
 
     async def simulate_operation(self, op_id):
         """Simulate a single operation."""
-        await asyncio.sleep(random.uniform(0.01, 0.1))
-        if random.random() < 0.95:  # 95% success rate
+        await asyncio.sleep(random.uniform(0.01, 0.1))  # noqa: S311 (using random for test simulation)
+        if random.random() < 0.95:  # 95% success rate  # noqa: S311 (using random for test simulation)
             return {"op_id": op_id, "status": "success"}
         else:
             raise Exception(f"Operation {op_id} failed")

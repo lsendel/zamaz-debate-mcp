@@ -369,7 +369,7 @@ Manage preferences: https://github.com/apps/kiro/preferences
 
         return text
 
-    async def _send_github_notification(self, recipient: NotificationRecipient, content: NotificationContent) -> bool:
+    async def _send_github_notification(self, _recipient: NotificationRecipient, content: NotificationContent) -> bool:
         """Send a notification via GitHub (comment or status)."""
         if not self.github_token or not content.repository:
             logger.warning("GitHub notification requires token and repository")

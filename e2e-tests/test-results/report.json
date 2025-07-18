@@ -1,0 +1,436 @@
+{
+  "config": {
+    "configFile": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/playwright.config.ts",
+    "rootDir": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "test-results/html-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/report.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "00-login-and-navigation.spec.ts",
+      "file": "00-login-and-navigation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Login and Navigation Flow",
+          "file": "00-login-and-navigation.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should login successfully and navigate to home page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 9754,
+                      "error": {
+                        "message": "Error: \u001b[31mTimed out 5000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: locator('nav, [role=\"navigation\"]')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('nav, [role=\"navigation\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[31mTimed out 5000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: locator('nav, [role=\"navigation\"]')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('nav, [role=\"navigation\"]')\u001b[22m\n\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:51:60",
+                        "location": {
+                          "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                          "column": 60,
+                          "line": 51
+                        },
+                        "snippet": "  49 |     \n  50 |     // Check for navigation elements\n> 51 |     await expect(page.locator('nav, [role=\"navigation\"]')).toBeVisible();\n     |                                                            ^\n  52 |     \n  53 |     // Step 8: Verify no JavaScript errors\n  54 |     const logs = [];"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                            "column": 60,
+                            "line": 51
+                          },
+                          "message": "Error: \u001b[31mTimed out 5000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: locator('nav, [role=\"navigation\"]')\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('nav, [role=\"navigation\"]')\u001b[22m\n\n\n  49 |     \n  50 |     // Check for navigation elements\n> 51 |     await expect(page.locator('nav, [role=\"navigation\"]')).toBeVisible();\n     |                                                            ^\n  52 |     \n  53 |     // Step 8: Verify no JavaScript errors\n  54 |     const logs = [];\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:51:60"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-18T14:39:15.345Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-0bce2-y-and-navigate-to-home-page-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                        "column": 60,
+                        "line": 51
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0197e160d21579cf9e55-936a7758190e5b8f8f4a",
+              "file": "00-login-and-navigation.spec.ts",
+              "line": 19,
+              "column": 7
+            },
+            {
+              "title": "should navigate to debates page and load debates",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4998,
+                      "error": {
+                        "message": "Error: expect.toContainText: Error: strict mode violation: locator('button') resolved to 3 elements:\n    1) <button tabindex=\"0\" type=\"button\" aria-label=\"open drawer\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-edgeStart MuiIconButton-sizeMedium css-17cwzu3-MuiButtonBase-root-MuiIconButton-root\">…</button> aka getByRole('button', { name: 'open drawer' })\n    2) <button tabindex=\"0\" type=\"button\" aria-label=\"Refresh\" data-mui-internal-clone-element=\"true\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-1syrll4-MuiButtonBase-root-MuiIconButton-root\">…</button> aka getByRole('button', { name: 'Refresh' })\n    3) <button tabindex=\"0\" type=\"button\" class=\"MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-52xubp-MuiButtonBase-root-MuiButton-root\">…</button> aka getByRole('button', { name: 'Create Debate' })\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('button')\u001b[22m\n",
+                        "stack": "Error: expect.toContainText: Error: strict mode violation: locator('button') resolved to 3 elements:\n    1) <button tabindex=\"0\" type=\"button\" aria-label=\"open drawer\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-edgeStart MuiIconButton-sizeMedium css-17cwzu3-MuiButtonBase-root-MuiIconButton-root\">…</button> aka getByRole('button', { name: 'open drawer' })\n    2) <button tabindex=\"0\" type=\"button\" aria-label=\"Refresh\" data-mui-internal-clone-element=\"true\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-1syrll4-MuiButtonBase-root-MuiIconButton-root\">…</button> aka getByRole('button', { name: 'Refresh' })\n    3) <button tabindex=\"0\" type=\"button\" class=\"MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-52xubp-MuiButtonBase-root-MuiButton-root\">…</button> aka getByRole('button', { name: 'Create Debate' })\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('button')\u001b[22m\n\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:93:42",
+                        "location": {
+                          "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                          "column": 42,
+                          "line": 93
+                        },
+                        "snippet": "  91 |     \n  92 |     // Look for debate-related elements\n> 93 |     await expect(page.locator('button')).toContainText('Create Debate');\n     |                                          ^\n  94 |     \n  95 |     // Check for no critical errors\n  96 |     const logs = [];"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                            "column": 42,
+                            "line": 93
+                          },
+                          "message": "Error: expect.toContainText: Error: strict mode violation: locator('button') resolved to 3 elements:\n    1) <button tabindex=\"0\" type=\"button\" aria-label=\"open drawer\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-edgeStart MuiIconButton-sizeMedium css-17cwzu3-MuiButtonBase-root-MuiIconButton-root\">…</button> aka getByRole('button', { name: 'open drawer' })\n    2) <button tabindex=\"0\" type=\"button\" aria-label=\"Refresh\" data-mui-internal-clone-element=\"true\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium css-1syrll4-MuiButtonBase-root-MuiIconButton-root\">…</button> aka getByRole('button', { name: 'Refresh' })\n    3) <button tabindex=\"0\" type=\"button\" class=\"MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-52xubp-MuiButtonBase-root-MuiButton-root\">…</button> aka getByRole('button', { name: 'Create Debate' })\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('button')\u001b[22m\n\n\n  91 |     \n  92 |     // Look for debate-related elements\n> 93 |     await expect(page.locator('button')).toContainText('Create Debate');\n     |                                          ^\n  94 |     \n  95 |     // Check for no critical errors\n  96 |     const logs = [];\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:93:42"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-18T14:39:26.304Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-3a863-bates-page-and-load-debates-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                        "column": 42,
+                        "line": 93
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0197e160d21579cf9e55-051fc7644aafb9111766",
+              "file": "00-login-and-navigation.spec.ts",
+              "line": 74,
+              "column": 7
+            },
+            {
+              "title": "should navigate to organization management page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 11261,
+                      "error": {
+                        "message": "Error: \u001b[31mTimed out 5000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nLocator: locator('h1, h2, h3, h4')\nExpected string: \u001b[32m\"Organization Management\"\u001b[39m\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1, h2, h3, h4')\u001b[22m\n",
+                        "stack": "Error: \u001b[31mTimed out 5000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nLocator: locator('h1, h2, h3, h4')\nExpected string: \u001b[32m\"Organization Management\"\u001b[39m\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1, h2, h3, h4')\u001b[22m\n\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:132:50",
+                        "location": {
+                          "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                          "column": 50,
+                          "line": 132
+                        },
+                        "snippet": "  130 |     \n  131 |     // Look for organization-related elements\n> 132 |     await expect(page.locator('h1, h2, h3, h4')).toContainText('Organization Management');\n      |                                                  ^\n  133 |     \n  134 |     // Check for tabs\n  135 |     const tabs = page.locator('[role=\"tab\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                            "column": 50,
+                            "line": 132
+                          },
+                          "message": "Error: \u001b[31mTimed out 5000ms waiting for \u001b[39m\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nLocator: locator('h1, h2, h3, h4')\nExpected string: \u001b[32m\"Organization Management\"\u001b[39m\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1, h2, h3, h4')\u001b[22m\n\n\n  130 |     \n  131 |     // Look for organization-related elements\n> 132 |     await expect(page.locator('h1, h2, h3, h4')).toContainText('Organization Management');\n      |                                                  ^\n  133 |     \n  134 |     // Check for tabs\n  135 |     const tabs = page.locator('[role=\"tab\"]');\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts:132:50"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-18T14:39:32.090Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-9ceed-rganization-management-page-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/00-login-and-navigation.spec.ts",
+                        "column": 50,
+                        "line": 132
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0197e160d21579cf9e55-caa6d08e09e253b4d0f4",
+              "file": "00-login-and-navigation.spec.ts",
+              "line": 113,
+              "column": 7
+            },
+            {
+              "title": "should handle API errors gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5050,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-18T14:39:44.158Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-26dea-andle-API-errors-gracefully-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-26dea-andle-API-errors-gracefully-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-26dea-andle-API-errors-gracefully-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0197e160d21579cf9e55-594992556c9c2ae2a2ce",
+              "file": "00-login-and-navigation.spec.ts",
+              "line": 142,
+              "column": 7
+            },
+            {
+              "title": "should maintain authentication state across page navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8812,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-18T14:39:49.540Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-5a22b-tate-across-page-navigation-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-5a22b-tate-across-page-navigation-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/00-login-and-navigation-Lo-5a22b-tate-across-page-navigation-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0197e160d21579cf9e55-a1b828f8606d9fa1af95",
+              "file": "00-login-and-navigation.spec.ts",
+              "line": 163,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-07-18T14:39:15.045Z",
+    "duration": 43484.242,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  }
+}

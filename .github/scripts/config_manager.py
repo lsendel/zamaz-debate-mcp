@@ -8,6 +8,7 @@ import base64
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -21,8 +22,8 @@ logging.basicConfig(
 logger = logging.getLogger("kiro_config_manager")
 
 # Constants
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "config", "github.yml")
-CONFIG_SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "config", "github.schema.json")
+DEFAULT_CONFIG_PATH = str(Path(__file__).parent / ".." / ".." / ".kiro" / "config" / "github.yml")
+CONFIG_SCHEMA_PATH = str(Path(__file__).parent / ".." / ".." / ".kiro" / "config" / "github.schema.json")
 
 
 class ConfigManager:
@@ -571,10 +572,10 @@ if __name__ == "__main__":
 
     # Create a mock GitHub client
     class MockGitHubClient:
-        def get(self, url, params=None):
+        def get(self, _url, _params=None):
             raise Exception("File not found")
 
-        def put(self, url, json=None):
+        def put(self, _url, _json=None):
             return {}
 
     # Get configuration

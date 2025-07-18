@@ -32,7 +32,7 @@ async def demo_dependency_injection():
         async def get(self, key):
             return f"cached_{key}"
 
-        async def set(self, key, value, ttl=None):
+        async def set(self, _key, _value, _ttl=None):
             return True
 
     class MockMetrics:

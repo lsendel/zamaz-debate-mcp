@@ -11,6 +11,7 @@ import re
 import subprocess
 import tempfile
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 # Configure logging
@@ -115,7 +116,7 @@ class CodeAnalyzer:
         self.issues = []
         self.temp_dir = None
 
-    def analyze_pr(self, pr_data: dict[str, Any], files: list[dict[str, Any]], diff: str) -> list[CodeIssue]:
+    def analyze_pr(self, pr_data: dict[str, Any], files: list[dict[str, Any]], _diff: str) -> list[CodeIssue]:
         """Analyze a pull request and return a list of issues."""
         logger.info(f"Analyzing PR #{pr_data['number']} in {pr_data['repository']['full_name']}")
 
@@ -153,8 +154,8 @@ class CodeAnalyzer:
                 continue
 
             # Create directory structure
-            full_path = os.path.join(self.temp_dir, file_path)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            full_path = Path(self.temp_dir) / file_path
+            full_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Write file content
             content = file.get("content", "")
@@ -200,7 +201,7 @@ class CodeAnalyzer:
 
     def _check_python_syntax(self, file_path: str) -> None:
         """Check Python syntax using pyflakes."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Use Python's built-in compile function to check syntax
@@ -252,7 +253,7 @@ class CodeAnalyzer:
 
     def _check_javascript_syntax(self, file_path: str) -> None:
         """Check JavaScript/TypeScript syntax using ESLint if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run ESLint if available
@@ -296,7 +297,7 @@ class CodeAnalyzer:
 
     def _check_java_syntax(self, file_path: str) -> None:
         """Check Java syntax using javac if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run javac if available
@@ -343,7 +344,7 @@ class CodeAnalyzer:
 
     def _check_go_syntax(self, file_path: str) -> None:
         """Check Go syntax using go vet if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run go vet if available
@@ -376,7 +377,7 @@ class CodeAnalyzer:
 
     def _check_ruby_syntax(self, file_path: str) -> None:
         """Check Ruby syntax using ruby -c if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run ruby -c if available
@@ -433,7 +434,7 @@ class CodeAnalyzer:
 
     def _check_python_style(self, file_path: str) -> None:
         """Check Python style using flake8 if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run flake8 if available
@@ -475,7 +476,7 @@ class CodeAnalyzer:
 
     def _check_javascript_style(self, file_path: str) -> None:
         """Check JavaScript/TypeScript style using prettier if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run prettier if available
@@ -504,7 +505,7 @@ class CodeAnalyzer:
 
     def _check_java_style(self, file_path: str) -> None:
         """Check Java style using checkstyle if available."""
-        full_path = os.path.join(self.temp_dir, file_path)
+        full_path = Path(self.temp_dir) / file_path
 
         try:
             # Try to run checkstyle if available
@@ -551,7 +552,7 @@ class CodeAnalyzer:
         # Try to run bandit for Python security if available
         try:
             python_files = [
-                os.path.join(self.temp_dir, file.get("filename"))
+                str(Path(self.temp_dir) / file.get("filename"))
                 for file in files
                 if file.get("filename", "").endswith(".py") and file.get("status") != "removed"
             ]
@@ -653,7 +654,7 @@ class CodeAnalyzer:
                 continue
 
             # Get file content
-            full_path = os.path.join(self.temp_dir, file_path)
+            full_path = Path(self.temp_dir) / file_path
             try:
                 with open(full_path) as f:
                     content = f.read()
@@ -740,7 +741,7 @@ class CodeAnalyzer:
             file_ext = os.path.splitext(file_path)[1].lower()
 
             # Get file content
-            full_path = os.path.join(self.temp_dir, file_path)
+            full_path = Path(self.temp_dir) / file_path
             try:
                 with open(full_path) as f:
                     content = f.read()

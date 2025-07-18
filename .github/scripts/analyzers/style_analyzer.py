@@ -418,7 +418,7 @@ class DocumentationStrategy(AnalysisStrategy):
 
         return issues
 
-    def _check_jsdoc(self, context: AnalyzerContext) -> list[CodeIssue]:
+    def _check_jsdoc(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check JSDoc documentation."""
         # Implementation for JavaScript/TypeScript
         return []

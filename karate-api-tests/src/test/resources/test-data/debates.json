@@ -1,0 +1,314 @@
+{
+  "sampleDebates": [
+    {
+      "topic": "Should artificial intelligence be regulated by government?",
+      "description": "A debate about the role of government regulation in AI development and deployment",
+      "config": {
+        "format": "OXFORD",
+        "maxRounds": 3,
+        "responseTimeout": 300,
+        "maxParticipants": 6,
+        "allowAnonymous": false,
+        "requireModeration": false,
+        "isPublic": true,
+        "tags": ["AI", "regulation", "government", "technology"],
+        "difficulty": "INTERMEDIATE",
+        "estimatedDuration": 1800
+      },
+      "positions": [
+        {
+          "side": "PRO",
+          "description": "AI should be regulated by government to ensure safety and ethical use",
+          "maxParticipants": 3
+        },
+        {
+          "side": "CON",
+          "description": "AI regulation by government would stifle innovation and progress",
+          "maxParticipants": 3
+        }
+      ]
+    },
+    {
+      "topic": "Is remote work better than office work?",
+      "description": "Comparing the benefits and drawbacks of remote vs office work environments",
+      "config": {
+        "format": "STANDARD",
+        "maxRounds": 5,
+        "responseTimeout": 240,
+        "maxParticipants": 8,
+        "allowAnonymous": true,
+        "requireModeration": false,
+        "isPublic": true,
+        "tags": ["work", "remote", "office", "productivity"],
+        "difficulty": "BEGINNER",
+        "estimatedDuration": 2400
+      },
+      "positions": [
+        {
+          "side": "PRO",
+          "description": "Remote work offers better work-life balance and productivity",
+          "maxParticipants": 4
+        },
+        {
+          "side": "CON",
+          "description": "Office work provides better collaboration and team dynamics",
+          "maxParticipants": 4
+        }
+      ]
+    },
+    {
+      "topic": "Should social media platforms be held responsible for content moderation?",
+      "description": "Examining the responsibility of social media companies in content moderation",
+      "config": {
+        "format": "FREESTYLE",
+        "maxRounds": 4,
+        "responseTimeout": 360,
+        "maxParticipants": 10,
+        "allowAnonymous": false,
+        "requireModeration": true,
+        "isPublic": true,
+        "tags": ["social-media", "content-moderation", "responsibility", "free-speech"],
+        "difficulty": "ADVANCED",
+        "estimatedDuration": 3600
+      },
+      "positions": [
+        {
+          "side": "PRO",
+          "description": "Social media platforms should be responsible for moderating content",
+          "maxParticipants": 5
+        },
+        {
+          "side": "CON",
+          "description": "Content moderation should be minimal to preserve free speech",
+          "maxParticipants": 5
+        }
+      ]
+    }
+  ],
+  "debateTemplates": [
+    {
+      "name": "Academic Debate Template",
+      "description": "Template for formal academic debates with structured arguments",
+      "config": {
+        "format": "OXFORD",
+        "maxRounds": 3,
+        "responseTimeout": 600,
+        "maxParticipants": 4,
+        "allowAnonymous": false,
+        "requireModeration": true,
+        "isPublic": false,
+        "difficulty": "ADVANCED",
+        "estimatedDuration": 2400
+      },
+      "guidelines": [
+        "Present clear thesis statements",
+        "Support arguments with evidence",
+        "Address counterarguments",
+        "Maintain respectful tone",
+        "Follow time limits strictly"
+      ],
+      "requiredFields": ["topic", "description", "positions"],
+      "tags": ["academic", "formal", "structured"]
+    },
+    {
+      "name": "Community Discussion Template",
+      "description": "Template for open community discussions with multiple perspectives",
+      "config": {
+        "format": "TOWN_HALL",
+        "maxRounds": 7,
+        "responseTimeout": 180,
+        "maxParticipants": 20,
+        "allowAnonymous": true,
+        "requireModeration": false,
+        "isPublic": true,
+        "difficulty": "BEGINNER",
+        "estimatedDuration": 2100
+      },
+      "guidelines": [
+        "Keep responses concise",
+        "Respect different viewpoints",
+        "Stay on topic",
+        "Use constructive language"
+      ],
+      "requiredFields": ["topic"],
+      "tags": ["community", "discussion", "open"]
+    }
+  ],
+  "debateStatuses": [
+    "DRAFT",
+    "SCHEDULED",
+    "OPEN_FOR_REGISTRATION",
+    "READY_TO_START",
+    "IN_PROGRESS",
+    "PAUSED",
+    "COMPLETED",
+    "CANCELLED",
+    "ARCHIVED"
+  ],
+  "debateFormats": [
+    {
+      "name": "OXFORD",
+      "description": "Traditional Oxford-style debate with structured turns",
+      "rules": {
+        "speakingOrder": "alternating",
+        "timePerTurn": 300,
+        "rebuttalsAllowed": true,
+        "crossExaminationAllowed": false,
+        "audienceVoting": true
+      }
+    },
+    {
+      "name": "STANDARD",
+      "description": "Standard debate format with flexible structure",
+      "rules": {
+        "speakingOrder": "flexible",
+        "timePerTurn": 240,
+        "rebuttalsAllowed": true,
+        "crossExaminationAllowed": true,
+        "audienceVoting": false
+      }
+    },
+    {
+      "name": "FREESTYLE",
+      "description": "Free-form discussion with minimal structure",
+      "rules": {
+        "speakingOrder": "open",
+        "timePerTurn": 180,
+        "rebuttalsAllowed": true,
+        "crossExaminationAllowed": true,
+        "audienceVoting": false
+      }
+    },
+    {
+      "name": "TOWN_HALL",
+      "description": "Open town hall style with multiple participants",
+      "rules": {
+        "speakingOrder": "queue",
+        "timePerTurn": 120,
+        "rebuttalsAllowed": true,
+        "crossExaminationAllowed": false,
+        "audienceVoting": true
+      }
+    }
+  ],
+  "sampleResponses": [
+    {
+      "content": "I believe AI regulation is essential for protecting consumers and ensuring ethical development. Without proper oversight, we risk creating systems that perpetuate bias, violate privacy, and potentially cause harm. The government has a responsibility to establish frameworks that guide innovation while protecting citizens.",
+      "type": "ARGUMENT",
+      "position": "PRO",
+      "round": 1,
+      "evidenceUrls": [
+        "https://example.com/ai-ethics-study",
+        "https://example.com/regulatory-framework"
+      ],
+      "tags": ["ethics", "consumer-protection", "oversight"]
+    },
+    {
+      "content": "While I understand the concerns about AI safety, excessive government regulation could stifle innovation and slow progress. The tech industry has shown it can self-regulate effectively, and market forces naturally address consumer concerns. Over-regulation might push innovation to countries with fewer restrictions.",
+      "type": "REBUTTAL",
+      "position": "CON",
+      "round": 1,
+      "evidenceUrls": [
+        "https://example.com/innovation-impact",
+        "https://example.com/self-regulation-examples"
+      ],
+      "tags": ["innovation", "self-regulation", "market-forces"]
+    }
+  ],
+  "participantRoles": [
+    {
+      "role": "DEBATER",
+      "description": "Active participant presenting arguments",
+      "permissions": [
+        "SUBMIT_RESPONSES",
+        "VIEW_DEBATE",
+        "REACT_TO_RESPONSES",
+        "REQUEST_CLARIFICATION"
+      ]
+    },
+    {
+      "role": "MODERATOR",
+      "description": "Facilitates the debate and maintains order",
+      "permissions": [
+        "MODERATE_RESPONSES",
+        "MANAGE_PARTICIPANTS",
+        "CONTROL_DEBATE_FLOW",
+        "ENFORCE_RULES",
+        "END_DEBATE"
+      ]
+    },
+    {
+      "role": "OBSERVER",
+      "description": "Watches the debate without participating",
+      "permissions": [
+        "VIEW_DEBATE",
+        "REACT_TO_RESPONSES",
+        "VOTE_ON_WINNER"
+      ]
+    },
+    {
+      "role": "JUDGE",
+      "description": "Evaluates arguments and determines winner",
+      "permissions": [
+        "VIEW_DEBATE",
+        "SCORE_RESPONSES",
+        "PROVIDE_FEEDBACK",
+        "DETERMINE_WINNER"
+      ]
+    }
+  ],
+  "debateMetrics": {
+    "engagement": {
+      "avgResponseLength": 250,
+      "avgResponseTime": 180,
+      "participationRate": 0.85,
+      "completionRate": 0.92
+    },
+    "quality": {
+      "avgArgumentScore": 7.2,
+      "evidenceUsageRate": 0.65,
+      "constructivenessScore": 8.1,
+      "civility": 9.3
+    },
+    "popularity": {
+      "avgViewers": 45,
+      "avgReactions": 23,
+      "shareRate": 0.12,
+      "followUpDebates": 0.08
+    }
+  },
+  "testScenarios": [
+    {
+      "name": "Complete Debate Flow",
+      "description": "Test full debate lifecycle from creation to completion",
+      "steps": [
+        "Create debate",
+        "Add participants",
+        "Start debate",
+        "Submit responses for all rounds",
+        "Complete debate",
+        "Verify results"
+      ]
+    },
+    {
+      "name": "Concurrent Participation",
+      "description": "Test multiple users participating simultaneously",
+      "steps": [
+        "Create debate with multiple participants",
+        "Have users submit responses concurrently",
+        "Verify response order and integrity",
+        "Check for race conditions"
+      ]
+    },
+    {
+      "name": "Moderation Workflow",
+      "description": "Test debate moderation features",
+      "steps": [
+        "Create moderated debate",
+        "Submit responses requiring approval",
+        "Moderate responses (approve/reject)",
+        "Verify moderation workflow"
+      ]
+    }
+  ]
+}

@@ -91,7 +91,7 @@ class SonarQubeReportGenerator:
     def _load_config(self, config_file: str) -> dict[str, Any]:
         """Load configuration from YAML file"""
         try:
-            with open(config_file) as f:
+            with Path(config_file).open() as f:
                 return yaml.safe_load(f)
         except FileNotFoundError:
             logger.error(f"Configuration file {config_file} not found")
@@ -131,7 +131,7 @@ class SonarQubeReportGenerator:
         """Load historical data for trend analysis"""
         if self.historical_data_file.exists():
             try:
-                with open(self.historical_data_file) as f:
+                with self.historical_data_file.open() as f:
                     return json.load(f)
             except Exception as e:
                 logger.error(f"Error loading historical data: {e}")
@@ -143,7 +143,7 @@ class SonarQubeReportGenerator:
         # Keep only last 100 reports
         self.historical_data["reports"] = self.historical_data["reports"][-100:]
 
-        with open(self.historical_data_file, "w") as f:
+        with self.historical_data_file.open("w") as f:
             json.dump(self.historical_data, f, indent=2)
 
     def _make_sonar_request(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -660,7 +660,7 @@ class SonarQubeReportGenerator:
         filename = f"sonarqube_report_{timestamp}.{format_type}"
         filepath = Path(self.report_config.output_dir) / filename
 
-        with open(filepath, "w", encoding="utf-8") as f:
+        with filepath.open("w", encoding="utf-8") as f:
             f.write(content)
 
         logger.info(f"Report saved: {filepath}")
@@ -695,7 +695,7 @@ class SonarQubeReportGenerator:
 
             # Attach report files
             for file_path in report_files:
-                with open(file_path, "rb") as attachment:
+                with Path(file_path).open("rb") as attachment:
                     part = MIMEBase("application", "octet-stream")
                     part.set_payload(attachment.read())
                     encoders.encode_base64(part)

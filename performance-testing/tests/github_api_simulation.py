@@ -293,11 +293,11 @@ class GitHubAPISimulator:
             base_delay *= 1.5  # Write operations are slower
 
         # Add random variation
-        delay = base_delay * random.uniform(0.5, 1.5)
+        delay = base_delay * random.uniform(0.5, 1.5)  # noqa: S311 (using random for test simulation)
 
         await asyncio.sleep(delay)
 
-    def _generate_response(self, endpoint: str, method: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _generate_response(self, endpoint: str, _method: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         """Generate response data for endpoint."""
         # Determine response type based on endpoint
         if "/user" in endpoint:

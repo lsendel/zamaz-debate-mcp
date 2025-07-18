@@ -26,7 +26,7 @@ class GitHubCredentialManager:
         )
 
         # Ensure directory exists
-        os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
+        Path(self.storage_path).parent.mkdir(parents=True, exist_ok=True)
 
         # Set up encryption
         self.encryption_key = encryption_key or os.environ.get("GITHUB_CREDENTIAL_KEY")

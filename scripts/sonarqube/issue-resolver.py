@@ -127,7 +127,7 @@ class IssueResolver:
     def _fix_cognitive_complexity(self, file_path: Path, issue: Issue) -> bool:
         """Fix cognitive complexity issues by extracting functions"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             lines = content.split("\n")
@@ -147,7 +147,7 @@ class IssueResolver:
                 # Replace the function in the original content
                 new_lines = lines[:function_start] + refactored_content.split("\n") + lines[function_end + 1 :]
 
-                with open(file_path, "w", encoding="utf-8") as f:
+                with file_path.open("w", encoding="utf-8") as f:
                     f.write("\n".join(new_lines))
 
                 logger.info(f"Refactored complex function in {file_path}:{issue.line}")
@@ -162,7 +162,7 @@ class IssueResolver:
     def _fix_function_nesting(self, file_path: Path, issue: Issue) -> bool:
         """Fix function nesting depth issues"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             lines = content.split("\n")
@@ -180,7 +180,7 @@ class IssueResolver:
                     refactored_content = self._move_function_outside_nesting(content, extracted_function)
 
                     if refactored_content != content:
-                        with open(file_path, "w", encoding="utf-8") as f:
+                        with file_path.open("w", encoding="utf-8") as f:
                             f.write(refactored_content)
 
                         logger.info(f"Reduced function nesting in {file_path}:{issue.line}")
@@ -195,7 +195,7 @@ class IssueResolver:
     def _fix_unnecessary_await(self, file_path: Path, issue: Issue) -> bool:
         """Fix unnecessary await on non-Promise values"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             lines = content.split("\n")
@@ -213,7 +213,7 @@ class IssueResolver:
                     if new_line != line_content:
                         lines[issue.line - 1] = new_line
 
-                        with open(file_path, "w", encoding="utf-8") as f:
+                        with file_path.open("w", encoding="utf-8") as f:
                             f.write("\n".join(lines))
 
                         logger.info(f"Removed unnecessary await in {file_path}:{issue.line}")
@@ -228,7 +228,7 @@ class IssueResolver:
     def _fix_array_sort_without_comparator(self, file_path: Path, issue: Issue) -> bool:
         """Fix array sort without comparator"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             lines = content.split("\n")
@@ -244,7 +244,7 @@ class IssueResolver:
                     if new_line != line_content:
                         lines[issue.line - 1] = new_line
 
-                        with open(file_path, "w", encoding="utf-8") as f:
+                        with file_path.open("w", encoding="utf-8") as f:
                             f.write("\n".join(lines))
 
                         logger.info(f"Added comparator to array sort in {file_path}:{issue.line}")
@@ -259,7 +259,7 @@ class IssueResolver:
     def _fix_hardcoded_secret(self, file_path: Path, issue: Issue) -> bool:
         """Fix hardcoded secrets by replacing with environment variables"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             lines = content.split("\n")
@@ -288,7 +288,7 @@ class IssueResolver:
                         new_line = re.sub(pattern, replacement, line_content)
                         lines[issue.line - 1] = new_line
 
-                        with open(file_path, "w", encoding="utf-8") as f:
+                        with file_path.open("w", encoding="utf-8") as f:
                             f.write("\n".join(lines))
 
                         logger.info(f"Replaced hardcoded secret in {file_path}:{issue.line}")
@@ -300,10 +300,10 @@ class IssueResolver:
             logger.error(f"Error fixing hardcoded secret: {e}")
             return False
 
-    def _fix_compromised_password(self, file_path: Path, issue: Issue) -> bool:
+    def _fix_compromised_password(self, file_path: Path, _issue: Issue) -> bool:
         """Fix compromised passwords in configuration files"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             # Replace common compromised passwords with environment variables
@@ -327,7 +327,7 @@ class IssueResolver:
                     modified = True
 
             if modified:
-                with open(file_path, "w", encoding="utf-8") as f:
+                with file_path.open("w", encoding="utf-8") as f:
                     f.write(content)
 
                 logger.info(f"Fixed compromised password in {file_path}")
@@ -343,10 +343,10 @@ class IssueResolver:
         """Fix database secrets"""
         return self._fix_hardcoded_secret(file_path, issue)
 
-    def _fix_sonarqube_token(self, file_path: Path, issue: Issue) -> bool:
+    def _fix_sonarqube_token(self, file_path: Path, _issue: Issue) -> bool:
         """Fix SonarQube token exposure"""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with file_path.open(encoding="utf-8") as f:
                 content = f.read()
 
             # Look for SonarQube token patterns
@@ -367,7 +367,7 @@ class IssueResolver:
                     modified = True
 
             if modified:
-                with open(file_path, "w", encoding="utf-8") as f:
+                with file_path.open("w", encoding="utf-8") as f:
                     f.write(content)
 
                 logger.info(f"Fixed SonarQube token exposure in {file_path}")
@@ -406,7 +406,7 @@ class IssueResolver:
 
         return "\n".join(function_lines), end_line
 
-    def _refactor_complex_function(self, function_content: str, file_extension: str) -> str:
+    def _refactor_complex_function(self, function_content: str, _file_extension: str) -> str:
         """Refactor complex function by extracting helper functions"""
         # This is a simplified refactoring - in practice, you'd need more sophisticated analysis
         lines = function_content.split("\n")

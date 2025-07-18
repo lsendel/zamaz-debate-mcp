@@ -13,13 +13,14 @@ import os
 import signal
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 # Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.api import diagnostic_endpoints, review_endpoints, webhook_endpoints
 from scripts.core.container import ServiceContainer

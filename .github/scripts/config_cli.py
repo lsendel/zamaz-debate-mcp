@@ -38,7 +38,7 @@ class MockGitHubClient:
         """Initialize the mock GitHub client."""
         self.config_path = config_path
 
-    def get(self, url, params=None):
+    def get(self, url, _params=None):
         """Mock GET request."""
         if "contents/.kiro/config/github.yml" in url and self.config_path:
             try:

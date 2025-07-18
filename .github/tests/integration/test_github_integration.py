@@ -8,12 +8,13 @@ import json
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+sys.path.insert(0, str(Path(__file__).parent / ".." / ".." / "scripts"))
 
 from code_analyzer import CodeAnalyzer
 from comment_generator import CommentGenerator
@@ -167,7 +168,7 @@ class TestGitHubIntegrationFlow:
         assert review_result["state"] == "COMMENTED"
 
     @pytest.mark.asyncio
-    async def test_pr_with_security_issues(self, code_analyzer, comment_generator, github_client):
+    async def test_pr_with_security_issues(self, code_analyzer, comment_generator, _github_client):
         """Test handling PR with security vulnerabilities."""
         # Analyze code with SQL injection
         vulnerable_code = """
@@ -225,7 +226,7 @@ def get_user(user_id):
         assert total_issues >= 0  # May or may not find issues
 
     @pytest.mark.asyncio
-    async def test_configuration_based_analysis(self, code_analyzer, integration_config):
+    async def test_configuration_based_analysis(self, _code_analyzer, integration_config):
         """Test that analysis respects configuration settings."""
         # Update config to disable certain checks
         integration_config["rules_config"] = {
@@ -251,7 +252,7 @@ def test():
         # In practice, you'd need to implement this configuration check
 
     @pytest.mark.asyncio
-    async def test_error_handling_in_flow(self, webhook_handler, pr_processor, github_client):
+    async def test_error_handling_in_flow(self, _webhook_handler, pr_processor, github_client):
         """Test error handling throughout the integration flow."""
         # Simulate GitHub API error
         github_client.get_pull_request = AsyncMock(side_effect=Exception("GitHub API rate limit exceeded"))
@@ -285,7 +286,7 @@ def test():
         assert "Hardcoded password" in batch_comment
 
     @pytest.mark.asyncio
-    async def test_incremental_review_on_push(self, webhook_handler, pr_processor, code_analyzer):
+    async def test_incremental_review_on_push(self, webhook_handler, _pr_processor, _code_analyzer):
         """Test incremental review when new commits are pushed."""
         # First review
         {"commit_sha": "abc123", "issues_found": 5, "timestamp": datetime.now().isoformat()}
@@ -316,7 +317,7 @@ class TestEndToEndScenarios:
     """End-to-end scenario tests."""
 
     @pytest.mark.asyncio
-    async def test_auto_fix_suggestion_flow(self, code_analyzer, comment_generator, github_client):
+    async def test_auto_fix_suggestion_flow(self, code_analyzer, comment_generator, _github_client):
         """Test flow for suggesting automatic fixes."""
         # Code with fixable issue
         code_with_issue = """

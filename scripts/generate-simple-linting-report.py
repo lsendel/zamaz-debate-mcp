@@ -31,7 +31,7 @@ def get_python_issues():
             # Get file contents for context
             for issue in raw_issues:
                 try:
-                    with open(issue["filename"]) as f:
+                    with Path(issue["filename"]).open() as f:
                         lines = f.readlines()
 
                     line_num = issue["location"]["row"]
@@ -125,7 +125,7 @@ def fix_python_security():
 
             for file in files_to_fix:
                 # Check if it's actually security-sensitive
-                with open(file) as f:
+                with Path(file).open() as f:
                     content = f.read()
 
                 # Only fix if there are security-related keywords
@@ -138,7 +138,7 @@ def fix_python_security():
                     content = content.replace("secrets.randbelow(", "secrets.randbelow(")
                     content = content.replace("random.random()", "secrets.randbits(64) / (2**64)")
 
-                    with open(file, "w") as f:
+                    with Path(file).open("w") as f:
                         f.write(content)
         except:
             pass
@@ -151,7 +151,7 @@ def fix_python_security():
             files_to_fix = {issue["filename"] for issue in issues}
 
             for file in files_to_fix:
-                with open(file) as f:
+                with Path(file).open() as f:
                     lines = f.readlines()
 
                 # Add timeout parameter
@@ -163,7 +163,7 @@ def fix_python_security():
                         elif "requests.post(" in line:
                             lines[i] = line.replace("requests.post(", "requests.post(").replace(")", ", timeout=30)")
 
-                with open(file, "w") as f:
+                with Path(file).open("w") as f:
                     f.writelines(lines)
         except:
             pass
@@ -178,7 +178,7 @@ def fix_shell_issues():
         if ".git" in str(file) or "node_modules" in str(file):
             continue
 
-        with open(file) as f:
+        with file.open() as f:
             content = f.read()
             lines = content.split("\n")
 
@@ -196,7 +196,7 @@ def fix_shell_issues():
                 # Simple replacement - may need manual review
                 lines[i] = line.replace("`", "$(...)")
 
-        with open(file, "w") as f:
+        with file.open("w") as f:
             f.write("\n".join(lines))
 
 
@@ -242,7 +242,7 @@ def generate_report(iteration):
 
     # Save report
     report_file = f"linting_report_iteration_{iteration}.json"
-    with open(report_file, "w") as f:
+    with Path(report_file).open("w") as f:
         json.dump(report, f, indent=2)
 
     # Print summary

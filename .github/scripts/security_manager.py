@@ -14,6 +14,7 @@ import sqlite3
 import time
 import uuid
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from cryptography.fernet import Fernet
@@ -27,8 +28,8 @@ logging.basicConfig(
 logger = logging.getLogger("kiro_security")
 
 # Constants
-AUDIT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "data", "audit.db")
-ENCRYPTION_KEY_PATH = os.path.join(os.path.dirname(__file__), "..", "..", ".kiro", "security", "encryption.key")
+AUDIT_DB_PATH = str(Path(__file__).parent / ".." / ".." / ".kiro" / "data" / "audit.db")
+ENCRYPTION_KEY_PATH = str(Path(__file__).parent / ".." / ".." / ".kiro" / "security" / "encryption.key")
 
 
 class SecurityManager:
@@ -40,8 +41,8 @@ class SecurityManager:
         self.encryption_key_path = ENCRYPTION_KEY_PATH
 
         # Ensure directories exist
-        os.makedirs(os.path.dirname(self.audit_db_path), exist_ok=True)
-        os.makedirs(os.path.dirname(self.encryption_key_path), exist_ok=True)
+        os.makedirs(str(Path(self.audit_db_path).parent), exist_ok=True)
+        os.makedirs(str(Path(self.encryption_key_path).parent), exist_ok=True)
 
         # Initialize encryption
         self.cipher = self._init_encryption()

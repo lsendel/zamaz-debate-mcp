@@ -355,7 +355,7 @@ class SlackIntegration:
 
         await client.chat_postMessage(channel=command["channel_id"], text="Kiro statistics", blocks=blocks)
 
-    def _generate_sample_stats(self, repository: str | None) -> dict[str, Any]:
+    def _generate_sample_stats(self, _repository: str | None) -> dict[str, Any]:
         """Generate sample statistics (would be replaced with real data)."""
         return {
             "prs_reviewed": 156,

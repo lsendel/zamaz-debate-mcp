@@ -68,7 +68,7 @@ class E2ETestEnvironment:
         self.github.create_review.side_effect = self._create_review
         self.notifications.send.side_effect = self._send_notification
 
-    async def _queue_publish(self, queue_name: str, message: Any, **kwargs):
+    async def _queue_publish(self, queue_name: str, message: Any, **_kwargs):
         """Mock queue publish."""
         msg_id = f"msg-{len(self.webhook_events)}"
         self.webhook_events.append(
@@ -92,7 +92,7 @@ class E2ETestEnvironment:
             "html_url": f"https://github.com/{owner}/{repo}/pull/{pr_number}#review-{review['id']}",
         }
 
-    async def _send_notification(self, recipient: str, subject: str, message: str, **kwargs):
+    async def _send_notification(self, recipient: str, subject: str, message: str, **_kwargs):
         """Mock notification sending."""
         notification = {
             "id": f"notif-{len(self.notifications_sent)}",

@@ -21,7 +21,7 @@ class DetailedLintingReporter:
     def extract_python_context(self, file_path: str, line_number: int) -> dict[str, Any]:
         """Extract class and method context for a Python file at a specific line."""
         try:
-            with open(file_path) as f:
+            with Path(file_path).open() as f:
                 content = f.read()
 
             tree = ast.parse(content)
@@ -106,7 +106,7 @@ class DetailedLintingReporter:
                     issues = json.loads(result.stdout)
 
                     for issue in issues:
-                        with open(file_path) as f:
+                        with file_path.open() as f:
                             lines = f.readlines()
                             line_content = lines[issue["line"] - 1].strip() if issue["line"] <= len(lines) else ""
 
@@ -153,7 +153,7 @@ class DetailedLintingReporter:
                         file_path = file_result["filePath"]
 
                         for message in file_result["messages"]:
-                            with open(file_path) as f:
+                            with Path(file_path).open() as f:
                                 lines = f.readlines()
                                 line_content = (
                                     lines[message["line"] - 1].strip() if message["line"] <= len(lines) else ""
@@ -203,7 +203,7 @@ class DetailedLintingReporter:
 
     def generate_markdown_report(self, output_file: str = "DETAILED_LINTING_REPORT.md"):
         """Generate a detailed markdown report."""
-        with open(output_file, "w") as f:
+        with Path(output_file).open("w") as f:
             f.write("# Detailed Linting Report\n\n")
             f.write(f"**Generated**: {Path.cwd()}\n")
             f.write(f"**Total Files with Issues**: {len(self.issues_by_file)}\n")
@@ -322,7 +322,7 @@ class DetailedLintingReporter:
             "by_file": self.issues_by_file,
         }
 
-        with open(output_file, "w") as f:
+        with Path(output_file).open("w") as f:
             json.dump(report, f, indent=2)
 
         return report

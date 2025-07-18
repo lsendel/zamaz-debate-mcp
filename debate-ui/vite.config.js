@@ -132,6 +132,17 @@ export default defineConfig(({ mode }) => {
             console.log('Debate API proxy error:', err.message);
           });
         }
+      },
+      '/api/v1/chat': {
+        target: env.VITE_LLM_API_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('LLM API proxy error:', err.message);
+          });
+        }
       }
     }
   },

@@ -542,13 +542,13 @@ if __name__ == "__main__":
 
         # Create a mock GitHub client
         class MockGitHubClient:
-            def get(self, url, params=None):
+            def get(self, _url, _params=None):
                 return {}
 
-            def post(self, url, json=None):
+            def post(self, _url, _json=None):
                 return {}
 
-            def patch(self, url, json=None):
+            def patch(self, _url, _json=None):
                 return {}
 
         # Generate fix suggestions

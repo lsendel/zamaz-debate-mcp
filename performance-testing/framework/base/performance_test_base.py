@@ -430,10 +430,10 @@ class PerformanceTestBase(ABC):
         filepath = self.test_data_dir / filename
 
         if isinstance(data, dict | list):
-            with open(filepath, "w") as f:
+            with filepath.open("w") as f:
                 json.dump(data, f, indent=2, default=str)
         else:
-            with open(filepath, "w") as f:
+            with filepath.open("w") as f:
                 f.write(str(data))
 
     def load_test_data(self, filename: str) -> Any:
@@ -444,10 +444,10 @@ class PerformanceTestBase(ABC):
             return None
 
         try:
-            with open(filepath) as f:
+            with filepath.open() as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            with open(filepath) as f:
+            with filepath.open() as f:
                 return f.read()
 
 
@@ -626,10 +626,10 @@ def generate_test_data(size: int, pattern: str = "random") -> list[dict[str, Any
             data.append(
                 {
                     "id": i,
-                    "name": "".join(random.choices(string.ascii_letters, k=10)),
-                    "value": random.randint(1, 1000),
+                    "name": "".join(random.choices(string.ascii_letters, k=10)),  # noqa: S311 (using random for test simulation)
+                    "value": random.randint(1, 1000),  # noqa: S311 (using random for test simulation)
                     "timestamp": datetime.now(UTC).isoformat(),
-                    "data": "".join(random.choices(string.ascii_letters + string.digits, k=100)),
+                    "data": "".join(random.choices(string.ascii_letters + string.digits, k=100)),  # noqa: S311 (using random for test simulation)
                 }
             )
         elif pattern == "sequential":

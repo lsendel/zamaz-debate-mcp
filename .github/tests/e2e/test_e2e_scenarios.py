@@ -8,12 +8,13 @@ import asyncio
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+sys.path.insert(0, str(Path(__file__).parent / ".." / ".." / "scripts"))
 
 
 @pytest.mark.e2e
@@ -50,7 +51,7 @@ class TestE2EScenarios:
             yield mock_response
 
     @pytest.mark.asyncio
-    async def test_new_pr_complete_review_cycle(self, e2e_config, mock_github_api):
+    async def test_new_pr_complete_review_cycle(self, _e2e_config, mock_github_api):
         """Test complete cycle: PR opened -> analysis -> review -> notification."""
         # Simulate webhook payload for new PR
 
@@ -93,7 +94,7 @@ class TestE2EScenarios:
         # - Issue logged in analytics
 
     @pytest.mark.asyncio
-    async def test_pr_with_incremental_improvements(self, e2e_config, mock_github_api):
+    async def test_pr_with_incremental_improvements(self, _e2e_config, mock_github_api):
         """Test PR that gets updated based on review feedback."""
         # Initial PR with issues
 
@@ -134,7 +135,7 @@ class TestE2EScenarios:
         # - PR approval after fixes
 
     @pytest.mark.asyncio
-    async def test_large_pr_handling(self, e2e_config, mock_github_api):
+    async def test_large_pr_handling(self, _e2e_config, mock_github_api):
         """Test handling of large PRs with many files."""
         # Create a large PR with 50+ files
         large_pr_files = []
@@ -161,7 +162,7 @@ class TestE2EScenarios:
         # Would implement actual pagination and batching logic
 
     @pytest.mark.asyncio
-    async def test_multi_language_pr(self, e2e_config, mock_github_api):
+    async def test_multi_language_pr(self, _e2e_config, mock_github_api):
         """Test PR with multiple programming languages."""
         multi_lang_files = [
             {
@@ -195,7 +196,7 @@ class TestE2EScenarios:
         # CSS: might skip or basic validation only
 
     @pytest.mark.asyncio
-    async def test_emergency_security_alert_flow(self, e2e_config, mock_github_api):
+    async def test_emergency_security_alert_flow(self, _e2e_config, mock_github_api):
         """Test critical security issue triggers emergency flow."""
         critical_security_pr = {
             "filename": "auth/jwt_handler.py",
@@ -246,7 +247,7 @@ class TestE2EScenarios:
         # Verify restricted mode is activated for fork PRs
 
     @pytest.mark.asyncio
-    async def test_performance_regression_detection(self, e2e_config, mock_github_api):
+    async def test_performance_regression_detection(self, _e2e_config, mock_github_api):
         """Test detection of performance regressions."""
         pr_with_perf_issue = {
             "filename": "data/processor.py",
@@ -286,7 +287,7 @@ class TestE2EScenarios:
         # 5. Developer leaderboard (optional)
 
     @pytest.mark.asyncio
-    async def test_custom_rule_configuration(self, e2e_config, mock_github_api):
+    async def test_custom_rule_configuration(self, _e2e_config, mock_github_api):
         """Test repository-specific custom rules."""
 
         # PR violating custom rules

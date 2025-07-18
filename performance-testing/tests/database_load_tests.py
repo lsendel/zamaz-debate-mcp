@@ -437,7 +437,7 @@ class DatabaseLoadTest(PerformanceTestBase):
                     async with self.connection_pool.acquire() as conn:
                         # Simulate work
                         await conn.fetchval("SELECT 1")
-                        await asyncio.sleep(random.uniform(0.01, 0.1))
+                        await asyncio.sleep(random.uniform(0.01, 0.1))  # noqa: S311 (using random for test simulation)
                         operations += 1
                 except Exception as e:
                     errors += 1
@@ -860,7 +860,7 @@ class DatabaseLoadTest(PerformanceTestBase):
                     async with self.connection_pool.acquire() as conn, conn.transaction():
                         # Get two random posts
                         if len(self.test_data["posts"]) >= 2:
-                            post1_id, post2_id = random.sample([p[0] for p in self.test_data["posts"]], 2)
+                            post1_id, post2_id = random.sample([p[0] for p in self.test_data["posts"]], 2)  # noqa: S311 (using random for test simulation)
 
                             # Lock posts in different order to create deadlock potential
                             if worker_id % 2 == 0:

@@ -1,0 +1,167 @@
+{
+  "defaultOrganization": {
+    "id": "test-org-id",
+    "name": "Test Organization",
+    "description": "Default organization for testing",
+    "settings": {
+      "allowPublicDebates": true,
+      "maxDebateParticipants": 10,
+      "debateTimeout": 300,
+      "allowAnonymousParticipation": false,
+      "requireEmailVerification": true,
+      "enableNotifications": true,
+      "defaultDebateFormat": "OXFORD",
+      "maxDebateRounds": 5,
+      "allowFileUploads": true,
+      "maxFileSize": 52428800,
+      "supportedFileTypes": ["pdf", "docx", "txt", "md"]
+    },
+    "tier": "ENTERPRISE",
+    "features": {
+      "aiAssistant": true,
+      "advancedAnalytics": true,
+      "customBranding": true,
+      "apiAccess": true,
+      "webhooks": true,
+      "sso": true,
+      "auditLogs": true
+    },
+    "limits": {
+      "monthlyDebates": 1000,
+      "concurrentDebates": 20,
+      "storageQuota": 1073741824,
+      "apiCallsPerMonth": 50000
+    }
+  },
+  "testOrganizations": [
+    {
+      "name": "Academic Institution",
+      "description": "Test organization for academic debates",
+      "settings": {
+        "allowPublicDebates": false,
+        "maxDebateParticipants": 6,
+        "debateTimeout": 600,
+        "allowAnonymousParticipation": false,
+        "requireEmailVerification": true,
+        "enableNotifications": true,
+        "defaultDebateFormat": "ACADEMIC",
+        "maxDebateRounds": 3,
+        "allowFileUploads": true,
+        "maxFileSize": 10485760,
+        "supportedFileTypes": ["pdf", "docx"]
+      },
+      "tier": "PRO",
+      "features": {
+        "aiAssistant": true,
+        "advancedAnalytics": true,
+        "customBranding": false,
+        "apiAccess": true,
+        "webhooks": false,
+        "sso": true,
+        "auditLogs": true
+      }
+    },
+    {
+      "name": "Corporate Training",
+      "description": "Test organization for corporate training debates",
+      "settings": {
+        "allowPublicDebates": true,
+        "maxDebateParticipants": 15,
+        "debateTimeout": 900,
+        "allowAnonymousParticipation": true,
+        "requireEmailVerification": false,
+        "enableNotifications": true,
+        "defaultDebateFormat": "FREESTYLE",
+        "maxDebateRounds": 7,
+        "allowFileUploads": true,
+        "maxFileSize": 26214400,
+        "supportedFileTypes": ["pdf", "docx", "txt", "md", "pptx"]
+      },
+      "tier": "ENTERPRISE",
+      "features": {
+        "aiAssistant": true,
+        "advancedAnalytics": true,
+        "customBranding": true,
+        "apiAccess": true,
+        "webhooks": true,
+        "sso": true,
+        "auditLogs": true
+      }
+    },
+    {
+      "name": "Community Forum",
+      "description": "Test organization for community debates",
+      "settings": {
+        "allowPublicDebates": true,
+        "maxDebateParticipants": 50,
+        "debateTimeout": 1800,
+        "allowAnonymousParticipation": true,
+        "requireEmailVerification": false,
+        "enableNotifications": false,
+        "defaultDebateFormat": "TOWN_HALL",
+        "maxDebateRounds": 10,
+        "allowFileUploads": false,
+        "maxFileSize": 0,
+        "supportedFileTypes": []
+      },
+      "tier": "BASIC",
+      "features": {
+        "aiAssistant": false,
+        "advancedAnalytics": false,
+        "customBranding": false,
+        "apiAccess": false,
+        "webhooks": false,
+        "sso": false,
+        "auditLogs": false
+      }
+    }
+  ],
+  "organizationUsers": [
+    {
+      "email": "admin@test-org.com",
+      "password": "AdminPass123!",
+      "name": "Organization Admin",
+      "role": "ADMIN",
+      "permissions": [
+        "MANAGE_ORGANIZATION",
+        "MANAGE_USERS",
+        "MANAGE_DEBATES",
+        "VIEW_ANALYTICS",
+        "MANAGE_SETTINGS",
+        "MANAGE_BILLING"
+      ]
+    },
+    {
+      "email": "moderator@test-org.com",
+      "password": "ModeratorPass123!",
+      "name": "Debate Moderator",
+      "role": "MODERATOR",
+      "permissions": [
+        "MANAGE_DEBATES",
+        "MODERATE_DEBATES",
+        "VIEW_ANALYTICS",
+        "MANAGE_PARTICIPANTS"
+      ]
+    },
+    {
+      "email": "user@test-org.com",
+      "password": "UserPass123!",
+      "name": "Regular User",
+      "role": "USER",
+      "permissions": [
+        "PARTICIPATE_DEBATES",
+        "CREATE_DEBATES",
+        "VIEW_DEBATES"
+      ]
+    },
+    {
+      "email": "viewer@test-org.com",
+      "password": "ViewerPass123!",
+      "name": "Debate Viewer",
+      "role": "VIEWER",
+      "permissions": [
+        "VIEW_DEBATES"
+      ]
+    }
+  ]
+}

@@ -20,6 +20,8 @@ import {
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
+  Business as BusinessIcon,
+  AdminPanelSettings as AdminIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "../store";
@@ -40,10 +42,17 @@ const Layout: React.FC = () => {
     navigate("/login");
   };
 
+  // Check if user is admin
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
   const menuItems = [
     { text: "Debates", icon: <ForumIcon />, path: "/debates" },
     { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
+  ];
+
+  const adminMenuItems = [
+    { text: "Organization Management", icon: <BusinessIcon />, path: "/organization-management" },
   ];
 
   return (
@@ -70,9 +79,30 @@ const Layout: React.FC = () => {
             Zamaz Debate System
           </Typography>
           {user && (
-            <Typography variant="body2" sx={{ mr: 2 }}>
-              {user.username}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+              {isAdmin && (
+                <AdminIcon sx={{ mr: 1, color: "gold" }} />
+              )}
+              <Typography variant="body2">
+                {user.username}
+                {isAdmin && (
+                  <Typography 
+                    component="span" 
+                    variant="caption" 
+                    sx={{ 
+                      ml: 1, 
+                      px: 1, 
+                      py: 0.5, 
+                      bgcolor: "rgba(255,215,0,0.2)", 
+                      borderRadius: 1,
+                      color: "gold"
+                    }}
+                  >
+                    ADMIN
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
           )}
         </Toolbar>
       </AppBar>
@@ -105,6 +135,35 @@ const Layout: React.FC = () => {
               </ListItem>
             ))}
           </List>
+          
+          {isAdmin && (
+            <>
+              <Divider />
+              <List>
+                <ListItem>
+                  <ListItemIcon>
+                    <AdminIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Administration" 
+                    primaryTypographyProps={{ 
+                      variant: "subtitle2", 
+                      color: "primary",
+                      fontWeight: "bold"
+                    }} 
+                  />
+                </ListItem>
+                {adminMenuItems.map((item) => (
+                  <ListItem key={item.text} disablePadding>
+                    <ListItemButton onClick={() => navigate(item.path)}>
+                      <ListItemIcon>{item.icon}</ListItemIcon>
+                      <ListItemText primary={item.text} />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            </>
+          )}
           <Divider />
           <List>
             <ListItem disablePadding>

@@ -1,15 +1,22 @@
 import BaseApiClient from "./baseClient";
 
 export interface LLMProvider {
+  id: string;
   name: string;
-  models: string[];
-  features: {
-    streaming: boolean;
-    functionCalling: boolean;
-    visionSupport: boolean;
-    maxTokens: number;
-  };
-  status: "available" | "unavailable" | "rate_limited";
+  apiEndpoint: string;
+  authType: string;
+  status: string;
+  models: LLMModel[];
+}
+
+export interface LLMModel {
+  id: string;
+  name: string;
+  provider: string;
+  type: string;
+  maxTokens: number;
+  costPerToken: number;
+  capabilities: string[];
 }
 
 export interface CompletionRequest {
@@ -38,36 +45,44 @@ export interface CompletionResponse {
   cached?: boolean;
 }
 
-export interface ModelInfo {
-  provider: string;
-  model: string;
-  description: string;
-  contextWindow: number;
-  pricing: {
-    inputTokens: number;
-    outputTokens: number;
-  };
-  capabilities: string[];
-}
 
 class LLMClient extends BaseApiClient {
   constructor() {
-    super("/api/llm");
+    super("/api/v1");
   }
 
   // Provider management
   async listProviders(): Promise<LLMProvider[]> {
-    const resources = await this.listResources();
-    return resources.filter((r: any) => r.uri.startsWith("provider://"));
+    const response = await this.client.get("/providers");
+    return response.data;
   }
 
   async getProvider(name: string): Promise<LLMProvider> {
-    return this.getResource(`provider://${name}`);
+    const response = await this.client.get(`/providers/${name}`);
+    return response.data;
   }
 
   // Completion
   async complete(request: CompletionRequest): Promise<CompletionResponse> {
-    return this.callTool("complete", request);
+    const response = await this.client.post("/chat/completions", {
+      model: request.model,
+      messages: request.messages,
+      max_tokens: request.maxTokens,
+      temperature: request.temperature,
+      top_p: request.topP,
+      stop: request.stopSequences
+    });
+    
+    return {
+      content: response.data.choices[0].message.content,
+      model: response.data.model,
+      usage: {
+        promptTokens: response.data.usage.prompt_tokens,
+        completionTokens: response.data.usage.completion_tokens,
+        totalTokens: response.data.usage.total_tokens
+      },
+      finishReason: response.data.choices[0].finish_reason
+    };
   }
 
   async streamComplete(
@@ -83,7 +98,7 @@ class LLMClient extends BaseApiClient {
   private async makeStreamRequest(
     request: CompletionRequest,
   ): Promise<Response> {
-    const response = await fetch("/api/llm/tools/complete", {
+    const response = await fetch("/api/v1/chat/completions", {
       method: "POST",
       headers: this.getStreamHeaders(),
       body: JSON.stringify({ ...request, stream: true }),
@@ -212,20 +227,25 @@ class LLMClient extends BaseApiClient {
   }
 
   // Model information
-  async listModels(provider?: string): Promise<ModelInfo[]> {
-    const params = provider ? { provider } : undefined;
-    const response = await this.client.get("/models", { params });
+  async listModels(provider?: string): Promise<LLMModel[]> {
+    if (provider) {
+      const response = await this.client.get(`/providers/${provider}/models`);
+      return response.data;
+    } else {
+      const response = await this.client.get("/models");
+      return response.data;
+    }
+  }
+
+  async getModelInfo(modelId: string): Promise<LLMModel> {
+    const response = await this.client.get(`/models/${modelId}`);
     return response.data;
   }
 
-  async getModelInfo(provider: string, model: string): Promise<ModelInfo> {
-    const response = await this.client.get(`/models/${provider}/${model}`);
-    return response.data;
-  }
-
-  // Token counting
+  // Token counting (mock implementation for now)
   async countTokens(text: string, model: string): Promise<number> {
-    return this.callTool("count_tokens", { text, model });
+    // Simple approximation: 1 token per 4 characters
+    return Math.ceil(text.length / 4);
   }
 
   // Rate limit information
@@ -239,8 +259,22 @@ class LLMClient extends BaseApiClient {
     status: string;
     providers: Record<string, string>;
   }> {
-    const response = await this.client.get("/health");
-    return response.data;
+    const providers = await this.listProviders();
+    const providerStatus: Record<string, string> = {};
+    
+    for (const provider of providers) {
+      try {
+        const response = await this.client.get(`/providers/${provider.id}/health`);
+        providerStatus[provider.id] = response.data.available ? 'available' : 'unavailable';
+      } catch (error) {
+        providerStatus[provider.id] = 'unavailable';
+      }
+    }
+    
+    return {
+      status: 'UP',
+      providers: providerStatus
+    };
   }
 }
 

@@ -45,7 +45,7 @@ class ComprehensiveLintingReporter:
         """Get detailed file metadata."""
         try:
             stat = os.stat(file_path)
-            with open(file_path, encoding="utf-8", errors="ignore") as f:
+            with Path(file_path).open(encoding="utf-8", errors="ignore") as f:
                 content = f.read()
                 lines = content.split("\n")
 
@@ -86,7 +86,7 @@ class ComprehensiveLintingReporter:
     def extract_python_context_detailed(self, file_path: str, line_number: int) -> dict[str, Any]:
         """Extract comprehensive context for Python issues."""
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with Path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             lines = content.split("\n")
@@ -548,7 +548,7 @@ class ComprehensiveLintingReporter:
                     issues = json.loads(result.stdout)
                     file_meta = self.get_file_metadata(str(file_path))
 
-                    with open(file_path, encoding="utf-8", errors="ignore") as f:
+                    with file_path.open(encoding="utf-8", errors="ignore") as f:
                         lines = f.readlines()
 
                     for issue in issues:
@@ -713,7 +713,7 @@ class ComprehensiveLintingReporter:
                     file_path = file_result["filePath"]
                     file_meta = self.get_file_metadata(file_path)
 
-                    with open(file_path, encoding="utf-8") as f:
+                    with Path(file_path).open(encoding="utf-8") as f:
                         lines = f.readlines()
 
                     for message in file_result["messages"]:
@@ -908,7 +908,7 @@ class ComprehensiveLintingReporter:
 
             # Get file context
             try:
-                with open(file_path, encoding="utf-8") as f:
+                with Path(file_path).open(encoding="utf-8") as f:
                     lines = f.readlines()
 
                 context = self._extract_java_context(lines, line)
@@ -1037,7 +1037,7 @@ class ComprehensiveLintingReporter:
 
     def generate_comprehensive_report(self, output_file: str = "COMPREHENSIVE_LINTING_REPORT.md"):
         """Generate the comprehensive markdown report."""
-        with open(output_file, "w", encoding="utf-8") as f:
+        with Path(output_file).open("w", encoding="utf-8") as f:
             # Header
             f.write("# Comprehensive Linting Report\n\n")
             f.write(f"**Generated**: {self.stats['start_time'].isoformat()}\n")
@@ -1315,7 +1315,7 @@ class ComprehensiveLintingReporter:
             "patterns": {"python": self.analyze_python_issue_patterns()},
         }
 
-        with open(output_file, "w", encoding="utf-8") as f:
+        with Path(output_file).open("w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, default=str)
 
         return report

@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 # Add the scripts directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+sys.path.insert(0, str(Path(__file__).parent / ".." / "scripts"))
 
 # Import existing analysis modules
 try:
@@ -251,7 +251,7 @@ class ComprehensiveAnalysisSystem:
 
         return integration_data
 
-    def _analyze_doc_code_alignment(self, doc_results: dict, repo_results: dict) -> dict[str, Any]:
+    def _analyze_doc_code_alignment(self, doc_results: dict, _repo_results: dict) -> dict[str, Any]:
         """Analyze alignment between documentation and code."""
         alignment_data = {
             "api_documentation_coverage": 0.0,

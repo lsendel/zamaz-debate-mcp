@@ -386,7 +386,7 @@ class JMeterTestGenerator:
         pretty_xml = "\n".join([line for line in pretty_xml.split("\n") if line.strip()])
 
         # Write to file
-        with open(output_path, "w", encoding="utf-8") as f:
+        with Path(output_path).open("w", encoding="utf-8") as f:
             f.write(pretty_xml)
 
 
@@ -479,7 +479,7 @@ class JMeterExecutor:
 
         # Check common locations
         for path in possible_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 return path
 
         return None

@@ -87,7 +87,7 @@ class PerformanceTestSuite:
         }
 
         if self.config_file and Path(self.config_file).exists():
-            with open(self.config_file) as f:
+            with Path(self.config_file).open() as f:
                 user_config = json.load(f)
                 default_config.update(user_config)
 
@@ -510,7 +510,7 @@ class PerformanceTestSuite:
         self.logger.info(f"Test Summary: {summary}")
 
         # Save summary
-        with open(output_dir / "test_summary.json", "w") as f:
+        with (output_dir / "test_summary.json").open("w") as f:
             json.dump(summary, f, indent=2)
 
     def _add_failed_test_result(self, test_name: str, test_type: str, error: Exception):
@@ -573,7 +573,7 @@ async def main():
     else:
         config_path = Path(args.output_dir) / "test_config.json"
         config_path.parent.mkdir(exist_ok=True)
-        with open(config_path, "w") as f:
+        with config_path.open("w") as f:
             json.dump(config, f, indent=2)
 
     # Run tests
