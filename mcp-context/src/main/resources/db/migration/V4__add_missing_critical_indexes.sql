@@ -1,6 +1,31 @@
 -- Critical missing indexes for context module
 -- Adds essential indexes for multi-tenant context management and message retrieval
 
+DO $$
+DECLARE
+    STATUS_ACTIVE CONSTANT varchar(10) := 'ACTIVE';
+BEGIN
+    -- Active contexts by organization (partial index for efficiency)
+    EXECUTE format('CREATE INDEX IF NOT EXISTS idx_contexts_org_status 
+                   ON contexts(organization_id, status) 
+                   WHERE status = %L', STATUS_ACTIVE);
+    
+    -- Token usage tracking by organization for billing/limits
+    EXECUTE format('CREATE INDEX IF NOT EXISTS idx_contexts_org_tokens 
+                   ON contexts(organization_id, total_tokens) 
+                   WHERE status = %L', STATUS_ACTIVE);
+    
+    -- Context size for memory management
+    EXECUTE format('CREATE INDEX IF NOT EXISTS idx_contexts_message_count 
+                   ON contexts(message_count DESC) 
+                   WHERE status = %L', STATUS_ACTIVE);
+    
+    -- Context last activity for cleanup jobs
+    EXECUTE format('CREATE INDEX IF NOT EXISTS idx_contexts_last_activity 
+                   ON contexts(last_activity_at ASC) 
+                   WHERE status = %L', STATUS_ACTIVE);
+END $$;
+
 -- ============================================================================
 -- CRITICAL: Foreign key indexes (PostgreSQL doesn't auto-create these)
 -- ============================================================================
@@ -28,10 +53,6 @@ ON shared_contexts(shared_with_org_id);
 CREATE INDEX IF NOT EXISTS idx_contexts_org_user_status 
 ON contexts(organization_id, user_id, status);
 
--- Active contexts by organization (partial index for efficiency)
-CREATE INDEX IF NOT EXISTS idx_contexts_org_status 
-ON contexts(organization_id, status) 
-WHERE status = 'ACTIVE';
 
 -- ============================================================================
 -- CRITICAL: Message retrieval optimization

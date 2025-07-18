@@ -1,23 +1,34 @@
 package com.zamaz.mcp.common.resilience;
 
 import com.zamaz.mcp.common.resilience.annotation.CircuitBreaker;
+import com.zamaz.mcp.common.resilience.exception.CircuitBreakerConfigurationException;
+import com.zamaz.mcp.common.resilience.exception.CircuitBreakerExecutionException;
+import com.zamaz.mcp.common.resilience.metrics.CircuitBreakerMetricsCollector;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.opentelemetry.api.trace.Span;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import javax.validation.constraints.NotNull;
 import java.lang.reflect.Method;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Aspect that applies circuit breaker pattern to annotated methods.
