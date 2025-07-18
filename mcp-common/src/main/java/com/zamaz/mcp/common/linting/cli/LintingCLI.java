@@ -19,6 +19,7 @@ import com.zamaz.mcp.common.linting.LintingSeverity;
 import com.zamaz.mcp.common.linting.QualityThresholds;
 import com.zamaz.mcp.common.linting.ReportFormat;
 import com.zamaz.mcp.common.linting.impl.LintingEngineImpl;
+import com.zamaz.mcp.common.linting.incremental.IncrementalLintingEngine;
 
 /**
  * Command-line interface for the linting engine.
@@ -28,9 +29,11 @@ public class LintingCLI {
     private static final Logger logger = LoggerFactory.getLogger(LintingCLI.class);
 
     private final LintingEngine lintingEngine;
+    private final IncrementalLintingEngine incrementalLintingEngine;
 
     public LintingCLI() {
         this.lintingEngine = new LintingEngineImpl();
+        this.incrementalLintingEngine = new IncrementalLintingEngine(lintingEngine);
     }
 
     public static void main(String[] args) {
@@ -162,6 +165,44 @@ public class LintingCLI {
                     options.setQuiet(true);
                     break;
 
+                case "--incremental":
+                    options.setIncremental(true);
+                    break;
+
+                case "--from-commit":
+                    if (i + 1 < args.length) {
+                        options.setFromCommit(args[++i]);
+                    }
+                    break;
+
+                case "--to-commit":
+                    if (i + 1 < args.length) {
+                        options.setToCommit(args[++i]);
+                    }
+                    break;
+
+                case "--working-dir":
+                    options.setWorkingDirectory(true);
+                    break;
+
+                case "--commit":
+                    if (i + 1 < args.length) {
+                        options.setCommit(args[++i]);
+                    }
+                    break;
+
+                case "--clear-cache":
+                    options.setClearCache(true);
+                    break;
+
+                case "--cache-stats":
+                    options.setCacheStats(true);
+                    break;
+
+                case "--warm-cache":
+                    options.setWarmCache(true);
+                    break;
+
                 default:
                     if (arg.startsWith("-")) {
                         throw new IllegalArgumentException("Unknown option: " + arg);
@@ -206,6 +247,54 @@ public class LintingCLI {
     }
 
     private LintingResult executeLinting(CLIOptions options, LintingContext context) {
+        // Handle cache operations first
+        if (options.isClearCache()) {
+            incrementalLintingEngine.clearCache();
+            if (!options.isQuiet()) {
+                System.out.println("Linting cache cleared");
+            }
+            return createEmptyResult();
+        }
+
+        if (options.isCacheStats()) {
+            if (!options.isQuiet()) {
+                System.out.println("Cache Statistics:");
+                System.out.println(incrementalLintingEngine.getCacheStatistics());
+            }
+            return createEmptyResult();
+        }
+
+        if (options.isWarmCache()) {
+            if (!options.isQuiet()) {
+                System.out.println("Warming up linting cache...");
+            }
+            incrementalLintingEngine.warmUpCache(context);
+            if (!options.isQuiet()) {
+                System.out.println("Cache warmed up successfully");
+            }
+            return createEmptyResult();
+        }
+
+        // Handle incremental linting
+        if (options.isIncremental() || options.getFromCommit() != null || 
+            options.getToCommit() != null || options.isWorkingDirectory() || 
+            options.getCommit() != null) {
+            
+            if (options.isWorkingDirectory()) {
+                return incrementalLintingEngine.lintWorkingDirectory(context);
+            } else if (options.getCommit() != null) {
+                return incrementalLintingEngine.lintChangedFiles(context, options.getCommit() + "~1", options.getCommit());
+            } else if (options.getFromCommit() != null && options.getToCommit() != null) {
+                return incrementalLintingEngine.lintChangedFiles(context, options.getFromCommit(), options.getToCommit());
+            } else if (options.getFromCommit() != null) {
+                return incrementalLintingEngine.lintChangedFiles(context, options.getFromCommit(), "HEAD");
+            } else {
+                // Default incremental: compare with previous commit
+                return incrementalLintingEngine.lintChangedFiles(context);
+            }
+        }
+
+        // Standard linting
         if (options.getServiceName() != null) {
             return lintingEngine.lintService(options.getServiceName(), context);
         } else if (options.getFiles() != null && !options.getFiles().isEmpty()) {
@@ -296,6 +385,16 @@ public class LintingCLI {
         System.out.println("  --verbose               Verbose output");
         System.out.println("  --quiet                 Quiet output (errors only)");
         System.out.println();
+        System.out.println("Incremental Options:");
+        System.out.println("  --incremental           Enable incremental linting (changed files only)");
+        System.out.println("  --from-commit COMMIT    Start commit for incremental linting");
+        System.out.println("  --to-commit COMMIT      End commit for incremental linting (default: HEAD)");
+        System.out.println("  --working-dir           Lint working directory changes only");
+        System.out.println("  --commit COMMIT         Lint files changed in specific commit");
+        System.out.println("  --clear-cache           Clear the linting cache");
+        System.out.println("  --cache-stats           Show cache statistics");
+        System.out.println("  --warm-cache            Pre-populate the cache with current project");
+        System.out.println();
         System.out.println("Examples:");
         System.out.println("  lint                    # Lint current project");
         System.out.println("  lint /path/to/project   # Lint specific project");
@@ -303,6 +402,13 @@ public class LintingCLI {
         System.out.println("  lint -f src/main.java   # Lint specific file");
         System.out.println("  lint --format json      # Output JSON report");
         System.out.println("  lint --auto-fix         # Fix issues automatically");
+        System.out.println();
+        System.out.println("Incremental Examples:");
+        System.out.println("  lint --incremental      # Lint changed files since last commit");
+        System.out.println("  lint --working-dir      # Lint working directory changes");
+        System.out.println("  lint --from-commit abc123 --to-commit def456  # Lint specific range");
+        System.out.println("  lint --commit abc123    # Lint files changed in specific commit");
+        System.out.println("  lint --clear-cache      # Clear the linting cache");
     }
 
     private void printVersion() {
@@ -344,6 +450,14 @@ public class LintingCLI {
         private String configFile;
         private boolean verbose = false;
         private boolean quiet = false;
+        private boolean incremental = false;
+        private String fromCommit;
+        private String toCommit;
+        private boolean workingDirectory = false;
+        private String commit;
+        private boolean clearCache = false;
+        private boolean cacheStats = false;
+        private boolean warmCache = false;
 
         // Getters and setters
         public boolean isHelp() {
@@ -457,5 +571,79 @@ public class LintingCLI {
         public void setQuiet(boolean quiet) {
             this.quiet = quiet;
         }
+
+        public boolean isIncremental() {
+            return incremental;
+        }
+
+        public void setIncremental(boolean incremental) {
+            this.incremental = incremental;
+        }
+
+        public String getFromCommit() {
+            return fromCommit;
+        }
+
+        public void setFromCommit(String fromCommit) {
+            this.fromCommit = fromCommit;
+        }
+
+        public String getToCommit() {
+            return toCommit;
+        }
+
+        public void setToCommit(String toCommit) {
+            this.toCommit = toCommit;
+        }
+
+        public boolean isWorkingDirectory() {
+            return workingDirectory;
+        }
+
+        public void setWorkingDirectory(boolean workingDirectory) {
+            this.workingDirectory = workingDirectory;
+        }
+
+        public String getCommit() {
+            return commit;
+        }
+
+        public void setCommit(String commit) {
+            this.commit = commit;
+        }
+
+        public boolean isClearCache() {
+            return clearCache;
+        }
+
+        public void setClearCache(boolean clearCache) {
+            this.clearCache = clearCache;
+        }
+
+        public boolean isCacheStats() {
+            return cacheStats;
+        }
+
+        public void setCacheStats(boolean cacheStats) {
+            this.cacheStats = cacheStats;
+        }
+
+        public boolean isWarmCache() {
+            return warmCache;
+        }
+
+        public void setWarmCache(boolean warmCache) {
+            this.warmCache = warmCache;
+        }
+    }
+
+    private LintingResult createEmptyResult() {
+        return new com.zamaz.mcp.common.linting.impl.DefaultLintingResult(
+                java.util.Collections.emptyList(),
+                java.util.Map.of("operation", "cache-management"),
+                java.time.LocalDateTime.now(),
+                0,
+                0L,
+                true);
     }
 }

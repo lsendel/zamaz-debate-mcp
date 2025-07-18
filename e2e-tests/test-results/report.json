@@ -1,0 +1,227 @@
+{
+  "config": {
+    "configFile": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/playwright.config.ts",
+    "rootDir": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "test-results/html-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/report.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "ui-showcase.spec.ts",
+      "file": "ui-showcase.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "UI Showcase - Complete Application Flow",
+          "file": "ui-showcase.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Capture screenshots of all UI functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 687,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "Error during UI showcase: page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at \u001b[90m/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/\u001b[39mtests/ui-showcase.spec.ts:10:18 {\n  name: \u001b[32m'Error'\u001b[39m,\n  [\u001b[32mSymbol(step)\u001b[39m]: {\n    stepId: \u001b[32m'pw:api@8'\u001b[39m,\n    location: {\n      file: \u001b[32m'/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts'\u001b[39m,\n      line: \u001b[33m10\u001b[39m,\n      column: \u001b[33m18\u001b[39m\n    },\n    category: \u001b[32m'pw:api'\u001b[39m,\n    title: \u001b[32m'Navigate to \"/\"'\u001b[39m,\n    apiName: \u001b[32m'page.goto'\u001b[39m,\n    params: { url: \u001b[32m'http://localhost:3000'\u001b[39m, waitUntil: \u001b[32m'load'\u001b[39m, timeout: \u001b[33m30000\u001b[39m },\n    boxedStack: \u001b[90mundefined\u001b[39m,\n    steps: [],\n    attachmentIndices: [],\n    info: TestStepInfoImpl {\n      annotations: [],\n      _testInfo: \u001b[36m[TestInfoImpl]\u001b[39m,\n      _stepId: \u001b[32m'pw:api@8'\u001b[39m,\n      skip: \u001b[36m[Function (anonymous)]\u001b[39m\n    },\n    complete: \u001b[36m[Function: complete]\u001b[39m,\n    endWallTime: \u001b[33m1752818616037\u001b[39m,\n    error: {\n      message: \u001b[32m'Error: page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/\\n'\u001b[39m +\n        \u001b[32m'Call log:\\n'\u001b[39m +\n        \u001b[32m'\\x1B[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\\x1B[22m\\n'\u001b[39m,\n      stack: \u001b[32m'Error: page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/\\n'\u001b[39m +\n        \u001b[32m'Call log:\\n'\u001b[39m +\n        \u001b[32m'\\x1B[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\\x1B[22m\\n'\u001b[39m +\n        \u001b[32m'\\n'\u001b[39m +\n        \u001b[32m'    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts:10:18'\u001b[39m,\n      cause: \u001b[90mundefined\u001b[39m\n    }\n  }\n}\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-07-18T06:03:34.277Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/ui-showcase-UI-Showcase----83a02-ots-of-all-UI-functionality-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/ui-showcase-UI-Showcase----83a02-ots-of-all-UI-functionality-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/ui-showcase-UI-Showcase----83a02-ots-of-all-UI-functionality-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cf4343dcaaaaeb15d0f8-16e8de6add068598c5db",
+              "file": "ui-showcase.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "Interactive UI element testing",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 138,
+                      "error": {
+                        "message": "Error: page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts:107:16",
+                        "location": {
+                          "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts",
+                          "column": 16,
+                          "line": 107
+                        },
+                        "snippet": "  105 |\n  106 |   test('Interactive UI element testing', async ({ page }) => {\n> 107 |     await page.goto('http://localhost:3000');\n      |                ^\n  108 |     await page.waitForLoadState('networkidle', { timeout: 10000 });\n  109 |     \n  110 |     // Take screenshot of initial state"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts",
+                            "column": 16,
+                            "line": 107
+                          },
+                          "message": "Error: page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\n  105 |\n  106 |   test('Interactive UI element testing', async ({ page }) => {\n> 107 |     await page.goto('http://localhost:3000');\n      |                ^\n  108 |     await page.waitForLoadState('networkidle', { timeout: 10000 });\n  109 |     \n  110 |     // Take screenshot of initial state\n    at /Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts:107:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-18T06:03:36.159Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/ui-showcase-UI-Showcase----3d79d-eractive-UI-element-testing-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/ui-showcase-UI-Showcase----3d79d-eractive-UI-element-testing-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/test-results/ui-showcase-UI-Showcase----3d79d-eractive-UI-element-testing-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/e2e-tests/tests/ui-showcase.spec.ts",
+                        "column": 16,
+                        "line": 107
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cf4343dcaaaaeb15d0f8-7d17d3b5b80946eee09a",
+              "file": "ui-showcase.spec.ts",
+              "line": 106,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-07-18T06:03:33.846Z",
+    "duration": 2488.306,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

@@ -123,7 +123,7 @@
   - Implement end-to-end tests for complete linting workflow
   - _Requirements: 1.5, 2.4, 3.4_
 
-- [-] 16. Implement incremental linting for improved performance
+- [ ] 16. Implement incremental linting for improved performance
 
   - Add git diff integration to lint only changed files
   - Implement caching system for linting results
