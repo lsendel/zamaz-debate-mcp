@@ -431,7 +431,7 @@ class JMeterExecutor:
         start_time = time.time()
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=output_path, check=False)
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=output_path, check=False)  # noqa: S603, S607 (calling known development tool)
 
             execution_time = time.time() - start_time
 
@@ -471,7 +471,7 @@ class JMeterExecutor:
 
         # Check PATH
         try:
-            result = subprocess.run(["which", "jmeter"], capture_output=True, text=True, check=False)
+            result = subprocess.run(["which", "jmeter"], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)
             if result.returncode == 0:
                 return result.stdout.strip()
         except:

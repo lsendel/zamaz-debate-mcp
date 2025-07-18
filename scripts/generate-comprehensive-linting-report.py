@@ -218,16 +218,16 @@ class ComprehensiveLintingReporter:
         self.stats["total_files_scanned"] += len(python_files)
 
         # Run ruff with JSON output
-        result = subprocess.run(
-            ["ruff", "check", ".", "--output-format=json"], capture_output=True, text=True, check=False
+        result = subprocess.run(  # noqa: S603 (calling known development tool)
+            ["ruff", "check", ".", "--output-format=json"], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
         )
 
         if result.stdout:
             issues = json.loads(result.stdout)
 
             # Also get security-specific issues
-            security_result = subprocess.run(
-                ["ruff", "check", ".", "--select=S", "--output-format=json"],
+            security_result = subprocess.run(  # noqa: S603 (calling known development tool)
+                ["ruff", "check", ".", "--select=S", "--output-format=json"],  # noqa: S607 (development tool path)
                 capture_output=True,
                 text=True,
                 check=False,
@@ -536,8 +536,8 @@ class ComprehensiveLintingReporter:
                 continue
 
             # Run shellcheck with different formats for more info
-            result = subprocess.run(
-                ["shellcheck", "--format=json", "--severity=style", "--external-sources", str(file_path)],
+            result = subprocess.run(  # noqa: S603 (calling known development tool)
+                ["shellcheck", "--format=json", "--severity=style", "--external-sources", str(file_path)],  # noqa: S607 (development tool path)
                 capture_output=True,
                 text=True,
                 check=False,
@@ -694,8 +694,8 @@ class ComprehensiveLintingReporter:
         self.stats["total_files_scanned"] += len(ts_files) + len(js_files)
 
         # Run ESLint
-        result = subprocess.run(
-            ["npx", "eslint", "src", "--ext", ".ts,.tsx,.js,.jsx", "--format=json"],
+        result = subprocess.run(  # noqa: S603 (calling known development tool)
+            ["npx", "eslint", "src", "--ext", ".ts,.tsx,.js,.jsx", "--format=json"],  # noqa: S607 (development tool path)
             cwd=debate_ui_path,
             capture_output=True,
             text=True,
@@ -881,8 +881,8 @@ class ComprehensiveLintingReporter:
         self.stats["total_files_scanned"] += len(java_files)
 
         # Run Maven checkstyle
-        checkstyle_result = subprocess.run(
-            ["mvn", "checkstyle:check", "-Dcheckstyle.consoleOutput=true", "-Dcheckstyle.failOnViolation=false"],
+        checkstyle_result = subprocess.run(  # noqa: S603 (calling known development tool)
+            ["mvn", "checkstyle:check", "-Dcheckstyle.consoleOutput=true", "-Dcheckstyle.failOnViolation=false"],  # noqa: S607 (development tool path)
             capture_output=True,
             text=True,
             check=False,

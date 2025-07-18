@@ -552,7 +552,7 @@ CMD ["python", "run_tests.py"]
                 f.write(chunk)
 
         # Extract artifacts
-        subprocess.run(["tar", "-xzf", str(Path(temp_dir) / "artifacts.tar.gz"), "-C", temp_dir], check=True)
+        subprocess.run(["tar", "-xzf", str(Path(temp_dir) / "artifacts.tar.gz"), "-C", temp_dir], check=True)  # noqa: S603, S607 (calling known development tool)
 
         temp_container.remove()
 

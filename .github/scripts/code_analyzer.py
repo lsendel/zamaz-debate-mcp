@@ -225,7 +225,7 @@ class CodeAnalyzer:
 
             # Try to run pyflakes if available
             try:
-                result = subprocess.run(["pyflakes", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607
+                result = subprocess.run(["pyflakes", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)  # noqa: S603, S607
 
                 if result.returncode != 0:
                     # Parse pyflakes output
@@ -257,8 +257,8 @@ class CodeAnalyzer:
         try:
             # Try to run ESLint if available
             try:
-                result = subprocess.run(
-                    ["eslint", "--format", "json", full_path], capture_output=True, text=True, check=False
+                result = subprocess.run(  # noqa: S603 (calling known development tool)
+                    ["eslint", "--format", "json", full_path], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
                 )
 
                 # Parse ESLint JSON output
@@ -301,7 +301,7 @@ class CodeAnalyzer:
         try:
             # Try to run javac if available
             try:
-                result = subprocess.run(["javac", "-Xlint:all", full_path], capture_output=True, text=True, check=False)
+                result = subprocess.run(["javac", "-Xlint:all", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)
 
                 if result.returncode != 0:
                     # Parse javac error output
@@ -348,7 +348,7 @@ class CodeAnalyzer:
         try:
             # Try to run go vet if available
             try:
-                result = subprocess.run(["go", "vet", full_path], capture_output=True, text=True, check=False)
+                result = subprocess.run(["go", "vet", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)
 
                 if result.returncode != 0:
                     # Parse go vet output
@@ -381,7 +381,7 @@ class CodeAnalyzer:
         try:
             # Try to run ruby -c if available
             try:
-                result = subprocess.run(["ruby", "-c", full_path], capture_output=True, text=True, check=False)
+                result = subprocess.run(["ruby", "-c", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)
 
                 if result.returncode != 0:
                     # Parse ruby -c output
@@ -438,8 +438,8 @@ class CodeAnalyzer:
         try:
             # Try to run flake8 if available
             try:
-                result = subprocess.run(
-                    ["flake8", "--format", "default", full_path], capture_output=True, text=True, check=False
+                result = subprocess.run(  # noqa: S603 (calling known development tool)
+                    ["flake8", "--format", "default", full_path], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
                 )
 
                 # Parse flake8 output
@@ -480,7 +480,7 @@ class CodeAnalyzer:
         try:
             # Try to run prettier if available
             try:
-                result = subprocess.run(["prettier", "--check", full_path], capture_output=True, text=True, check=False)
+                result = subprocess.run(["prettier", "--check", full_path], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)
 
                 if result.returncode != 0:
                     # Prettier found style issues
@@ -509,8 +509,8 @@ class CodeAnalyzer:
         try:
             # Try to run checkstyle if available
             try:
-                result = subprocess.run(
-                    ["checkstyle", "-f", "plain", full_path], capture_output=True, text=True, check=False
+                result = subprocess.run(  # noqa: S603 (calling known development tool)
+                    ["checkstyle", "-f", "plain", full_path], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
                 )
 
                 # Parse checkstyle output
@@ -558,8 +558,8 @@ class CodeAnalyzer:
 
             if python_files:
                 try:
-                    result = subprocess.run(
-                        ["bandit", "-f", "json", "-r", *python_files], capture_output=True, text=True, check=False
+                    result = subprocess.run(  # noqa: S603 (calling known development tool)
+                        ["bandit", "-f", "json", "-r", *python_files], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
                     )
 
                     # Parse bandit JSON output

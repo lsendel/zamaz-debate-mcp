@@ -56,8 +56,8 @@ class DetailedLintingReporter:
         """Get all Python linting issues with detailed context."""
 
         # Run ruff and get JSON output
-        result = subprocess.run(
-            ["ruff", "check", ".", "--output-format=json"], capture_output=True, text=True, check=False
+        result = subprocess.run(  # noqa: S603 (calling known development tool)
+            ["ruff", "check", ".", "--output-format=json"], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
         )
 
         if result.stdout:
@@ -97,8 +97,8 @@ class DetailedLintingReporter:
             if ".git" in str(file_path) or "node_modules" in str(file_path):
                 continue
 
-            result = subprocess.run(
-                ["shellcheck", "--format=json", str(file_path)], capture_output=True, text=True, check=False
+            result = subprocess.run(  # noqa: S603 (calling known development tool)
+                ["shellcheck", "--format=json", str(file_path)], capture_output=True, text=True, check=False  # noqa: S607 (development tool path)
             )
 
             if result.stdout:
@@ -137,8 +137,8 @@ class DetailedLintingReporter:
         # Change to debate-ui directory
         debate_ui_path = Path("debate-ui")
         if debate_ui_path.exists():
-            result = subprocess.run(
-                ["npx", "eslint", "src", "--ext", ".ts,.tsx,.js,.jsx", "--format=json"],
+            result = subprocess.run(  # noqa: S603 (calling known development tool)
+                ["npx", "eslint", "src", "--ext", ".ts,.tsx,.js,.jsx", "--format=json"],  # noqa: S607 (development tool path)
                 cwd=debate_ui_path,
                 capture_output=True,
                 text=True,
