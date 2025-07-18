@@ -1,0 +1,100 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: mcp-service-mesh
+  namespace: production
+
+# Resources to deploy
+resources:
+  # Istio installation
+  - istio/installation.yaml
+  
+  # Gateway configurations
+  - gateway/mcp-gateway.yaml
+  
+  # Virtual services for traffic routing
+  - virtual-services/mcp-virtual-services.yaml
+  
+  # Destination rules for load balancing and circuit breaking
+  - destination-rules/mcp-destination-rules.yaml
+  
+  # Service entries for external services
+  - service-entries/external-services.yaml
+  
+  # Security policies
+  - security/authentication-policies.yaml
+  - security/authorization-policies.yaml
+  
+  # Telemetry configuration
+  - telemetry/telemetry-config.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app: mcp-debate
+  component: service-mesh
+  environment: production
+  managed-by: kustomize
+
+# Namespace for all resources
+namespace: production
+
+# Configuration patches
+patchesStrategicMerge:
+  # Environment-specific patches can be added here
+  - patches/production-patches.yaml
+
+# ConfigMap generators for environment-specific configs
+configMapGenerator:
+  - name: istio-mesh-config
+    literals:
+      - MESH_ID=mcp-mesh
+      - CLUSTER_NAME=mcp-production
+      - NETWORK=mcp-network
+      - TRACING_ENABLED=true
+      - METRICS_ENABLED=true
+      - ACCESS_LOGS_ENABLED=true
+
+# Secret generators for certificates and keys
+secretGenerator:
+  - name: mcp-tls-secret
+    type: kubernetes.io/tls
+    files:
+      - tls.crt=certs/mcp-debate.crt
+      - tls.key=certs/mcp-debate.key
+    options:
+      disableNameSuffixHash: true
+
+# Images to use (can be customized per environment)
+images:
+  - name: docker.io/istio/pilot
+    newTag: 1.20.1
+  - name: docker.io/istio/proxyv2
+    newTag: 1.20.1
+
+# Replacements for templating
+replacements:
+  - source:
+      kind: ConfigMap
+      name: istio-mesh-config
+      fieldPath: data.MESH_ID
+    targets:
+      - select:
+          kind: IstioOperator
+        fieldPaths:
+          - spec.values.global.meshID
+  
+  - source:
+      kind: ConfigMap
+      name: istio-mesh-config
+      fieldPath: data.CLUSTER_NAME
+    targets:
+      - select:
+          kind: IstioOperator
+        fieldPaths:
+          - spec.values.global.multiCluster.clusterName
+
+# Resource ordering
+# Ensure Istio installation happens before other resources
+transformers:
+  - deployment-order.yaml

@@ -1,0 +1,361 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-business-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: business-metrics
+spec:
+  selector:
+    matchLabels:
+      app: mcp-debate
+      metrics: business
+  endpoints:
+  - port: http-metrics
+    interval: 15s
+    path: /actuator/prometheus
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_label_organization_id]
+      targetLabel: organization_id
+    - sourceLabels: [__meta_kubernetes_service_label_service_tier]
+      targetLabel: service_tier
+    - sourceLabels: [__meta_kubernetes_service_label_deployment_environment]
+      targetLabel: environment
+    metricRelabelings:
+    # Add business context to metrics
+    - sourceLabels: [__name__]
+      regex: 'mcp_debate_.*'
+      targetLabel: metric_category
+      replacement: 'debate_metrics'
+    - sourceLabels: [__name__]
+      regex: 'mcp_llm_.*'
+      targetLabel: metric_category
+      replacement: 'llm_metrics'
+    - sourceLabels: [__name__]
+      regex: 'mcp_user_.*'
+      targetLabel: metric_category
+      replacement: 'user_metrics'
+    - sourceLabels: [__name__]
+      regex: 'mcp_organization_.*'
+      targetLabel: metric_category
+      replacement: 'organization_metrics'
+    # Filter out high-cardinality metrics in production
+    - sourceLabels: [__name__]
+      regex: '.*_bucket|.*_sum|.*_count'
+      action: keep
+    # Add cost attribution
+    - sourceLabels: [provider]
+      targetLabel: cost_center
+      regex: 'openai'
+      replacement: 'ai_openai'
+    - sourceLabels: [provider]
+      targetLabel: cost_center
+      regex: 'anthropic'
+      replacement: 'ai_anthropic'
+    - sourceLabels: [provider]
+      targetLabel: cost_center
+      regex: 'google'
+      replacement: 'ai_google'
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-sla-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: sla-monitoring
+spec:
+  selector:
+    matchLabels:
+      app: mcp-debate
+      monitoring: sla
+  endpoints:
+  - port: http-metrics
+    interval: 5s
+    path: /metrics/sla
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_annotation_sla_tier]
+      targetLabel: sla_tier
+    - sourceLabels: [__meta_kubernetes_service_annotation_business_criticality]
+      targetLabel: business_criticality
+    metricRelabelings:
+    # SLA-specific metric labeling
+    - sourceLabels: [__name__]
+      regex: 'http_request_duration_.*'
+      targetLabel: sla_metric_type
+      replacement: 'latency'
+    - sourceLabels: [__name__]
+      regex: 'http_requests_total'
+      targetLabel: sla_metric_type
+      replacement: 'availability'
+    # Add SLA targets as labels
+    - sourceLabels: [sla_tier]
+      targetLabel: availability_target
+      regex: 'gold'
+      replacement: '99.9'
+    - sourceLabels: [sla_tier]
+      targetLabel: availability_target
+      regex: 'silver'
+      replacement: '99.5'
+    - sourceLabels: [sla_tier]
+      targetLabel: availability_target
+      regex: 'bronze'
+      replacement: '99.0'
+    - sourceLabels: [sla_tier]
+      targetLabel: latency_target_ms
+      regex: 'gold'
+      replacement: '500'
+    - sourceLabels: [sla_tier]
+      targetLabel: latency_target_ms
+      regex: 'silver'
+      replacement: '1000'
+    - sourceLabels: [sla_tier]
+      targetLabel: latency_target_ms
+      regex: 'bronze'
+      replacement: '2000'
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-cost-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: cost-tracking
+spec:
+  selector:
+    matchLabels:
+      app: mcp-debate
+      cost-tracking: enabled
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+    path: /metrics/cost
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_label_cost_center]
+      targetLabel: cost_center
+    - sourceLabels: [__meta_kubernetes_service_label_project_id]
+      targetLabel: project_id
+    - sourceLabels: [__meta_kubernetes_service_label_team]
+      targetLabel: team
+    metricRelabelings:
+    # Cost attribution and tracking
+    - sourceLabels: [provider]
+      targetLabel: cost_category
+      regex: 'openai|anthropic|google'
+      replacement: 'ai_inference'
+    - sourceLabels: [__name__]
+      regex: 'mcp_database_.*'
+      targetLabel: cost_category
+      replacement: 'database'
+    - sourceLabels: [__name__]
+      regex: 'mcp_storage_.*'
+      targetLabel: cost_category
+      replacement: 'storage'
+    - sourceLabels: [__name__]
+      regex: 'mcp_compute_.*'
+      targetLabel: cost_category
+      replacement: 'compute'
+    # Add hourly cost estimates
+    - sourceLabels: [provider, __name__]
+      targetLabel: hourly_cost_estimate
+      regex: 'openai;mcp_llm_tokens_consumed_total'
+      replacement: '0.002'  # $0.002 per 1K tokens (rough estimate)
+    - sourceLabels: [provider, __name__]
+      targetLabel: hourly_cost_estimate
+      regex: 'anthropic;mcp_llm_tokens_consumed_total'
+      replacement: '0.008'  # $0.008 per 1K tokens (rough estimate)
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-user-experience-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: user-experience
+spec:
+  selector:
+    matchLabels:
+      app: mcp-debate
+      user-experience: enabled
+  endpoints:
+  - port: http-metrics
+    interval: 10s
+    path: /metrics/user-experience
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_label_user_tier]
+      targetLabel: user_tier
+    - sourceLabels: [__meta_kubernetes_service_label_feature_flags]
+      targetLabel: feature_flags
+    metricRelabelings:
+    # User experience categorization
+    - sourceLabels: [__name__]
+      regex: 'mcp_debate_creation_.*'
+      targetLabel: ux_category
+      replacement: 'content_creation'
+    - sourceLabels: [__name__]
+      regex: 'mcp_debate_participation_.*'
+      targetLabel: ux_category
+      replacement: 'engagement'
+    - sourceLabels: [__name__]
+      regex: 'mcp_ui_.*'
+      targetLabel: ux_category
+      replacement: 'interface'
+    - sourceLabels: [__name__]
+      regex: 'mcp_search_.*'
+      targetLabel: ux_category
+      replacement: 'discovery'
+    # User journey tracking
+    - sourceLabels: [user_action]
+      targetLabel: journey_stage
+      regex: 'signup|onboarding'
+      replacement: 'acquisition'
+    - sourceLabels: [user_action]
+      targetLabel: journey_stage
+      regex: 'first_debate|tutorial'
+      replacement: 'activation'
+    - sourceLabels: [user_action]
+      targetLabel: journey_stage
+      regex: 'debate_participation|comment'
+      replacement: 'engagement'
+    - sourceLabels: [user_action]
+      targetLabel: journey_stage
+      regex: 'subscription|upgrade'
+      replacement: 'conversion'
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-ai-quality-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: ai-quality
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+      quality-monitoring: enabled
+  endpoints:
+  - port: http-metrics
+    interval: 20s
+    path: /metrics/ai-quality
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_label_ai_model]
+      targetLabel: ai_model
+    - sourceLabels: [__meta_kubernetes_service_label_model_version]
+      targetLabel: model_version
+    metricRelabelings:
+    # AI quality categorization
+    - sourceLabels: [__name__]
+      regex: 'mcp_llm_response_quality_.*'
+      targetLabel: quality_dimension
+      replacement: 'response_quality'
+    - sourceLabels: [__name__]
+      regex: 'mcp_llm_relevance_.*'
+      targetLabel: quality_dimension
+      replacement: 'relevance'
+    - sourceLabels: [__name__]
+      regex: 'mcp_llm_coherence_.*'
+      targetLabel: quality_dimension
+      replacement: 'coherence'
+    - sourceLabels: [__name__]
+      regex: 'mcp_llm_safety_.*'
+      targetLabel: quality_dimension
+      replacement: 'safety'
+    # Model performance tracking
+    - sourceLabels: [provider, model]
+      targetLabel: model_identifier
+      regex: '(.*);(.*)'
+      replacement: '${1}_${2}'
+    # Add quality thresholds
+    - sourceLabels: [quality_dimension]
+      targetLabel: quality_threshold
+      regex: 'response_quality'
+      replacement: '4.0'  # Out of 5
+    - sourceLabels: [quality_dimension]
+      targetLabel: quality_threshold
+      regex: 'relevance'
+      replacement: '4.2'  # Out of 5
+    - sourceLabels: [quality_dimension]
+      targetLabel: quality_threshold
+      regex: 'safety'
+      replacement: '4.8'  # Out of 5
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-organization-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: organization-analytics
+spec:
+  selector:
+    matchLabels:
+      app: mcp-organization
+      analytics: enabled
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+    path: /metrics/organization
+    honorLabels: true
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_label_org_tier]
+      targetLabel: organization_tier
+    - sourceLabels: [__meta_kubernetes_service_label_org_size]
+      targetLabel: organization_size
+    - sourceLabels: [__meta_kubernetes_service_label_industry]
+      targetLabel: industry
+    metricRelabelings:
+    # Organization segmentation
+    - sourceLabels: [organization_size]
+      targetLabel: org_segment
+      regex: '1|2|3|4|5'
+      replacement: 'small'
+    - sourceLabels: [organization_size]
+      targetLabel: org_segment
+      regex: '6|7|8|9|[1-4][0-9]'
+      replacement: 'medium'
+    - sourceLabels: [organization_size]
+      targetLabel: org_segment
+      regex: '[5-9][0-9]|[1-9][0-9][0-9]+'
+      replacement: 'large'
+    # Subscription tracking
+    - sourceLabels: [subscription_plan]
+      targetLabel: revenue_tier
+      regex: 'free'
+      replacement: 'tier_0'
+    - sourceLabels: [subscription_plan]
+      targetLabel: revenue_tier
+      regex: 'basic'
+      replacement: 'tier_1'
+    - sourceLabels: [subscription_plan]
+      targetLabel: revenue_tier
+      regex: 'professional'
+      replacement: 'tier_2'
+    - sourceLabels: [subscription_plan]
+      targetLabel: revenue_tier
+      regex: 'enterprise'
+      replacement: 'tier_3'
+    # Activity classification
+    - sourceLabels: [__name__]
+      regex: 'mcp_org_debates_.*'
+      targetLabel: activity_type
+      replacement: 'content_creation'
+    - sourceLabels: [__name__]
+      regex: 'mcp_org_users_.*'
+      targetLabel: activity_type
+      replacement: 'user_management'
+    - sourceLabels: [__name__]
+      regex: 'mcp_org_api_.*'
+      targetLabel: activity_type
+      replacement: 'api_usage'

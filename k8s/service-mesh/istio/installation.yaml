@@ -1,0 +1,164 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: mcp-control-plane
+  namespace: istio-system
+spec:
+  # Use the default configuration profile
+  # with customizations for production use
+  hub: docker.io/istio
+  tag: 1.20.1
+  
+  values:
+    global:
+      meshID: mcp-mesh
+      multiCluster:
+        clusterName: mcp-production
+      network: mcp-network
+      
+    pilot:
+      traceSampling: 1.0
+      
+    telemetry:
+      v2:
+        prometheus:
+          configOverride:
+            inbound_metric_relabeling_configs:
+              - source_labels: [__name__]
+                regex: 'istio_.*'
+                target_label: __tmp_istio_name
+              - source_labels: [__tmp_istio_name]
+                target_label: __name__
+                
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2048Mi
+          limits:
+            cpu: 1000m
+            memory: 4096Mi
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 80
+        env:
+          - name: PILOT_TRACE_SAMPLING
+            value: "1.0"
+          - name: PILOT_ENABLE_WORKLOAD_ENTRY_AUTOREGISTRATION
+            value: "true"
+            
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+      k8s:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1024Mi
+        hpaSpec:
+          minReplicas: 3
+          maxReplicas: 10
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 80
+        service:
+          type: LoadBalancer
+          ports:
+            - port: 15021
+              targetPort: 15021
+              name: status-port
+            - port: 80
+              targetPort: 8080
+              name: http2
+            - port: 443
+              targetPort: 8443
+              name: https
+            - port: 15443
+              targetPort: 15443
+              name: tls
+        overlays:
+          - kind: Deployment
+            name: istio-ingressgateway
+            patches:
+              - path: spec.template.spec.containers.[name:istio-proxy].env[-1]
+                value:
+                  name: ISTIO_META_ROUTER_MODE
+                  value: standard
+                  
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: true
+      k8s:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2000m
+            memory: 1024Mi
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+        service:
+          type: ClusterIP
+          ports:
+            - port: 80
+              targetPort: 8080
+              name: http2
+            - port: 443
+              targetPort: 8443
+              name: https
+              
+  meshConfig:
+    accessLogFile: /dev/stdout
+    defaultConfig:
+      gatewayTopology:
+        numTrustedProxies: 2
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*outlier_detection.*"
+        - ".*circuit_breaker.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*_cx_.*"
+      holdApplicationUntilProxyStarts: true
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        ISTIO_META_PROXY_XDS_VIA_AGENT: "true"
+    defaultProviders:
+      metrics:
+      - prometheus
+      tracing:
+      - jaeger
+      accessLogging:
+      - envoy
+    extensionProviders:
+    - name: jaeger
+      envoyOtelAls:
+        service: jaeger-collector.istio-system.svc.cluster.local
+        port: 14250
+    - name: prometheus
+      prometheus:
+        configOverride:
+          metric_relabeling_configs:
+          - source_labels: [__name__]
+            regex: 'envoy_.*'
+            target_label: __tmp_envoy_name
+          - source_labels: [__tmp_envoy_name]
+            target_label: __name__

@@ -1,0 +1,291 @@
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default-metrics
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        organization_id:
+          value: "%{REQUEST_HEADERS['x-org-id']}"
+        user_id:
+          value: "%{REQUEST_HEADERS['x-user-id']}"
+        request_id:
+          value: "%{REQUEST_HEADERS['x-request-id']}"
+        service_version:
+          value: "%{ENVIRONMENT['SERVICE_VERSION']}"
+  # Custom metrics for business logic
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: requests_total
+      tags:
+        debate_id: "%{REQUEST_HEADERS['x-debate-id']}"
+        llm_provider: "%{REQUEST_HEADERS['x-llm-provider']}"
+        context_size: "%{REQUEST_HEADERS['x-context-size']}"
+        operation_type: "%{REQUEST_HEADERS['x-operation-type']}"
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: access-logging
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  accessLogging:
+  - providers:
+    - name: otel
+  - format:
+      labels:
+        timestamp: "%START_TIME%"
+        method: "%REQ(:METHOD)%"
+        path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+        protocol: "%PROTOCOL%"
+        response_code: "%RESPONSE_CODE%"
+        response_flags: "%RESPONSE_FLAGS%"
+        bytes_received: "%BYTES_RECEIVED%"
+        bytes_sent: "%BYTES_SENT%"
+        duration: "%DURATION%"
+        upstream_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+        x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
+        user_agent: "%REQ(USER-AGENT)%"
+        request_id: "%REQ(X-REQUEST-ID)%"
+        authority: "%REQ(:AUTHORITY)%"
+        upstream_host: "%UPSTREAM_HOST%"
+        organization_id: "%REQ(X-ORG-ID)%"
+        user_id: "%REQ(X-USER-ID)%"
+        debate_id: "%REQ(X-DEBATE-ID)%"
+        llm_provider: "%REQ(X-LLM-PROVIDER)%"
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: distributed-tracing
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  tracing:
+  - providers:
+    - name: jaeger
+  - customTags:
+      organization_id:
+        header:
+          name: x-org-id
+      user_id:
+        header:
+          name: x-user-id
+      debate_id:
+        header:
+          name: x-debate-id
+      llm_provider:
+        header:
+          name: x-llm-provider
+      service_name:
+        environment:
+          name: SERVICE_NAME
+      service_version:
+        environment:
+          name: SERVICE_VERSION
+      deployment_environment:
+        literal:
+          value: production
+---
+# Service-specific telemetry for LLM service
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-llm-telemetry
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: requests_total
+      tags:
+        llm_provider: "%{REQUEST_HEADERS['x-llm-provider']}"
+        model_name: "%{REQUEST_HEADERS['x-model-name']}"
+        token_count: "%{REQUEST_HEADERS['x-token-count']}"
+        response_time_ms: "%{DURATION}"
+        error_type: "%{REQUEST_HEADERS['x-error-type']}"
+        rate_limited: "%{RESPONSE_CODE == 429}"
+  # Custom LLM metrics
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: histogram
+        mode: CLIENT
+      name: llm_request_duration
+      unit: MILLISECONDS
+      tags:
+        provider: "%{REQUEST_HEADERS['x-llm-provider']}"
+        model: "%{REQUEST_HEADERS['x-model-name']}"
+    - match:
+        metric: counter
+        mode: CLIENT  
+      name: llm_token_usage
+      tags:
+        provider: "%{REQUEST_HEADERS['x-llm-provider']}"
+        type: "%{REQUEST_HEADERS['x-token-type']}"
+    - match:
+        metric: counter
+        mode: CLIENT
+      name: llm_errors_total
+      tags:
+        provider: "%{REQUEST_HEADERS['x-llm-provider']}"
+        error_code: "%{RESPONSE_CODE}"
+---
+# Database connection telemetry
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: database-telemetry
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-context
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: tcp_opened_total
+      name: database_connections_opened
+      tags:
+        database_type: "postgresql"
+        service: "%{SOURCE_WORKLOAD}"
+    - match:
+        metric: tcp_closed_total
+      name: database_connections_closed
+      tags:
+        database_type: "postgresql"
+        service: "%{SOURCE_WORKLOAD}"
+---
+# Cache telemetry for Redis
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: cache-telemetry
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      connects-to: redis
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: requests_total
+      tags:
+        cache_operation: "%{REQUEST_HEADERS['x-cache-operation']}"
+        cache_hit: "%{REQUEST_HEADERS['x-cache-hit']}"
+        cache_key_prefix: "%{REQUEST_HEADERS['x-cache-key-prefix']}"
+---
+# Security telemetry
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: security-telemetry
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: requests_total
+      tags:
+        auth_type: "%{REQUEST_HEADERS['authorization'] | 'none'}"
+        tls_version: "%{DOWNSTREAM_TLS_VERSION}"
+        mtls_enabled: "%{CONNECTION_MTLS}"
+        jwt_issuer: "%{REQUEST_AUTH_CLAIMS['iss']}"
+        user_role: "%{REQUEST_AUTH_CLAIMS['role']}"
+---
+# Performance telemetry
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: performance-telemetry
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    # Request size distribution
+    - match:
+        metric: request_bytes
+      name: http_request_size_bytes
+      tags:
+        service: "%{DESTINATION_SERVICE_NAME}"
+        endpoint: "%{REQUEST_URL_PATH}"
+    # Response size distribution
+    - match:
+        metric: response_bytes
+      name: http_response_size_bytes
+      tags:
+        service: "%{DESTINATION_SERVICE_NAME}"
+        endpoint: "%{REQUEST_URL_PATH}"
+    # Request duration by percentiles
+    - match:
+        metric: request_duration_milliseconds
+      name: http_request_duration_p99
+      tags:
+        service: "%{DESTINATION_SERVICE_NAME}"
+        endpoint: "%{REQUEST_URL_PATH}"
+        percentile: "99"
+---
+# Error tracking telemetry
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: error-tracking
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  accessLogging:
+  - providers:
+    - name: otel
+    filter:
+      expression: 'response.code >= 400'
+  - format:
+      labels:
+        error_timestamp: "%START_TIME%"
+        error_code: "%RESPONSE_CODE%"
+        error_path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+        error_method: "%REQ(:METHOD)%"
+        error_user_agent: "%REQ(USER-AGENT)%"
+        error_request_id: "%REQ(X-REQUEST-ID)%"
+        error_organization: "%REQ(X-ORG-ID)%"
+        error_user: "%REQ(X-USER-ID)%"
+        error_service: "%DESTINATION_SERVICE_NAME%"
+        error_flags: "%RESPONSE_FLAGS%"
+        error_upstream: "%UPSTREAM_HOST%"

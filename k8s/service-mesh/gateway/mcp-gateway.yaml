@@ -1,0 +1,105 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: mcp-gateway
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  # HTTP redirect to HTTPS
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - api.mcp-debate.com
+    - staging.mcp-debate.com
+    - "*.mcp-debate.com"
+    tls:
+      httpsRedirect: true
+  # HTTPS termination
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - api.mcp-debate.com
+    - staging.mcp-debate.com
+    - "*.mcp-debate.com"
+    tls:
+      mode: SIMPLE
+      credentialName: mcp-tls-secret
+  # gRPC for service communication
+  - port:
+      number: 9090
+      name: grpc
+      protocol: GRPC
+    hosts:
+    - grpc.mcp-debate.com
+    tls:
+      mode: SIMPLE
+      credentialName: mcp-tls-secret
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: mcp-egress-gateway
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  # AI Providers
+  - port:
+      number: 443
+      name: tls-openai
+      protocol: TLS
+    hosts:
+    - api.openai.com
+    tls:
+      mode: PASSTHROUGH
+  - port:
+      number: 443
+      name: tls-anthropic
+      protocol: TLS
+    hosts:
+    - api.anthropic.com
+    tls:
+      mode: PASSTHROUGH
+  - port:
+      number: 443
+      name: tls-google
+      protocol: TLS
+    hosts:
+    - generativelanguage.googleapis.com
+    tls:
+      mode: PASSTHROUGH
+  # Monitoring and external services
+  - port:
+      number: 443
+      name: tls-github
+      protocol: TLS
+    hosts:
+    - github.com
+    - api.github.com
+    tls:
+      mode: PASSTHROUGH
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcp-tls-secret
+  namespace: istio-system
+  labels:
+    app: mcp-debate
+type: kubernetes.io/tls
+data:
+  # These should be replaced with actual certificate data
+  # Generated using cert-manager or provided certificates
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t...
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t...

@@ -1,0 +1,99 @@
+# MCP Debate System Maintenance Cron Jobs
+# 
+# Installation:
+# sudo cp mcp-maintenance.cron /etc/cron.d/mcp-maintenance
+# sudo chown root:root /etc/cron.d/mcp-maintenance
+# sudo chmod 644 /etc/cron.d/mcp-maintenance
+#
+# Environment variables
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin:/opt/mcp/scripts
+MAILTO=admin@mcp-debate.com
+MCP_HOME=/opt/mcp
+
+# Daily backups at 2:00 AM
+0 2 * * * root /opt/mcp/scripts/backup/backup-database.sh >/var/log/mcp/backup-$(date +\%Y\%m\%d).log 2>&1
+
+# Hourly incremental backups during business hours (9 AM - 5 PM)
+0 9-17 * * * root /opt/mcp/scripts/backup/backup-database.sh --incremental >/var/log/mcp/backup-incremental.log 2>&1
+
+# System health check every 5 minutes
+*/5 * * * * root /opt/mcp/scripts/maintenance/health-check.sh --quiet >/dev/null 2>&1
+
+# Comprehensive health report every hour
+0 * * * * root /opt/mcp/scripts/maintenance/health-check.sh >/var/log/mcp/health-$(date +\%H).log 2>&1
+
+# Daily cleanup at 3:00 AM
+0 3 * * * root /opt/mcp/scripts/maintenance/cleanup.sh >/var/log/mcp/cleanup-$(date +\%Y\%m\%d).log 2>&1
+
+# Weekly comprehensive cleanup on Sunday at 4:00 AM
+0 4 * * 0 root /opt/mcp/scripts/maintenance/cleanup.sh --comprehensive >/var/log/mcp/cleanup-weekly.log 2>&1
+
+# Monthly backup verification on the 1st at 5:00 AM
+0 5 1 * * root /opt/mcp/scripts/backup/verify-backups.sh >/var/log/mcp/backup-verify-$(date +\%Y\%m).log 2>&1
+
+# Database maintenance every Sunday at 6:00 AM
+0 6 * * 0 root /opt/mcp/scripts/maintenance/database-maintenance.sh >/var/log/mcp/db-maintenance.log 2>&1
+
+# Security scan weekly on Saturday at 2:00 AM
+0 2 * * 6 root /opt/mcp/scripts/security/security-scan.sh >/var/log/mcp/security-scan.log 2>&1
+
+# Certificate check daily at 7:00 AM
+0 7 * * * root /opt/mcp/scripts/maintenance/check-certificates.sh >/var/log/mcp/cert-check.log 2>&1
+
+# Performance monitoring every 15 minutes during business hours
+*/15 9-17 * * 1-5 root /opt/mcp/scripts/monitoring/performance-check.sh >/var/log/mcp/performance.log 2>&1
+
+# Disk space monitoring every 30 minutes
+*/30 * * * * root /opt/mcp/scripts/monitoring/disk-space-check.sh >/var/log/mcp/disk-space.log 2>&1
+
+# Log rotation trigger daily at midnight
+0 0 * * * root /usr/sbin/logrotate /etc/logrotate.d/mcp >/var/log/mcp/logrotate.log 2>&1
+
+# Metrics collection every minute
+* * * * * root /opt/mcp/scripts/monitoring/collect-metrics.sh >/dev/null 2>&1
+
+# Container health check every 2 minutes
+*/2 * * * * root /opt/mcp/scripts/monitoring/container-health.sh >/var/log/mcp/container-health.log 2>&1
+
+# Network connectivity check every 5 minutes
+*/5 * * * * root /opt/mcp/scripts/monitoring/network-check.sh >/var/log/mcp/network.log 2>&1
+
+# API endpoint monitoring every minute
+* * * * * root /opt/mcp/scripts/monitoring/api-health.sh >/var/log/mcp/api-health.log 2>&1
+
+# Redis memory optimization every 6 hours
+0 */6 * * * root /opt/mcp/scripts/maintenance/optimize-redis.sh >/var/log/mcp/redis-optimize.log 2>&1
+
+# Update system packages weekly on Wednesday at 3:00 AM
+0 3 * * 3 root /opt/mcp/scripts/maintenance/update-system.sh >/var/log/mcp/system-update.log 2>&1
+
+# Generate daily reports at 11:59 PM
+59 23 * * * root /opt/mcp/scripts/reporting/daily-report.sh >/var/log/mcp/daily-report.log 2>&1
+
+# Generate weekly reports on Monday at 1:00 AM
+0 1 * * 1 root /opt/mcp/scripts/reporting/weekly-report.sh >/var/log/mcp/weekly-report.log 2>&1
+
+# Generate monthly reports on the 1st at 2:00 AM
+0 2 1 * * root /opt/mcp/scripts/reporting/monthly-report.sh >/var/log/mcp/monthly-report.log 2>&1
+
+# Cleanup old Docker images weekly on Thursday at 1:00 AM
+0 1 * * 4 root docker system prune -af --filter "until=168h" >/var/log/mcp/docker-cleanup.log 2>&1
+
+# Restart services if needed (based on memory usage) every 6 hours
+0 */6 * * * root /opt/mcp/scripts/maintenance/conditional-restart.sh >/var/log/mcp/conditional-restart.log 2>&1
+
+# Sync configuration from git repository every 30 minutes
+*/30 * * * * root /opt/mcp/scripts/config/sync-config.sh >/var/log/mcp/config-sync.log 2>&1
+
+# Check for application updates daily at 4:00 AM
+0 4 * * * root /opt/mcp/scripts/maintenance/check-updates.sh >/var/log/mcp/check-updates.log 2>&1
+
+# Cleanup temporary files every 4 hours
+0 */4 * * * root find /tmp /var/tmp -name "mcp-*" -mtime +1 -delete 2>/dev/null
+
+# Archive old logs weekly on Friday at 11:00 PM
+0 23 * * 5 root /opt/mcp/scripts/maintenance/archive-logs.sh >/var/log/mcp/archive-logs.log 2>&1
+
+# Test disaster recovery procedures monthly on the 15th at 6:00 AM
+0 6 15 * * root /opt/mcp/scripts/disaster-recovery/test-recovery.sh --dry-run >/var/log/mcp/dr-test.log 2>&1

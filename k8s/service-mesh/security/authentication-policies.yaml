@@ -1,0 +1,207 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  # Enable mTLS for all workloads in the namespace
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-gateway-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    8080:
+      mode: STRICT
+    8443:
+      mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-organization-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-organization
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-context-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-context
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-llm-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-debate-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-debate
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-rag-mtls
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-rag
+  mtls:
+    mode: STRICT
+---
+# Allow external traffic to ingress gateway (no mTLS for external clients)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: istio-ingressgateway
+  namespace: istio-system
+  labels:
+    app: istio-ingressgateway
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  mtls:
+    mode: PERMISSIVE
+  portLevelMtls:
+    80:
+      mode: DISABLE
+    443:
+      mode: DISABLE
+    15443:
+      mode: STRICT
+---
+# JWT Authentication for API endpoints
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: mcp-jwt-auth
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  jwtRules:
+  - issuer: "https://auth.mcp-debate.com"
+    jwksUri: "https://auth.mcp-debate.com/.well-known/jwks.json"
+    audiences:
+    - "mcp-debate-api"
+    forwardOriginalToken: true
+    fromHeaders:
+    - name: Authorization
+      prefix: "Bearer "
+    fromParams:
+    - "access_token"
+  - issuer: "https://accounts.google.com"
+    jwksUri: "https://www.googleapis.com/oauth2/v3/certs"
+    audiences:
+    - "mcp-debate-google-client-id"
+    forwardOriginalToken: false
+---
+# API Key Authentication for MCP LLM service
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: mcp-llm-apikey-auth
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+  jwtRules:
+  - issuer: "mcp-internal-auth"
+    jwks: |
+      {
+        "keys": [
+          {
+            "kty": "oct",
+            "kid": "mcp-internal-key",
+            "k": "YOUR_INTERNAL_JWT_SECRET_BASE64"
+          }
+        ]
+      }
+    audiences:
+    - "mcp-internal-services"
+    forwardOriginalToken: false
+    fromHeaders:
+    - name: X-API-Key
+    - name: Authorization
+      prefix: "Bearer "
+---
+# Organization-specific authentication
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: mcp-organization-auth
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-organization
+  jwtRules:
+  - issuer: "https://auth.mcp-debate.com"
+    jwksUri: "https://auth.mcp-debate.com/.well-known/jwks.json"
+    audiences:
+    - "mcp-debate-org"
+    forwardOriginalToken: true
+    fromHeaders:
+    - name: Authorization
+      prefix: "Bearer "
+    fromCookies:
+    - "auth-token"

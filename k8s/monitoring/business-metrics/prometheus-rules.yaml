@@ -1,0 +1,373 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mcp-business-metrics
+  namespace: monitoring
+  labels:
+    app: mcp-debate
+    component: business-metrics
+spec:
+  groups:
+  - name: mcp.debate.business
+    interval: 30s
+    rules:
+    # Debate Activity Metrics
+    - record: mcp:debate_creation_rate
+      expr: rate(mcp_debates_created_total[5m])
+      labels:
+        metric_type: "business"
+        category: "debate_activity"
+    
+    - record: mcp:debate_completion_rate
+      expr: rate(mcp_debates_completed_total[5m])
+      labels:
+        metric_type: "business"
+        category: "debate_activity"
+    
+    - record: mcp:debate_success_ratio
+      expr: |
+        (
+          mcp:debate_completion_rate /
+          mcp:debate_creation_rate
+        ) * 100
+      labels:
+        metric_type: "business"
+        category: "debate_quality"
+    
+    # User Engagement Metrics
+    - record: mcp:active_users_5m
+      expr: count(count by (user_id) (mcp_user_activity_total{action="debate_participation"}[5m]))
+      labels:
+        metric_type: "business"
+        category: "user_engagement"
+    
+    - record: mcp:user_retention_rate
+      expr: |
+        (
+          count(count by (user_id) (mcp_user_activity_total[7d])) /
+          count(count by (user_id) (mcp_user_activity_total[30d]))
+        ) * 100
+      labels:
+        metric_type: "business"
+        category: "user_engagement"
+    
+    # LLM Usage and Performance
+    - record: mcp:llm_requests_per_second
+      expr: rate(mcp_llm_requests_total[1m])
+      labels:
+        metric_type: "business"
+        category: "llm_usage"
+    
+    - record: mcp:llm_token_consumption_rate
+      expr: rate(mcp_llm_tokens_consumed_total[5m])
+      labels:
+        metric_type: "business"
+        category: "llm_usage"
+    
+    - record: mcp:llm_cost_per_minute
+      expr: |
+        sum(rate(mcp_llm_tokens_consumed_total[1m]) * on(provider) group_left() mcp_llm_provider_cost_per_token)
+      labels:
+        metric_type: "business"
+        category: "cost_tracking"
+    
+    - record: mcp:llm_error_rate_by_provider
+      expr: |
+        (
+          rate(mcp_llm_requests_total{status=~"4xx|5xx"}[5m]) /
+          rate(mcp_llm_requests_total[5m])
+        ) * 100
+      labels:
+        metric_type: "business"
+        category: "llm_quality"
+    
+    # Organization Metrics
+    - record: mcp:organization_activity_score
+      expr: |
+        (
+          rate(mcp_debates_created_total[1h]) * 10 +
+          rate(mcp_user_activity_total{action="login"}[1h]) * 2 +
+          rate(mcp_user_activity_total{action="debate_participation"}[1h]) * 5
+        )
+      labels:
+        metric_type: "business"
+        category: "organization_health"
+    
+    - record: mcp:revenue_per_organization
+      expr: |
+        sum(rate(mcp_billing_events_total{event_type="charge"}[1h]) * on(organization_id) group_left() mcp_organization_plan_cost) by (organization_id)
+      labels:
+        metric_type: "business"
+        category: "revenue"
+    
+    # System Health Business Impact
+    - record: mcp:availability_sla_current
+      expr: |
+        (
+          (
+            sum(rate(http_requests_total{status!~"5xx"}[5m])) /
+            sum(rate(http_requests_total[5m]))
+          ) * 100
+        )
+      labels:
+        metric_type: "sla"
+        category: "availability"
+    
+    - record: mcp:response_time_sla_p95
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) * 1000
+      labels:
+        metric_type: "sla"
+        category: "performance"
+    
+    # Context Management Efficiency
+    - record: mcp:context_cache_hit_rate
+      expr: |
+        (
+          rate(mcp_context_cache_hits_total[5m]) /
+          rate(mcp_context_requests_total[5m])
+        ) * 100
+      labels:
+        metric_type: "business"
+        category: "efficiency"
+    
+    - record: mcp:context_optimization_ratio
+      expr: |
+        (
+          1 - (
+            avg(mcp_context_final_size_bytes) /
+            avg(mcp_context_original_size_bytes)
+          )
+        ) * 100
+      labels:
+        metric_type: "business"
+        category: "efficiency"
+
+  - name: mcp.sla.alerts
+    interval: 30s
+    rules:
+    # SLA Violation Alerts
+    - alert: DebateAvailabilitySLAViolation
+      expr: mcp:availability_sla_current < 99.9
+      for: 5m
+      labels:
+        severity: critical
+        team: platform
+        sla_type: availability
+      annotations:
+        summary: "Debate service availability below SLA"
+        description: "Current availability is {{ $value }}%, below 99.9% SLA target"
+        runbook_url: "https://docs.mcp-debate.com/runbooks/availability"
+    
+    - alert: ResponseTimeSLAViolation
+      expr: mcp:response_time_sla_p95 > 2000
+      for: 3m
+      labels:
+        severity: warning
+        team: platform
+        sla_type: performance
+      annotations:
+        summary: "Response time P95 above SLA threshold"
+        description: "P95 response time is {{ $value }}ms, above 2000ms SLA target"
+        runbook_url: "https://docs.mcp-debate.com/runbooks/performance"
+    
+    - alert: LLMProviderExcessiveErrors
+      expr: mcp:llm_error_rate_by_provider > 5
+      for: 2m
+      labels:
+        severity: warning
+        team: ai
+        sla_type: quality
+      annotations:
+        summary: "High error rate from LLM provider {{ $labels.provider }}"
+        description: "Error rate is {{ $value }}% for provider {{ $labels.provider }}"
+        runbook_url: "https://docs.mcp-debate.com/runbooks/llm-errors"
+    
+    # Business Impact Alerts
+    - alert: DebateCreationDropped
+      expr: |
+        (
+          mcp:debate_creation_rate < 
+          avg_over_time(mcp:debate_creation_rate[1h]) * 0.5
+        ) and 
+        mcp:debate_creation_rate > 0
+      for: 10m
+      labels:
+        severity: warning
+        team: product
+        impact: business
+      annotations:
+        summary: "Significant drop in debate creation rate"
+        description: "Debate creation rate dropped to {{ $value }}/min, 50% below recent average"
+    
+    - alert: UserEngagementDrop
+      expr: mcp:active_users_5m < 10
+      for: 15m
+      labels:
+        severity: warning
+        team: product
+        impact: business
+      annotations:
+        summary: "Low user engagement detected"
+        description: "Only {{ $value }} active users in the last 5 minutes"
+    
+    - alert: HighLLMCosts
+      expr: mcp:llm_cost_per_minute > 50
+      for: 5m
+      labels:
+        severity: warning
+        team: finance
+        impact: cost
+      annotations:
+        summary: "High LLM costs detected"
+        description: "LLM costs are ${{ $value }}/minute, above $50 threshold"
+    
+    # Revenue and Billing Alerts
+    - alert: BillingEventFailures
+      expr: rate(mcp_billing_events_total{status="failed"}[5m]) > 0.1
+      for: 2m
+      labels:
+        severity: critical
+        team: billing
+        impact: revenue
+      annotations:
+        summary: "Billing event failures detected"
+        description: "{{ $value }} billing events per second are failing"
+        runbook_url: "https://docs.mcp-debate.com/runbooks/billing"
+
+  - name: mcp.capacity.planning
+    interval: 1m
+    rules:
+    # Capacity Planning Metrics
+    - record: mcp:debate_capacity_utilization
+      expr: |
+        (
+          sum(rate(mcp_debates_active_total[5m])) /
+          sum(mcp_debate_service_max_capacity)
+        ) * 100
+      labels:
+        metric_type: "capacity"
+        category: "utilization"
+    
+    - record: mcp:llm_quota_utilization
+      expr: |
+        (
+          sum(rate(mcp_llm_tokens_consumed_total[1h])) /
+          sum(mcp_llm_provider_hourly_quota)
+        ) * 100
+      labels:
+        metric_type: "capacity"
+        category: "quotas"
+    
+    - record: mcp:database_connection_utilization
+      expr: |
+        (
+          sum(mcp_database_connections_active) /
+          sum(mcp_database_connections_max)
+        ) * 100
+      labels:
+        metric_type: "capacity"
+        category: "database"
+    
+    # Growth Trend Analysis
+    - record: mcp:user_growth_rate_weekly
+      expr: |
+        (
+          (count(count by (user_id) (mcp_user_activity_total[7d])) -
+           count(count by (user_id) (mcp_user_activity_total[7d] offset 7d))) /
+          count(count by (user_id) (mcp_user_activity_total[7d] offset 7d))
+        ) * 100
+      labels:
+        metric_type: "growth"
+        category: "users"
+    
+    - record: mcp:debate_volume_growth_daily
+      expr: |
+        (
+          (rate(mcp_debates_created_total[24h]) -
+           rate(mcp_debates_created_total[24h] offset 24h)) /
+          rate(mcp_debates_created_total[24h] offset 24h)
+        ) * 100
+      labels:
+        metric_type: "growth"
+        category: "debates"
+    
+    # Capacity Alerts
+    - alert: DebateCapacityHigh
+      expr: mcp:debate_capacity_utilization > 80
+      for: 5m
+      labels:
+        severity: warning
+        team: platform
+        impact: capacity
+      annotations:
+        summary: "Debate service capacity utilization high"
+        description: "Capacity utilization is {{ $value }}%, consider scaling"
+    
+    - alert: LLMQuotaNearLimit
+      expr: mcp:llm_quota_utilization > 90
+      for: 1m
+      labels:
+        severity: critical
+        team: ai
+        impact: capacity
+      annotations:
+        summary: "LLM quota near limit for provider {{ $labels.provider }}"
+        description: "Quota utilization is {{ $value }}% for {{ $labels.provider }}"
+    
+    - alert: DatabaseConnectionsHigh
+      expr: mcp:database_connection_utilization > 85
+      for: 3m
+      labels:
+        severity: warning
+        team: platform
+        impact: capacity
+      annotations:
+        summary: "Database connection pool utilization high"
+        description: "Connection utilization is {{ $value }}%, consider scaling"
+
+  - name: mcp.custom.business.metrics
+    interval: 30s
+    rules:
+    # Custom Business KPIs
+    - record: mcp:debate_engagement_score
+      expr: |
+        (
+          avg(mcp_debate_message_count) * 0.4 +
+          avg(mcp_debate_duration_minutes) * 0.3 +
+          avg(mcp_debate_participant_satisfaction) * 0.3
+        )
+      labels:
+        metric_type: "kpi"
+        category: "engagement"
+    
+    - record: mcp:platform_health_score
+      expr: |
+        (
+          (mcp:availability_sla_current / 100) * 0.4 +
+          (min(mcp:response_time_sla_p95, 2000) / 2000) * 0.3 +
+          (mcp:context_cache_hit_rate / 100) * 0.3
+        ) * 100
+      labels:
+        metric_type: "kpi"
+        category: "platform_health"
+    
+    - record: mcp:ai_quality_score
+      expr: |
+        (
+          ((100 - mcp:llm_error_rate_by_provider) / 100) * 0.5 +
+          (min(avg(mcp_llm_response_quality_rating), 5) / 5) * 0.5
+        ) * 100
+      labels:
+        metric_type: "kpi"
+        category: "ai_quality"
+    
+    - record: mcp:cost_efficiency_score
+      expr: |
+        (
+          (mcp:context_optimization_ratio / 100) * 0.4 +
+          (mcp:context_cache_hit_rate / 100) * 0.3 +
+          (min(mcp:llm_cost_per_debate, 1.0) / 1.0) * 0.3
+        ) * 100
+      labels:
+        metric_type: "kpi"
+        category: "cost_efficiency"

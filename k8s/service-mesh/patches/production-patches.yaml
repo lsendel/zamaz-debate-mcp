@@ -1,0 +1,178 @@
+# Production environment patches for Istio service mesh
+# These patches override default configurations for production deployment
+
+# Increase resource limits for production workload
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: mcp-control-plane
+  namespace: istio-system
+spec:
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 4096Mi
+          limits:
+            cpu: 2000m
+            memory: 8192Mi
+        hpaSpec:
+          minReplicas: 3
+          maxReplicas: 10
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 70
+          - type: Resource
+            resource:
+              name: memory
+              target:
+                type: Utilization
+                averageUtilization: 80
+        env:
+          - name: PILOT_TRACE_SAMPLING
+            value: "0.1"  # Reduced sampling for production
+          - name: PILOT_ENABLE_CROSS_CLUSTER_WORKLOAD_ENTRY
+            value: "true"
+          - name: PILOT_ENABLE_NETWORK_POLICY
+            value: "true"
+            
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+      k8s:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 4000m
+            memory: 2048Mi
+        hpaSpec:
+          minReplicas: 5
+          maxReplicas: 20
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 70
+          - type: Resource
+            resource:
+              name: memory
+              target:
+                type: Utilization
+                averageUtilization: 80
+        service:
+          type: LoadBalancer
+          loadBalancerIP: ""  # Let cloud provider assign
+          annotations:
+            # AWS-specific annotations
+            service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+            service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+            service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+            service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "60"
+            # GCP-specific annotations (commented out)
+            # cloud.google.com/load-balancer-type: "External"
+            # cloud.google.com/backend-config: '{"default": "istio-ingress-backendconfig"}'
+        overlays:
+          - kind: Deployment
+            name: istio-ingressgateway
+            patches:
+              - path: spec.template.spec.containers.[name:istio-proxy].env[-1]
+                value:
+                  name: ISTIO_META_ROUTER_MODE
+                  value: standard
+              - path: spec.template.spec.containers.[name:istio-proxy].resources
+                value:
+                  requests:
+                    cpu: 500m
+                    memory: 512Mi
+                  limits:
+                    cpu: 2000m
+                    memory: 1024Mi
+                    
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: true
+      k8s:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 2000m
+            memory: 1024Mi
+        hpaSpec:
+          minReplicas: 3
+          maxReplicas: 10
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 70
+        service:
+          type: ClusterIP
+          
+  meshConfig:
+    defaultConfig:
+      # Production optimizations
+      concurrency: 2
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*outlier_detection.*"
+        - ".*circuit_breaker.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*_cx_.*"
+        - ".*_rq_.*"
+        exclusionRegexps:
+        - ".*osconfig.*"
+        - ".*wasm.*"
+      holdApplicationUntilProxyStarts: true
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        ISTIO_META_PROXY_XDS_VIA_AGENT: "true"
+        BOOTSTRAP_XDS_AGENT: "true"
+        
+    # Production tracing configuration
+    defaultProviders:
+      metrics:
+      - prometheus
+      tracing:
+      - jaeger
+      accessLogging:
+      - envoy
+      
+    extensionProviders:
+    - name: jaeger
+      envoyOtelAls:
+        service: jaeger-collector.monitoring.svc.cluster.local
+        port: 14250
+        
+    - name: prometheus
+      prometheus:
+        configOverride:
+          metric_relabeling_configs:
+          - source_labels: [__name__]
+            regex: 'envoy_.*'
+            target_label: __tmp_envoy_name
+          - source_labels: [__tmp_envoy_name]
+            target_label: __name__
+            
+    # Production access log format
+    accessLogFile: /dev/stdout
+    accessLogFormat: |
+      [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%"
+      %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT%
+      %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%"
+      "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%"
+      "%REQ(X-ORG-ID)%" "%REQ(X-USER-ID)%" "%REQ(X-DEBATE-ID)%"

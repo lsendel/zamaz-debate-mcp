@@ -1,0 +1,202 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: openai-api
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - api.openai.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: anthropic-api
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - api.anthropic.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: google-ai-api
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - generativelanguage.googleapis.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: github-api
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - api.github.com
+  - github.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 22
+    name: ssh
+    protocol: TCP
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: slack-webhook
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - hooks.slack.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: monitoring-external
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - prometheus.io
+  - grafana.com
+  - jaegertracing.io
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: docker-registry
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - docker.io
+  - registry-1.docker.io
+  - index.docker.io
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: package-managers
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - pypi.org
+  - files.pythonhosted.org
+  - npmjs.org
+  - registry.npmjs.org
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+# AWS services (if using AWS infrastructure)
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: aws-services
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - "*.amazonaws.com"
+  - "*.s3.amazonaws.com"
+  - "*.rds.amazonaws.com"
+  - "*.elasticache.amazonaws.com"
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+---
+# DNS services for external resolution
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: dns-services
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  hosts:
+  - dns.google
+  - cloudflare-dns.com
+  addresses:
+  - 8.8.8.8
+  - 8.8.4.4
+  - 1.1.1.1
+  - 1.0.0.1
+  ports:
+  - number: 53
+    name: dns-udp
+    protocol: UDP
+  - number: 53
+    name: dns-tcp
+    protocol: TCP
+  - number: 853
+    name: dns-tls
+    protocol: TLS
+  location: MESH_EXTERNAL
+  resolution: STATIC
+  endpoints:
+  - address: 8.8.8.8
+  - address: 8.8.4.4
+  - address: 1.1.1.1
+  - address: 1.0.0.1

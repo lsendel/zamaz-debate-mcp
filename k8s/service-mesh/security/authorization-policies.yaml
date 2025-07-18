@@ -1,0 +1,340 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all-default
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  # Deny all traffic by default - explicit allow policies are required
+  action: DENY
+  rules:
+  - {}
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ingress-to-gateway
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["istio-system"]
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+  - to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+        paths: ["/api/*", "/health", "/metrics", "/actuator/health"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-gateway-to-services
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/production/sa/mcp-gateway"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+  - when:
+    - key: request.headers[x-service-name]
+      values: ["mcp-gateway"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-inter-service-communication
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  action: ALLOW
+  rules:
+  # Allow mcp-debate to call mcp-context and mcp-llm
+  - from:
+    - source:
+        principals: ["cluster.local/ns/production/sa/mcp-debate"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT"]
+        paths: ["/api/*", "/health", "/metrics"]
+    when:
+    - key: destination.service.name
+      values: ["mcp-context", "mcp-llm", "mcp-rag"]
+  
+  # Allow mcp-llm to call external AI services
+  - from:
+    - source:
+        principals: ["cluster.local/ns/production/sa/mcp-llm"]
+    to:
+    - operation:
+        methods: ["POST"]
+    when:
+    - key: destination.service.name
+      values: ["api.openai.com", "api.anthropic.com", "generativelanguage.googleapis.com"]
+  
+  # Allow mcp-organization to call mcp-context
+  - from:
+    - source:
+        principals: ["cluster.local/ns/production/sa/mcp-organization"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/context/*"]
+    when:
+    - key: destination.service.name
+      values: ["mcp-context"]
+  
+  # Allow mcp-rag to call mcp-context
+  - from:
+    - source:
+        principals: ["cluster.local/ns/production/sa/mcp-rag"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/v1/context/*"]
+    when:
+    - key: destination.service.name
+      values: ["mcp-context"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-health-checks
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/actuator/health", "/healthz", "/ready"]
+  - from:
+    - source:
+        namespaces: ["kube-system", "monitoring"]
+  - when:
+    - key: request.headers[user-agent]
+      values: ["kube-probe/*", "prometheus/*", "grafana/*"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-metrics-collection
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["monitoring", "istio-system"]
+        principals: ["cluster.local/ns/monitoring/sa/prometheus", "cluster.local/ns/istio-system/sa/prometheus"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/metrics", "/stats/prometheus"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-organization-rbac
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-organization
+  action: ALLOW
+  rules:
+  # Admin users can do everything
+  - when:
+    - key: request.auth.claims[role]
+      values: ["admin", "super-admin"]
+  
+  # Organization owners can manage their organizations
+  - to:
+    - operation:
+        methods: ["GET", "PUT", "PATCH"]
+        paths: ["/api/v1/organizations/*"]
+    when:
+    - key: request.auth.claims[role]
+      values: ["org-owner"]
+    - key: request.auth.claims[org_id]
+      values: ["*"]
+  
+  # Regular users can read their organization info
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/v1/organizations/*/info"]
+    when:
+    - key: request.auth.claims[role]
+      values: ["user"]
+    - key: request.auth.claims[org_id]
+      values: ["*"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-debate-rbac
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-debate
+  action: ALLOW
+  rules:
+  # Users can create and manage debates in their organization
+  - to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/debates/*"]
+    when:
+    - key: request.auth.claims[org_id]
+      values: ["*"]
+    - key: request.auth.claims[role]
+      values: ["user", "moderator", "admin"]
+  
+  # Public debate viewing (if enabled)
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/v1/debates/public/*"]
+  
+  # Moderators can manage all debates in their org
+  - to:
+    - operation:
+        methods: ["GET", "PUT", "DELETE", "PATCH"]
+        paths: ["/api/v1/debates/*"]
+    when:
+    - key: request.auth.claims[role]
+      values: ["moderator", "admin"]
+    - key: request.auth.claims[org_id]
+      values: ["*"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-llm-access-control
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-llm
+  action: ALLOW
+  rules:
+  # Only internal services can call LLM service
+  - from:
+    - source:
+        principals: [
+          "cluster.local/ns/production/sa/mcp-debate",
+          "cluster.local/ns/production/sa/mcp-rag",
+          "cluster.local/ns/production/sa/mcp-gateway"
+        ]
+    to:
+    - operation:
+        methods: ["POST"]
+        paths: ["/api/v1/llm/*"]
+    when:
+    - key: request.headers[x-api-key]
+      values: ["*"]
+  
+  # Allow health checks
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/health", "/metrics"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-context-data-access
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  selector:
+    matchLabels:
+      app: mcp-context
+  action: ALLOW
+  rules:
+  # Services can access context with proper organization scope
+  - from:
+    - source:
+        principals: [
+          "cluster.local/ns/production/sa/mcp-debate",
+          "cluster.local/ns/production/sa/mcp-rag",
+          "cluster.local/ns/production/sa/mcp-organization",
+          "cluster.local/ns/production/sa/mcp-gateway"
+        ]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/context/*"]
+    when:
+    - key: request.headers[x-org-id]
+      values: ["*"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: rate-limiting-policy
+  namespace: production
+  labels:
+    app: mcp-debate
+spec:
+  action: ALLOW
+  rules:
+  # Rate limiting based on JWT claims
+  - when:
+    - key: request.auth.claims[tier]
+      values: ["premium"]
+    # Premium users get higher rate limits
+  - when:
+    - key: request.auth.claims[tier]
+      values: ["standard"]
+    # Standard rate limits
+  - when:
+    - key: request.auth.claims[tier]
+      notValues: ["premium", "standard"]
+    # Basic rate limits for free tier
+---
+# Emergency access policy (can be activated during incidents)
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: emergency-access
+  namespace: production
+  labels:
+    app: mcp-debate
+    emergency: "false"  # Set to "true" to activate
+spec:
+  action: ALLOW
+  rules:
+  - when:
+    - key: request.headers[x-emergency-access]
+      values: ["true"]
+    - key: request.auth.claims[role]
+      values: ["emergency-admin"]
+  # This policy is disabled by default and should only be enabled during emergencies
