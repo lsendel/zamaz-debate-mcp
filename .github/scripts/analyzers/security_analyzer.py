@@ -233,24 +233,24 @@ class DependencySecurityStrategy(AnalysisStrategy):
 
         return issues
 
-    async def _check_npm_packages(self, context: AnalyzerContext) -> list[CodeIssue]:
+    async def _check_npm_packages(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check package.json for vulnerabilities."""
         # Implementation would parse JSON and check dependencies
         return []
 
-    async def _check_ruby_gems(self, context: AnalyzerContext) -> list[CodeIssue]:
+    async def _check_ruby_gems(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check Gemfile for vulnerabilities."""
         return []
 
-    async def _check_go_modules(self, context: AnalyzerContext) -> list[CodeIssue]:
+    async def _check_go_modules(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check go.mod for vulnerabilities."""
         return []
 
-    async def _check_maven_dependencies(self, context: AnalyzerContext) -> list[CodeIssue]:
+    async def _check_maven_dependencies(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check pom.xml for vulnerabilities."""
         return []
 
-    async def _check_gradle_dependencies(self, context: AnalyzerContext) -> list[CodeIssue]:
+    async def _check_gradle_dependencies(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check build.gradle for vulnerabilities."""
         return []
 
@@ -327,7 +327,7 @@ class InputValidationStrategy(AnalysisStrategy):
 
         return issues
 
-    async def _check_javascript_input_validation(self, context: AnalyzerContext) -> list[CodeIssue]:
+    async def _check_javascript_input_validation(self, _context: AnalyzerContext) -> list[CodeIssue]:
         """Check JavaScript code for input validation issues."""
         # Implementation for JavaScript
         return []

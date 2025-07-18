@@ -14,6 +14,14 @@ from ..scripts.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Constants for alert thresholds
+MAX_PROCESSING_HISTORY = 1000
+CRITICAL_ERROR_RATE = 0.05
+WARNING_RATE_LIMIT_PERCENT = 10
+SLOW_PROCESSING_SECONDS = 300
+HIGH_QUEUE_SIZE = 100
+HIGH_MEMORY_MB = 1024
+
 
 class PRProcessingMetrics:
     """Custom metrics for PR processing."""
@@ -241,7 +249,7 @@ class SLOMonitor:
         self.processing_times.append(duration)
 
         # Maintain rolling window (last 1000 requests)
-        if len(self.processing_times) > 1000:
+        if len(self.processing_times) > MAX_PROCESSING_HISTORY:
             self.processing_times.pop(0)
 
     def check_slos(self) -> dict[str, dict[str, Any]]:
@@ -319,31 +327,31 @@ class AlertManager:
         return [
             {
                 "name": "HighErrorRate",
-                "condition": lambda: self._get_error_rate() > 0.05,
+                "condition": lambda: self._get_error_rate() > CRITICAL_ERROR_RATE,
                 "severity": "critical",
                 "message": "Error rate exceeds 5%",
             },
             {
                 "name": "LowGitHubRateLimit",
-                "condition": lambda: self._get_rate_limit_percent() < 10,
+                "condition": lambda: self._get_rate_limit_percent() < WARNING_RATE_LIMIT_PERCENT,
                 "severity": "warning",
                 "message": "GitHub rate limit below 10%",
             },
             {
                 "name": "SlowPRProcessing",
-                "condition": lambda: self._get_processing_p95() > 300,
+                "condition": lambda: self._get_processing_p95() > SLOW_PROCESSING_SECONDS,
                 "severity": "warning",
                 "message": "PR processing P95 exceeds 5 minutes",
             },
             {
                 "name": "HighQueueSize",
-                "condition": lambda: self._get_max_queue_size() > 100,
+                "condition": lambda: self._get_max_queue_size() > HIGH_QUEUE_SIZE,
                 "severity": "warning",
                 "message": "PR queue size exceeds 100",
             },
             {
                 "name": "MemoryUsageHigh",
-                "condition": lambda: self._get_memory_usage_mb() > 1024,
+                "condition": lambda: self._get_memory_usage_mb() > HIGH_MEMORY_MB,
                 "severity": "warning",
                 "message": "Memory usage exceeds 1GB",
             },
