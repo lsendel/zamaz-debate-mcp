@@ -296,7 +296,7 @@ class ConfigManager:
                 self.github.get(contents_url)
                 logger.warning(f"Configuration file already exists in {repo_owner}/{repo_name}")
                 return False
-            except:
+            except Exception:
                 # File doesn't exist, create it
                 pass
 
@@ -343,7 +343,7 @@ class ConfigManager:
             try:
                 response = self.github.get(contents_url)
                 sha = response.get("sha")
-            except:
+            except Exception:
                 # File doesn't exist, create it instead
                 return self.create_default_config(repo_owner, repo_name)
 

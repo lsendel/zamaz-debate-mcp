@@ -27,7 +27,7 @@ public class TemplateServiceClient {
     
     private final RestTemplate restTemplate;
     
-    @Value("${template.service.url:http://localhost:5006}")
+    @Value("${TEMPLATE_SERVICE_URL}")
     private String templateServiceUrl;
     
     /**

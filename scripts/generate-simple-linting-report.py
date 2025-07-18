@@ -38,7 +38,8 @@ def get_python_issues():
                     issue["line_content"] = lines[line_num - 1].strip() if line_num <= len(lines) else ""
                     issue["context_before"] = [line.strip() for line in lines[max(0, line_num - 3) : line_num - 1]]
                     issue["context_after"] = [line.strip() for line in lines[line_num : min(len(lines), line_num + 2)]]
-                except:
+                except Exception:
+                    # Handle file read errors gracefully
                     issue["line_content"] = ""
                     issue["context_before"] = []
                     issue["context_after"] = []
@@ -95,7 +96,8 @@ def get_typescript_issues():
                 for msg in file_result.get("messages", []):
                     msg["filename"] = file_result["filePath"]
                     issues.append(msg)
-        except:
+        except json.JSONDecodeError:
+            # Skip invalid JSON output
             pass
 
     return issues
@@ -246,7 +248,7 @@ def generate_report(iteration):
     # Print summary
 
     if python_by_type:
-        for code, _issues in sorted(python_by_type.items(), key=lambda x: len(x[1]), reverse=True)[:5]:
+        for _code, _issues in sorted(python_by_type.items(), key=lambda x: len(x[1]), reverse=True)[:5]:
             pass
 
     return total, report

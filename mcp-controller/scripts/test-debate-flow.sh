@@ -24,7 +24,7 @@ echo """"$DEBATE_JSON"""" | jq .
 echo ""
 
 echo "Response:"
-curl -X POST http://localhost:5013/api/v1/debates \
+curl -X POST ${CONTROLLER_SERVICE_URL}/api/v1/debates \
   -H "Content-Type: application/json" \
   -d """"$DEBATE_JSON""""
 
@@ -34,7 +34,7 @@ echo ""
 # Step 2: List debates (if endpoint exists)
 echo "2. Listing debates..."
 echo "-------------------"
-curl http://localhost:5013/api/v1/debates?organizationId=$ORG_ID
+curl ${CONTROLLER_SERVICE_URL}/api/v1/debates?organizationId=$ORG_ID
 
 echo ""
 echo ""
@@ -42,6 +42,6 @@ echo ""
 # Step 3: Check health
 echo "3. Service Health..."
 echo "------------------"
-curl http://localhost:5013/actuator/health | jq .
+curl ${CONTROLLER_SERVICE_URL}/actuator/health | jq .
 
 echo ""

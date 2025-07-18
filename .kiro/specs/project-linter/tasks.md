@@ -115,7 +115,7 @@
   - Add Docker security linting rules
   - _Requirements: 5.4_
 
-- [x] 15. Create comprehensive test suite for linting system
+- [-] 15. Create comprehensive test suite for linting system
 
   - Write unit tests for all linting engine components
   - Create integration tests with sample code violations

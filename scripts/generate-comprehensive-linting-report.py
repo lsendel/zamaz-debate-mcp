@@ -568,8 +568,8 @@ class ComprehensiveLintingReporter:
                             "level": issue["level"],
                             "message": issue["message"],
                             "line_content": lines[line_num - 1].strip() if line_num <= len(lines) else "",
-                            "context_before": [l.rstrip() for l in lines[start_context : line_num - 1]],
-                            "context_after": [l.rstrip() for l in lines[line_num:end_context]],
+                            "context_before": [line.rstrip() for line in lines[start_context : line_num - 1]],
+                            "context_after": [line.rstrip() for line in lines[line_num:end_context]],
                             # Additional context
                             "function_context": self._extract_shell_function_context(lines, line_num),
                             "in_conditional": self._is_in_shell_conditional(lines, line_num),
@@ -789,8 +789,8 @@ class ComprehensiveLintingReporter:
         # Get surrounding context
         start_context = max(0, line_num - 4)
         end_context = min(len(lines), line_num + 3)
-        context["context_before"] = [l.rstrip() for l in lines[start_context : line_num - 1]]
-        context["context_after"] = [l.rstrip() for l in lines[line_num:end_context]]
+        context["context_before"] = [line.rstrip() for line in lines[start_context : line_num - 1]]
+        context["context_after"] = [line.rstrip() for line in lines[line_num:end_context]]
 
         # Extract imports and exports
         for i, line in enumerate(lines):
@@ -948,8 +948,8 @@ class ComprehensiveLintingReporter:
         # Get surrounding context
         start_context = max(0, line_num - 4)
         end_context = min(len(lines), line_num + 3)
-        context["context_before"] = [l.rstrip() for l in lines[start_context : line_num - 1]]
-        context["context_after"] = [l.rstrip() for l in lines[line_num:end_context]]
+        context["context_before"] = [line.rstrip() for line in lines[start_context : line_num - 1]]
+        context["context_after"] = [line.rstrip() for line in lines[line_num:end_context]]
 
         # Look for class and method
         for i in range(0, min(line_num, len(lines))):

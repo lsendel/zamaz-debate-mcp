@@ -65,6 +65,7 @@ help: ## 📚 Show this help message
 	@echo '  $(GREEN)make test$(NC)      - Run all tests (quick validation)'
 	@echo '  $(GREEN)make test-e2e$(NC)  - Run comprehensive end-to-end tests'
 	@echo '  $(GREEN)make test-ui$(NC)   - Run UI tests only'
+	@echo '  $(GREEN)make test-integration$(NC) - Run integration tests (80% coverage target)'
 	@echo '  $(GREEN)make lint$(NC)      - Check code quality with incremental linting'
 	@echo ''
 	@echo '$(WHITE)📊 MONITORING & DEBUG:$(NC)'
@@ -241,6 +242,55 @@ lint-fix: ## 🔧 Auto-fix linting issues
 		cd debate-ui && npm run format --silent 2>/dev/null || true; \
 	fi
 	@echo "$(GREEN)✅ Auto-fixes applied$(NC)"
+
+test-integration: ## 🧪 Run comprehensive integration tests (80% coverage target)
+	@echo "$(BLUE)Running comprehensive integration tests...$(NC)"
+	@echo "$(YELLOW)Target: 80% functionality coverage$(NC)"
+	@if [ -f "./run-integration-tests.sh" ]; then \
+		chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh; \
+	else \
+		echo "$(RED)❌ Integration test runner not found$(NC)"; \
+		exit 1; \
+	fi
+
+test-integration-core: ## 🔧 Run core linting integration tests
+	@echo "$(BLUE)Running core integration tests...$(NC)"
+	@if [ -f ".linting/scripts/integration-test-suite.sh" ]; then \
+		chmod +x .linting/scripts/integration-test-suite.sh && .linting/scripts/integration-test-suite.sh; \
+	else \
+		echo "$(RED)❌ Core integration tests not found$(NC)"; \
+		exit 1; \
+	fi
+
+test-integration-performance: ## ⚡ Run performance integration tests
+	@echo "$(BLUE)Running performance integration tests...$(NC)"
+	@if [ -f ".linting/scripts/performance-integration-tests.sh" ]; then \
+		chmod +x .linting/scripts/performance-integration-tests.sh && .linting/scripts/performance-integration-tests.sh; \
+	else \
+		echo "$(RED)❌ Performance integration tests not found$(NC)"; \
+		exit 1; \
+	fi
+
+test-integration-workflow: ## 🔄 Run workflow integration tests
+	@echo "$(BLUE)Running workflow integration tests...$(NC)"
+	@if [ -f ".linting/scripts/workflow-integration-tests.sh" ]; then \
+		chmod +x .linting/scripts/workflow-integration-tests.sh && .linting/scripts/workflow-integration-tests.sh; \
+	else \
+		echo "$(RED)❌ Workflow integration tests not found$(NC)"; \
+		exit 1; \
+	fi
+
+test-coverage-report: ## 📊 Generate integration test coverage report
+	@echo "$(BLUE)Generating integration test coverage report...$(NC)"
+	@if [ -f ".linting/test-results/master/comprehensive-test-report.md" ]; then \
+		echo "$(GREEN)✅ Coverage report available:$(NC)"; \
+		echo "$(CYAN)   .linting/test-results/master/comprehensive-test-report.md$(NC)"; \
+		echo ""; \
+		echo "$(YELLOW)Coverage Summary:$(NC)"; \
+		grep -A 5 "Coverage Percentage" .linting/test-results/master/comprehensive-test-report.md 2>/dev/null || echo "Run integration tests first"; \
+	else \
+		echo "$(YELLOW)⚠️ No coverage report found. Run 'make test-integration' first$(NC)"; \
+	fi
 
 # =============================================================================
 # MONITORING & DEBUGGING

@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:5004"
+BASE_URL="${RAG_SERVICE_URL}"
 TEST_KB_NAME="Test Knowledge Base $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 

@@ -122,13 +122,13 @@ if [ """$PYTHON_RUNNING""" -gt 0 ] || [ """$JAVA_RUNNING""" -gt 0 ]; then
     # Test LLM providers if available
     if check_service "LLM Service" "5002" "/providers" 2>/dev/null; then
         echo "Available LLM providers:"
-        curl -s http://localhost:5002/providers 2>/dev/null | jq -r '.providers[] | "  - \(.name)"' 2>/dev/null || echo "  (unable to fetch)"
+        curl -s ${LLM_SERVICE_URL}/providers 2>/dev/null | jq -r '.providers[] | "  - \(.name)"' 2>/dev/null || echo "  (unable to fetch)"
     fi
     
     # Test debates if available
     if check_service "Debate Service" "5013" "/resources/debates" 2>/dev/null; then
         echo "Active debates:"
-        COUNT=$(curl -s http://localhost:5013/resources/debates 2>/dev/null | jq '.debates | length' 2>/dev/null || echo "0")
+        COUNT=$(curl -s ${CONTROLLER_SERVICE_URL}/resources/debates 2>/dev/null | jq '.debates | length' 2>/dev/null || echo "0")
         echo "  - Total: """$COUNT""" debates"
     fi
 fi

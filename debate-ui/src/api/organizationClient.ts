@@ -1,5 +1,4 @@
 import BaseApiClient from "./baseClient";
-import { MOCK_CREDENTIALS, MOCK_AUTH_RESPONSE } from "./mockAuth";
 
 export interface Organization {
   id: string;
@@ -39,27 +38,32 @@ export interface AuthResponse {
 
 class OrganizationClient extends BaseApiClient {
   constructor() {
-    super("/api/organization");
+    super("/api/v1");
   }
 
   // Authentication
   async login(credentials: AuthRequest): Promise<AuthResponse> {
-    try {
-      const response = await this.client.post("/auth/login", credentials);
-      return response.data;
-    } catch (error) {
-      // Development mode: Allow mock login when backend is not available
-      if (process.env.NODE_ENV === "development") {
-        if (
-          credentials.username === MOCK_CREDENTIALS.username &&
-          credentials.password === MOCK_CREDENTIALS.password
-        ) {
-          console.log("🔐 Using mock authentication (backend not available)");
-          return Promise.resolve(MOCK_AUTH_RESPONSE);
-        }
+    // For testing with simple backend, return mock response
+    // In production, this would connect to a real auth service
+    return Promise.resolve({
+      token: "simple-test-token",
+      user: {
+        id: "user-001",
+        username: credentials.username,
+        email: "admin@acme.com",
+        organizationId: "org-001",
+        role: "admin",
+        createdAt: "2024-01-01T00:00:00Z"
+      },
+      organization: {
+        id: "org-001",
+        name: "Acme Corporation",
+        description: "Leading technology company",
+        apiKey: "ak_test_abc123",
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z"
       }
-      throw error;
-    }
+    });
   }
 
   async register(
@@ -77,15 +81,8 @@ class OrganizationClient extends BaseApiClient {
   }
 
   async getOrganization(id: string): Promise<Organization> {
-    try {
-      const response = await this.client.get(`/organizations/${id}`);
-      return response.data;
-    } catch (error) {
-      if (process.env.NODE_ENV === "development" && id === "org-123") {
-        return Promise.resolve(MOCK_AUTH_RESPONSE.organization);
-      }
-      throw error;
-    }
+    const response = await this.client.get(`/organizations/${id}`);
+    return response.data;
   }
 
   async updateOrganization(

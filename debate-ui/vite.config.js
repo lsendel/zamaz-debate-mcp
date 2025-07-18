@@ -67,47 +67,69 @@ export default defineConfig(({ mode }) => {
       overlay: true
     },
     proxy: {
-      '/api/organization': {
-        target: env.VITE_ORGANIZATION_API_URL || 'http://localhost:5005',
+      '/api/v1/organizations': {
+        target: env.VITE_ORGANIZATION_API_URL,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/organization/, ''),
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
             console.log('Organization API proxy error:', err.message);
           });
         }
       },
-      '/api/llm': {
-        target: env.VITE_LLM_API_URL || 'http://localhost:5002',
+      '/api/v1/users': {
+        target: env.VITE_ORGANIZATION_API_URL,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/llm/, ''),
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('Organization API proxy error:', err.message);
+          });
+        }
+      },
+      '/api/v1/providers': {
+        target: env.VITE_LLM_API_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
             console.log('LLM API proxy error:', err.message);
           });
         }
       },
-      '/api/debate': {
-        target: env.VITE_DEBATE_API_URL || 'http://localhost:5013',
+      '/api/v1/models': {
+        target: env.VITE_LLM_API_URL,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/debate/, ''),
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('LLM API proxy error:', err.message);
+          });
+        }
+      },
+      '/api/v1/debates': {
+        target: env.VITE_DEBATE_API_URL,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
             console.log('Debate API proxy error:', err.message);
           });
         }
       },
-      '/api/rag': {
-        target: env.VITE_RAG_API_URL || 'http://localhost:5004',
+      '/api/v1/debate-formats': {
+        target: env.VITE_DEBATE_API_URL,
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/rag/, ''),
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
-            console.log('RAG API proxy error:', err.message);
+            console.log('Debate API proxy error:', err.message);
           });
         }
       }

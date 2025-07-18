@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:5013"
+BASE_URL="${CONTROLLER_SERVICE_URL}"
 TEST_DEBATE_NAME="Test Debate $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 
@@ -240,8 +240,8 @@ echo ""
 # Test 12: WebSocket Connection (if running)
 echo -e "${YELLOW}Test 12: WebSocket Connection${NC}"
 if command -v wscat &> /dev/null; then
-    echo -e "  Testing WebSocket at ws://localhost:5013/ws..."
-    timeout 2 wscat -c "ws://localhost:5013/ws" 2>&1 | head -n 5 || true
+    echo -e "  Testing WebSocket at ${WEBSOCKET_URL}/ws..."
+    timeout 2 wscat -c "${WEBSOCKET_URL}/ws" 2>&1 | head -n 5 || true
     echo -e "${YELLOW}⚠ WebSocket test requires wscat (npm install -g wscat)${NC}"
 else
     echo -e "${YELLOW}⚠ Skipping WebSocket test (wscat not installed)${NC}"

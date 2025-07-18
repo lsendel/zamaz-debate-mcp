@@ -13,9 +13,9 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Service URLs
-ORG_URL="http://localhost:5005"
-LLM_URL="http://localhost:5002"
-CONTROLLER_URL="http://localhost:5013"
+ORG_URL="${ORGANIZATION_SERVICE_URL}"
+LLM_URL="${LLM_SERVICE_URL}"
+CONTROLLER_URL="${CONTROLLER_SERVICE_URL}"
 
 # Test function
 test_endpoint() {

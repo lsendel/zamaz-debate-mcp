@@ -3,6 +3,7 @@ package com.zamaz.mcp.rag.adapter.external;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zamaz.mcp.rag.domain.model.Embedding;
 import com.zamaz.mcp.rag.domain.port.EmbeddingService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
  * External adapter for embedding generation using OpenAI or other providers.
  */
 @Service
+@Slf4j
 public class EmbeddingServiceAdapter implements EmbeddingService {
     
     private final RestTemplate restTemplate;
@@ -107,7 +109,7 @@ public class EmbeddingServiceAdapter implements EmbeddingService {
         } catch (Exception e) {
             // Log error and return empty embeddings
             // In production, would implement proper error handling and retry logic
-            System.err.println("Failed to generate embeddings: " + e.getMessage());
+            log.error("Failed to generate embeddings for {} texts using model {}: {}", texts.size(), model, e.getMessage(), e);
         }
         
         // Return null embeddings for each text on failure

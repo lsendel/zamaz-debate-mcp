@@ -35,7 +35,7 @@ public class SecureEmailService {
     @Value("${app.email.rate-limit.per-hour:10}")
     private int emailsPerHour;
     
-    @Value("${app.base-url:http://localhost:3000}")
+    @Value("${APP_EMAIL_BASE_URL}")
     private String baseUrl;
     
     @Value("${app.email.enabled:true}")

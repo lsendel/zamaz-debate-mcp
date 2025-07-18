@@ -12,7 +12,7 @@ echo "=========================================="
 
 # Health check
 echo -n "Health Check: "
-if curl -s http://localhost:5002/health | grep -q "healthy"; then
+if curl -s ${LLM_SERVICE_URL}/health | grep -q "healthy"; then
     echo "✓ Passed"
 else
     echo "✗ Failed"
@@ -21,18 +21,18 @@ fi
 # List providers
 echo ""
 echo "Available Providers:"
-curl -s http://localhost:5002/providers | jq -r '.providers[] | "  - \(.name): \(.description // "No description")"' 2>/dev/null
+curl -s ${LLM_SERVICE_URL}/providers | jq -r '.providers[] | "  - \(.name): \(.description // "No description")"' 2>/dev/null
 
 # List all models
 echo ""
 echo "Available Models:"
-curl -s http://localhost:5002/models | jq -r '.models[:5][] | "  - \(.provider)/\(.name)"' 2>/dev/null
+curl -s ${LLM_SERVICE_URL}/models | jq -r '.models[:5][] | "  - \(.provider)/\(.name)"' 2>/dev/null
 echo "  ... and more"
 
 # Test token estimation
 echo ""
 echo "Testing Token Estimation:"
-RESPONSE=$(curl -s -X POST http://localhost:5002/tools/estimate_tokens \
+RESPONSE=$(curl -s -X POST ${LLM_SERVICE_URL}/tools/estimate_tokens \
     -H "Content-Type: application/json" \
     -d '{"arguments": {"text": "Hello world!", "model": "gpt-3.5-turbo"}}' 2>/dev/null)
 echo "  Response: """$RESPONSE""""
@@ -44,7 +44,7 @@ echo "=========================================="
 
 # Health check
 echo -n "Health Check: "
-if curl -s http://localhost:5013/health | grep -q "healthy"; then
+if curl -s ${CONTROLLER_SERVICE_URL}/health | grep -q "healthy"; then
     echo "✓ Passed"
 else
     echo "✗ Failed"
@@ -53,24 +53,24 @@ fi
 # Try to access API info
 echo ""
 echo "API Endpoints:"
-curl -s http://localhost:5013/ 2>/dev/null | jq '.' 2>/dev/null || echo "  No root endpoint"
+curl -s ${CONTROLLER_SERVICE_URL}/ 2>/dev/null | jq '.' 2>/dev/null || echo "  No root endpoint"
 
 # Try different endpoints
 echo ""
 echo "Checking various endpoints:"
 echo -n "  /docs: "
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5013/docs
+curl -s -o /dev/null -w "%{http_code}" ${CONTROLLER_SERVICE_URL}/docs
 echo ""
 echo -n "  /api: "
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5013/api
+curl -s -o /dev/null -w "%{http_code}" ${CONTROLLER_SERVICE_URL}/api
 echo ""
 echo -n "  /resources: "
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5013/resources
+curl -s -o /dev/null -w "%{http_code}" ${CONTROLLER_SERVICE_URL}/resources
 echo ""
 
 # Test WebSocket endpoint
 echo ""
-echo "WebSocket endpoint: ws://localhost:5013/ws"
+echo "WebSocket endpoint: ${WEBSOCKET_URL}/ws"
 
 echo ""
 echo ""

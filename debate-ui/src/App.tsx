@@ -18,6 +18,7 @@ import DebatesPage from "./components/DebatesPage";
 import DebateDetailPage from "./components/DebateDetailPage";
 import AnalyticsPage from "./components/AnalyticsPage";
 import SettingsPage from "./components/SettingsPage";
+import OrganizationManagementPage from "./components/OrganizationManagementPage";
 import NotificationSnackbar from "./components/NotificationSnackbar";
 
 // Actions
@@ -74,6 +75,7 @@ function AppContent() {
           <Route path="debates/:id" element={<DebateDetailPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="organization-management" element={<OrganizationManagementPage />} />
         </Route>
       </Routes>
       <NotificationSnackbar />

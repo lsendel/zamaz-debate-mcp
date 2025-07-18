@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:5006"
+BASE_URL="${TEMPLATE_SERVICE_URL}"
 TEST_TEMPLATE_NAME="Test Template $(date +%s)"
 TEST_ORG_ID="test-org-$(date +%s)"
 

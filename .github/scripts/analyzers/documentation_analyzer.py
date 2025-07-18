@@ -52,7 +52,7 @@ try:
     from pygments.formatters import HtmlFormatter  # noqa: F401
     from pygments.lexers import get_lexer_by_name, guess_lexer  # noqa: F401
     from sentence_transformers import SentenceTransformer  # noqa: F401
-    from sklearn.cluster import KMeans
+    from sklearn.cluster import KMeans  # noqa: F401
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.metrics.pairwise import cosine_similarity
 
@@ -1026,7 +1026,8 @@ class DocumentationQualityAnalyzer:
             else:
                 sentences = len([s for s in content.split(".") if s.strip()])
                 words = len(content.split())
-        except:
+        except Exception:
+            # Fallback to simple counting if NLTK is not available
             sentences = len([s for s in content.split(".") if s.strip()])
             words = len(content.split())
 
@@ -1202,7 +1203,7 @@ class DocumentationCoverageAnalyzer:
                 logger.warning(f"Error analyzing {file_path}: {e}")
 
         # Calculate coverage percentages
-        for file_type, data in coverage_data["coverage_by_type"].items():
+        for _file_type, data in coverage_data["coverage_by_type"].items():
             if data["total"] > 0:
                 data["coverage"] = (data["documented"] / data["total"]) * 100
 

@@ -9,7 +9,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Default values
-LLM_SERVICE_URL="${LLM_SERVICE_URL:-http://localhost:5002}"
+LLM_SERVICE_URL="${LLM_SERVICE_URL}"
 TEST_PROMPT="${1:-"Hello, can you explain what artificial intelligence is in simple terms?"}"
 
 echo -e "${BLUE}=== LLM Service Test Tool ===${NC}"
@@ -175,7 +175,7 @@ debate_payload=$(cat <<EOF
 EOF
 )
 
-debate_response=$(curl -s -X POST "http://localhost:5013/tools/create_debate" \
+debate_response=$(curl -s -X POST "${CONTROLLER_SERVICE_URL}/tools/create_debate" \
     -H "Content-Type: application/json" \
     -d "${debate_payload}")
 
@@ -186,7 +186,7 @@ if [ -n """"$debate_id"""" ] && [ """"$debate_id"""" != "null" ]; then
     
     # Start the debate
     echo -e "\n${BLUE}Starting debate...${NC}"
-    start_response=$(curl -s -X POST "http://localhost:5013/tools/start_debate" \
+    start_response=$(curl -s -X POST "${CONTROLLER_SERVICE_URL}/tools/start_debate" \
         -H "Content-Type: application/json" \
         -d "{\"arguments\": {\"debate_id\": \"${debate_id}\"}}")
     
@@ -195,7 +195,7 @@ if [ -n """"$debate_id"""" ] && [ """"$debate_id"""" != "null" ]; then
         
         # Test LLM-generated turn
         echo -e "\n${BLUE}Testing LLM-generated debate turn...${NC}"
-        turn_response=$(curl -s -X POST "http://localhost:5013/tools/add_turn" \
+        turn_response=$(curl -s -X POST "${CONTROLLER_SERVICE_URL}/tools/add_turn" \
             -H "Content-Type: application/json" \
             -d "{\"arguments\": {\"debate_id\": \"${debate_id}\", \"participant_name\": \"AI Optimist\", \"content\": \"\"}}")
         

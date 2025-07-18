@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:5002"
+BASE_URL="${LLM_SERVICE_URL}"
 TEST_PROMPT="Explain quantum computing in one sentence."
 
 echo -e "${BLUE}=== MCP LLM Service (Java) Detailed Test ===${NC}"

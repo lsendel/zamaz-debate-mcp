@@ -137,8 +137,8 @@ class BaseAnalyzer(AnalyzerInterface):
                 all_issues.extend(issues)
                 strategy_results[strategy.get_name()] = len(issues)
 
-            except TimeoutError:
-                raise AnalysisTimeoutError(file_path, analysis_context.timeout_seconds)
+            except TimeoutError as e:
+                raise AnalysisTimeoutError(file_path, analysis_context.timeout_seconds) from e
             except Exception as e:
                 # Log error but continue with other strategies
                 strategy_results[strategy.get_name()] = f"error: {e!s}"

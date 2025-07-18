@@ -6,6 +6,7 @@ import com.zamaz.mcp.debateengine.domain.model.Context;
 import com.zamaz.mcp.debateengine.domain.model.Message;
 import com.zamaz.mcp.debateengine.domain.model.QualityScore;
 import com.zamaz.mcp.debateengine.domain.port.AIService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,12 +23,13 @@ import java.util.stream.Collectors;
  * External adapter for AI service interactions.
  */
 @Service
+@Slf4j
 public class AIServiceAdapter implements AIService {
     
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     
-    @Value("${debate-engine.ai.llm-service-url:http://localhost:5002}")
+    @Value("${LLM_SERVICE_URL}")
     private String llmServiceUrl;
     
     @Value("${debate-engine.ai.quality-analysis-enabled:true}")
@@ -76,7 +78,7 @@ public class AIServiceAdapter implements AIService {
                 }
             } catch (Exception e) {
                 // Log error and return fallback response
-                System.err.println("Failed to generate AI response: " + e.getMessage());
+                log.error("Failed to generate AI response for model {}: {}", model.name(), e.getMessage(), e);
             }
             
             // Fallback response
@@ -131,7 +133,7 @@ public class AIServiceAdapter implements AIService {
                     );
                 }
             } catch (Exception e) {
-                System.err.println("Failed to analyze quality: " + e.getMessage());
+                log.error("Failed to analyze quality for topic '{}': {}", topic, e.getMessage(), e);
             }
             
             return QualityScore.empty();

@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Environment Setup Script
+# Sets up development environment with proper configuration
+
+set -e
+
+echo "🚀 Setting up development environment..."
+
+# Check if .env file exists
+if [ ! -f ".env" ]; then
+    echo "❌ Error: .env file not found!"
+    echo "Please create a .env file with all required variables."
+    exit 1
+fi
+
+# Validate configuration
+echo "🔍 Validating configuration..."
+./scripts/validate-configuration.sh
+
+# Load environment variables
+export $(cat .env | grep -v '^#' | xargs)
+
+# Create Docker environment file
+echo "🐳 Creating Docker environment file..."
+cat > .env.docker << EOF
+# Docker Environment Variables
+# Generated from .env file
+
+# Database Configuration
+POSTGRES_USER=${POSTGRES_USER}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+POSTGRES_DB=${POSTGRES_DB}
+
+# Redis Configuration
+REDIS_HOST=redis
+REDIS_PORT=${REDIS_PORT}
+
+# Service Ports
+MCP_ORGANIZATION_PORT=${MCP_ORGANIZATION_PORT}
+MCP_LLM_PORT=${MCP_LLM_PORT}
+MCP_CONTROLLER_PORT=${MCP_CONTROLLER_PORT}
+MCP_RAG_PORT=${MCP_RAG_PORT}
+MCP_TEMPLATE_PORT=${MCP_TEMPLATE_PORT}
+MCP_CONTEXT_PORT=${MCP_CONTEXT_PORT}
+MCP_SECURITY_PORT=${MCP_SECURITY_PORT}
+MCP_GATEWAY_PORT=${MCP_GATEWAY_PORT}
+UI_PORT=${UI_PORT}
+
+# Docker Service URLs
+ORGANIZATION_SERVICE_URL=${DOCKER_ORGANIZATION_SERVICE_URL}
+LLM_SERVICE_URL=${DOCKER_LLM_SERVICE_URL}
+CONTROLLER_SERVICE_URL=${DOCKER_CONTROLLER_SERVICE_URL}
+RAG_SERVICE_URL=${DOCKER_RAG_SERVICE_URL}
+TEMPLATE_SERVICE_URL=${DOCKER_TEMPLATE_SERVICE_URL}
+CONTEXT_SERVICE_URL=${DOCKER_CONTEXT_SERVICE_URL}
+SECURITY_SERVICE_URL=${DOCKER_SECURITY_SERVICE_URL}
+GATEWAY_SERVICE_URL=${DOCKER_GATEWAY_SERVICE_URL}
+
+# WebSocket Configuration
+WEBSOCKET_URL=${WEBSOCKET_URL}
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+
+# LLM Endpoints
+CLAUDE_ENDPOINT=${CLAUDE_ENDPOINT}
+OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+GEMINI_ENDPOINT=${GEMINI_ENDPOINT}
+OLLAMA_ENDPOINT=${OLLAMA_ENDPOINT}
+
+# API Keys
+OPENAI_API_KEY=${OPENAI_API_KEY}
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+# Security
+JWT_SECRET=${JWT_SECRET}
+API_KEY_SALT=${API_KEY_SALT}
+
+# Email Configuration
+APP_EMAIL_ENABLED=${APP_EMAIL_ENABLED}
+APP_EMAIL_FROM=${APP_EMAIL_FROM}
+APP_EMAIL_FROM_NAME=${APP_EMAIL_FROM_NAME}
+APP_EMAIL_BASE_URL=${APP_EMAIL_BASE_URL}
+APP_EMAIL_PROVIDER=${APP_EMAIL_PROVIDER}
+
+# Logging
+LOG_LEVEL=${LOG_LEVEL}
