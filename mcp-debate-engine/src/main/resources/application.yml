@@ -143,3 +143,22 @@ debate.statemachine:
   enabled: true
   auto-startup: true
   trace-enabled: false
+
+# Hexagonal Architecture Configuration
+debate-engine:
+  ai:
+    llm-service-url: ${LLM_SERVICE_URL:http://localhost:5002}
+    quality-analysis-enabled: ${QUALITY_ANALYSIS_ENABLED:true}
+    timeout: ${AI_SERVICE_TIMEOUT:30000}
+  
+  domain-events:
+    async: ${DOMAIN_EVENTS_ASYNC:true}
+    retry-attempts: ${DOMAIN_EVENTS_RETRY:3}
+  
+  persistence:
+    batch-size: ${PERSISTENCE_BATCH_SIZE:50}
+    fetch-size: ${PERSISTENCE_FETCH_SIZE:100}
+  
+  validation:
+    strict-mode: ${VALIDATION_STRICT_MODE:true}
+    enable-cross-reference-checks: ${VALIDATION_CROSS_REF:true}

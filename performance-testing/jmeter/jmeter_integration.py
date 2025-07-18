@@ -197,7 +197,7 @@ class JMeterTestGenerator:
         
         # Add request body if present
         if 'body' in request_config:
-            self._add_string_prop(http_request, 'HTTPSampler.postBodyRaw', True)
+            self._add_bool_prop(http_request, 'HTTPSampler.postBodyRaw', True)
             
             # Add arguments for body
             arguments = ET.SubElement(http_request, 'elementProp', {

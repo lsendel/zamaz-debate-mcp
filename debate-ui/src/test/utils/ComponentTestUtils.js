@@ -192,14 +192,18 @@ export function mockApiResponse(url, response, options = {}) {
     return Promise.resolve(response);
   };
 
+  const createTextResponse = () => Promise.resolve(JSON.stringify(response));
+
+  const createMockResponse = () => ({
+    ok: status >= 200 && status < 300,
+    status,
+    json: createDelayedResponse,
+    text: createTextResponse,
+  });
+
   global.fetch = jest.fn().mockImplementation((requestUrl, requestOptions = {}) => {
     if (requestUrl.includes(url) && (requestOptions.method || 'GET') === method) {
-      return Promise.resolve({
-        ok: status >= 200 && status < 300,
-        status,
-        json: createDelayedResponse,
-        text: () => Promise.resolve(JSON.stringify(response)),
-      });
+      return Promise.resolve(createMockResponse());
     }
     return Promise.reject(new Error('Unhandled request'));
   });

@@ -99,25 +99,30 @@ export const usePWA = () => {
     }
   }, []);
 
+  // Handle service worker registration
+  const registerServiceWorker = useCallback(async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service worker registered:', registration);
+      setCacheStatus('active');
+      
+      const updateHandler = () => handleUpdateFound(registration);
+      registration.addEventListener('updatefound', updateHandler);
+      return registration;
+    } catch (error) {
+      console.error('Service worker registration failed:', error);
+      setCacheStatus('failed');
+      throw error;
+    }
+  }, [handleUpdateFound]);
+
   // Handle service worker updates
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          console.log('Service worker registered:', registration);
-          setCacheStatus('active');
-          
-          const updateHandler = () => handleUpdateFound(registration);
-          registration.addEventListener('updatefound', updateHandler);
-        })
-        .catch(error => {
-          console.error('Service worker registration failed:', error);
-          setCacheStatus('failed');
-        });
-
+      registerServiceWorker();
       navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
     }
-  }, [handleUpdateFound, handleServiceWorkerMessage]);
+  }, [registerServiceWorker, handleServiceWorkerMessage]);
 
   // Install PWA
   const installPWA = useCallback(async () => {
