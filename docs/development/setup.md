@@ -46,7 +46,7 @@ Required API keys:
 mvn clean install -DskipTests
 
 # Build Docker images
-docker-compose build
+docker-compose -f infrastructure/docker-compose/docker-compose.yml build
 ```
 
 ## Running the Services
@@ -55,30 +55,30 @@ docker-compose build
 
 ```bash
 # Start all services
-docker-compose up -d
+docker-compose -f infrastructure/docker-compose/docker-compose.yml up -d
 
 # Check service status
-docker-compose ps
+docker-compose -f infrastructure/docker-compose/docker-compose.yml ps
 ```
 
 ### Start Specific Services
 
 ```bash
 # Start only the core services
-docker-compose up -d postgres redis mcp-organization mcp-llm
+docker-compose -f infrastructure/docker-compose/docker-compose.yml up -d postgres redis mcp-organization mcp-llm
 
 # Start with monitoring
-docker-compose --profile monitoring up -d
+docker-compose -f infrastructure/docker-compose/docker-compose-monitoring.yml up -d
 ```
 
 ### View Logs
 
 ```bash
 # View logs for all services
-docker-compose logs -f
+docker-compose -f infrastructure/docker-compose/docker-compose.yml logs -f
 
 # View logs for a specific service
-docker-compose logs -f mcp-llm
+docker-compose -f infrastructure/docker-compose/docker-compose.yml logs -f mcp-llm
 ```
 
 ## Development Workflow
@@ -93,7 +93,7 @@ docker-compose logs -f mcp-llm
    ```
 3. Restart the service:
    ```bash
-   docker-compose restart mcp-service-name
+docker-compose -f infrastructure/docker-compose/docker-compose.yml restart mcp-service-name
    ```
 
 ### Running Tests
@@ -116,7 +116,7 @@ mvn test
 
 ```bash
 # Connect to PostgreSQL
-docker-compose exec postgres psql -U postgres
+docker-compose -f infrastructure/docker-compose/docker-compose.yml exec postgres psql -U postgres
 
 # Run database migrations
 ./scripts/run-migrations.sh
@@ -126,10 +126,10 @@ docker-compose exec postgres psql -U postgres
 
 ```bash
 # Connect to Redis CLI
-docker-compose exec redis redis-cli
+docker-compose -f infrastructure/docker-compose/docker-compose.yml exec redis redis-cli
 
 # Monitor Redis commands
-docker-compose exec redis redis-cli monitor
+docker-compose -f infrastructure/docker-compose/docker-compose.yml exec redis redis-cli monitor
 ```
 
 ### Testing API Endpoints
@@ -150,14 +150,14 @@ curl -X POST http://localhost:5002/mcp/tools/complete \
 ### Common Issues
 
 1. **Service won't start**
-   - Check logs: `docker-compose logs mcp-service-name`
+   - Check logs: `docker-compose -f infrastructure/docker-compose/docker-compose.yml logs mcp-service-name`
    - Verify environment variables are set correctly
    - Ensure ports are not already in use
 
 2. **Database connection issues**
-   - Ensure PostgreSQL is running: `docker-compose ps postgres`
+   - Ensure PostgreSQL is running: `docker-compose -f infrastructure/docker-compose/docker-compose.yml ps postgres`
    - Check database credentials in `.env`
-   - Verify database exists: `docker-compose exec postgres psql -U postgres -c '\l'`
+   - Verify database exists: `docker-compose -f infrastructure/docker-compose/docker-compose.yml exec postgres psql -U postgres -c '\l'`
 
 3. **API key errors**
    - Verify API keys are correctly set in `.env`
@@ -170,14 +170,14 @@ If you need to reset your development environment:
 
 ```bash
 # Stop all services
-docker-compose down
+docker-compose -f infrastructure/docker-compose/docker-compose.yml down
 
 # Remove volumes (caution: this deletes all data)
-docker-compose down -v
+docker-compose -f infrastructure/docker-compose/docker-compose.yml down -v
 
 # Rebuild and restart
-docker-compose build
-docker-compose up -d
+docker-compose -f infrastructure/docker-compose/docker-compose.yml build
+docker-compose -f infrastructure/docker-compose/docker-compose.yml up -d
 ```
 
 ## IDE Setup

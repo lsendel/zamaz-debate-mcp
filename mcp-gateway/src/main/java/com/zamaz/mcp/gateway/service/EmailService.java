@@ -1,14 +1,21 @@
 package com.zamaz.mcp.gateway.service;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 /**
  * Email service for sending user management related emails.
- * This is a placeholder implementation that logs emails instead of sending them.
- * In production, integrate with actual email service (SendGrid, AWS SES, etc.)
+ * Supports both SMTP and fallback logging when email is disabled.
+ * Configure SMTP settings in application properties for production use.
  */
 @Service
 @RequiredArgsConstructor
@@ -21,8 +28,17 @@ public class EmailService {
     @Value("${app.email.from:noreply@mcp.com}")
     private String fromAddress;
     
+    @Value("${app.email.from-name:MCP Platform}")
+    private String fromName;
+    
     @Value("${app.email.enabled:false}")
     private boolean emailEnabled;
+    
+    @Value("${app.email.provider:smtp}")
+    private String emailProvider;
+    
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
 
     /**
      * Send email verification message
@@ -106,15 +122,96 @@ public class EmailService {
             return;
         }
         
-        // TODO: Integrate with actual email service
-        // Example integrations:
-        // - Spring Boot Mail Starter with SMTP
-        // - SendGrid API
-        // - AWS SES
-        // - Mailgun API
-        // - Twilio SendGrid
+        if (mailSender == null) {
+            log.error("Email enabled but JavaMailSender not configured. Please configure spring.mail properties.");
+            return;
+        }
         
-        log.debug("Sending email to: {} with subject: {}", toEmail, subject);
+        try {
+            switch (emailProvider.toLowerCase()) {
+                case "smtp":
+                    sendSmtpEmail(toEmail, subject, htmlContent, textContent);
+                    break;
+                case "sendgrid":
+                    sendSendGridEmail(toEmail, subject, htmlContent, textContent);
+                    break;
+                case "ses":
+                    sendAwsSesEmail(toEmail, subject, htmlContent, textContent);
+                    break;
+                default:
+                    sendSmtpEmail(toEmail, subject, htmlContent, textContent);
+            }
+            
+            log.info("Email sent successfully to: {} with subject: {}", toEmail, subject);
+            
+        } catch (Exception e) {
+            log.error("Failed to send email to: {} with subject: {}", toEmail, subject, e);
+            throw new EmailSendException("Failed to send email", e);
+        }
+    }
+    
+    /**
+     * Send email using SMTP (works with Gmail, Outlook, custom SMTP servers)
+     */
+    private void sendSmtpEmail(String toEmail, String subject, String htmlContent, String textContent) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        try {
+            helper.setFrom(fromAddress, fromName);
+        } catch (Exception e) {
+            // Fallback to simple from address if name causes issues
+            helper.setFrom(fromAddress);
+        }
+        
+        helper.setTo(toEmail);
+        helper.setSubject(subject);
+        
+        // Set both HTML and plain text versions
+        if (htmlContent != null) {
+            helper.setText(textContent, htmlContent);
+        } else {
+            helper.setText(textContent);
+        }
+        
+        mailSender.send(message);
+    }
+    
+    /**
+     * Send email using SendGrid API (requires additional integration)
+     */
+    private void sendSendGridEmail(String toEmail, String subject, String htmlContent, String textContent) {
+        // SendGrid integration would go here
+        // For now, fallback to SMTP
+        log.info("SendGrid integration not implemented, falling back to SMTP");
+        try {
+            sendSmtpEmail(toEmail, subject, htmlContent, textContent);
+        } catch (MessagingException e) {
+            throw new EmailSendException("Failed to send email via SMTP fallback", e);
+        }
+    }
+    
+    /**
+     * Send email using AWS SES (requires additional integration)
+     */
+    private void sendAwsSesEmail(String toEmail, String subject, String htmlContent, String textContent) {
+        // AWS SES integration would go here
+        // For now, fallback to SMTP
+        log.info("AWS SES integration not implemented, falling back to SMTP");
+        try {
+            sendSmtpEmail(toEmail, subject, htmlContent, textContent);
+        } catch (MessagingException e) {
+            throw new EmailSendException("Failed to send email via SMTP fallback", e);
+        }
+    }
+    
+    /**
+     * Custom exception for email sending failures
+     */
+    public static class EmailSendException extends RuntimeException {
+        public EmailSendException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
     private String buildEmailVerificationTemplate(String firstName, String verificationUrl) {

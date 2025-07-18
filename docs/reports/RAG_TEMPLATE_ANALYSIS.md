@@ -51,7 +51,7 @@ docker system prune -f
 ```
 
 ### 2. Fix Database Initialization
-Add to `init-scripts/01-init-databases.sql`:
+Add to `scripts/init-scripts/01-create-databases.sql`:
 ```sql
 CREATE DATABASE IF NOT EXISTS rag_db;
 CREATE DATABASE IF NOT EXISTS template_db;

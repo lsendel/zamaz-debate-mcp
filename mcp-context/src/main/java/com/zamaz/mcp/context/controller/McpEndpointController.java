@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zamaz.mcp.common.security.McpSecurityService;
 import com.zamaz.mcp.common.security.McpSecurityException;
 import com.zamaz.mcp.common.error.McpErrorHandler;
+import com.zamaz.mcp.common.resilience.McpRateLimit;
 import com.zamaz.mcp.context.dto.AppendMessageRequest;
 import com.zamaz.mcp.context.dto.ContextDto;
 import com.zamaz.mcp.context.dto.ContextWindowRequest;
@@ -54,6 +55,7 @@ public class McpEndpointController {
     @PostMapping("/create_context")
     @Operation(summary = "Create context (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.WRITE, limitForPeriod = 20, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> createContext(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -86,6 +88,7 @@ public class McpEndpointController {
     @PostMapping("/append_message")
     @Operation(summary = "Append message to context (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.WRITE, limitForPeriod = 100, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> appendMessage(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -117,6 +120,7 @@ public class McpEndpointController {
     @PostMapping("/get_context_window")
     @Operation(summary = "Get context window (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.EXPENSIVE, limitForPeriod = 30, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> getContextWindow(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -148,6 +152,7 @@ public class McpEndpointController {
     @PostMapping("/search_contexts")
     @Operation(summary = "Search contexts (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.READ, limitForPeriod = 50, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> searchContexts(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -179,6 +184,7 @@ public class McpEndpointController {
     @PostMapping("/share_context")
     @Operation(summary = "Share context (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.WRITE, limitForPeriod = 10, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> shareContext(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {

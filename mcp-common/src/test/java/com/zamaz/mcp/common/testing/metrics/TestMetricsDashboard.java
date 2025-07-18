@@ -437,6 +437,7 @@ public class TestMetricsDashboard {
         testSuites.put("e2e-tests", new TestSuite("E2E Tests", "functional"));
         testSuites.put("performance-tests", new TestSuite("Performance Tests", "performance"));
         testSuites.put("chaos-tests", new TestSuite("Chaos Tests", "resilience"));
+        testSuites.put("circuit-breaker-tests", new TestSuite("Circuit Breaker Tests", "resilience"));
         testSuites.put("security-tests", new TestSuite("Security Tests", "security"));
     }
 

@@ -6,6 +6,7 @@ import com.zamaz.mcp.common.security.McpSecurityService;
 import com.zamaz.mcp.common.security.McpSecurityException;
 import com.zamaz.mcp.common.error.McpErrorHandler;
 import com.zamaz.mcp.common.error.McpErrorResponse;
+import com.zamaz.mcp.common.resilience.McpRateLimit;
 import com.zamaz.mcp.organization.dto.OrganizationDto;
 import com.zamaz.mcp.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +40,7 @@ public class McpToolsController {
     @PostMapping("/create_organization")
     @Operation(summary = "Create organization (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.ADMIN, limitForPeriod = 3, limitRefreshPeriodSeconds = 3600)
     public ResponseEntity<Map<String, Object>> createOrganization(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -65,6 +67,7 @@ public class McpToolsController {
     @PostMapping("/get_organization")
     @Operation(summary = "Get organization by ID (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.READ)
     public ResponseEntity<Map<String, Object>> getOrganization(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -86,6 +89,7 @@ public class McpToolsController {
     @PostMapping("/update_organization")
     @Operation(summary = "Update organization (MCP Tool)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.WRITE)
     public ResponseEntity<Map<String, Object>> updateOrganization(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -113,6 +117,7 @@ public class McpToolsController {
     @PostMapping("/delete_organization")
     @Operation(summary = "Delete organization (MCP Tool)")
     @PreAuthorize("hasRole('ADMIN')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.ADMIN, limitForPeriod = 1, limitRefreshPeriodSeconds = 3600)
     public ResponseEntity<Map<String, Object>> deleteOrganization(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -133,6 +138,7 @@ public class McpToolsController {
     @PostMapping("/add_user_to_organization")
     @Operation(summary = "Add user to organization (MCP Tool)")
     @PreAuthorize("hasRole('ADMIN')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.WRITE, limitForPeriod = 10, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> addUserToOrganization(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -156,6 +162,7 @@ public class McpToolsController {
     @PostMapping("/remove_user_from_organization")
     @Operation(summary = "Remove user from organization (MCP Tool)")
     @PreAuthorize("hasRole('ADMIN')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.WRITE, limitForPeriod = 10, limitRefreshPeriodSeconds = 60)
     public ResponseEntity<Map<String, Object>> removeUserFromOrganization(
             @RequestBody Map<String, Object> params,
             Authentication authentication) {
@@ -178,6 +185,7 @@ public class McpToolsController {
     @GetMapping("/resources/organizations")
     @Operation(summary = "List organizations (MCP Resource)")
     @PreAuthorize("hasRole('USER')")
+    @McpRateLimit(operationType = McpRateLimit.OperationType.READ)
     public ResponseEntity<Map<String, Object>> listOrganizationsResource(Authentication authentication) {
         try {
             // Only return the user's organization for security
@@ -199,35 +207,31 @@ public class McpToolsController {
     public Mono<JsonNode> callTool(String toolName, JsonNode params, Authentication authentication) {
         Map<String, Object> paramsMap = objectMapper.convertValue(params, Map.class);
         
-        ResponseEntity<Map<String, Object>> response;
-        switch (toolName) {
-            case "create_organization":
-                response = createOrganization(paramsMap, authentication);
-                break;
-            case "get_organization":
-                response = getOrganization(paramsMap, authentication);
-                break;
-            case "update_organization":
-                response = updateOrganization(paramsMap, authentication);
-                break;
-            case "delete_organization":
-                response = deleteOrganization(paramsMap, authentication);
-                break;
-            case "add_user_to_organization":
-                response = addUserToOrganization(paramsMap, authentication);
-                break;
-            case "remove_user_from_organization":
-                response = removeUserFromOrganization(paramsMap, authentication);
-                break;
-            case "list_organizations":
-                response = listOrganizationsResource(authentication);
-                break;
-            default:
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "Unknown tool: " + toolName);
-                response = ResponseEntity.badRequest().body(errorResponse);
-        }
+        ToolCommand command = getToolCommand(toolName);
+        ResponseEntity<Map<String, Object>> response = command.execute(paramsMap, authentication);
         
         return Mono.just(objectMapper.valueToTree(response.getBody()));
+    }
+    
+    private ToolCommand getToolCommand(String toolName) {
+        return switch (toolName) {
+            case "create_organization" -> this::createOrganization;
+            case "get_organization" -> this::getOrganization;
+            case "update_organization" -> this::updateOrganization;
+            case "delete_organization" -> this::deleteOrganization;
+            case "add_user_to_organization" -> this::addUserToOrganization;
+            case "remove_user_from_organization" -> this::removeUserFromOrganization;
+            case "list_organizations" -> (params, auth) -> listOrganizationsResource(auth);
+            default -> (params, auth) -> {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Unknown tool: " + toolName);
+                return ResponseEntity.badRequest().body(errorResponse);
+            };
+        };
+    }
+    
+    @FunctionalInterface
+    private interface ToolCommand {
+        ResponseEntity<Map<String, Object>> execute(Map<String, Object> params, Authentication authentication);
     }
 }

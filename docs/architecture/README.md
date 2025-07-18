@@ -42,7 +42,7 @@ The MCP Debate System follows a microservices architecture with clear separation
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   UI (React)    │────▶│   MCP Gateway   │────▶│ Load Balancer   │
+│   UI (React)    │────▶│  API Gateway    │────▶│ Load Balancer   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                 │                          │
                     ┌───────────┴───────────┬─────────────┴─────────┐
@@ -53,20 +53,9 @@ The MCP Debate System follows a microservices architecture with clear separation
               └───────────┘          └───────────┘          └───────────┘
                     │                       │                       │
               ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼─────┐
-              │  Security │          │    RAG    │          │  Pattern  │
-              │  Service  │          │  Service  │          │Recognition│
+              │PostgreSQL │          │   Redis   │          │ AI Providers│
               └───────────┘          └───────────┘          └───────────┘
-                    │                       │                       │
-              ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼─────┐
-              │  GitHub   │          │PostgreSQL │          │   Redis   │
-              │Integration│          └───────────┘          └───────────┘
-              └───────────┘                    │
-                                     ┌─────────▼─────────┐
-                                     │   AI Providers    │
-                                     └─────────────────┘
 ```
-
-**Note on Legacy Modules:** The project currently includes several legacy modules (e.g., `mcp-context`, `mcp-controller`, `mcp-debate`, `mcp-template`, `mcp-context-client`, `mcp-modulith`) that are in the process of being phased out or refactored. The diagram above focuses on the active and strategic services.
 
 ## Data Flow
 
@@ -90,45 +79,23 @@ The MCP Debate System follows a microservices architecture with clear separation
 ## Technology Stack
 
 ### Backend
-- **Java 21**: Core language
-- **Spring Boot 3.3.6**: Framework
+- **Java 17**: Core language
+- **Spring Boot 3.3**: Framework
 - **Spring Cloud Gateway**: API Gateway
 - **Spring WebFlux**: Reactive programming
 - **Spring Security**: Authentication/Authorization
-- **Spring AI**: AI integration
-- **Spring Modulith**: Modular application design
-- **Lombok**: Boilerplate code reduction
-- **MapStruct**: Object mapping
-- **Resilience4j**: Fault tolerance and resilience
-- **Bucket4j**: Rate limiting
-
-### Frontend
-- **React**: JavaScript library for building user interfaces
-- **TypeScript**: Superset of JavaScript for type safety
-- **Vite**: Fast frontend build tool
-
-### API Documentation
-- **Springdoc OpenAPI**: API documentation generation
 
 ### Data Storage
-- **PostgreSQL**: Primary relational database
-- **Redis**: Caching, session management, and message broker
-- **Qdrant**: Vector database for RAG (Retrieval Augmented Generation)
-
-### Testing
-- **JUnit 5**: Unit and integration testing framework
-- **Mockito**: Mocking framework for Java
-- **Testcontainers**: Lightweight, throwaway containers for tests
-- **Rest-Assured**: REST API testing
+- **PostgreSQL**: Primary database
+- **Redis**: Caching and sessions
+- **Qdrant**: Vector database for RAG
 
 ### Infrastructure
 - **Docker**: Containerization
-- **Kubernetes**: Container orchestration
-- **Prometheus**: Monitoring and alerting
-- **Grafana**: Data visualization and dashboards
+- **Kubernetes**: Orchestration
+- **Prometheus**: Metrics
+- **Grafana**: Visualization
 - **Jaeger**: Distributed tracing
-- **Loki**: Log aggregation
-- **Promtail**: Log collector for Loki
 
 ## Design Patterns
 
@@ -203,3 +170,15 @@ Separates read and write operations for performance.
 3. **Event Streaming**: Kafka for high-volume event processing
 4. **ML Pipeline**: Custom model training and deployment
 5. **Multi-Region**: Global deployment with data sovereignty
+
+## Contribution Guidelines
+
+1. Follow architectural principles
+2. Document all changes
+3. Write comprehensive tests
+4. Participate in code reviews
+5. Adhere to security best practices
+
+## Contact
+
+For architectural questions, contact the core development team.

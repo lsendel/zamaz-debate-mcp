@@ -38,6 +38,12 @@ public class DebateWebSocketHandler implements WebSocketHandler {
     // Map of session ID to sink for sending messages
     private final Map<String, Sinks.Many<WebSocketMessage>> sessionSinks = new ConcurrentHashMap<>();
     
+    // Map for storing votes in memory (debate:response:user -> vote type)
+    private final Map<String, Map<String, String>> sessionVotes = new ConcurrentHashMap<>();
+    
+    // Map for storing comments in memory
+    private final Map<String, ConcurrentHashMap<String, Comment>> debateComments = new ConcurrentHashMap<>();
+    
     @Override
     public Mono<Void> handle(WebSocketSession session) {
         String sessionId = session.getId();
@@ -209,32 +215,221 @@ public class DebateWebSocketHandler implements WebSocketHandler {
      * Handle vote from WebSocket
      */
     private void handleVote(WebSocketSession session, String debateId, Map<String, Object> data) {
-        // TODO: Implement vote handling
         log.info("Vote received via WebSocket - Debate: {}, Data: {}", debateId, data);
         
-        // Broadcast vote update to all participants
-        broadcastToDebate(debateId, Map.of(
-            "type", "vote_update",
-            "responseId", data.get("responseId"),
-            "voteType", data.get("voteType"),
-            "timestamp", System.currentTimeMillis()
-        ));
+        try {
+            // Extract vote data
+            String responseId = (String) data.get("responseId");
+            String voteType = (String) data.get("voteType");
+            String userId = (String) session.getAttributes().get("userId");
+            
+            // Validate vote data
+            if (responseId == null || voteType == null) {
+                sendError(session, "Invalid vote data: missing responseId or voteType");
+                return;
+            }
+            
+            // Validate vote type
+            if (!isValidVoteType(voteType)) {
+                sendError(session, "Invalid vote type: " + voteType);
+                return;
+            }
+            
+            // Process the vote
+            VoteResult voteResult = processVote(debateId, responseId, voteType, userId);
+            
+            // Broadcast vote update to all participants
+            broadcastToDebate(debateId, Map.of(
+                "type", "vote_update",
+                "responseId", responseId,
+                "voteType", voteType,
+                "userId", userId,
+                "updatedCounts", voteResult.getUpdatedCounts(),
+                "timestamp", System.currentTimeMillis()
+            ));
+            
+            // Send confirmation to the voter
+            sendMessage(session, Map.of(
+                "type", "vote_confirmed",
+                "responseId", responseId,
+                "voteType", voteType,
+                "success", true
+            ));
+            
+        } catch (Exception e) {
+            log.error("Error handling vote for debate {}: {}", debateId, e.getMessage(), e);
+            sendError(session, "Failed to process vote: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Validate vote type
+     */
+    private boolean isValidVoteType(String voteType) {
+        return "upvote".equals(voteType) || "downvote".equals(voteType) || "remove".equals(voteType);
+    }
+    
+    /**
+     * Process vote and return updated counts
+     */
+    private VoteResult processVote(String debateId, String responseId, String voteType, String userId) {
+        // In a real implementation, this would interact with the database
+        // For now, we'll use in-memory storage
+        String voteKey = debateId + ":" + responseId + ":" + userId;
+        Map<String, String> votes = sessionVotes.computeIfAbsent(debateId, k -> new ConcurrentHashMap<>());
+        
+        String previousVote = votes.get(voteKey);
+        
+        if ("remove".equals(voteType)) {
+            votes.remove(voteKey);
+        } else {
+            votes.put(voteKey, voteType);
+        }
+        
+        // Calculate updated counts
+        Map<String, Integer> counts = calculateVoteCounts(debateId, responseId);
+        
+        return new VoteResult(counts, previousVote, voteType);
+    }
+    
+    /**
+     * Calculate vote counts for a response
+     */
+    private Map<String, Integer> calculateVoteCounts(String debateId, String responseId) {
+        Map<String, String> votes = sessionVotes.getOrDefault(debateId, new ConcurrentHashMap<>());
+        int upvotes = 0;
+        int downvotes = 0;
+        
+        String prefix = debateId + ":" + responseId + ":";
+        for (Map.Entry<String, String> entry : votes.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                if ("upvote".equals(entry.getValue())) {
+                    upvotes++;
+                } else if ("downvote".equals(entry.getValue())) {
+                    downvotes++;
+                }
+            }
+        }
+        
+        return Map.of("upvotes", upvotes, "downvotes", downvotes);
+    }
+    
+    /**
+     * Vote result class
+     */
+    private static class VoteResult {
+        private final Map<String, Integer> updatedCounts;
+        private final String previousVote;
+        private final String newVote;
+        
+        public VoteResult(Map<String, Integer> updatedCounts, String previousVote, String newVote) {
+            this.updatedCounts = updatedCounts;
+            this.previousVote = previousVote;
+            this.newVote = newVote;
+        }
+        
+        public Map<String, Integer> getUpdatedCounts() {
+            return updatedCounts;
+        }
     }
     
     /**
      * Handle comment from WebSocket
      */
     private void handleComment(WebSocketSession session, String debateId, Map<String, Object> data) {
-        // TODO: Implement comment handling
         log.info("Comment received via WebSocket - Debate: {}, Data: {}", debateId, data);
         
-        // Broadcast comment to all participants
-        broadcastToDebate(debateId, Map.of(
-            "type", "new_comment",
-            "comment", data.get("comment"),
-            "author", data.get("author"),
-            "timestamp", System.currentTimeMillis()
-        ));
+        try {
+            // Extract comment data
+            String content = (String) data.get("content");
+            String responseId = (String) data.get("responseId");
+            String userId = (String) session.getAttributes().get("userId");
+            String author = (String) data.get("author");
+            
+            // Validate comment data
+            if (content == null || content.trim().isEmpty()) {
+                sendError(session, "Invalid comment: content is required");
+                return;
+            }
+            
+            if (content.length() > 1000) {
+                sendError(session, "Comment too long: maximum 1000 characters allowed");
+                return;
+            }
+            
+            // Create comment
+            String commentId = UUID.randomUUID().toString();
+            Comment comment = new Comment(
+                commentId,
+                debateId,
+                responseId,
+                userId,
+                author != null ? author : "Anonymous",
+                content,
+                System.currentTimeMillis()
+            );
+            
+            // Store comment
+            ConcurrentHashMap<String, Comment> comments = debateComments.computeIfAbsent(
+                debateId, k -> new ConcurrentHashMap<>()
+            );
+            comments.put(commentId, comment);
+            
+            // Broadcast comment to all participants
+            broadcastToDebate(debateId, Map.of(
+                "type", "new_comment",
+                "commentId", commentId,
+                "responseId", responseId,
+                "content", content,
+                "author", comment.getAuthor(),
+                "userId", userId,
+                "timestamp", comment.getTimestamp()
+            ));
+            
+            // Send confirmation to the commenter
+            sendMessage(session, Map.of(
+                "type", "comment_confirmed",
+                "commentId", commentId,
+                "success", true
+            ));
+            
+        } catch (Exception e) {
+            log.error("Error handling comment for debate {}: {}", debateId, e.getMessage(), e);
+            sendError(session, "Failed to process comment: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Comment data class
+     */
+    private static class Comment {
+        private final String id;
+        private final String debateId;
+        private final String responseId;
+        private final String userId;
+        private final String author;
+        private final String content;
+        private final long timestamp;
+        
+        public Comment(String id, String debateId, String responseId, String userId, 
+                      String author, String content, long timestamp) {
+            this.id = id;
+            this.debateId = debateId;
+            this.responseId = responseId;
+            this.userId = userId;
+            this.author = author;
+            this.content = content;
+            this.timestamp = timestamp;
+        }
+        
+        // Getters
+        public String getId() { return id; }
+        public String getDebateId() { return debateId; }
+        public String getResponseId() { return responseId; }
+        public String getUserId() { return userId; }
+        public String getAuthor() { return author; }
+        public String getContent() { return content; }
+        public long getTimestamp() { return timestamp; }
     }
     
     /**

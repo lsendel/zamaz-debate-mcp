@@ -98,23 +98,24 @@ mcp:
       polling:
         poll-timeout: PT0.1S
   
-  rag:
-    qdrant-url: ${QDRANT_URL:http://qdrant:6333}
-    
-    embedding:
-      default-model: text-embedding-3-large
-      dimension: 1536
-      batch-size: 100
-    
-    chunking:
-      default-chunk-size: 1000
-      default-chunk-overlap: 200
-    
-    retrieval:
-      default-top-k: 5
-      default-similarity-threshold: 0.7
-    
-    augmentation:
-      max-tokens-per-source: 1000
-      include-metadata: true
-      include-sources: true
+rag:
+  embedding:
+    api-key: ${OPENAI_API_KEY:}
+    api-url: ${EMBEDDING_API_URL:https://api.openai.com/v1/embeddings}
+    model: ${EMBEDDING_MODEL:text-embedding-ada-002}
+    batch-size: ${EMBEDDING_BATCH_SIZE:100}
+  
+  chunking:
+    strategy: ${CHUNKING_STRATEGY:sliding-window}
+    size: ${CHUNK_SIZE:512}
+    overlap: ${CHUNK_OVERLAP:128}
+    min-size: ${MIN_CHUNK_SIZE:50}
+  
+  processing:
+    max-file-size: ${MAX_FILE_SIZE:52428800} # 50MB
+    supported-types: text/plain,text/markdown,text/csv,application/json,application/xml
+  
+  search:
+    default-limit: ${SEARCH_DEFAULT_LIMIT:10}
+    max-limit: ${SEARCH_MAX_LIMIT:100}
+    min-similarity: ${SEARCH_MIN_SIMILARITY:0.0}

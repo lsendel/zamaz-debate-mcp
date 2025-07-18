@@ -1,5 +1,6 @@
 package com.zamaz.mcp.common.testing.metrics;
 
+import com.zamaz.mcp.common.resilience.metrics.CircuitBreakerMetricsCollector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,9 @@ public class MetricsIntegration {
 
     @Autowired
     private TestMetricsDashboard dashboard;
+    
+    @Autowired(required = false)
+    private CircuitBreakerMetricsCollector circuitBreakerMetricsCollector;
 
     /**
      * Maven Surefire integration for collecting unit test metrics.
@@ -505,6 +509,227 @@ public class MetricsIntegration {
     }
 
     /**
+     * Circuit breaker resilience metrics integration.
+     */
+    public static class CircuitBreakerMetricsIntegration {
+        
+        private final CircuitBreakerMetricsCollector metricsCollector;
+        
+        public CircuitBreakerMetricsIntegration(CircuitBreakerMetricsCollector metricsCollector) {
+            this.metricsCollector = metricsCollector;
+        }
+        
+        public TestMetricsDashboard.TestMetrics collectCircuitBreakerMetrics() {
+            if (metricsCollector == null) {
+                return createEmptyMetrics();
+            }
+            
+            Map<String, CircuitBreakerMetricsCollector.CircuitBreakerStats> allStats = 
+                metricsCollector.getAllCircuitBreakerStats();
+            
+            if (allStats.isEmpty()) {
+                return createEmptyMetrics();
+            }
+            
+            // Aggregate all circuit breaker metrics
+            long totalExecutions = 0;
+            long successfulExecutions = 0;
+            long failedExecutions = 0;
+            long callsNotPermitted = 0;
+            long fallbackExecutions = 0;
+            long successfulFallbacks = 0;
+            double totalExecutionTime = 0.0;
+            double totalFallbackTime = 0.0;
+            List<String> failureReasons = new ArrayList<>();
+            
+            for (CircuitBreakerMetricsCollector.CircuitBreakerStats stats : allStats.values()) {
+                totalExecutions += stats.getTotalExecutions();
+                successfulExecutions += stats.getSuccessfulExecutions();
+                failedExecutions += stats.getFailedExecutions();
+                callsNotPermitted += stats.getCallsNotPermitted();
+                fallbackExecutions += stats.getFallbackExecutions();
+                successfulFallbacks += stats.getSuccessfulFallbacks();
+                totalExecutionTime += stats.getAverageExecutionTimeMs() * stats.getTotalExecutions();
+                totalFallbackTime += stats.getAverageFallbackTimeMs() * stats.getFallbackExecutions();
+                
+                if (stats.getLastError() != null) {
+                    failureReasons.add(stats.getLastError());
+                }
+            }
+            
+            // Calculate aggregate metrics
+            double avgExecutionTime = totalExecutions > 0 ? totalExecutionTime / totalExecutions : 0.0;
+            double avgFallbackTime = fallbackExecutions > 0 ? totalFallbackTime / fallbackExecutions : 0.0;
+            double successRate = totalExecutions > 0 ? (double) successfulExecutions / totalExecutions : 0.0;
+            double failureRate = totalExecutions > 0 ? (double) failedExecutions / totalExecutions : 0.0;
+            double callNotPermittedRate = (totalExecutions + callsNotPermitted) > 0 ? 
+                (double) callsNotPermitted / (totalExecutions + callsNotPermitted) : 0.0;
+            double fallbackSuccessRate = fallbackExecutions > 0 ? (double) successfulFallbacks / fallbackExecutions : 0.0;
+            
+            // Calculate overall health score
+            double overallHealthScore = allStats.values().stream()
+                .mapToDouble(CircuitBreakerMetricsCollector.CircuitBreakerStats::getHealthScore)
+                .average()
+                .orElse(0.0);
+            
+            return TestMetricsDashboard.TestMetrics.builder()
+                .totalTests((int) totalExecutions)
+                .passedTests((int) successfulExecutions)
+                .failedTests((int) failedExecutions)
+                .executionDuration(Duration.ofMillis((long) avgExecutionTime))
+                .performanceMetric("circuit_breaker_health_score", overallHealthScore * 100)
+                .performanceMetric("success_rate_percent", successRate * 100)
+                .performanceMetric("failure_rate_percent", failureRate * 100)
+                .performanceMetric("call_not_permitted_rate_percent", callNotPermittedRate * 100)
+                .performanceMetric("fallback_success_rate_percent", fallbackSuccessRate * 100)
+                .performanceMetric("avg_execution_time_ms", avgExecutionTime)
+                .performanceMetric("avg_fallback_time_ms", avgFallbackTime)
+                .performanceMetric("total_circuit_breakers", (double) allStats.size())
+                .performanceMetric("calls_not_permitted", (double) callsNotPermitted)
+                .performanceMetric("fallback_executions", (double) fallbackExecutions)
+                .failureReasons(failureReasons)
+                .build();
+        }
+        
+        public Map<String, TestMetricsDashboard.TestMetrics> collectIndividualCircuitBreakerMetrics() {
+            if (metricsCollector == null) {
+                return Collections.emptyMap();
+            }
+            
+            Map<String, CircuitBreakerMetricsCollector.CircuitBreakerStats> allStats = 
+                metricsCollector.getAllCircuitBreakerStats();
+            
+            Map<String, TestMetricsDashboard.TestMetrics> individualMetrics = new HashMap<>();
+            
+            for (Map.Entry<String, CircuitBreakerMetricsCollector.CircuitBreakerStats> entry : allStats.entrySet()) {
+                String circuitBreakerName = entry.getKey();
+                CircuitBreakerMetricsCollector.CircuitBreakerStats stats = entry.getValue();
+                
+                List<String> failureReasons = new ArrayList<>();
+                if (stats.getLastError() != null) {
+                    failureReasons.add(stats.getLastError());
+                }
+                
+                TestMetricsDashboard.TestMetrics metrics = TestMetricsDashboard.TestMetrics.builder()
+                    .totalTests((int) stats.getTotalExecutions())
+                    .passedTests((int) stats.getSuccessfulExecutions())
+                    .failedTests((int) stats.getFailedExecutions())
+                    .executionDuration(Duration.ofMillis((long) stats.getAverageExecutionTimeMs()))
+                    .performanceMetric("health_score", stats.getHealthScore() * 100)
+                    .performanceMetric("success_rate_percent", stats.getSuccessRate() * 100)
+                    .performanceMetric("failure_rate_percent", stats.getFailureRate() * 100)
+                    .performanceMetric("call_not_permitted_rate_percent", stats.getCallNotPermittedRate() * 100)
+                    .performanceMetric("fallback_success_rate_percent", stats.getFallbackSuccessRate() * 100)
+                    .performanceMetric("avg_execution_time_ms", stats.getAverageExecutionTimeMs())
+                    .performanceMetric("avg_fallback_time_ms", stats.getAverageFallbackTimeMs())
+                    .performanceMetric("calls_not_permitted", (double) stats.getCallsNotPermitted())
+                    .performanceMetric("fallback_executions", (double) stats.getFallbackExecutions())
+                    .performanceMetric("state_changes", (double) stats.getStateChanges())
+                    .performanceMetric("current_state", mapStateToNumeric(stats.getCurrentState()))
+                    .failureReasons(failureReasons)
+                    .build();
+                
+                individualMetrics.put(circuitBreakerName, metrics);
+            }
+            
+            return individualMetrics;
+        }
+        
+        private double mapStateToNumeric(io.github.resilience4j.circuitbreaker.CircuitBreaker.State state) {
+            switch (state) {
+                case CLOSED: return 0.0; // Healthy
+                case HALF_OPEN: return 1.0; // Recovering
+                case OPEN: return 2.0; // Unhealthy
+                default: return -1.0; // Unknown
+            }
+        }
+        
+        public List<TestMetricsDashboard.PerformanceAlert> generateCircuitBreakerAlerts() {
+            if (metricsCollector == null) {
+                return Collections.emptyList();
+            }
+            
+            List<TestMetricsDashboard.PerformanceAlert> alerts = new ArrayList<>();
+            Map<String, CircuitBreakerMetricsCollector.CircuitBreakerStats> allStats = 
+                metricsCollector.getAllCircuitBreakerStats();
+            
+            for (Map.Entry<String, CircuitBreakerMetricsCollector.CircuitBreakerStats> entry : allStats.entrySet()) {
+                String circuitBreakerName = entry.getKey();
+                CircuitBreakerMetricsCollector.CircuitBreakerStats stats = entry.getValue();
+                
+                // Check health score
+                if (stats.getHealthScore() < 0.7) {
+                    TestMetricsDashboard.AlertSeverity severity = stats.getHealthScore() < 0.5 ? 
+                        TestMetricsDashboard.AlertSeverity.HIGH : TestMetricsDashboard.AlertSeverity.MEDIUM;
+                    
+                    alerts.add(new TestMetricsDashboard.PerformanceAlert(
+                        severity,
+                        "Circuit Breaker Health Issue",
+                        String.format("Circuit breaker '%s' health score %.1f%% is below threshold (70%%)", 
+                            circuitBreakerName, stats.getHealthScore() * 100)
+                    ));
+                }
+                
+                // Check failure rate
+                if (stats.getFailureRate() > 0.1) {
+                    TestMetricsDashboard.AlertSeverity severity = stats.getFailureRate() > 0.2 ? 
+                        TestMetricsDashboard.AlertSeverity.HIGH : TestMetricsDashboard.AlertSeverity.MEDIUM;
+                    
+                    alerts.add(new TestMetricsDashboard.PerformanceAlert(
+                        severity,
+                        "High Circuit Breaker Failure Rate",
+                        String.format("Circuit breaker '%s' failure rate %.1f%% exceeds threshold (10%%)", 
+                            circuitBreakerName, stats.getFailureRate() * 100)
+                    ));
+                }
+                
+                // Check if circuit is open
+                if (stats.getCurrentState() == io.github.resilience4j.circuitbreaker.CircuitBreaker.State.OPEN) {
+                    alerts.add(new TestMetricsDashboard.PerformanceAlert(
+                        TestMetricsDashboard.AlertSeverity.CRITICAL,
+                        "Circuit Breaker Open",
+                        String.format("Circuit breaker '%s' is in OPEN state, blocking calls", circuitBreakerName)
+                    ));
+                }
+                
+                // Check call not permitted rate
+                if (stats.getCallNotPermittedRate() > 0.05) {
+                    alerts.add(new TestMetricsDashboard.PerformanceAlert(
+                        TestMetricsDashboard.AlertSeverity.MEDIUM,
+                        "High Call Rejection Rate",
+                        String.format("Circuit breaker '%s' is rejecting %.1f%% of calls", 
+                            circuitBreakerName, stats.getCallNotPermittedRate() * 100)
+                    ));
+                }
+                
+                // Check fallback failure rate
+                if (stats.getFallbackExecutions() > 0 && stats.getFallbackSuccessRate() < 0.8) {
+                    alerts.add(new TestMetricsDashboard.PerformanceAlert(
+                        TestMetricsDashboard.AlertSeverity.MEDIUM,
+                        "Fallback Mechanism Issues",
+                        String.format("Circuit breaker '%s' fallback success rate %.1f%% is below threshold (80%%)", 
+                            circuitBreakerName, stats.getFallbackSuccessRate() * 100)
+                    ));
+                }
+            }
+            
+            return alerts;
+        }
+        
+        private TestMetricsDashboard.TestMetrics createEmptyMetrics() {
+            return TestMetricsDashboard.TestMetrics.builder()
+                .totalTests(0)
+                .passedTests(0)
+                .failedTests(0)
+                .performanceMetric("circuit_breaker_health_score", 100.0)
+                .performanceMetric("success_rate_percent", 100.0)
+                .performanceMetric("failure_rate_percent", 0.0)
+                .performanceMetric("total_circuit_breakers", 0.0)
+                .build();
+        }
+    }
+
+    /**
      * Main integration method that collects metrics from all sources.
      */
     public void collectAndUpdateMetrics(String projectPath) {
@@ -512,6 +737,8 @@ public class MetricsIntegration {
         JaCoCoIntegration jacocoIntegration = new JaCoCoIntegration();
         PerformanceTestIntegration performanceIntegration = new PerformanceTestIntegration();
         ChaosMetricsIntegration chaosIntegration = new ChaosMetricsIntegration();
+        CircuitBreakerMetricsIntegration circuitBreakerIntegration = 
+            new CircuitBreakerMetricsIntegration(circuitBreakerMetricsCollector);
 
         // Collect unit test metrics
         TestMetricsDashboard.TestMetrics unitMetrics = surefireIntegration.collectSurefireMetrics(projectPath);
@@ -545,6 +772,30 @@ public class MetricsIntegration {
         TestMetricsDashboard.TestMetrics chaosMetrics = chaosIntegration.collectChaosMetrics(chaosResultsPath);
         recordExecution("chaos-tests", "test", chaosMetrics, 
             chaosMetrics.getFailedTests() > 0 ? TestMetricsDashboard.ExecutionStatus.PARTIAL_SUCCESS : TestMetricsDashboard.ExecutionStatus.SUCCESS);
+
+        // Collect circuit breaker resilience metrics
+        TestMetricsDashboard.TestMetrics circuitBreakerMetrics = circuitBreakerIntegration.collectCircuitBreakerMetrics();
+        recordExecution("circuit-breaker-tests", "test", circuitBreakerMetrics,
+            circuitBreakerMetrics.getPerformanceMetrics().get("circuit_breaker_health_score") >= 70.0 ? 
+                TestMetricsDashboard.ExecutionStatus.SUCCESS : TestMetricsDashboard.ExecutionStatus.FAILURE);
+        
+        // Also record individual circuit breaker metrics
+        Map<String, TestMetricsDashboard.TestMetrics> individualCircuitBreakerMetrics = 
+            circuitBreakerIntegration.collectIndividualCircuitBreakerMetrics();
+        
+        for (Map.Entry<String, TestMetricsDashboard.TestMetrics> entry : individualCircuitBreakerMetrics.entrySet()) {
+            String circuitBreakerName = entry.getKey();
+            TestMetricsDashboard.TestMetrics metrics = entry.getValue();
+            
+            // Create a test suite for this specific circuit breaker if it doesn't exist
+            dashboard.addTestSuite("cb-" + circuitBreakerName, "resilience");
+            
+            double healthScore = metrics.getPerformanceMetrics().getOrDefault("health_score", 100.0);
+            TestMetricsDashboard.ExecutionStatus status = healthScore >= 70.0 ? 
+                TestMetricsDashboard.ExecutionStatus.SUCCESS : TestMetricsDashboard.ExecutionStatus.FAILURE;
+            
+            recordExecution("cb-" + circuitBreakerName, "test", metrics, status);
+        }
     }
 
     /**

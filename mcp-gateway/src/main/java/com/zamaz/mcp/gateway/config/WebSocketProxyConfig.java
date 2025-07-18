@@ -1,6 +1,10 @@
 package com.zamaz.mcp.gateway.config;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.support.ipresolver.XForwardedRemoteAddressResolver;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * WebSocket proxy configuration and connection management
@@ -31,7 +36,18 @@ public class WebSocketProxyConfig {
     @Value("${websocket.idle-timeout:300000}")
     private long idleTimeout;
     
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
+    
     private final ConcurrentHashMap<String, AtomicInteger> connectionCounts = new ConcurrentHashMap<>();
+    
+    // Metrics tracking
+    private final AtomicLong activeConnections = new AtomicLong(0);
+    private final AtomicLong totalConnections = new AtomicLong(0);
+    private final AtomicLong failedConnections = new AtomicLong(0);
+    private final Map<String, Timer> pathTimers = new ConcurrentHashMap<>();
+    private final Map<String, Counter> pathCounters = new ConcurrentHashMap<>();
+    private final Map<String, Counter> errorCounters = new ConcurrentHashMap<>();
     
     /**
      * WebSocket connection limit filter
@@ -88,11 +104,41 @@ public class WebSocketProxyConfig {
                 .doOnSuccess(aVoid -> {
                     long duration = System.currentTimeMillis() - startTime;
                     log.info("WebSocket connection established: {} in {}ms", path, duration);
-                    // TODO: Send metrics to monitoring system
+                    
+                    // Send metrics to monitoring system
+                    if (meterRegistry != null) {
+                        activeConnections.incrementAndGet();
+                        totalConnections.incrementAndGet();
+                        
+                        // Record path-specific metrics
+                        getOrCreatePathCounter(path + ".success").increment();
+                        getOrCreatePathTimer(path).record(duration, java.util.concurrent.TimeUnit.MILLISECONDS);
+                        
+                        // Update gauges
+                        meterRegistry.gauge("websocket.connections.active", activeConnections);
+                        meterRegistry.gauge("websocket.connections.total", totalConnections);
+                    }
                 })
                 .doOnError(error -> {
                     log.error("WebSocket connection failed: {} - {}", path, error.getMessage());
-                    // TODO: Send error metrics
+                    
+                    // Send error metrics
+                    if (meterRegistry != null) {
+                        failedConnections.incrementAndGet();
+                        
+                        // Record error metrics
+                        getOrCreatePathCounter(path + ".error").increment();
+                        getOrCreateErrorCounter(error.getClass().getSimpleName()).increment();
+                        
+                        // Update gauges
+                        meterRegistry.gauge("websocket.connections.failed", failedConnections);
+                    }
+                })
+                .doFinally(signalType -> {
+                    // Decrement active connections when connection closes
+                    if (meterRegistry != null) {
+                        activeConnections.decrementAndGet();
+                    }
                 });
         };
     }
@@ -176,5 +222,48 @@ public class WebSocketProxyConfig {
         public ConcurrentHashMap<String, AtomicInteger> getConnectionsByIp() {
             return new ConcurrentHashMap<>(connectionCounts);
         }
+    }
+    
+    /**
+     * Get or create a path-specific counter
+     */
+    private Counter getOrCreatePathCounter(String path) {
+        return pathCounters.computeIfAbsent(path, p -> 
+            Counter.builder("websocket.path.requests")
+                .tag("path", sanitizePath(p))
+                .description("WebSocket path request counter")
+                .register(meterRegistry));
+    }
+    
+    /**
+     * Get or create a path-specific timer
+     */
+    private Timer getOrCreatePathTimer(String path) {
+        return pathTimers.computeIfAbsent(path, p -> 
+            Timer.builder("websocket.path.duration")
+                .tag("path", sanitizePath(p))
+                .description("WebSocket path connection duration")
+                .register(meterRegistry));
+    }
+    
+    /**
+     * Get or create an error counter
+     */
+    private Counter getOrCreateErrorCounter(String errorType) {
+        return errorCounters.computeIfAbsent(errorType, e -> 
+            Counter.builder("websocket.errors")
+                .tag("error_type", e)
+                .description("WebSocket error counter")
+                .register(meterRegistry));
+    }
+    
+    /**
+     * Sanitize path for use as a metric tag
+     */
+    private String sanitizePath(String path) {
+        // Remove dynamic parts from path for consistent tagging
+        return path.replaceAll("/[0-9a-f-]+", "/{id}")
+                   .replaceAll("\\.", "_")
+                   .replaceAll("/", "_");
     }
 }

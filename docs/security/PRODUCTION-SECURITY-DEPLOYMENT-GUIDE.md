@@ -146,7 +146,7 @@ docker run -d \
   -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
   -e POSTGRES_DB="$POSTGRES_DB" \
   -v postgres-data:/var/lib/postgresql/data \
-  -v ./init-scripts:/docker-entrypoint-initdb.d \
+  -v ./scripts/init-scripts:/docker-entrypoint-initdb.d \
   --restart unless-stopped \
   postgres:15-alpine
 ```
@@ -173,7 +173,7 @@ docker run -d \
 #### 2.1 Build Production Images
 ```bash
 # Build all services with production optimizations
-docker-compose -f docker-compose.prod.yml build \
+docker-compose -f infrastructure/docker-compose/docker-compose.prod.yml build \
   --build-arg ENVIRONMENT=production
 
 # Scan images for vulnerabilities
@@ -186,11 +186,11 @@ docker scan mcp-controller:latest
 #### 2.2 Deploy Services
 ```bash
 # Deploy with production configuration
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f infrastructure/docker-compose/docker-compose.prod.yml up -d
 
 # Verify all services are healthy
-docker-compose -f docker-compose.prod.yml ps
-docker-compose -f docker-compose.prod.yml logs --tail=50
+docker-compose -f infrastructure/docker-compose/docker-compose.prod.yml ps
+docker-compose -f infrastructure/docker-compose/docker-compose.prod.yml logs --tail=50
 ```
 
 ### Phase 3: Security Monitoring Deployment
@@ -201,10 +201,10 @@ docker-compose -f docker-compose.prod.yml logs --tail=50
 cd monitoring
 
 # Deploy monitoring stack
-docker-compose -f docker-compose-monitoring.yml up -d
+docker-compose -f infrastructure/docker-compose/docker-compose-monitoring.yml up -d
 
 # Verify monitoring services
-docker-compose -f docker-compose-monitoring.yml ps
+docker-compose -f infrastructure/docker-compose/docker-compose-monitoring.yml ps
 ```
 
 #### 3.2 Configure Alerting
@@ -383,7 +383,7 @@ kubectl set env deployment/mcp-gateway MAINTENANCE_MODE=true
 docker-compose logs > security-incident-$(date +%Y%m%d-%H%M%S).log
 
 # 3. Stop services
-docker-compose -f docker-compose.prod.yml down
+docker-compose -f infrastructure/docker-compose/docker-compose.prod.yml down
 
 # 4. Notify stakeholders
 # Use predefined incident communication template
