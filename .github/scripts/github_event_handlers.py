@@ -7,6 +7,7 @@ This module contains handlers for different GitHub webhook events.
 import logging
 import os
 import re
+from typing import List, Tuple
 
 import requests
 from github_auth import GitHubCredentialManager

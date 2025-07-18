@@ -121,25 +121,7 @@ const OrganizationManagementPage: React.FC = () => {
       setUsers(userList);
     } catch (error) {
       console.error("Failed to load users:", error);
-      // Mock users for development
-      setUsers([
-        {
-          id: "user-1",
-          username: "demo",
-          email: "demo@example.com",
-          organizationId: currentOrganization?.id || "",
-          role: "admin",
-          createdAt: "2024-01-01T00:00:00Z",
-        },
-        {
-          id: "user-2",
-          username: "john",
-          email: "john@example.com",
-          organizationId: currentOrganization?.id || "",
-          role: "member",
-          createdAt: "2024-01-02T00:00:00Z",
-        },
-      ]);
+      setUsers([]);
     }
   };
 

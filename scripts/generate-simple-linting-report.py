@@ -72,7 +72,8 @@ def get_shell_issues():
                 for issue in file_issues:
                     issue["filename"] = str(file)
                     issues.append(issue)
-            except:
+            except json.JSONDecodeError:
+                # Skip files with invalid JSON output
                 pass
 
     return issues

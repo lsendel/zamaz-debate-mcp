@@ -6,6 +6,7 @@ formatting, and general quality issues.
 """
 
 import re
+from typing import Optional
 
 from ..core.interfaces import CodeIssue, IssueLevel
 from .base_analyzer import AnalysisStrategy, AnalyzerContext

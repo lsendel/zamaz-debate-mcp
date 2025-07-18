@@ -7,7 +7,7 @@ that manages service lifecycles and dependencies.
 
 import inspect
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, Tuple, TypeVar
 
 from .exceptions import ConfigurationError, ServiceError
 

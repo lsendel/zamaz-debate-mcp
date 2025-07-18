@@ -8,6 +8,7 @@ authorization, encryption, and other security features.
 import hashlib
 import secrets
 from datetime import datetime, timedelta
+from typing import Any
 
 import jwt
 

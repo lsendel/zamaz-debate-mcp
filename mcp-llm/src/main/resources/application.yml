@@ -64,7 +64,7 @@ mcp:
       claude:
         enabled: ${CLAUDE_ENABLED:true}
         api-key: ${CLAUDE_API_KEY:}
-        base-url: ${CLAUDE_BASE_URL:https://api.anthropic.com}
+        base-url: ${CLAUDE_ENDPOINT}
         models:
           - name: claude-3-opus-20240229
             max-tokens: 100000
@@ -76,7 +76,7 @@ mcp:
       openai:
         enabled: ${OPENAI_ENABLED:true}
         api-key: ${OPENAI_API_KEY:}
-        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        base-url: ${OPENAI_ENDPOINT}
         models:
           - name: gpt-4
             max-tokens: 8192
@@ -88,7 +88,7 @@ mcp:
       gemini:
         enabled: ${GEMINI_ENABLED:true}
         api-key: ${GEMINI_API_KEY:}
-        base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+        base-url: ${GEMINI_ENDPOINT}
         models:
           - name: gemini-pro
             max-tokens: 32768
@@ -97,7 +97,7 @@ mcp:
       
       ollama:
         enabled: ${OLLAMA_ENABLED:false}
-        base-url: ${OLLAMA_BASE_URL:http://ollama:11434}
+        base-url: ${OLLAMA_ENDPOINT}
         models:
           - name: llama2:70b
             max-tokens: 4096

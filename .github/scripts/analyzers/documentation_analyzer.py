@@ -36,22 +36,22 @@ try:
     import ast
 
     import docutils.core
-    import docutils.parsers.rst
+    import docutils.parsers.rst  # noqa: F401
     import javalang
     import markdown
-    import mistune
-    import nltk
-    import numpy as np
-    import spacy
+    import mistune  # noqa: F401
+    import nltk  # noqa: F401
+    import numpy as np  # noqa: F401
+    import spacy  # noqa: F401
     from asciidoc import AsciiDocAPI
     from bs4 import BeautifulSoup
     from nltk.corpus import stopwords
     from nltk.stem import WordNetLemmatizer
     from nltk.tokenize import sent_tokenize, word_tokenize
-    from pygments import highlight
-    from pygments.formatters import HtmlFormatter
-    from pygments.lexers import get_lexer_by_name, guess_lexer
-    from sentence_transformers import SentenceTransformer
+    from pygments import highlight  # noqa: F401
+    from pygments.formatters import HtmlFormatter  # noqa: F401
+    from pygments.lexers import get_lexer_by_name, guess_lexer  # noqa: F401
+    from sentence_transformers import SentenceTransformer  # noqa: F401
     from sklearn.cluster import KMeans
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.metrics.pairwise import cosine_similarity
@@ -632,8 +632,8 @@ class CodeDocumentationExtractor:
             try:
                 with open(file_path, encoding="latin-1") as f:
                     content = f.read()
-            except:
-                logger.warning(f"Could not read file: {file_path}")
+            except Exception as e:
+                logger.warning(f"Could not read file: {file_path}, error: {e}")
                 return CodeFile(path=file_path, language="unknown")
 
         if file_extension == ".java":
@@ -1000,7 +1000,8 @@ class DocumentationQualityAnalyzer:
                 nltk.download("wordnet", quiet=True)
                 self.lemmatizer = WordNetLemmatizer()
                 self.stop_words = set(stopwords.words("english"))
-            except:
+            except Exception:
+                # NLTK dependencies are optional
                 pass
 
     def analyze_document(self, doc: DocumentationFile) -> DocumentationFile:
@@ -1226,7 +1227,8 @@ class DocumentationSearchIndex:
                 self.vectorizer = TfidfVectorizer(stop_words="english", max_features=5000)
                 # For semantic search, we'd use a sentence transformer
                 # self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
-            except:
+            except Exception:
+                # Optional imports may not be available
                 pass
 
     def build_index(self, docs: list[DocumentationFile]) -> None:

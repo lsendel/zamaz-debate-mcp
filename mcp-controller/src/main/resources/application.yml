@@ -85,8 +85,8 @@ mcp:
         debate: dbt:
   
   controller:
-    organization-service-url: ${ORGANIZATION_SERVICE_URL:http://mcp-organization:5005}
-    llm-service-url: ${LLM_SERVICE_URL:http://mcp-llm:5002}
+    organization-service-url: ${ORGANIZATION_SERVICE_URL}
+    llm-service-url: ${LLM_SERVICE_URL}
     
     # Hexagonal Architecture Configuration
     hexagonal:

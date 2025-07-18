@@ -6,6 +6,7 @@ Tests system behavior under high load conditions.
 
 import asyncio
 import os
+import random
 import secrets
 import statistics
 import sys

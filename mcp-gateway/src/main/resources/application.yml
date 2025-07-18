@@ -201,11 +201,7 @@ websocket:
   max-frame-size: 65536
   idle-timeout: 300000
   heartbeat-interval: 30000
-  allowed-origins:
-    - "http://localhost:3000"
-    - "http://localhost:3001"
-    - "http://127.0.0.1:3000"
-    - "http://127.0.0.1:3001"
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 # Email Configuration
 app:

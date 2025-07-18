@@ -50,15 +50,15 @@ class ComprehensiveAnalysisSystem:
         # Initialize optional components
         try:
             self.repo_analyzer = RepositoryAnalyzer(str(self.project_path))
-        except:
-            logger.warning("Repository analyzer not available")
+        except Exception as e:
+            logger.warning(f"Repository analyzer not available: {e}")
 
         if github_token:
             try:
                 self.github_client = GitHubAPIClient(github_token)
                 self.issue_tracker = IssueTracker(github_token)
-            except:
-                logger.warning("GitHub integration not available")
+            except Exception as e:
+                logger.warning(f"GitHub integration not available: {e}")
 
     def run_comprehensive_analysis(self) -> dict[str, Any]:
         """Run comprehensive analysis including documentation, code, and GitHub data."""
