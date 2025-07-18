@@ -10,7 +10,7 @@ This module provides comprehensive load testing capabilities including:
 """
 
 import asyncio
-import random
+import random  # noqa: S311
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field

@@ -616,7 +616,7 @@ async def http_client_session(timeout: int = 30) -> aiohttp.ClientSession:
 # Test utilities
 def generate_test_data(size: int, pattern: str = "random") -> list[dict[str, Any]]:
     """Generate test data for performance tests."""
-    import random
+    import random  # noqa: S311
     import string
 
     data = []
