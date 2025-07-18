@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zamaz.mcp.common.security.McpSecurityService;
 import com.zamaz.mcp.common.security.McpSecurityException;
+import com.zamaz.mcp.common.error.McpErrorHandler;
+import com.zamaz.mcp.common.error.McpErrorResponse;
 import com.zamaz.mcp.organization.dto.OrganizationDto;
 import com.zamaz.mcp.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +34,7 @@ public class McpToolsController {
     private final OrganizationService organizationService;
     private final ObjectMapper objectMapper;
     private final McpSecurityService mcpSecurityService;
+    private final McpErrorHandler mcpErrorHandler;
     
     @PostMapping("/create_organization")
     @Operation(summary = "Create organization (MCP Tool)")
@@ -54,18 +57,8 @@ public class McpToolsController {
             response.put("success", true);
             response.put("organization", organization);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in create_organization: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error creating organization: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "create_organization", null);
         }
     }
     
@@ -85,18 +78,8 @@ public class McpToolsController {
             response.put("success", true);
             response.put("organization", organization);
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in get_organization: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error getting organization: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "get_organization", null);
         }
     }
     
