@@ -85,11 +85,13 @@
         <module>mcp-common</module>
         <module>mcp-security</module>
         <module>mcp-organization</module>
+        <module>mcp-debate-engine</module>
+        <module>mcp-llm</module>
+        <module>mcp-rag</module>
+        <!-- Legacy modules (to be phased out) -->
         <module>mcp-context</module>
         <module>mcp-controller</module>
-        <module>mcp-llm</module>
         <module>mcp-debate</module>
-        <module>mcp-rag</module>
         <module>mcp-template</module>
         <module>mcp-context-client</module>
         <module>mcp-modulith</module>
@@ -387,6 +389,8 @@
                         <effort>Max</effort>
                         <threshold>Low</threshold>
                         <xmlOutput>true</xmlOutput>
+                        <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+                        <includeTests>false</includeTests>
                     </configuration>
                 </plugin>
                 

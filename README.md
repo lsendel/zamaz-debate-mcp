@@ -1,17 +1,27 @@
-# Zamaz Debate MCP Services
+# MCP Debate System
 
-A multi-service Model Context Protocol (MCP) system for managing AI-powered debates with multi-tenant support.
+A comprehensive Model Context Protocol (MCP) system for managing AI-powered debates with enterprise-grade multi-tenant support, real-time processing, and advanced monitoring.
+
+## 🚀 Features
+
+- **Multi-AI Debates**: Support for Claude, OpenAI, Google Gemini, and Llama
+- **Real-time Processing**: WebSocket-based live debate updates
+- **Multi-tenant Architecture**: Complete organization isolation and resource management
+- **Enterprise Security**: JWT authentication, rate limiting, audit logging
+- **Comprehensive Monitoring**: Prometheus metrics, Grafana dashboards, distributed tracing
+- **High Performance**: Redis caching, database optimization, async processing
+- **Production Ready**: CI/CD pipelines, blue-green deployments, disaster recovery
 
 ## Architecture Overview
 
-The system consists of four microservices:
+The system follows a microservices architecture with consolidated services for better performance:
 
-1. **mcp-context**: Multi-tenant context management service
-2. **mcp-llm**: LLM provider gateway (Claude, OpenAI, Gemini, Llama)
-3. **mcp-controller**: Debate orchestration service (replacing mcp-debate)
-4. **mcp-rag**: Retrieval Augmented Generation service
-5. **mcp-organization**: Multi-tenant organization management
-6. **mcp-template**: Template management service
+1. **mcp-organization**: Multi-tenant organization and user management
+2. **mcp-gateway**: API gateway with authentication and rate limiting
+3. **mcp-debate-engine**: Consolidated debate orchestration (replaces controller, context, debate)
+4. **mcp-llm**: LLM provider gateway with failover and caching
+5. **mcp-rag**: Retrieval Augmented Generation with vector search
+6. **mcp-security**: Cross-cutting security services
 
 ## Quick Start
 
@@ -49,23 +59,22 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-## Documentation
+## 📚 Documentation
 
-Comprehensive documentation is available in the `/docs` directory:
+Comprehensive documentation is organized for easy navigation:
 
-- [Architecture Documentation](./docs/architecture/): System design and architecture
-- [API Documentation](./docs/api/): API endpoints and usage
-- [Development Guide](./docs/development/): Setup and development workflow
-- [Operations Guide](./docs/operations/): Deployment and monitoring
-- [Security Guidelines](./docs/security/): Security best practices
+- **[📖 Complete Documentation Index](./docs/index.md)** - Start here!
+- **[🏗️ Architecture Guide](./docs/architecture/README.md)** - System design and components
+- **[🔌 API Reference](./docs/api/README.md)** - REST APIs, WebSocket, examples
+- **[💻 Development Guide](./docs/development/README.md)** - Setup, workflow, testing
+- **[🚀 Operations Manual](./docs/operations/README.md)** - Deployment, monitoring, maintenance
+- **[🔒 Security Documentation](./docs/security/README.md)** - Security architecture and best practices
 
-Each service also has its own documentation in its respective directory:
-
-- [MCP-LLM Service](./mcp-llm/docs/): LLM provider gateway
-- [MCP-RAG Service](./mcp-rag/docs/): Retrieval Augmented Generation
-- [MCP-Controller Service](./mcp-controller/docs/): Debate orchestration
-- [MCP-Organization Service](./mcp-organization/docs/): Organization management
-- [MCP-Template Service](./mcp-template/docs/): Template management
+### Quick Links
+- [Getting Started](./docs/development/setup.md)
+- [API Examples](./docs/api/DEBATE_CURL_EXAMPLES.md)
+- [Performance Testing](./performance-tests/README.md)
+- [CI/CD Pipeline](./docs/ci-cd-pipeline-guide.md)
 
 ## Service Details
 

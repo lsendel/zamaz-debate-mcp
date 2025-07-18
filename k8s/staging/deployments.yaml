@@ -1,0 +1,345 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-organization
+  namespace: staging
+  labels:
+    app: mcp-organization
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-organization
+  template:
+    metadata:
+      labels:
+        app: mcp-organization
+        environment: staging
+    spec:
+      containers:
+      - name: mcp-organization
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-organization:latest
+        ports:
+        - containerPort: 5005
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "staging"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 5005
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 5005
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: staging
+  labels:
+    app: mcp-gateway
+    environment: staging
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+        environment: staging
+    spec:
+      containers:
+      - name: mcp-gateway
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-gateway:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "staging"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: ORGANIZATION_SERVICE_URL
+          value: "http://mcp-organization-service:5005"
+        - name: DEBATE_SERVICE_URL
+          value: "http://mcp-debate-engine-service:5013"
+        - name: LLM_SERVICE_URL
+          value: "http://mcp-llm-service:5002"
+        - name: RAG_SERVICE_URL
+          value: "http://mcp-rag-service:5004"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-debate-engine
+  namespace: staging
+  labels:
+    app: mcp-debate-engine
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-debate-engine
+  template:
+    metadata:
+      labels:
+        app: mcp-debate-engine
+        environment: staging
+    spec:
+      containers:
+      - name: mcp-debate-engine
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-debate-engine:latest
+        ports:
+        - containerPort: 5013
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "staging"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: LLM_SERVICE_URL
+          value: "http://mcp-llm-service:5002"
+        - name: RAG_SERVICE_URL
+          value: "http://mcp-rag-service:5004"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 5013
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 5013
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-llm
+  namespace: staging
+  labels:
+    app: mcp-llm
+    environment: staging
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-llm
+  template:
+    metadata:
+      labels:
+        app: mcp-llm
+        environment: staging
+    spec:
+      containers:
+      - name: mcp-llm
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-llm:latest
+        ports:
+        - containerPort: 5002
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "staging"
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-keys
+              key: openai
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-keys
+              key: anthropic
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-keys
+              key: google
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 5002
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 5002
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-rag
+  namespace: staging
+  labels:
+    app: mcp-rag
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-rag
+  template:
+    metadata:
+      labels:
+        app: mcp-rag
+        environment: staging
+    spec:
+      containers:
+      - name: mcp-rag
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-rag:latest
+        ports:
+        - containerPort: 5004
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "staging"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: QDRANT_HOST
+          value: "qdrant-service"
+        - name: QDRANT_PORT
+          value: "6333"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 5004
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 5004
+          initialDelaySeconds: 30
+          periodSeconds: 5

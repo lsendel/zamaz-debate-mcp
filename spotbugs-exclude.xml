@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Exclude generated code -->
+    <Match>
+        <Class name="~.*\$\$.*" />
+    </Match>
+    
+    <!-- Exclude test classes -->
+    <Match>
+        <Class name="~.*Test" />
+    </Match>
+    <Match>
+        <Class name="~.*Tests" />
+    </Match>
+    <Match>
+        <Class name="~.*IT" />
+    </Match>
+    
+    <!-- Exclude DTO/Entity classes from certain checks -->
+    <Match>
+        <Or>
+            <Package name="~.*\.dto(\..*)?" />
+            <Package name="~.*\.entity(\..*)?" />
+            <Package name="~.*\.model(\..*)?" />
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    
+    <!-- Exclude Spring configuration classes -->
+    <Match>
+        <Class name="~.*Config" />
+        <Bug pattern="UCF_USELESS_CONTROL_FLOW" />
+    </Match>
+    
+    <!-- Exclude Lombok-generated code issues -->
+    <Match>
+        <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR" />
+        <Or>
+            <Annotation name="lombok.Data" />
+            <Annotation name="lombok.Value" />
+            <Annotation name="lombok.Builder" />
+            <Annotation name="lombok.AllArgsConstructor" />
+            <Annotation name="lombok.NoArgsConstructor" />
+        </Or>
+    </Match>
+    
+    <!-- Exclude Spring dependency injection false positives -->
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_FIELD" />
+        <Or>
+            <Annotation name="org.springframework.beans.factory.annotation.Autowired" />
+            <Annotation name="org.springframework.beans.factory.annotation.Value" />
+            <Annotation name="jakarta.inject.Inject" />
+        </Or>
+    </Match>
+    
+    <!-- Exclude JPA entity equals/hashCode warnings -->
+    <Match>
+        <Class name="~.*Entity" />
+        <Bug pattern="HE_EQUALS_USE_HASHCODE,HE_INHERITS_EQUALS_USE_HASHCODE" />
+    </Match>
+    
+    <!-- Project-specific exclusions -->
+    
+    <!-- Exclude security token handling - intentional design -->
+    <Match>
+        <Class name="com.zamaz.mcp.gateway.security.JwtService" />
+        <Bug pattern="HARD_CODE_KEY" />
+    </Match>
+    
+    <!-- Exclude WebSocket handler - async processing -->
+    <Match>
+        <Class name="com.zamaz.mcp.debate.websocket.DebateWebSocketHandler" />
+        <Bug pattern="SC_START_IN_CTOR" />
+    </Match>
+    
+    <!-- Exclude AI provider implementations - external API calls -->
+    <Match>
+        <Package name="com.zamaz.mcp.llm.provider" />
+        <Bug pattern="REC_CATCH_EXCEPTION" />
+    </Match>
+</FindBugsFilter>

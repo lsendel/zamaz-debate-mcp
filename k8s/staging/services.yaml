@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-organization-service
+  namespace: staging
+  labels:
+    app: mcp-organization
+    environment: staging
+spec:
+  selector:
+    app: mcp-organization
+  ports:
+    - protocol: TCP
+      port: 5005
+      targetPort: 5005
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway-service
+  namespace: staging
+  labels:
+    app: mcp-gateway
+    environment: staging
+spec:
+  selector:
+    app: mcp-gateway
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-debate-engine-service
+  namespace: staging
+  labels:
+    app: mcp-debate-engine
+    environment: staging
+spec:
+  selector:
+    app: mcp-debate-engine
+  ports:
+    - protocol: TCP
+      port: 5013
+      targetPort: 5013
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-llm-service
+  namespace: staging
+  labels:
+    app: mcp-llm
+    environment: staging
+spec:
+  selector:
+    app: mcp-llm
+  ports:
+    - protocol: TCP
+      port: 5002
+      targetPort: 5002
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-rag-service
+  namespace: staging
+  labels:
+    app: mcp-rag
+    environment: staging
+spec:
+  selector:
+    app: mcp-rag
+  ports:
+    - protocol: TCP
+      port: 5004
+      targetPort: 5004
+  type: ClusterIP

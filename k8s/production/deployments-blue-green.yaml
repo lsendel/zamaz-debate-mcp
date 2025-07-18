@@ -1,0 +1,286 @@
+# Blue Deployment (Current)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway-blue
+  namespace: production
+  labels:
+    app: mcp-gateway
+    version: blue
+    environment: production
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: mcp-gateway
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+        version: blue
+        environment: production
+    spec:
+      containers:
+      - name: mcp-gateway
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-gateway:stable
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+# Green Deployment (New)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway-green
+  namespace: production
+  labels:
+    app: mcp-gateway
+    version: green
+    environment: production
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: mcp-gateway
+      version: green
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+        version: green
+        environment: production
+    spec:
+      containers:
+      - name: mcp-gateway
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-gateway:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+# Similar pattern for other services...
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-debate-engine-blue
+  namespace: production
+  labels:
+    app: mcp-debate-engine
+    version: blue
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-debate-engine
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: mcp-debate-engine
+        version: blue
+        environment: production
+    spec:
+      containers:
+      - name: mcp-debate-engine
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-debate-engine:stable
+        ports:
+        - containerPort: 5013
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: LLM_SERVICE_URL
+          value: "http://mcp-llm:5002"
+        - name: RAG_SERVICE_URL
+          value: "http://mcp-rag:5004"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 5013
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 5013
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-debate-engine-green
+  namespace: production
+  labels:
+    app: mcp-debate-engine
+    version: green
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-debate-engine
+      version: green
+  template:
+    metadata:
+      labels:
+        app: mcp-debate-engine
+        version: green
+        environment: production
+    spec:
+      containers:
+      - name: mcp-debate-engine
+        image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-debate-engine:latest
+        ports:
+        - containerPort: 5013
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: LLM_SERVICE_URL
+          value: "http://mcp-llm:5002"
+        - name: RAG_SERVICE_URL
+          value: "http://mcp-rag:5004"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 5013
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 5013
+          initialDelaySeconds: 30
+          periodSeconds: 5

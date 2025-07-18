@@ -1,0 +1,134 @@
+# Main Service that switches between blue and green
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway
+  namespace: production
+  labels:
+    app: mcp-gateway
+    environment: production
+spec:
+  selector:
+    app: mcp-gateway
+    version: blue  # This label controls which deployment receives traffic
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+# Green Service for testing
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway-green
+  namespace: production
+  labels:
+    app: mcp-gateway
+    version: green
+    environment: production
+spec:
+  selector:
+    app: mcp-gateway
+    version: green
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+# Main Service for Debate Engine
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-debate-engine
+  namespace: production
+  labels:
+    app: mcp-debate-engine
+    environment: production
+spec:
+  selector:
+    app: mcp-debate-engine
+    version: blue  # This label controls which deployment receives traffic
+  ports:
+    - protocol: TCP
+      port: 5013
+      targetPort: 5013
+  type: ClusterIP
+---
+# Green Service for Debate Engine testing
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-debate-engine-green
+  namespace: production
+  labels:
+    app: mcp-debate-engine
+    version: green
+    environment: production
+spec:
+  selector:
+    app: mcp-debate-engine
+    version: green
+  ports:
+    - protocol: TCP
+      port: 5013
+      targetPort: 5013
+  type: ClusterIP
+---
+# Organization Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-organization
+  namespace: production
+  labels:
+    app: mcp-organization
+    environment: production
+spec:
+  selector:
+    app: mcp-organization
+    version: blue
+  ports:
+    - protocol: TCP
+      port: 5005
+      targetPort: 5005
+  type: ClusterIP
+---
+# LLM Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-llm
+  namespace: production
+  labels:
+    app: mcp-llm
+    environment: production
+spec:
+  selector:
+    app: mcp-llm
+    version: blue
+  ports:
+    - protocol: TCP
+      port: 5002
+      targetPort: 5002
+  type: ClusterIP
+---
+# RAG Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-rag
+  namespace: production
+  labels:
+    app: mcp-rag
+    environment: production
+spec:
+  selector:
+    app: mcp-rag
+    version: blue
+  ports:
+    - protocol: TCP
+      port: 5004
+      targetPort: 5004
+  type: ClusterIP

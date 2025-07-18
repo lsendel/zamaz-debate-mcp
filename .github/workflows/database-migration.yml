@@ -1,0 +1,121 @@
+name: Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run migrations'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      migration_type:
+        description: 'Type of migration'
+        required: true
+        default: 'migrate'
+        type: choice
+        options:
+        - migrate
+        - rollback
+        - validate
+      version:
+        description: 'Version to migrate/rollback to (optional)'
+        required: false
+        type: string
+
+jobs:
+  database-migration:
+    name: Run Database Migration
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Configure Database Connection
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "Configuring database connection for ${{ github.event.inputs.environment }}"
+          
+          # Create Flyway configuration
+          cat > flyway.conf <<EOF
+          flyway.url=${DB_URL}
+          flyway.user=${DB_USERNAME}
+          flyway.password=${DB_PASSWORD}
+          flyway.locations=filesystem:./mcp-debate-engine/src/main/resources/db/migration
+          flyway.baselineOnMigrate=true
+          flyway.validateOnMigrate=true
+          flyway.cleanDisabled=true
+          flyway.outOfOrder=false
+          flyway.mixed=false
+          EOF
+
+      - name: Download Flyway
+        run: |
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/9.22.3/flyway-commandline-9.22.3-linux-x64.tar.gz | tar xvz
+          sudo ln -s `pwd`/flyway-9.22.3/flyway /usr/local/bin
+
+      - name: Validate Migrations
+        if: github.event.inputs.migration_type == 'validate'
+        run: |
+          echo "Validating migrations..."
+          flyway validate
+
+      - name: Run Migrations
+        if: github.event.inputs.migration_type == 'migrate'
+        run: |
+          echo "Running migrations..."
+          flyway info
+          flyway migrate
+          flyway info
+
+      - name: Rollback Migration
+        if: github.event.inputs.migration_type == 'rollback'
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "Error: Version is required for rollback"
+            exit 1
+          fi
+          
+          echo "Rolling back to version ${{ github.event.inputs.version }}..."
+          flyway info
+          flyway undo -target=${{ github.event.inputs.version }}
+          flyway info
+
+      - name: Generate Migration Report
+        if: always()
+        run: |
+          flyway info > migration-report.txt
+          echo "## Migration Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat migration-report.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Migration Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-report
+          path: migration-report.txt
+
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Database Migration ${{ github.event.inputs.migration_type }} on ${{ github.event.inputs.environment }}
+            Status: ${{ job.status }}
+            Actor: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

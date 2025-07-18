@@ -1,0 +1,206 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - staging
+        - production
+      rollback_type:
+        description: 'Type of rollback'
+        required: true
+        default: 'deployment'
+        type: choice
+        options:
+        - deployment
+        - database
+        - both
+      target_version:
+        description: 'Target version/tag to rollback to'
+        required: true
+        type: string
+
+jobs:
+  rollback-deployment:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    if: github.event.inputs.rollback_type == 'deployment' || github.event.inputs.rollback_type == 'both'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_version }}
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up Kubeconfig
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > kubeconfig
+          else
+            echo "${{ secrets.STAGING_KUBECONFIG }}" | base64 -d > kubeconfig
+          fi
+          export KUBECONFIG=kubeconfig
+
+      - name: Get Current Deployment Info
+        run: |
+          echo "Current deployment state:"
+          kubectl get deployments -n ${{ github.event.inputs.environment }} -o wide
+          kubectl get pods -n ${{ github.event.inputs.environment }} -o wide
+
+      - name: Rollback Deployments
+        run: |
+          NAMESPACE=${{ github.event.inputs.environment }}
+          VERSION=${{ github.event.inputs.target_version }}
+          
+          # List of services to rollback
+          SERVICES=("mcp-organization" "mcp-gateway" "mcp-debate-engine" "mcp-llm" "mcp-rag")
+          
+          for SERVICE in "${SERVICES[@]}"; do
+            echo "Rolling back $SERVICE to version $VERSION..."
+            
+            # Update deployment with previous version
+            kubectl set image deployment/$SERVICE $SERVICE=ghcr.io/${{ github.repository }}/$SERVICE:$VERSION -n $NAMESPACE
+            
+            # Wait for rollout to complete
+            kubectl rollout status deployment/$SERVICE -n $NAMESPACE --timeout=300s
+          done
+
+      - name: Verify Rollback
+        run: |
+          echo "Verifying rollback..."
+          kubectl get deployments -n ${{ github.event.inputs.environment }} -o wide
+          kubectl get pods -n ${{ github.event.inputs.environment }} -o wide
+          
+          # Run health checks
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            URL="${{ secrets.PRODUCTION_URL }}"
+          else
+            URL="${{ secrets.STAGING_URL }}"
+          fi
+          
+          curl -f ${URL}/health || exit 1
+          echo "Health check passed"
+
+  rollback-database:
+    name: Rollback Database
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    if: github.event.inputs.rollback_type == 'database' || github.event.inputs.rollback_type == 'both'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_version }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Configure Database Connection
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          cat > flyway.conf <<EOF
+          flyway.url=${DB_URL}
+          flyway.user=${DB_USERNAME}
+          flyway.password=${DB_PASSWORD}
+          flyway.locations=filesystem:./mcp-debate-engine/src/main/resources/db/migration
+          flyway.baselineOnMigrate=true
+          flyway.validateOnMigrate=true
+          flyway.cleanDisabled=true
+          EOF
+
+      - name: Download Flyway
+        run: |
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/9.22.3/flyway-commandline-9.22.3-linux-x64.tar.gz | tar xvz
+          sudo ln -s `pwd`/flyway-9.22.3/flyway /usr/local/bin
+
+      - name: Backup Current Database State
+        run: |
+          echo "Creating database backup before rollback..."
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          pg_dump ${{ secrets.DB_URL }} > backup_${TIMESTAMP}.sql
+          
+          # Upload backup to S3 or other storage
+          # aws s3 cp backup_${TIMESTAMP}.sql s3://mcp-backups/${{ github.event.inputs.environment }}/
+
+      - name: Rollback Database
+        run: |
+          echo "Rolling back database to version ${{ github.event.inputs.target_version }}..."
+          flyway info
+          flyway undo -target=${{ github.event.inputs.target_version }}
+          flyway info
+
+  notify-rollback:
+    name: Notify Rollback Status
+    runs-on: ubuntu-latest
+    needs: [rollback-deployment, rollback-database]
+    if: always()
+    steps:
+      - name: Send Slack Notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            🔄 Emergency Rollback Completed
+            Environment: ${{ github.event.inputs.environment }}
+            Rollback Type: ${{ github.event.inputs.rollback_type }}
+            Target Version: ${{ github.event.inputs.target_version }}
+            Status: ${{ job.status }}
+            Initiated by: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Create Incident Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueTitle = `Rollback Incident: ${context.payload.inputs.environment} - ${new Date().toISOString()}`;
+            const issueBody = `
+            ## Rollback Incident Report
+            
+            **Environment:** ${context.payload.inputs.environment}
+            **Rollback Type:** ${context.payload.inputs.rollback_type}
+            **Target Version:** ${context.payload.inputs.target_version}
+            **Initiated By:** ${context.actor}
+            **Time:** ${new Date().toISOString()}
+            
+            ### Reason for Rollback
+            _To be filled by the operator_
+            
+            ### Impact Assessment
+            _To be filled by the operator_
+            
+            ### Root Cause
+            _To be investigated_
+            
+            ### Action Items
+            - [ ] Investigate root cause
+            - [ ] Fix identified issues
+            - [ ] Test fixes in staging
+            - [ ] Plan re-deployment
+            
+            ### Lessons Learned
+            _To be documented after investigation_
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['incident', 'rollback', context.payload.inputs.environment]
+            });

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.zamaz.mcp</groupId>
+        <artifactId>mcp-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>performance-tests</artifactId>
+    <packaging>jar</packaging>
+    <name>MCP Performance Tests</name>
+
+    <properties>
+        <gatling.version>3.10.5</gatling.version>
+        <gatling-maven-plugin.version>4.8.0</gatling-maven-plugin.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>${gatling.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>${gatling-maven-plugin.version}</version>
+                <configuration>
+                    <simulationsFolder>src/test/scala</simulationsFolder>
+                    <resultsFolder>target/gatling</resultsFolder>
+                    <configFolder>src/test/resources</configFolder>
+                    <dataFolder>src/test/resources/data</dataFolder>
+                    <bodiesFolder>src/test/resources/bodies</bodiesFolder>
+                    <simulationClass>${simulation}</simulationClass>
+                    <jvmArgs>
+                        <jvmArg>-Xmx2g</jvmArg>
+                        <jvmArg>-Xms1g</jvmArg>
+                        <jvmArg>-XX:+UseG1GC</jvmArg>
+                        <jvmArg>-XX:MaxGCPauseMillis=30</jvmArg>
+                        <jvmArg>-XX:G1HeapRegionSize=16m</jvmArg>
+                        <jvmArg>-XX:InitiatingHeapOccupancyPercent=75</jvmArg>
+                        <jvmArg>-XX:+ParallelRefProcEnabled</jvmArg>
+                    </jvmArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
