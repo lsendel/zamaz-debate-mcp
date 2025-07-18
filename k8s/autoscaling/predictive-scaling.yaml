@@ -21,9 +21,18 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: mcp-predictive-scaler
+      automountServiceAccountToken: true
       containers:
       - name: predictive-scaler
-        image: mcp-debate/predictive-scaler:latest
+        image: mcp-debate/predictive-scaler:v1.0.0
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         ports:
         - containerPort: 8080
           name: http-metrics
@@ -48,9 +57,11 @@ spec:
           requests:
             cpu: 500m
             memory: 1Gi
+            ephemeral-storage: 2Gi
           limits:
             cpu: 2000m
             memory: 4Gi
+            ephemeral-storage: 5Gi
         livenessProbe:
           httpGet:
             path: /health
@@ -300,6 +311,7 @@ kind: ServiceAccount
 metadata:
   name: mcp-predictive-scaler
   namespace: monitoring
+automountServiceAccountToken: false
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -316,10 +328,10 @@ rules:
   resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "watch", "create", "update", "patch"]
 - apiGroups: ["metrics.k8s.io"]
-  resources: ["*"]
+  resources: ["nodes", "pods"]
   verbs: ["get", "list"]
 - apiGroups: ["custom.metrics.k8s.io"]
-  resources: ["*"]
+  resources: ["pods", "namespaces"]
   verbs: ["get", "list"]
 - apiGroups: ["external.metrics.k8s.io"]
   resources: ["*"]

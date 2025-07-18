@@ -1,11 +1,15 @@
 spring:
   application:
     name: mcp-llm
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    timeout: 2000
-    connect-timeout: 2000
+  
+  # Redis configuration imported from common module
+  config:
+    import:
+      - "classpath:application-redis.yml"
+  
+  profiles:
+    include:
+      - redis-medium-throughput
 
 server:
   port: ${SERVER_PORT:5002}

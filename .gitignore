@@ -56,14 +56,67 @@ package-lock.json
 
 # IDE files
 .idea/
-.idea/zencoder/
+.idea/*
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# JetBrains specific
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/.gitignore
+.idea/misc.xml
+.idea/compiler.xml
+.idea/inspectionProfiles/
+.idea/artifacts/
+.idea/jarRepositories.xml
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.classpath
+.c9/
+*.launch
+.buildpath
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
 
 # Build files
 build/
 dist/
+out/
 
-# Temporary files
-*.tmp
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 *~
 
 # Application-specific ignores
@@ -86,3 +139,129 @@ tools/sonar-cnes-report*.jar
 .github/tests/__pycache__/
 scripts/sonarqube/__pycache__/
 .kiro/specs/.DS_Store
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker files
+.dockerignore.bak
+*.dockerfile.bak
+
+# Kubernetes secrets
+**/secrets/
+**/secret.yaml
+**/secret.yml
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data/
+dumps/
+
+# Log files and monitoring
+logs/
+*.log
+*.log.*
+monitoring/grafana/data/
+monitoring/prometheus/data/
+test-evidence/
+test_probe/
+
+# Performance test results
+performance-tests/results/
+load-tests/target/
+gatling-results/
+jmeter-results/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*-backup
+*-original
+
+# Cache directories
+.cache/
+.npm/
+.yarn/
+.pnp.*
+yarn-error.log
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+.env.production
+.env.local
+.env.*.local
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# IntelliJ IDEA specific ignores that might not be covered
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Istio generated files
+istio-*/
+istio.yaml
+
+# Generated documentation
+site/
+_site/
+
+# Test coverage reports
+target/site/jacoco/
+target/test-results/
+
+# Security scan results
+security-test-reports/
+penetration-test-results/
+
+# Local development files
+local.properties
+local-*.yml
+local-*.yaml
+*-local.*
+
+# Temporary build artifacts
+*.class.tmp
+*.jar.tmp

@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,15 +65,17 @@ public class DebateService {
         return toDto(debate);
     }
 
+    @Cacheable(value = "debates", key = "#id")
     public DebateDto getDebate(UUID id) {
-        log.debug("Getting debate with ID: {}", id);
+        log.debug("Getting debate with ID: {} (cache miss)", id);
         Debate debate = debateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + id));
         return toDto(debate);
     }
     
+    @Cacheable(value = "debate-lists", key = "#organizationId + ':' + #status + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
     public Page<DebateDto> listDebates(UUID organizationId, DebateStatus status, Pageable pageable) {
-        log.debug("Listing debates for organization: {}, status: {}", organizationId, status);
+        log.debug("Listing debates for organization: {}, status: {} (cache miss)", organizationId, status);
         
         Specification<Debate> spec = Specification.where(DebateSpecifications.hasOrganizationId(organizationId))
                 .and(DebateSpecifications.hasStatus(status));
@@ -81,6 +86,8 @@ public class DebateService {
         return debates;
     }
     
+    @CachePut(value = "debates", key = "#id")
+    @CacheEvict(value = "debate-lists", allEntries = true)
     public DebateDto updateDebate(UUID id, DebateDto.UpdateDebateRequest request) {
         log.debug("Updating debate with ID: {}", id);
         
@@ -112,6 +119,7 @@ public class DebateService {
         return toDto(debate);
     }
     
+    @CacheEvict(value = {"debates", "debate-lists", "debate-results"}, key = "#id")
     public void deleteDebate(UUID id) {
         log.debug("Deleting debate with ID: {}", id);
         
@@ -200,8 +208,9 @@ public class DebateService {
                 .collect(Collectors.toList());
     }
     
+    @Cacheable(value = "debate-results", key = "#debateId", condition = "#result?.status?.name() == 'COMPLETED'")
     public DebateResultDto getResults(UUID debateId) {
-        log.debug("Getting results for debate: {}", debateId);
+        log.debug("Getting results for debate: {} (cache miss)", debateId);
         
         Debate debate = debateRepository.findById(debateId)
                 .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + debateId));

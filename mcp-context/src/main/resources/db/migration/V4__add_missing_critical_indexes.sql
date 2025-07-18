@@ -1,5 +1,6 @@
 -- Critical missing indexes for context module
 -- Adds essential indexes for multi-tenant context management and message retrieval
+-- Note: 'messages' table references are intentional - different indexes serve different query patterns
 
 DO $$
 DECLARE

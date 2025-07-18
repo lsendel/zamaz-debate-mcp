@@ -34,11 +34,14 @@ spring:
           region.factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
     open-in-view: false
   
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    timeout: 2000
-    connect-timeout: 2000
+  # Redis configuration imported from common module
+  config:
+    import:
+      - "classpath:application-redis.yml"
+  
+  profiles:
+    include:
+      - redis-high-throughput
   
   flyway:
     enabled: true

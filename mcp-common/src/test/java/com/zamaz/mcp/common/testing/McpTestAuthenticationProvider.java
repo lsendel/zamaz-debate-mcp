@@ -127,12 +127,12 @@ public class McpTestAuthenticationProvider {
             userId, "jwt-token", authorities);
         
         // In a real JWT implementation, the token would be stored in credentials
-        auth.setDetails(Map.of(
-            "userId", userId,
-            "organizationId", organizationId,
-            "tier", tier,
-            "tokenType", "JWT"
-        ));
+        Map<String, Object> details = new HashMap<>();
+        details.put("userId", userId);
+        details.put("organizationId", organizationId);
+        details.put("tier", tier);
+        details.put("tokenType", "JWT");
+        auth.setDetails(details);
 
         return auth;
     }

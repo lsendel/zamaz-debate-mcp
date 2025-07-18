@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JSON Configuration Validation",
+  "description": "Schema for validating JSON configuration files",
+  "type": "object",
+  "definitions": {
+    "packageJson": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9-]+)?$"
+        },
+        "description": {
+          "type": "string"
+        },
+        "main": {
+          "type": "string"
+        },
+        "scripts": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9:-]+$": {
+              "type": "string"
+            }
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9@/-]+$": {
+              "type": "string"
+            }
+          }
+        },
+        "devDependencies": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9@/-]+$": {
+              "type": "string"
+            }
+          }
+        },
+        "peerDependencies": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9@/-]+$": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["name", "version"],
+      "additionalProperties": true
+    },
+    "tsconfigJson": {
+      "type": "object",
+      "properties": {
+        "compilerOptions": {
+          "type": "object",
+          "properties": {
+            "target": {
+              "type": "string",
+              "enum": ["ES3", "ES5", "ES6", "ES2015", "ES2016", "ES2017", "ES2018", "ES2019", "ES2020", "ES2021", "ES2022", "ESNext"]
+            },
+            "module": {
+              "type": "string",
+              "enum": ["CommonJS", "AMD", "System", "UMD", "ES6", "ES2015", "ES2020", "ESNext", "None"]
+            },
+            "lib": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "strict": {
+              "type": "boolean"
+            },
+            "esModuleInterop": {
+              "type": "boolean"
+            },
+            "skipLibCheck": {
+              "type": "boolean"
+            },
+            "forceConsistentCasingInFileNames": {
+              "type": "boolean"
+            }
+          }
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extends": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "eslintrcJson": {
+      "type": "object",
+      "properties": {
+        "env": {
+          "type": "object"
+        },
+        "extends": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "parser": {
+          "type": "string"
+        },
+        "parserOptions": {
+          "type": "object"
+        },
+        "plugins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rules": {
+          "type": "object"
+        },
+        "settings": {
+          "type": "object"
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/packageJson"
+    },
+    {
+      "$ref": "#/definitions/tsconfigJson"
+    },
+    {
+      "$ref": "#/definitions/eslintrcJson"
+    }
+  ]
+}

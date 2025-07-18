@@ -1,0 +1,275 @@
+# Performance Monitoring and Caching Configuration
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  application:
+    name: ${spring.application.name:mcp-service}
+    version: ${BUILD_VERSION:1.0.0}
+    environment: ${ENVIRONMENT:development}
+  
+  # Prometheus Metrics
+  prometheus:
+    enabled: true
+    endpoint: /actuator/prometheus
+    step: 30s
+  
+  # Metrics Collection
+  metrics:
+    enabled: true
+    export:
+      interval: 30s
+    distribution:
+      percentiles: 0.5,0.75,0.95,0.99
+      sla:
+        enabled: true
+        boundaries: 50ms,100ms,200ms,500ms,1s,2s,5s
+    
+  # JVM Metrics
+  jvm:
+    enabled: true
+    gc:
+      enabled: true
+    memory:
+      enabled: true
+    threads:
+      enabled: true
+  
+  # Database Metrics
+  database:
+    enabled: true
+    hikari:
+      enabled: true
+  
+  # Custom Metrics
+  custom:
+    enabled: true
+    business:
+      enabled: true
+  
+  # Alerting
+  alerting:
+    enabled: true
+    thresholds:
+      error_rate: 0.05  # 5% error rate threshold
+      response_time_p99: 2000  # 2 seconds
+      cpu_usage: 0.8  # 80%
+      memory_usage: 0.85  # 85%
+  
+  # Profiling
+  profiling:
+    enabled: false
+    duration: 60s
+    interval: 5m
+
+# Cache Configuration
+cache:
+  type: redis  # redis, caffeine, or multi-level
+  enable-statistics: true
+  
+  # Redis Configuration
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    ttl: ${REDIS_TTL:3600}  # Default TTL in seconds
+    connection-timeout: 2000
+    command-timeout: 5000
+    database: 0
+    
+    # Connection Pool
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 2000
+  
+  # Caffeine Local Cache
+  caffeine:
+    spec: maximumSize=10000,expireAfterWrite=5m
+    
+  # Cache-specific TTLs
+  ttl:
+    contexts: 86400  # 24 hours
+    llm-responses: 3600  # 1 hour
+    providers: 300  # 5 minutes
+    debates: 7200  # 2 hours
+    users: 900  # 15 minutes
+    organizations: 43200  # 12 hours
+    system: 1800  # 30 minutes
+  
+  # Cache Warming
+  warming:
+    enabled: true
+    startup: true
+    refresh:
+      interval: 3600000  # 1 hour in milliseconds
+      
+  # Cache Statistics
+  statistics:
+    enabled: true
+    export-interval: 60s
+
+# Spring Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,caches,env,configprops
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    caches:
+      enabled: true
+  
+  # Health Indicators
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+    ping:
+      enabled: true
+  
+  # Metrics
+  metrics:
+    enable:
+      all: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.75,0.95,0.99
+      sla:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s,2s
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:development}
+    
+    # Export Configuration
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+
+# Logging Configuration for Performance
+logging:
+  level:
+    com.zamaz.mcp.common.monitoring: DEBUG
+    com.zamaz.mcp.common.cache: DEBUG
+    org.springframework.cache: INFO
+    io.lettuce.core: WARN
+    com.github.benmanes.caffeine: WARN
+  
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Performance Tuning
+spring:
+  # Database Connection Pool
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  # JPA Performance
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+          fetch_size: 50
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+        query:
+          plan_cache_max_size: 2048
+  
+  # Web Performance
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+  
+  # Task Execution
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 16
+        queue-capacity: 100
+        keep-alive: 60s
+      thread-name-prefix: task-
+    scheduling:
+      pool:
+        size: 4
+      thread-name-prefix: scheduling-
+
+# Server Performance
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+
+# Application-specific Performance Settings
+app:
+  performance:
+    # LLM Performance
+    llm:
+      timeout: ${LLM_TIMEOUT_SECONDS:120}s
+      max-retries: ${LLM_MAX_RETRIES:3}
+      circuit-breaker:
+        enabled: true
+        failure-threshold: 50
+        timeout: 60s
+        reset-timeout: 120s
+    
+    # Context Performance
+    context:
+      max-size: ${MAX_CONTEXT_SIZE_MB:10}MB
+      max-messages: ${MAX_MESSAGES_PER_CONTEXT:10000}
+      batch-size: 100
+    
+    # Debate Performance
+    debate:
+      max-participants: ${MAX_DEBATE_PARTICIPANTS:10}
+      max-rounds: ${MAX_DEBATE_ROUNDS:10}
+      turn-timeout: ${DEFAULT_TURN_TIMEOUT_SECONDS:300}s
+    
+    # Rate Limiting
+    rate-limiting:
+      enabled: true
+      per-minute: ${RATE_LIMIT_PER_MINUTE:60}
+      per-hour: ${RATE_LIMIT_PER_HOUR:1000}
+      window-size: 60s
+    
+    # Async Processing
+    async:
+      core-pool-size: 4
+      max-pool-size: 16
+      queue-capacity: 200
+      keep-alive: 300s

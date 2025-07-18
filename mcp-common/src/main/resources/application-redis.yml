@@ -1,0 +1,142 @@
+# Standardized Redis Configuration for MCP Services
+# Include this in service applications with: spring.config.import=classpath:application-redis.yml
+
+spring:
+  data:
+    redis:
+      # Environment-aware host configuration
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:#{null}}
+      database: ${REDIS_DATABASE:0}
+      
+      # Connection timeouts
+      timeout: ${REDIS_TIMEOUT:2000ms}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2000ms}
+      
+      # SSL support for production
+      ssl: ${REDIS_SSL:false}
+      
+      # Lettuce connection pool configuration
+      lettuce:
+        pool:
+          # Default pool size (can be overridden per service)
+          max-active: ${REDIS_POOL_MAX_ACTIVE:16}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:4}
+          max-wait: ${REDIS_POOL_MAX_WAIT:2000ms}
+          
+          # Connection validation
+          test-on-borrow: ${REDIS_POOL_TEST_ON_BORROW:true}
+          test-on-return: ${REDIS_POOL_TEST_ON_RETURN:false}
+          test-while-idle: ${REDIS_POOL_TEST_WHILE_IDLE:true}
+          
+          # Pool maintenance
+          time-between-eviction-runs: ${REDIS_POOL_EVICTION_INTERVAL:30000ms}
+          min-evictable-idle-time: ${REDIS_POOL_MIN_EVICTABLE_IDLE:60000ms}
+          
+        # Client options
+        shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:100ms}
+        cluster:
+          refresh:
+            adaptive: ${REDIS_CLUSTER_ADAPTIVE_REFRESH:false}
+            period: ${REDIS_CLUSTER_REFRESH_PERIOD:30s}
+
+---
+# High-throughput service profile (Gateway, Controller)
+spring:
+  config:
+    activate:
+      on-profile: redis-high-throughput
+
+  data:
+    redis:
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 3000ms
+
+---
+# Medium-throughput service profile (Context, Organization, LLM)  
+spring:
+  config:
+    activate:
+      on-profile: redis-medium-throughput
+
+  data:
+    redis:
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
+          max-wait: 2000ms
+
+---
+# Low-throughput service profile (Template, RAG, Pattern Recognition)
+spring:
+  config:
+    activate:
+      on-profile: redis-low-throughput
+
+  data:
+    redis:
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 1000ms
+
+---
+# Development environment overrides
+spring:
+  config:
+    activate:
+      on-profile: development
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+          min-idle: 2
+
+---
+# Docker/Container environment overrides
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+      timeout: 3000ms
+
+---
+# Production environment overrides
+spring:
+  config:
+    activate:
+      on-profile: production
+
+  data:
+    redis:
+      ssl: true
+      timeout: 1000ms
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 8
+          max-wait: 1000ms
+          test-on-borrow: true
+          test-while-idle: true

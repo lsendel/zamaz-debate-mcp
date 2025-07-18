@@ -70,6 +70,53 @@ function checkPerformanceDegradation(endpoint, response) {
   }
 }
 
+// Helper function to create debate for resource cleanup testing
+function createSoakTestDebate() {
+  const debatePayload = JSON.stringify({
+    title: `Soak Test Debate ${Date.now()}`,
+    topic: 'Long running stability test',
+    organizationId: 'soak-test-org',
+    participants: [
+      {
+        name: 'StabilityBot1',
+        position: 'PRO',
+        aiProvider: 'CLAUDE',
+        model: 'claude-3-opus-20240229'
+      },
+      {
+        name: 'StabilityBot2',
+        position: 'CON',
+        aiProvider: 'OPENAI',
+        model: 'gpt-4'
+      }
+    ],
+    config: {
+      maxRounds: 2,
+      responseTimeout: 10000,
+      maxResponseLength: 200
+    }
+  });
+
+  const createResponse = http.post(
+    `${BASE_URL}/api/debate/create`,
+    debatePayload,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${JWT_TOKEN}`
+      },
+      tags: { name: 'CreateDebateSoakTest' },
+      timeout: '20s'
+    }
+  );
+
+  check(createResponse, {
+    'debate created': (r) => [200, 429].includes(r.status), // 429 is acceptable (rate limit)
+  });
+
+  return createResponse;
+}
+
 // Helper function to calculate baseline averages
 function calculateBaselineAverages() {
   for (const [key, times] of Object.entries(baselineResponseTimes)) {
@@ -118,48 +165,7 @@ export default function () {
 
   // Every 100 iterations, perform a more complex operation
   if (__ITER % 100 === 0) {
-    // Create a debate to test resource cleanup
-    const debatePayload = JSON.stringify({
-      title: `Soak Test Debate ${Date.now()}`,
-      topic: 'Long running stability test',
-      organizationId: 'soak-test-org',
-      participants: [
-        {
-          name: 'StabilityBot1',
-          position: 'PRO',
-          aiProvider: 'CLAUDE',
-          model: 'claude-3-opus-20240229'
-        },
-        {
-          name: 'StabilityBot2',
-          position: 'CON',
-          aiProvider: 'OPENAI',
-          model: 'gpt-4'
-        }
-      ],
-      config: {
-        maxRounds: 2,
-        responseTimeout: 10000,
-        maxResponseLength: 200
-      }
-    });
-
-    const createResponse = http.post(
-      `${BASE_URL}/api/debate/create`,
-      debatePayload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${JWT_TOKEN}`
-        },
-        tags: { name: 'CreateDebateSoakTest' },
-        timeout: '20s'
-      }
-    );
-
-    check(createResponse, {
-      'debate created': (r) => [200, 429].includes(r.status), // 429 is acceptable (rate limit)
-    });
+    createSoakTestDebate();
   }
 }
 

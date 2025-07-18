@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Suppress checks for generated files -->
+    <suppress checks=".*" files=".*[\\/]target[\\/].*"/>
+    <suppress checks=".*" files=".*[\\/]generated[\\/].*"/>
+    <suppress checks=".*" files=".*[\\/]META-INF[\\/].*"/>
+    
+    <!-- Suppress checks for test files -->
+    <suppress checks="JavadocMethod|JavadocType" files=".*Test\.java"/>
+    <suppress checks="JavadocMethod|JavadocType" files=".*Tests\.java"/>
+    <suppress checks="JavadocMethod|JavadocType" files=".*IT\.java"/>
+    
+    <!-- Suppress checks for Spring Boot main classes -->
+    <suppress checks="HideUtilityClassConstructor" files=".*Application\.java"/>
+    
+    <!-- Suppress checks for configuration classes -->
+    <suppress checks="JavadocMethod" files=".*Config\.java"/>
+    <suppress checks="JavadocMethod" files=".*Configuration\.java"/>
+    
+    <!-- Suppress checks for DTOs and entities -->
+    <suppress checks="JavadocMethod|JavadocType" files=".*[\\/]dto[\\/].*"/>
+    <suppress checks="JavadocMethod|JavadocType" files=".*[\\/]entity[\\/].*"/>
+    <suppress checks="JavadocMethod|JavadocType" files=".*[\\/]model[\\/].*"/>
+    
+    <!-- MCP-specific suppressions -->
+    <suppress checks="ParameterNumber" files=".*Controller\.java"/>
+    <suppress checks="LineLength" files=".*[\\/]config[\\/].*"/>
+</suppressions>

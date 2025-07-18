@@ -1,0 +1,67 @@
+# Global Linting Configuration
+# This file defines global rules and settings that apply to all projects
+
+# Global settings
+global:
+  # Quality thresholds
+  thresholds:
+    max_errors: 0
+    max_warnings: 10
+    min_coverage: 0.80
+    max_complexity: 10
+  
+  # File patterns to exclude from all linting
+  exclude_patterns:
+    - "**/target/**"
+    - "**/build/**"
+    - "**/node_modules/**"
+    - "**/.git/**"
+    - "**/logs/**"
+    - "**/data/**"
+    - "**/*.log"
+    - "**/.DS_Store"
+    - "**/generated/**"
+    - "**/META-INF/**"
+  
+  # Parallel execution settings
+  parallel_execution: true
+  max_threads: 4
+  
+  # Reporting settings
+  report_formats:
+    - "console"
+    - "json"
+    - "html"
+  
+  # Auto-fix settings
+  auto_fix:
+    enabled: true
+    safe_fixes_only: true
+
+# Service-specific overrides
+services:
+  java_services:
+    - "mcp-*"
+    - "github-integration"
+  
+  frontend_services:
+    - "debate-ui"
+  
+  config_services:
+    - "infrastructure"
+    - "k8s"
+    - "docker"
+
+# Integration settings
+integrations:
+  ide:
+    vscode: true
+    intellij: true
+  
+  ci_cd:
+    github_actions: true
+    pre_commit_hooks: true
+  
+  reporting:
+    sonarqube: true
+    prometheus_metrics: true

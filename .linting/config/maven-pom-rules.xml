@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Maven POM Validation Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 
+         https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>PMD rules for Maven POM files</description>
+
+    <!-- Custom rules for Maven POM validation -->
+    <rule name="RequiredElements"
+          language="xml"
+          message="POM must contain required elements"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            Maven POM files must contain required elements like groupId, artifactId, version
+        </description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //project[not(groupId) and not(parent/groupId)] |
+                    //project[not(artifactId)] |
+                    //project[not(version) and not(parent/version)]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="VersionFormat"
+          language="xml"
+          message="Version should follow semantic versioning"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            Version numbers should follow semantic versioning format (x.y.z)
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //version[not(matches(text(), '^\d+\.\d+\.\d+(-[a-zA-Z0-9-]+)?$'))]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="DependencyVersions"
+          language="xml"
+          message="Dependencies should have explicit versions"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            All dependencies should have explicit version numbers
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //dependencies/dependency[not(version) and not(../../dependencyManagement)]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="PluginVersions"
+          language="xml"
+          message="Plugins should have explicit versions"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            All plugins should have explicit version numbers
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //plugins/plugin[not(version) and not(../../pluginManagement)]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="PropertiesOrganization"
+          language="xml"
+          message="Properties should be organized and documented"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            Properties section should be well organized with comments
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //properties[count(child::*) > 10 and not(comment())]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="DuplicateDependencies"
+          language="xml"
+          message="Duplicate dependencies detected"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            Check for duplicate dependency declarations
+        </description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //dependency[groupId = following-sibling::dependency/groupId 
+                               and artifactId = following-sibling::dependency/artifactId]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="TestDependencyScope"
+          language="xml"
+          message="Test dependencies should have test scope"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            Dependencies used only for testing should have test scope
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //dependency[contains(artifactId, 'test') and not(scope = 'test')] |
+                    //dependency[contains(artifactId, 'junit') and not(scope = 'test')] |
+                    //dependency[contains(artifactId, 'mockito') and not(scope = 'test')]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="RepositoryConfiguration"
+          language="xml"
+          message="Avoid using snapshot repositories in production"
+          class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>
+            Production builds should not use snapshot repositories
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                    //repository[contains(url, 'snapshot')]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+</ruleset>

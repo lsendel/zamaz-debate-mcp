@@ -165,7 +165,7 @@ class DockerPerformanceTestRunner:
             if self.config.cleanup_after_test:
                 test_container.remove(force=True)
     
-    async def cleanup_test_environment(self):
+    def cleanup_test_environment(self):
         """Cleanup Docker test environment."""
         self.logger.info("Cleaning up Docker test environment")
         
@@ -194,7 +194,7 @@ class DockerPerformanceTestRunner:
             except Exception as e:
                 self.logger.error(f"Error removing network: {e}")
     
-    async def _start_service(self, service_config: Dict[str, Any]):
+    def _start_service(self, service_config: Dict[str, Any]):
         """Start a test service container."""
         service_name = service_config['name']
         
@@ -258,7 +258,7 @@ class DockerPerformanceTestRunner:
     async def _check_postgres_health(self, container: Container):
         """Check PostgreSQL health."""
         max_attempts = 30
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             try:
                 result = container.exec_run(
                     "pg_isready -h localhost -U testuser -d testdb",
@@ -277,7 +277,7 @@ class DockerPerformanceTestRunner:
     async def _check_redis_health(self, container: Container):
         """Check Redis health."""
         max_attempts = 30
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             try:
                 result = container.exec_run("redis-cli ping")
                 if result.exit_code == 0 and b"PONG" in result.output:
@@ -293,7 +293,7 @@ class DockerPerformanceTestRunner:
     async def _check_rabbitmq_health(self, container: Container):
         """Check RabbitMQ health."""
         max_attempts = 60
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             try:
                 result = container.exec_run("rabbitmq-diagnostics ping")
                 if result.exit_code == 0:
@@ -309,7 +309,7 @@ class DockerPerformanceTestRunner:
     async def _wait_for_container_running(self, container: Container):
         """Wait for container to be running."""
         max_attempts = 30
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             container.reload()
             if container.status == 'running':
                 self.logger.info(f"Container {container.name} is running")
@@ -549,56 +549,59 @@ RUN mkdir -p /artifacts
 CMD ["python", "run_tests.py"]
 """
     
+    def _find_artifacts_volume(self, container: Container):
+        """Find the artifacts volume for a container."""
+        for volume_name, volume in self.test_volumes.items():
+            if container.id[:12] in volume_name:
+                return volume
+        return None
+
+    def _extract_artifacts_from_volume(self, artifacts_volume, temp_dir: str):
+        """Extract artifacts from Docker volume to temporary directory."""
+        temp_container = self.docker_client.containers.run(
+            "alpine:latest",
+            command=f"tar -czf /tmp/artifacts.tar.gz -C /artifacts .",
+            volumes={
+                artifacts_volume.name: {'bind': '/artifacts', 'mode': 'ro'}
+            },
+            detach=True,
+            remove=False
+        )
+        
+        temp_container.wait()
+        
+        # Copy artifacts
+        bits, _ = temp_container.get_archive('/tmp/artifacts.tar.gz')
+        
+        with open(Path(temp_dir) / 'artifacts.tar.gz', 'wb') as f:
+            for chunk in bits:
+                f.write(chunk)
+        
+        # Extract artifacts
+        subprocess.run([
+            'tar', '-xzf', str(Path(temp_dir) / 'artifacts.tar.gz'),
+            '-C', temp_dir
+        ], check=True)
+        
+        temp_container.remove()
+
     async def _collect_test_results(self, container: Container) -> Dict[str, Any]:
         """Collect test results from container."""
         try:
-            # Get artifacts volume
-            artifacts_volume = None
-            for volume_name, volume in self.test_volumes.items():
-                if container.id[:12] in volume_name:
-                    artifacts_volume = volume
-                    break
-            
+            artifacts_volume = self._find_artifacts_volume(container)
             if not artifacts_volume:
                 return {'error': 'Artifacts volume not found'}
             
-            # Create temporary directory to extract artifacts
             temp_dir = tempfile.mkdtemp(prefix="test-results-")
             
             try:
-                # Extract artifacts from volume
-                temp_container = self.docker_client.containers.run(
-                    "alpine:latest",
-                    command=f"tar -czf /tmp/artifacts.tar.gz -C /artifacts .",
-                    volumes={
-                        artifacts_volume.name: {'bind': '/artifacts', 'mode': 'ro'}
-                    },
-                    detach=True,
-                    remove=False
-                )
-                
-                temp_container.wait()
-                
-                # Copy artifacts
-                bits, _ = temp_container.get_archive('/tmp/artifacts.tar.gz')
-                
-                with open(Path(temp_dir) / 'artifacts.tar.gz', 'wb') as f:
-                    for chunk in bits:
-                        f.write(chunk)
-                
-                # Extract artifacts
-                subprocess.run([
-                    'tar', '-xzf', str(Path(temp_dir) / 'artifacts.tar.gz'),
-                    '-C', temp_dir
-                ], check=True)
+                self._extract_artifacts_from_volume(artifacts_volume, temp_dir)
                 
                 # Load test results
                 results_file = Path(temp_dir) / 'test_results.json'
                 if results_file.exists():
                     with open(results_file, 'r') as f:
                         return json.load(f)
-                
-                temp_container.remove()
                 
             finally:
                 shutil.rmtree(temp_dir, ignore_errors=True)

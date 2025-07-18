@@ -48,6 +48,15 @@ help: ## Show this help message
 	@echo '  make test-docker        - Test Docker containers and health'
 	@echo '  make test-e2e-full      - Run full end-to-end tests'
 	@echo '  make test-performance   - Run performance and load tests'
+	@echo ''
+	@echo '🔍 CODE QUALITY & LINTING:'
+	@echo '  make lint-all           - Run all linting checks'
+	@echo '  make lint-java          - Lint Java code (Checkstyle, SpotBugs, PMD)'
+	@echo '  make lint-frontend      - Lint React TypeScript code'
+	@echo '  make lint-config        - Lint configuration files (YAML, JSON)'
+	@echo '  make lint-docs          - Lint documentation (Markdown)'
+	@echo '  make lint-fix           - Auto-fix linting issues where possible'
+	@echo '  make lint-report        - Generate comprehensive linting report'
 	@echo '  make test-security      - Run security tests'
 	@echo '  make test-all-github    - Run all GitHub integration tests'
 	@echo '  make test-report        - Generate test report with evidence'
@@ -538,3 +547,154 @@ test-github-monitoring: ## Test monitoring stack (Prometheus, Grafana, Loki)
 	@echo -n "Loki: "
 	@curl -s http://localhost:3100/ready > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(RED)✗ Not running$(NC)"
 	@echo "$(GREEN)✅ Monitoring stack test complete$(NC)"
+
+# Code Quality and Linting Commands
+lint-all: ## Run all linting checks
+	@echo "$(BLUE)🔍 Running comprehensive linting...$(NC)"
+	@$(MAKE) lint-java
+	@$(MAKE) lint-frontend
+	@$(MAKE) lint-config
+	@$(MAKE) lint-docs
+	@echo "$(GREEN)✅ All linting checks complete!$(NC)"
+
+lint-java: ## Lint Java code (Checkstyle, SpotBugs, PMD)
+	@echo "$(BLUE)☕ Linting Java code...$(NC)"
+	@echo "$(YELLOW)Running Checkstyle...$(NC)"
+	@mvn checkstyle:check -q || (echo "$(RED)✗ Checkstyle issues found$(NC)" && exit 1)
+	@echo "$(GREEN)✓ Checkstyle passed$(NC)"
+	@echo "$(YELLOW)Running SpotBugs...$(NC)"
+	@mvn spotbugs:check -q || (echo "$(RED)✗ SpotBugs issues found$(NC)" && exit 1)
+	@echo "$(GREEN)✓ SpotBugs passed$(NC)"
+	@echo "$(YELLOW)Running PMD...$(NC)"
+	@mvn pmd:check -q || (echo "$(RED)✗ PMD issues found$(NC)" && exit 1)
+	@echo "$(GREEN)✓ PMD passed$(NC)"
+	@echo "$(GREEN)✅ Java linting complete$(NC)"
+
+lint-java-report: ## Generate Java linting reports
+	@echo "$(BLUE)📊 Generating Java linting reports...$(NC)"
+	@mkdir -p .linting/reports/java
+	@mvn checkstyle:checkstyle -q
+	@mvn spotbugs:spotbugs -q
+	@mvn pmd:pmd -q
+	@echo "$(GREEN)✅ Java reports generated in target/site/$(NC)"
+
+lint-frontend: ## Lint React TypeScript code
+	@echo "$(BLUE)⚛️ Linting frontend code...$(NC)"
+	@if [ ! -d "debate-ui/node_modules" ]; then \
+		echo "$(YELLOW)Installing frontend dependencies...$(NC)"; \
+		cd debate-ui && npm install; \
+	fi
+	@echo "$(YELLOW)Running ESLint...$(NC)"
+	@cd debate-ui && npm run lint:check || (echo "$(RED)✗ ESLint issues found$(NC)" && exit 1)
+	@echo "$(GREEN)✓ ESLint passed$(NC)"
+	@echo "$(YELLOW)Running Prettier check...$(NC)"
+	@cd debate-ui && npm run format:check || (echo "$(RED)✗ Prettier formatting issues found$(NC)" && exit 1)
+	@echo "$(GREEN)✓ Prettier check passed$(NC)"
+	@echo "$(YELLOW)Running TypeScript check...$(NC)"
+	@cd debate-ui && npm run type-check || (echo "$(RED)✗ TypeScript issues found$(NC)" && exit 1)
+	@echo "$(GREEN)✓ TypeScript check passed$(NC)"
+	@echo "$(GREEN)✅ Frontend linting complete$(NC)"
+
+lint-config: ## Lint configuration files (YAML, JSON, Docker)
+	@echo "$(BLUE)⚙️ Linting configuration files...$(NC)"
+	@echo "$(YELLOW)Checking YAML files...$(NC)"
+	@if command -v yamllint >/dev/null 2>&1; then \
+		yamllint -c .linting/config/yaml-lint.yml . || (echo "$(RED)✗ YAML linting issues found$(NC)" && exit 1); \
+		echo "$(GREEN)✓ YAML files passed$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️ yamllint not installed, skipping YAML checks$(NC)"; \
+	fi
+	@echo "$(YELLOW)Checking JSON files...$(NC)"
+	@find . -name "*.json" -not -path "./node_modules/*" -not -path "./target/*" -not -path "./build/*" | while read -r file; do \
+		if ! python -m json.tool "$$file" > /dev/null 2>&1; then \
+			echo "$(RED)✗ Invalid JSON: $$file$(NC)"; \
+			exit 1; \
+		fi; \
+	done && echo "$(GREEN)✓ JSON files passed$(NC)"
+	@echo "$(YELLOW)Checking Dockerfile syntax...$(NC)"
+	@if command -v hadolint >/dev/null 2>&1; then \
+		find . -name "Dockerfile*" -not -path "./node_modules/*" | while read -r file; do \
+			hadolint "$$file" || (echo "$(RED)✗ Dockerfile issues in $$file$(NC)" && exit 1); \
+		done && echo "$(GREEN)✓ Dockerfiles passed$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️ hadolint not installed, skipping Dockerfile checks$(NC)"; \
+	fi
+	@echo "$(GREEN)✅ Configuration linting complete$(NC)"
+
+lint-docs: ## Lint documentation (Markdown)
+	@echo "$(BLUE)📚 Linting documentation...$(NC)"
+	@echo "$(YELLOW)Checking Markdown files...$(NC)"
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint -c .linting/docs/markdownlint.json **/*.md || (echo "$(RED)✗ Markdown linting issues found$(NC)" && exit 1); \
+		echo "$(GREEN)✓ Markdown files passed$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️ markdownlint not installed, skipping Markdown checks$(NC)"; \
+	fi
+	@echo "$(YELLOW)Checking for broken links...$(NC)"
+	@if command -v markdown-link-check >/dev/null 2>&1; then \
+		find . -name "*.md" -not -path "./node_modules/*" -not -path "./target/*" | while read -r file; do \
+			markdown-link-check "$$file" -c .linting/docs/link-check.json || (echo "$(RED)✗ Broken links in $$file$(NC)" && exit 1); \
+		done && echo "$(GREEN)✓ Link check passed$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️ markdown-link-check not installed, skipping link checks$(NC)"; \
+	fi
+	@echo "$(GREEN)✅ Documentation linting complete$(NC)"
+
+lint-fix: ## Auto-fix linting issues where possible
+	@echo "$(BLUE)🔧 Auto-fixing linting issues...$(NC)"
+	@echo "$(YELLOW)Fixing frontend code...$(NC)"
+	@cd debate-ui && npm run lint:fix || true
+	@cd debate-ui && npm run format || true
+	@echo "$(GREEN)✓ Frontend auto-fixes applied$(NC)"
+	@echo "$(YELLOW)Note: Java issues need manual fixing$(NC)"
+	@echo "$(GREEN)✅ Auto-fix complete$(NC)"
+
+lint-report: ## Generate comprehensive linting report
+	@echo "$(BLUE)📊 Generating comprehensive linting report...$(NC)"
+	@mkdir -p .linting/reports
+	@echo "# Linting Report - $(shell date)" > .linting/reports/summary.md
+	@echo "" >> .linting/reports/summary.md
+	@echo "## Java Linting" >> .linting/reports/summary.md
+	@$(MAKE) lint-java-report || echo "- ❌ Java linting failed" >> .linting/reports/summary.md
+	@echo "- ✅ Java linting completed" >> .linting/reports/summary.md
+	@echo "" >> .linting/reports/summary.md
+	@echo "## Frontend Linting" >> .linting/reports/summary.md
+	@$(MAKE) lint-frontend || echo "- ❌ Frontend linting failed" >> .linting/reports/summary.md
+	@echo "- ✅ Frontend linting completed" >> .linting/reports/summary.md
+	@echo "" >> .linting/reports/summary.md
+	@echo "## Configuration Linting" >> .linting/reports/summary.md
+	@$(MAKE) lint-config || echo "- ❌ Configuration linting failed" >> .linting/reports/summary.md
+	@echo "- ✅ Configuration linting completed" >> .linting/reports/summary.md
+	@echo "" >> .linting/reports/summary.md
+	@echo "## Documentation Linting" >> .linting/reports/summary.md
+	@$(MAKE) lint-docs || echo "- ❌ Documentation linting failed" >> .linting/reports/summary.md
+	@echo "- ✅ Documentation linting completed" >> .linting/reports/summary.md
+	@echo "$(GREEN)✅ Linting report generated: .linting/reports/summary.md$(NC)"
+
+lint-setup: ## Install linting tools
+	@echo "$(BLUE)🔧 Installing linting tools...$(NC)"
+	@echo "$(YELLOW)Installing Node.js linting tools...$(NC)"
+	@npm install -g markdownlint-cli markdown-link-check
+	@echo "$(YELLOW)Installing Python linting tools...$(NC)"
+	@pip install yamllint
+	@echo "$(YELLOW)Installing Docker linting tools...$(NC)"
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install hadolint; \
+	elif command -v apt-get >/dev/null 2>&1; then \
+		wget -O /tmp/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 && \
+		chmod +x /tmp/hadolint && \
+		sudo mv /tmp/hadolint /usr/local/bin/hadolint; \
+	else \
+		echo "$(YELLOW)⚠️ Please install hadolint manually$(NC)"; \
+	fi
+	@echo "$(GREEN)✅ Linting tools installation complete$(NC)"
+
+lint-service-%: ## Lint specific service (e.g., make lint-service-mcp-llm)
+	@echo "$(BLUE)🔍 Linting service: $*$(NC)"
+	@if [ -d "$*" ]; then \
+		cd $* && mvn checkstyle:check spotbugs:check pmd:check -q; \
+		echo "$(GREEN)✅ Service $* linting complete$(NC)"; \
+	else \
+		echo "$(RED)✗ Service directory $* not found$(NC)"; \
+		exit 1; \
+	fi

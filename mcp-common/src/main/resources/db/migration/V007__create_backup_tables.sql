@@ -6,6 +6,8 @@
 -- STATUS_DELETED = 'DELETED'
 -- STATUS_PENDING = 'PENDING'
 -- DEFAULT_TIMESTAMP = CURRENT_TIMESTAMP (for created_at/updated_at fields)
+-- STANDARD_STATUS_FIELD_SIZE = VARCHAR(20) -- Used for status fields across tables
+-- STANDARD_BACKUP_TYPE_SIZE = VARCHAR(20) -- Used for backup type classifications
 
 -- Backup metadata table
 CREATE TABLE IF NOT EXISTS backup_metadata (

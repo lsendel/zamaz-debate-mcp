@@ -1,0 +1,33 @@
+{
+  "extends": "../../debate-ui/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": false
+  },
+  "include": [
+    "../../debate-ui/src/**/*",
+    "../../debate-ui/src/**/*.ts",
+    "../../debate-ui/src/**/*.tsx"
+  ],
+  "exclude": [
+    "../../debate-ui/node_modules",
+    "../../debate-ui/build",
+    "../../debate-ui/dist",
+    "../../debate-ui/coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}

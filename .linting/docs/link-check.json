@@ -1,0 +1,129 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://localhost"
+    },
+    {
+      "pattern": "^http://127.0.0.1"
+    },
+    {
+      "pattern": "^https://127.0.0.1"
+    },
+    {
+      "pattern": "^http://0.0.0.0"
+    },
+    {
+      "pattern": "^https://0.0.0.0"
+    },
+    {
+      "pattern": "^mailto:"
+    },
+    {
+      "pattern": "^tel:"
+    },
+    {
+      "pattern": "^ftp:"
+    },
+    {
+      "pattern": "^file:"
+    }
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "{{BASEURL}}/"
+    }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com"],
+      "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (compatible; link-checker)"
+      }
+    }
+  ],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 206, 999],
+  "ignoreStatusCodes": [
+    {
+      "pattern": "^https://sonarcloud.io",
+      "statusCodes": [403, 999]
+    },
+    {
+      "pattern": "^https://linkedin.com",
+      "statusCodes": [999]
+    },
+    {
+      "pattern": "^https://twitter.com",
+      "statusCodes": [999]
+    }
+  ],
+  "excludeLoopback": true,
+  "excludePrivate": true,
+  "excludeLinkLocal": true,
+  "includeVerbose": false,
+  "baseUrl": "https://github.com/zamaz/debate-mcp",
+  "checkAnchors": true,
+  "checkImages": true,
+  "checkFragments": true,
+  "allowedSchemes": ["http", "https"],
+  "excludePatterns": [
+    "node_modules/**",
+    "target/**",
+    "build/**",
+    ".git/**",
+    "logs/**",
+    "data/**",
+    "*.log"
+  ],
+  "includePatterns": [
+    "**/*.md",
+    "**/*.markdown",
+    "**/*.html",
+    "**/*.htm"
+  ],
+  "maxConcurrency": 10,
+  "progressBar": true,
+  "verbose": false,
+  "quiet": false,
+  "config": {
+    "markdown": {
+      "validateAnchors": true,
+      "validateImages": true,
+      "validateLinks": true
+    },
+    "html": {
+      "validateAnchors": true,
+      "validateImages": true,
+      "validateLinks": true
+    }
+  },
+  "customRules": [
+    {
+      "name": "internal-links",
+      "description": "Check internal project links",
+      "pattern": "^\\./|^\\.\\./|^/[^/]",
+      "severity": "error"
+    },
+    {
+      "name": "api-documentation",
+      "description": "Validate API documentation links",
+      "pattern": "/api/",
+      "severity": "warning"
+    },
+    {
+      "name": "image-alt-text",
+      "description": "Images should have alt text",
+      "pattern": "!\\[\\]\\(",
+      "severity": "warning",
+      "message": "Images should have descriptive alt text"
+    }
+  ]
+}

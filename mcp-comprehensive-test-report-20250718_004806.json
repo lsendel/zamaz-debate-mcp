@@ -1,0 +1,663 @@
+{
+  "summary": {
+    "total_tests": 37,
+    "passed_tests": 0,
+    "failed_tests": 37,
+    "success_rate": 0.0,
+    "total_execution_time_ms": 39,
+    "average_execution_time_ms": 2.5,
+    "max_execution_time_ms": 10,
+    "min_execution_time_ms": 1
+  },
+  "service_statistics": {
+    "organization": {
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "success_rate": 0.0
+    },
+    "context": {
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "success_rate": 0.0
+    },
+    "llm": {
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "success_rate": 0.0
+    },
+    "controller": {
+      "total": 6,
+      "passed": 0,
+      "failed": 6,
+      "success_rate": 0.0
+    },
+    "rag": {
+      "total": 5,
+      "passed": 0,
+      "failed": 5,
+      "success_rate": 0.0
+    },
+    "performance": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    },
+    "integration": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    }
+  },
+  "failed_tests": [
+    {
+      "test_name": "service_availability",
+      "service": "organization",
+      "tool": "health_check",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1048bc740>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 10
+    },
+    {
+      "test_name": "list_tools",
+      "service": "organization",
+      "tool": "list_tools",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104976ed0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 1
+    },
+    {
+      "test_name": "call_tool_create_organization",
+      "service": "organization",
+      "tool": "create_organization",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1700>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_list_organizations",
+      "service": "organization",
+      "tool": "list_organizations",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1e80>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_get_organization",
+      "service": "organization",
+      "tool": "get_organization",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a2660>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_update_organization",
+      "service": "organization",
+      "tool": "update_organization",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a2db0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_add_user_to_organization",
+      "service": "organization",
+      "tool": "add_user_to_organization",
+      "error": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a25d0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "service_availability",
+      "service": "context",
+      "tool": "health_check",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1a30>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "list_tools",
+      "service": "context",
+      "tool": "list_tools",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1160>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_create_context",
+      "service": "context",
+      "tool": "create_context",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3500>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_append_message",
+      "service": "context",
+      "tool": "append_message",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3e30>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_get_context_window",
+      "service": "context",
+      "tool": "get_context_window",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3ec0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 1
+    },
+    {
+      "test_name": "call_tool_search_contexts",
+      "service": "context",
+      "tool": "search_contexts",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a31d0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 1
+    },
+    {
+      "test_name": "call_tool_share_context",
+      "service": "context",
+      "tool": "share_context",
+      "error": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a02f0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 1
+    },
+    {
+      "test_name": "service_availability",
+      "service": "llm",
+      "tool": "health_check",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1b20>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "list_tools",
+      "service": "llm",
+      "tool": "list_tools",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x103657ce0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service": "llm",
+      "tool": "list_providers",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28dd0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_generate_completion",
+      "service": "llm",
+      "tool": "generate_completion",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1f40>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_get_provider_status",
+      "service": "llm",
+      "tool": "get_provider_status",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a2090>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "service_availability",
+      "service": "controller",
+      "tool": "health_check",
+      "error": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a13a0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "list_tools",
+      "service": "controller",
+      "tool": "list_tools",
+      "error": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3a70>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_create_debate",
+      "service": "controller",
+      "tool": "create_debate",
+      "error": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28e60>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_get_debate",
+      "service": "controller",
+      "tool": "get_debate",
+      "error": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28080>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_list_debates",
+      "service": "controller",
+      "tool": "list_debates",
+      "error": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3ef0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_submit_turn",
+      "service": "controller",
+      "tool": "submit_turn",
+      "error": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3140>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "service_availability",
+      "service": "rag",
+      "tool": "health_check",
+      "error": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a03b0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "list_tools",
+      "service": "rag",
+      "tool": "list_tools",
+      "error": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a23f0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_index_document",
+      "service": "rag",
+      "tool": "index_document",
+      "error": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28170>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_search",
+      "service": "rag",
+      "tool": "search",
+      "error": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b29040>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "call_tool_get_context",
+      "service": "rag",
+      "tool": "get_context",
+      "error": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1d60>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 0
+    },
+    {
+      "test_name": "performance_parallel",
+      "service": "performance",
+      "tool": "parallel_load",
+      "error": null,
+      "execution_time": 4
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service": "llm",
+      "tool": "list_providers",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b295b0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 2
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service": "llm",
+      "tool": "list_providers",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1d00>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 2
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service": "llm",
+      "tool": "list_providers",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b288f0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 2
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service": "llm",
+      "tool": "list_providers",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b29ee0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 2
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service": "llm",
+      "tool": "list_providers",
+      "error": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b29a60>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "execution_time": 2
+    },
+    {
+      "test_name": "integration_workflow",
+      "service": "integration",
+      "tool": "workflow",
+      "error": null,
+      "execution_time": 2
+    }
+  ],
+  "all_results": [
+    {
+      "test_name": "service_availability",
+      "service_name": "organization",
+      "tool_name": "health_check",
+      "success": false,
+      "execution_time_ms": 10,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1048bc740>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "list_tools",
+      "service_name": "organization",
+      "tool_name": "list_tools",
+      "success": false,
+      "execution_time_ms": 1,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104976ed0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_create_organization",
+      "service_name": "organization",
+      "tool_name": "create_organization",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1700>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_organizations",
+      "service_name": "organization",
+      "tool_name": "list_organizations",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1e80>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_get_organization",
+      "service_name": "organization",
+      "tool_name": "get_organization",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a2660>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_update_organization",
+      "service_name": "organization",
+      "tool_name": "update_organization",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a2db0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_add_user_to_organization",
+      "service_name": "organization",
+      "tool_name": "add_user_to_organization",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5005): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a25d0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "service_availability",
+      "service_name": "context",
+      "tool_name": "health_check",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1a30>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "list_tools",
+      "service_name": "context",
+      "tool_name": "list_tools",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1160>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_create_context",
+      "service_name": "context",
+      "tool_name": "create_context",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3500>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_append_message",
+      "service_name": "context",
+      "tool_name": "append_message",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3e30>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_get_context_window",
+      "service_name": "context",
+      "tool_name": "get_context_window",
+      "success": false,
+      "execution_time_ms": 1,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3ec0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_search_contexts",
+      "service_name": "context",
+      "tool_name": "search_contexts",
+      "success": false,
+      "execution_time_ms": 1,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a31d0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_share_context",
+      "service_name": "context",
+      "tool_name": "share_context",
+      "success": false,
+      "execution_time_ms": 1,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5007): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a02f0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "service_availability",
+      "service_name": "llm",
+      "tool_name": "health_check",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1b20>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "list_tools",
+      "service_name": "llm",
+      "tool_name": "list_tools",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x103657ce0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service_name": "llm",
+      "tool_name": "list_providers",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28dd0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_generate_completion",
+      "service_name": "llm",
+      "tool_name": "generate_completion",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1f40>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_get_provider_status",
+      "service_name": "llm",
+      "tool_name": "get_provider_status",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a2090>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "service_availability",
+      "service_name": "controller",
+      "tool_name": "health_check",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a13a0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "list_tools",
+      "service_name": "controller",
+      "tool_name": "list_tools",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3a70>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_create_debate",
+      "service_name": "controller",
+      "tool_name": "create_debate",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28e60>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_get_debate",
+      "service_name": "controller",
+      "tool_name": "get_debate",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28080>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_debates",
+      "service_name": "controller",
+      "tool_name": "list_debates",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3ef0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_submit_turn",
+      "service_name": "controller",
+      "tool_name": "submit_turn",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5013): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a3140>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "service_availability",
+      "service_name": "rag",
+      "tool_name": "health_check",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a03b0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "list_tools",
+      "service_name": "rag",
+      "tool_name": "list_tools",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/list-tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a23f0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_index_document",
+      "service_name": "rag",
+      "tool_name": "index_document",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b28170>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_search",
+      "service_name": "rag",
+      "tool_name": "search",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b29040>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_get_context",
+      "service_name": "rag",
+      "tool_name": "get_context",
+      "success": false,
+      "execution_time_ms": 0,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5018): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1d60>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "performance_parallel",
+      "service_name": "performance",
+      "tool_name": "parallel_load",
+      "success": false,
+      "execution_time_ms": 4,
+      "error_message": null,
+      "metadata": {
+        "concurrency": 5,
+        "successful_requests": 0,
+        "success_rate": 0.0,
+        "average_request_time": 0.8
+      }
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service_name": "llm",
+      "tool_name": "list_providers",
+      "success": false,
+      "execution_time_ms": 2,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b295b0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service_name": "llm",
+      "tool_name": "list_providers",
+      "success": false,
+      "execution_time_ms": 2,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1049a1d00>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service_name": "llm",
+      "tool_name": "list_providers",
+      "success": false,
+      "execution_time_ms": 2,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b288f0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service_name": "llm",
+      "tool_name": "list_providers",
+      "success": false,
+      "execution_time_ms": 2,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b29ee0>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "call_tool_list_providers",
+      "service_name": "llm",
+      "tool_name": "list_providers",
+      "success": false,
+      "execution_time_ms": 2,
+      "error_message": "HTTPConnectionPool(host='localhost', port=5002): Max retries exceeded with url: /mcp/call-tool (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x104b29a60>: Failed to establish a new connection: [Errno 61] Connection refused'))",
+      "metadata": {}
+    },
+    {
+      "test_name": "integration_workflow",
+      "service_name": "integration",
+      "tool_name": "workflow",
+      "success": false,
+      "execution_time_ms": 2,
+      "error_message": null,
+      "metadata": {
+        "steps_executed": [
+          "create_organization",
+          "create_debate",
+          "list_providers"
+        ]
+      }
+    }
+  ]
+}
