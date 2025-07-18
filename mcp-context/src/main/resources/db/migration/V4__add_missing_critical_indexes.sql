@@ -87,15 +87,7 @@ ON context_versions(created_at DESC);
 -- HIGH: Token counting and management queries
 -- ============================================================================
 
--- Token usage tracking by organization for billing/limits
-CREATE INDEX IF NOT EXISTS idx_contexts_org_tokens 
-ON contexts(organization_id, total_tokens) 
-WHERE status = 'ACTIVE';
 
--- Context size for memory management
-CREATE INDEX IF NOT EXISTS idx_contexts_message_count 
-ON contexts(message_count DESC) 
-WHERE status = 'ACTIVE';
 
 -- ============================================================================
 -- HIGH: Sharing and collaboration features
@@ -117,10 +109,6 @@ ON shared_contexts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_contexts_created_at 
 ON contexts(created_at DESC);
 
--- Context last activity for cleanup jobs
-CREATE INDEX IF NOT EXISTS idx_contexts_last_activity 
-ON contexts(last_activity_at ASC) 
-WHERE status = 'ACTIVE';
 
 -- Message creation time for analytics
 CREATE INDEX IF NOT EXISTS idx_messages_created_at 

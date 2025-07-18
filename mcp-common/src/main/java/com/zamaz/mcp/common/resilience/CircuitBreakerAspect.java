@@ -31,16 +31,28 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Aspect that applies circuit breaker pattern to annotated methods.
+ * Enhanced aspect that applies circuit breaker pattern to annotated methods with comprehensive
+ * error handling, validation, and metrics collection.
  */
 @Aspect
 @Component
-@RequiredArgsConstructor
 @Slf4j
 @Order(1) // Execute before other aspects like retry
 public class CircuitBreakerAspect {
 
     private final CircuitBreakerRegistry circuitBreakerRegistry;
+    private final CircuitBreakerMetricsCollector metricsCollector;
+    private final Map<String, Counter> circuitBreakerCounters = new ConcurrentHashMap<>();
+    private final Map<String, Timer> circuitBreakerTimers = new ConcurrentHashMap<>();
+    
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
+
+    public CircuitBreakerAspect(CircuitBreakerRegistry circuitBreakerRegistry, 
+                               CircuitBreakerMetricsCollector metricsCollector) {
+        this.circuitBreakerRegistry = circuitBreakerRegistry;
+        this.metricsCollector = metricsCollector;
+    }
 
     @Around("@annotation(circuitBreakerAnnotation)")
     public Object applyCircuitBreaker(ProceedingJoinPoint joinPoint, CircuitBreaker circuitBreakerAnnotation) throws Throwable {
