@@ -1,6 +1,6 @@
 package com.zamaz.mcp.security.config;
 
-import com.zamaz.mcp.organization.repository.UserRepository;
+import com.zamaz.mcp.common.security.UserLookupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,12 +17,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class ApplicationConfig {
 
-    private final UserRepository userRepository;
+    private final UserLookupService userLookupService;
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .map(com.zamaz.mcp.security.model.McpUser::new) // Convert to McpUser
+        return username -> userLookupService.findUserDetailsByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 

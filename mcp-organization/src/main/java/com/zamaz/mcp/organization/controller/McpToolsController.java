@@ -148,18 +148,8 @@ public class McpToolsController {
             response.put("success", true);
             response.put("message", "User added to organization successfully");
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in add_user_to_organization: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error adding user to organization: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "add_user_to_organization", null);
         }
     }
     
@@ -180,18 +170,8 @@ public class McpToolsController {
             response.put("success", true);
             response.put("message", "User removed from organization successfully");
             return ResponseEntity.ok(response);
-        } catch (McpSecurityException e) {
-            log.warn("Security error in remove_user_from_organization: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Access denied");
-            return ResponseEntity.status(403).body(errorResponse);
         } catch (Exception e) {
-            log.error("Error removing user from organization: ", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("error", "Internal server error");
-            return ResponseEntity.badRequest().body(errorResponse);
+            return mcpErrorHandler.createErrorResponse(e, "remove_user_from_organization", null);
         }
     }
     
