@@ -1,5 +1,8 @@
 package com.zamaz.mcp.common.resilience;
 
+import com.zamaz.mcp.common.resilience.annotation.CircuitBreaker;
+import com.zamaz.mcp.common.resilience.annotation.RateLimiter;
+import com.zamaz.mcp.common.resilience.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -69,7 +72,7 @@ public class ResilienceService {
      * Example method with circuit breaker protection
      */
     @CircuitBreaker(name = "example-service", fallbackMethod = "exampleFallback")
-    @Retry(name = "example-service", maxAttempts = 3)
+    @Retry(name = "example-service", maxAttempts = 3, waitDurationMs = 1000)
     @RateLimiter(name = "example-service", limitForPeriod = 10)
     public String protectedMethod(String input) {
         log.info("Executing protected method with input: {}", input);

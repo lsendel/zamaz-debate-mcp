@@ -4,7 +4,7 @@ import com.zamaz.mcp.llm.exception.LlmException;
 import com.zamaz.mcp.llm.model.CompletionRequest;
 import com.zamaz.mcp.llm.model.CompletionResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
+import com.zamaz.mcp.common.resilience.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ public class CompletionService {
     private final RateLimitService rateLimitService;
     
     @CircuitBreaker(name = "llm-completion", fallbackMethod = "completeFallback")
-    @Retry(name = "llm-completion")
+    @Retry(name = "llm-completion", maxAttempts = 3, waitDurationMs = 1000)
     public Mono<CompletionResponse> complete(CompletionRequest request) {
         return rateLimitService.checkRateLimit(request.getProvider())
                 .then(Mono.defer(() -> {

@@ -10,8 +10,7 @@ import com.zamaz.mcp.organization.domain.model.Organization;
 import com.zamaz.mcp.organization.domain.model.Role;
 import com.zamaz.mcp.organization.domain.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import com.zamaz.mcp.common.resilience.annotation.Retry;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,7 +30,7 @@ public class NotificationServiceAdapter implements NotificationService, External
     }
     
     @Override
-    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retry(name = "notification-send", maxAttempts = 3, waitDurationMs = 1000)
     public void sendOrganizationCreatedNotification(Organization organization, User owner) {
         logger.info("Sending organization created notification",
             "organizationId", organization.getId().value(),
@@ -62,7 +61,7 @@ public class NotificationServiceAdapter implements NotificationService, External
     }
     
     @Override
-    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retry(name = "notification-send", maxAttempts = 3, waitDurationMs = 1000)
     public void sendUserAddedToOrganizationNotification(Organization organization, User user, Role role) {
         logger.info("Sending user added to organization notification",
             "organizationId", organization.getId().value(),
@@ -99,7 +98,7 @@ public class NotificationServiceAdapter implements NotificationService, External
     }
     
     @Override
-    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retry(name = "notification-send", maxAttempts = 3, waitDurationMs = 1000)
     public void sendUserRemovedFromOrganizationNotification(Organization organization, User user) {
         logger.info("Sending user removed from organization notification",
             "organizationId", organization.getId().value(),
@@ -129,7 +128,7 @@ public class NotificationServiceAdapter implements NotificationService, External
     }
     
     @Override
-    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retry(name = "notification-send", maxAttempts = 3, waitDurationMs = 1000)
     public void sendRoleChangedNotification(Organization organization, User user, Role oldRole, Role newRole) {
         logger.info("Sending role changed notification",
             "organizationId", organization.getId().value(),
@@ -167,7 +166,7 @@ public class NotificationServiceAdapter implements NotificationService, External
     }
     
     @Override
-    @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    @Retry(name = "notification-send", maxAttempts = 3, waitDurationMs = 1000)
     public void sendEmailVerificationNotification(User user, String verificationToken) {
         logger.info("Sending email verification notification",
             "userId", user.getId().value(),

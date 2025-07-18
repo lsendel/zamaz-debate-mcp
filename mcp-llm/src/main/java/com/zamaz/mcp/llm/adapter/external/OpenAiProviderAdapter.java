@@ -4,7 +4,7 @@ import com.zamaz.mcp.llm.application.port.outbound.LlmProviderGateway;
 import com.zamaz.mcp.llm.config.LlmProperties;
 import com.zamaz.mcp.llm.domain.model.*;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
+import com.zamaz.mcp.common.resilience.annotation.Retry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
