@@ -55,87 +55,73 @@ public class CircuitBreakerAspect {
     }
 
     @Around("@annotation(circuitBreakerAnnotation)")
-    public Object applyCircuitBreaker(ProceedingJoinPoint joinPoint, CircuitBreaker circuitBreakerAnnotation) throws Throwable {
-        String circuitBreakerName = circuitBreakerAnnotation.name();
+    public Object applyCircuitBreaker(@NotNull ProceedingJoinPoint joinPoint, 
+                                    @NotNull CircuitBreaker circuitBreakerAnnotation) throws Throwable {
+        // Validate annotation parameters
+        validateCircuitBreakerConfiguration(circuitBreakerAnnotation);
         
+        String circuitBreakerName = determineCircuitBreakerName(circuitBreakerAnnotation, joinPoint);
+        Instant startTime = Instant.now();
+        
+        log.debug("Starting circuit breaker operation '{}' with configuration: failureRate={}, slowCallRate={}", 
+                 circuitBreakerName, circuitBreakerAnnotation.failureRateThreshold(), 
+                 circuitBreakerAnnotation.slowCallRateThreshold());
+
         // Get or create circuit breaker
-        io.github.resilience4j.circuitbreaker.CircuitBreaker circuitBreaker;
-        if (circuitBreakerAnnotation.useDefault()) {
-            circuitBreaker = circuitBreakerRegistry.circuitBreaker(circuitBreakerName);
-        } else {
-            // Create custom configuration
-            CircuitBreakerConfig config = buildConfig(circuitBreakerAnnotation);
-            circuitBreaker = circuitBreakerRegistry.circuitBreaker(circuitBreakerName, config);
-        }
-
-        // Add tracing attributes
-        Span currentSpan = Span.current();
-        if (currentSpan != null) {
-            currentSpan.setAttribute("circuitbreaker.name", circuitBreakerName);
-            currentSpan.setAttribute("circuitbreaker.state", circuitBreaker.getState().toString());
-        }
-
-        // Create callable from join point
-        Callable<Object> callable = () -> {
-            try {
-                return joinPoint.proceed();
-            } catch (Throwable throwable) {
-                throw new RuntimeException(throwable);
-            }
-        };
+        io.github.resilience4j.circuitbreaker.CircuitBreaker circuitBreaker = 
+            createOrGetCircuitBreaker(circuitBreakerName, circuitBreakerAnnotation);
+        
+        // Setup tracing and metrics
+        Span currentSpan = setupTracing(circuitBreakerName, circuitBreaker);
+        Timer.Sample timerSample = startTimer(circuitBreakerName);
+        
+        // Register state change listener
+        registerStateChangeListener(circuitBreaker, circuitBreakerName);
 
         try {
-            // Execute with circuit breaker
-            Object result = circuitBreaker.executeCallable(callable);
+            // Execute with circuit breaker and enhanced error handling
+            Object result = circuitBreaker.executeCallable(() -> executeWithErrorHandling(joinPoint));
             
-            // Update span with success
-            if (currentSpan != null) {
-                currentSpan.setAttribute("circuitbreaker.call_permitted", true);
-                currentSpan.setAttribute("circuitbreaker.success", true);
-            }
+            // Record successful execution
+            Duration executionDuration = Duration.between(startTime, Instant.now());
+            metricsCollector.recordSuccessfulExecution(circuitBreakerName, executionDuration);
+            recordSuccessMetrics(circuitBreakerName, executionDuration, currentSpan, timerSample);
+            
+            log.debug("Circuit breaker operation '{}' completed successfully in {}ms (state: {})", 
+                     circuitBreakerName, executionDuration.toMillis(), circuitBreaker.getState());
             
             return result;
             
         } catch (CallNotPermittedException e) {
-            // Circuit is open
-            log.warn("Circuit breaker {} is OPEN, call not permitted", circuitBreakerName);
+            // Circuit is open - handle fallback
+            Duration executionDuration = Duration.between(startTime, Instant.now());
+            metricsCollector.recordCallNotPermitted(circuitBreakerName);
+            recordCallNotPermittedMetrics(circuitBreakerName, currentSpan, timerSample);
             
-            // Update span
-            if (currentSpan != null) {
-                currentSpan.setAttribute("circuitbreaker.call_permitted", false);
-                currentSpan.setAttribute("circuitbreaker.fallback_used", true);
-            }
+            log.warn("Circuit breaker '{}' is OPEN, call not permitted (state: {})", 
+                    circuitBreakerName, circuitBreaker.getState());
             
             // Try fallback method if specified
             String fallbackMethodName = circuitBreakerAnnotation.fallbackMethod();
-            if (!fallbackMethodName.isEmpty()) {
-                return invokeFallbackMethod(joinPoint, fallbackMethodName, e);
+            if (StringUtils.hasText(fallbackMethodName)) {
+                return executeFallbackWithMetrics(joinPoint, fallbackMethodName, e, 
+                                                circuitBreakerName, currentSpan, startTime);
             }
             
-            throw e;
+            throw new CircuitBreakerExecutionException(circuitBreakerName, circuitBreaker.getState(), e);
             
         } catch (Exception e) {
-            // Unwrap if it's a wrapper exception
-            Throwable cause = e.getCause();
-            if (cause != null && cause instanceof Throwable) {
-                
-                // Update span with failure
-                if (currentSpan != null) {
-                    currentSpan.setAttribute("circuitbreaker.call_permitted", true);
-                    currentSpan.setAttribute("circuitbreaker.success", false);
-                    currentSpan.recordException(cause);
-                }
-                
-                throw cause;
-            }
+            // Record failed execution
+            Duration executionDuration = Duration.between(startTime, Instant.now());
+            Throwable originalException = extractOriginalException(e);
             
-            if (currentSpan != null) {
-                currentSpan.setAttribute("circuitbreaker.call_permitted", true);
-                currentSpan.setAttribute("circuitbreaker.success", false);
-                currentSpan.recordException(e);
-            }
+            metricsCollector.recordFailedExecution(circuitBreakerName, executionDuration, originalException);
+            recordFailureMetrics(circuitBreakerName, executionDuration, currentSpan, timerSample, originalException);
             
-            throw e;
+            log.error("Circuit breaker operation '{}' failed in {}ms (state: {})", 
+                     circuitBreakerName, executionDuration.toMillis(), circuitBreaker.getState(), originalException);
+            
+            throw new CircuitBreakerExecutionException(circuitBreakerName, circuitBreaker.getState(), originalException);
         }
     }
 
