@@ -1,0 +1,653 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-security-monitor
+  namespace: security
+  labels:
+    app: mcp-security-monitor
+    component: security-monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-security-monitor
+  template:
+    metadata:
+      labels:
+        app: mcp-security-monitor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: mcp-security-monitor
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+      - name: security-monitor
+        image: mcp-debate/security-monitor:latest
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: http-api
+        env:
+        - name: KUBERNETES_API_URL
+          value: "https://kubernetes.default.svc"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.monitoring.svc.cluster.local:9090"
+        - name: ALERTMANAGER_URL
+          value: "http://alertmanager.monitoring.svc.cluster.local:9093"
+        - name: SCAN_INTERVAL_SECONDS
+          value: "300"
+        - name: THREAT_DETECTION_ENABLED
+          value: "true"
+        - name: COMPLIANCE_CHECKING_ENABLED
+          value: "true"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: config
+          mountPath: /etc/security-monitor
+          readOnly: true
+        - name: rules
+          mountPath: /etc/security-rules
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: security-monitor-config
+      - name: rules
+        configMap:
+          name: security-rules
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-security-monitor
+  namespace: security
+  labels:
+    app: mcp-security-monitor
+spec:
+  selector:
+    app: mcp-security-monitor
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+  - name: http-api
+    port: 8081
+    targetPort: 8081
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-monitor-config
+  namespace: security
+  labels:
+    app: mcp-security-monitor
+data:
+  config.yaml: |
+    # Security monitoring configuration
+    monitoring:
+      scan_interval_seconds: 300
+      threat_detection_enabled: true
+      compliance_checking_enabled: true
+      real_time_alerts_enabled: true
+      
+    # Kubernetes security checks
+    kubernetes_security:
+      pod_security_policies:
+        enabled: true
+        enforce_non_root: true
+        enforce_read_only_fs: true
+        disallow_privileged: true
+        
+      network_policies:
+        enabled: true
+        require_default_deny: true
+        check_egress_rules: true
+        
+      rbac_analysis:
+        enabled: true
+        check_overprivileged_accounts: true
+        detect_cluster_admin_usage: true
+        
+      secrets_scanning:
+        enabled: true
+        check_encryption: true
+        detect_exposed_secrets: true
+        scan_config_maps: true
+        
+    # Container security checks
+    container_security:
+      image_scanning:
+        enabled: true
+        vulnerability_threshold: "HIGH"
+        scan_running_containers: true
+        
+      runtime_protection:
+        enabled: true
+        detect_privilege_escalation: true
+        monitor_file_access: true
+        network_anomaly_detection: true
+        
+    # Compliance frameworks
+    compliance:
+      cis_kubernetes:
+        enabled: true
+        version: "1.6"
+        
+      nist_cybersecurity:
+        enabled: true
+        
+      pci_dss:
+        enabled: false
+        
+      soc2:
+        enabled: true
+        
+    # Alerting configuration
+    alerting:
+      prometheus_alerts: true
+      slack_notifications: true
+      email_notifications: true
+      pagerduty_integration: true
+      
+      severity_thresholds:
+        critical: 0
+        high: 5
+        medium: 20
+        low: 50
+        
+    # Threat intelligence
+    threat_intelligence:
+      enabled: true
+      ioc_feeds:
+        - "https://feeds.example.com/malware-ips"
+        - "https://feeds.example.com/suspicious-domains"
+      update_interval_hours: 4
+      
+    # Data retention
+    data_retention:
+      events_days: 90
+      metrics_days: 365
+      reports_days: 1095
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-rules
+  namespace: security
+  labels:
+    app: mcp-security-monitor
+data:
+  pod-security-rules.yaml: |
+    rules:
+      - name: "Privileged Container Detection"
+        description: "Detect containers running with privileged access"
+        severity: "CRITICAL"
+        check: |
+          SELECT 
+            namespace,
+            name,
+            container_name,
+            privileged
+          FROM kubernetes_pods
+          WHERE privileged = true
+          AND namespace IN ('production', 'staging')
+        
+      - name: "Root User Detection"
+        description: "Detect containers running as root user"
+        severity: "HIGH"
+        check: |
+          SELECT 
+            namespace,
+            name,
+            container_name,
+            security_context_run_as_user
+          FROM kubernetes_pods
+          WHERE (security_context_run_as_user = 0 OR security_context_run_as_user IS NULL)
+          AND namespace IN ('production', 'staging')
+        
+      - name: "Host Network Usage"
+        description: "Detect pods using host network"
+        severity: "HIGH"
+        check: |
+          SELECT 
+            namespace,
+            name,
+            host_network
+          FROM kubernetes_pods
+          WHERE host_network = true
+          AND namespace IN ('production', 'staging')
+  
+  network-security-rules.yaml: |
+    rules:
+      - name: "Missing Network Policy"
+        description: "Detect namespaces without network policies"
+        severity: "MEDIUM"
+        check: |
+          SELECT DISTINCT
+            np.namespace
+          FROM kubernetes_namespaces n
+          LEFT JOIN kubernetes_network_policies np ON n.name = np.namespace
+          WHERE n.name IN ('production', 'staging')
+          AND np.namespace IS NULL
+        
+      - name: "Overly Permissive Network Policy"
+        description: "Detect network policies allowing all traffic"
+        severity: "HIGH"
+        check: |
+          SELECT 
+            namespace,
+            name,
+            spec
+          FROM kubernetes_network_policies
+          WHERE spec LIKE '%0.0.0.0/0%'
+          OR spec LIKE '%allow-all%'
+  
+  rbac-security-rules.yaml: |
+    rules:
+      - name: "Cluster Admin Usage"
+        description: "Detect usage of cluster-admin role"
+        severity: "CRITICAL"
+        check: |
+          SELECT 
+            crb.name,
+            crb.subjects,
+            crb.role_ref
+          FROM kubernetes_cluster_role_bindings crb
+          WHERE crb.role_ref LIKE '%cluster-admin%'
+        
+      - name: "Overprivileged Service Accounts"
+        description: "Detect service accounts with excessive permissions"
+        severity: "HIGH"
+        check: |
+          SELECT 
+            rb.namespace,
+            rb.subjects,
+            rb.role_ref,
+            COUNT(*) as permission_count
+          FROM kubernetes_role_bindings rb
+          JOIN kubernetes_roles r ON rb.role_ref = r.name
+          GROUP BY rb.namespace, rb.subjects, rb.role_ref
+          HAVING permission_count > 10
+  
+  secrets-security-rules.yaml: |
+    rules:
+      - name: "Unencrypted Secrets"
+        description: "Detect secrets that are not encrypted at rest"
+        severity: "HIGH"
+        check: |
+          SELECT 
+            namespace,
+            name,
+            type,
+            data_keys
+          FROM kubernetes_secrets
+          WHERE namespace IN ('production', 'staging')
+        
+      - name: "Exposed ConfigMaps"
+        description: "Detect ConfigMaps containing potential secrets"
+        severity: "MEDIUM"
+        check: |
+          SELECT 
+            namespace,
+            name,
+            data_keys
+          FROM kubernetes_config_maps
+          WHERE (data_keys LIKE '%password%' 
+             OR data_keys LIKE '%key%' 
+             OR data_keys LIKE '%token%')
+          AND namespace IN ('production', 'staging')
+---
+# Prometheus rules for security monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mcp-security-rules
+  namespace: security
+  labels:
+    app: mcp-security-monitor
+    component: alerting
+spec:
+  groups:
+  - name: mcp.security.vulnerabilities
+    interval: 60s
+    rules:
+    - alert: CriticalVulnerabilitiesDetected
+      expr: sum(trivy_vulnerabilities{severity="CRITICAL"}) > 0
+      for: 5m
+      labels:
+        severity: critical
+        team: security
+        component: vulnerability-scanning
+      annotations:
+        summary: "Critical vulnerabilities detected in container images"
+        description: "{{ $value }} critical vulnerabilities found in running containers"
+        runbook_url: "https://docs.mcp-debate.com/runbooks/security/vulnerabilities"
+    
+    - alert: HighVulnerabilitiesThresholdExceeded
+      expr: sum(trivy_vulnerabilities{severity="HIGH"}) > 20
+      for: 10m
+      labels:
+        severity: warning
+        team: security
+        component: vulnerability-scanning
+      annotations:
+        summary: "High number of high-severity vulnerabilities"
+        description: "{{ $value }} high-severity vulnerabilities found, exceeding threshold of 20"
+    
+    - alert: VulnerabilityScanFailed
+      expr: up{job="vulnerability-scanner"} == 0
+      for: 15m
+      labels:
+        severity: warning
+        team: security
+        component: vulnerability-scanning
+      annotations:
+        summary: "Vulnerability scanner is down"
+        description: "Vulnerability scanning service has been down for 15 minutes"
+  
+  - name: mcp.security.runtime
+    interval: 30s
+    rules:
+    - alert: SuspiciousRuntimeActivity
+      expr: increase(falco_events{priority="Critical"}[5m]) > 0
+      for: 0m
+      labels:
+        severity: critical
+        team: security
+        component: runtime-security
+      annotations:
+        summary: "Suspicious runtime activity detected"
+        description: "Falco detected {{ $value }} critical security events in the last 5 minutes"
+        runbook_url: "https://docs.mcp-debate.com/runbooks/security/runtime-threats"
+    
+    - alert: PrivilegedContainerDetected
+      expr: sum(mcp_security_privileged_containers) > 0
+      for: 5m
+      labels:
+        severity: high
+        team: security
+        component: container-security
+      annotations:
+        summary: "Privileged container detected"
+        description: "{{ $value }} privileged containers are running in production namespaces"
+    
+    - alert: RootContainerDetected
+      expr: sum(mcp_security_root_containers) > 0
+      for: 5m
+      labels:
+        severity: high
+        team: security
+        component: container-security
+      annotations:
+        summary: "Container running as root detected"
+        description: "{{ $value }} containers are running as root user in production namespaces"
+  
+  - name: mcp.security.network
+    interval: 60s
+    rules:
+    - alert: MissingNetworkPolicy
+      expr: sum(mcp_security_namespaces_without_netpol) > 0
+      for: 10m
+      labels:
+        severity: medium
+        team: security
+        component: network-security
+      annotations:
+        summary: "Namespaces without network policies"
+        description: "{{ $value }} production namespaces are missing network policies"
+    
+    - alert: OverlyPermissiveNetworkPolicy
+      expr: sum(mcp_security_permissive_netpol) > 0
+      for: 10m
+      labels:
+        severity: high
+        team: security
+        component: network-security
+      annotations:
+        summary: "Overly permissive network policies detected"
+        description: "{{ $value }} network policies allow unrestricted traffic"
+  
+  - name: mcp.security.rbac
+    interval: 300s
+    rules:
+    - alert: ClusterAdminUsage
+      expr: sum(mcp_security_cluster_admin_bindings) > 2
+      for: 5m
+      labels:
+        severity: critical
+        team: security
+        component: rbac-security
+      annotations:
+        summary: "Excessive cluster-admin role usage"
+        description: "{{ $value }} cluster-admin role bindings detected, exceeding threshold of 2"
+    
+    - alert: OverprivilegedServiceAccount
+      expr: sum(mcp_security_overprivileged_sa) > 0
+      for: 10m
+      labels:
+        severity: medium
+        team: security
+        component: rbac-security
+      annotations:
+        summary: "Overprivileged service accounts detected"
+        description: "{{ $value }} service accounts have excessive permissions"
+  
+  - name: mcp.security.secrets
+    interval: 300s
+    rules:
+    - alert: UnencryptedSecretsDetected
+      expr: sum(mcp_security_unencrypted_secrets) > 0
+      for: 5m
+      labels:
+        severity: high
+        team: security
+        component: secrets-management
+      annotations:
+        summary: "Unencrypted secrets detected"
+        description: "{{ $value }} secrets are not properly encrypted at rest"
+    
+    - alert: ExposedSecretsInConfigMaps
+      expr: sum(mcp_security_exposed_secrets_configmaps) > 0
+      for: 5m
+      labels:
+        severity: high
+        team: security
+        component: secrets-management
+      annotations:
+        summary: "Potential secrets exposed in ConfigMaps"
+        description: "{{ $value }} ConfigMaps contain potential secret data"
+---
+# Security event log aggregation
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-security-config
+  namespace: security
+  labels:
+    app: fluentd-security
+    component: log-aggregation
+data:
+  fluent.conf: |
+    <source>
+      @type tail
+      path /var/log/falco/events.log
+      pos_file /var/log/falco/events.log.pos
+      tag falco.events
+      format json
+      time_key time
+      time_format %Y-%m-%dT%H:%M:%S.%NZ
+    </source>
+    
+    <source>
+      @type tail
+      path /var/log/audit/audit.log
+      pos_file /var/log/audit/audit.log.pos
+      tag k8s.audit
+      format json
+      time_key timestamp
+    </source>
+    
+    <filter falco.events>
+      @type record_transformer
+      <record>
+        source falco
+        environment production
+        cluster mcp-debate
+      </record>
+    </filter>
+    
+    <filter k8s.audit>
+      @type record_transformer
+      <record>
+        source kubernetes-audit
+        environment production
+        cluster mcp-debate
+      </record>
+    </filter>
+    
+    # Send critical events to alerting
+    <match falco.events>
+      @type copy
+      <store>
+        @type elasticsearch
+        host elasticsearch.monitoring.svc.cluster.local
+        port 9200
+        index_name falco-events
+        type_name _doc
+      </store>
+      <store>
+        @type prometheus
+        host prometheus-pushgateway.monitoring.svc.cluster.local
+        port 9091
+        metrics_path /metrics/job/falco/instance/#{Socket.gethostname}
+      </store>
+    </match>
+    
+    <match k8s.audit>
+      @type elasticsearch
+      host elasticsearch.monitoring.svc.cluster.local
+      port 9200
+      index_name k8s-audit
+      type_name _doc
+    </match>
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-security
+  namespace: security
+  labels:
+    app: fluentd-security
+    component: log-aggregation
+spec:
+  selector:
+    matchLabels:
+      app: fluentd-security
+  template:
+    metadata:
+      labels:
+        app: fluentd-security
+    spec:
+      serviceAccountName: fluentd-security
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
+        env:
+        - name: FLUENT_CONF
+          value: "fluent.conf"
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "elasticsearch.monitoring.svc.cluster.local"
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "9200"
+        volumeMounts:
+        - name: config
+          mountPath: /fluentd/etc/fluent.conf
+          subPath: fluent.conf
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+      volumes:
+      - name: config
+        configMap:
+          name: fluentd-security-config
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd-security
+  namespace: security
+  labels:
+    app: fluentd-security
+    component: log-aggregation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluentd-security
+  labels:
+    app: fluentd-security
+    component: log-aggregation
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluentd-security
+  labels:
+    app: fluentd-security
+    component: log-aggregation
+roleRef:
+  kind: ClusterRole
+  name: fluentd-security
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: fluentd-security
+  namespace: security

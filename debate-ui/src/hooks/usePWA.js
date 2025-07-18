@@ -66,6 +66,39 @@ export const usePWA = () => {
     };
   }, []);
 
+  // Handle service worker state changes
+  const handleWorkerStateChange = useCallback((newWorker) => {
+    const onStateChange = () => {
+      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+        setUpdateAvailable(true);
+        console.log('New service worker available');
+      }
+    };
+    newWorker.addEventListener('statechange', onStateChange);
+  }, []);
+
+  // Handle service worker update detection
+  const handleUpdateFound = useCallback((registration) => {
+    const newWorker = registration.installing;
+    handleWorkerStateChange(newWorker);
+  }, [handleWorkerStateChange]);
+
+  // Handle service worker messages
+  const handleServiceWorkerMessage = useCallback((event) => {
+    const { type, payload } = event.data || {};
+    
+    switch (type) {
+      case 'CACHE_UPDATED':
+        console.log('Cache updated:', payload);
+        break;
+      case 'OFFLINE_FALLBACK':
+        console.log('Using offline fallback');
+        break;
+      default:
+        break;
+    }
+  }, []);
+
   // Handle service worker updates
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -73,47 +106,18 @@ export const usePWA = () => {
         .then(registration => {
           console.log('Service worker registered:', registration);
           setCacheStatus('active');
-
-          // Check for updates
-          const handleUpdateFound = () => {
-            const newWorker = registration.installing;
-            handleWorkerStateChange(newWorker);
-          };
           
-          const handleWorkerStateChange = (newWorker) => {
-            const onStateChange = () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setUpdateAvailable(true);
-                console.log('New service worker available');
-              }
-            };
-            newWorker.addEventListener('statechange', onStateChange);
-          };
-          
-          registration.addEventListener('updatefound', handleUpdateFound);
+          const updateHandler = () => handleUpdateFound(registration);
+          registration.addEventListener('updatefound', updateHandler);
         })
         .catch(error => {
           console.error('Service worker registration failed:', error);
           setCacheStatus('failed');
         });
 
-      // Listen for service worker messages
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        const { type, payload } = event.data || {};
-        
-        switch (type) {
-          case 'CACHE_UPDATED':
-            console.log('Cache updated:', payload);
-            break;
-          case 'OFFLINE_FALLBACK':
-            console.log('Using offline fallback');
-            break;
-          default:
-            break;
-        }
-      });
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
     }
-  }, []);
+  }, [handleUpdateFound, handleServiceWorkerMessage]);
 
   // Install PWA
   const installPWA = useCallback(async () => {
