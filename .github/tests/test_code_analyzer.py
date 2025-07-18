@@ -3,16 +3,16 @@
 Unit tests for the code analyzer module.
 """
 
-import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-import sys
 import os
+import sys
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
-from code_analyzer import CodeAnalyzer, AnalysisResult, IssueSeverity, IssueType
+from code_analyzer import AnalysisResult, CodeAnalyzer, IssueSeverity, IssueType
 
 
 class TestCodeAnalyzer:
@@ -83,7 +83,7 @@ function fetchUserData(userId) {
 function processPayment(amount, cardNumber) {
     // Security issue: logging sensitive data
     console.log('Processing payment for card: ' + cardNumber);
-    
+
     // SQL injection vulnerability
     const query = "SELECT * FROM payments WHERE card = '" + cardNumber + "'";
     return db.query(query);
@@ -141,11 +141,11 @@ const unusedConfig = {
      result = []
      for item in data:
          result.append(item.upper())
-+    
++
 +    # New code with issue
 +    password = "hardcoded123"  # Security issue
 +    eval(user_input)  # Another security issue
-     
+
      return result
 """
 

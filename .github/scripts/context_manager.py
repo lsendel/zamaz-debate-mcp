@@ -9,12 +9,11 @@ import asyncio
 import hashlib
 import json
 import logging
-import re
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional, Any, Set
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 import aioredis
 import numpy as np
@@ -52,7 +51,7 @@ class ContextItem:
     id: str
     type: ContextType
     content: str
-    embedding: Optional[np.ndarray] = None
+    embedding: np.ndarray | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     accessed_at: datetime = field(default_factory=datetime.utcnow)
@@ -216,7 +215,7 @@ class AdvancedContextManager:
         context_id: str,
         context_type: ContextType,
         content: str,
-        metadata: Optional[dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> ContextItem:
         """Add new context item"""
         item = ContextItem(
@@ -247,7 +246,7 @@ class AdvancedContextManager:
         self,
         query: str,
         max_items: int = 10,
-        context_types: Optional[list[ContextType]] = None,
+        context_types: list[ContextType] | None = None,
         max_tokens: int = 8000
     ) -> ContextWindow:
         """Get relevant context for a query"""
@@ -399,14 +398,11 @@ async def main():
 
         # Get relevant context
         query = "authentication problems and memory issues"
-        context_window = await manager.get_relevant_context(query)
+        await manager.get_relevant_context(query)
 
-        print("Relevant context:")
-        print(context_window.get_context_string())
 
         # Get summary
-        summary = await manager.get_context_summary()
-        print(f"\nContext summary: {json.dumps(summary, indent=2)}")
+        await manager.get_context_summary()
 
     finally:
         await manager.close()
