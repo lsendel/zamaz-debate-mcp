@@ -9,6 +9,8 @@ COMMIT_RANGE=""
 CACHE_DIR=".linting/cache"
 VERBOSE=false
 FORCE_ALL=false
+AUTO_FIX=false
+INCLUDE_PATTERN=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -30,6 +32,15 @@ while [[ $# -gt 0 ]]; do
       ;;
     --force-all)
       FORCE_ALL=true
+      shift
+      ;;
+    --auto-fix)
+      AUTO_FIX=true
+      shift
+      ;;
+    --include-pattern)
+      INCLUDE_PATTERN="$2"
+      shift
       shift
       ;;
     *)
@@ -67,23 +78,45 @@ get_changed_files() {
 # Function to check if file has changed since last lint
 has_changed_since_last_lint() {
   local file=$1
-  local cache_file="$CACHE_DIR/$(echo "$file" | tr '/' '_').hash"
 
-  # Get current hash of the file
-  local current_hash=$(git hash-object "$file" 2>/dev/null || echo "file_not_found")
+  # Use the cache manager if available
+  if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; then
+    local result=$(node .linting/scripts/cache-manager.js check "$file")
+    if [[ "$result" == *"has changed: true"* ]]; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    # Fallback to simple hash-based caching
+    local cache_file="$CACHE_DIR/$(echo "$file" | tr '/' '_').hash"
 
-  # If file doesn't exist, return false
-  if [ "$current_hash" = "file_not_found" ]; then
+    # Get current hash of the file
+    local current_hash=$(git hash-object "$file" 2>/dev/null || echo "file_not_found")
+
+    # If file doesn't exist, return false
+    if [ "$current_hash" = "file_not_found" ]; then
+      return 1
+    fi
+
+    # If cache file doesn't exist or hash is different, file has changed
+    if [ ! -f "$cache_file" ] || [ "$(cat "$cache_file")" != "$current_hash" ]; then
+      echo "$current_hash" > "$cache_file"
+      return 0
+    fi
+
     return 1
   fi
+}
 
-  # If cache file doesn't exist or hash is different, file has changed
-  if [ ! -f "$cache_file" ] || [ "$(cat "$cache_file")" != "$current_hash" ]; then
-    echo "$current_hash" > "$cache_file"
-    return 0
+# Function to update cache after linting
+update_cache() {
+  local file=$1
+
+  # Use the cache manager if available
+  if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; then
+    node .linting/scripts/cache-manager.js update "$file"
   fi
-
-  return 1
 }
 
 # Function to run Java linting on specific files
@@ -133,6 +166,11 @@ run_java_linting() {
 
   # Clean up
   rm "$tmp_pom"
+
+  # Update cache for each file
+  for file in "${files[@]}"; do
+    update_cache "$file"
+  done
 }
 
 # Function to run TypeScript/React linting on specific files
@@ -147,7 +185,16 @@ run_ts_linting() {
   log "Running TypeScript/React linting on ${#files[@]} files"
 
   # Run ESLint on the files
-  cd debate-ui && npx eslint --fix "${files[@]}" && npx prettier --write "${files[@]}"
+  if [ "$AUTO_FIX" = true ]; then
+    cd debate-ui && npx eslint --fix "${files[@]}" && npx prettier --write "${files[@]}"
+  else
+    cd debate-ui && npx eslint "${files[@]}" && npx prettier --check "${files[@]}"
+  fi
+
+  # Update cache for each file
+  for file in "${files[@]}"; do
+    update_cache "$file"
+  done
 }
 
 # Function to run YAML/JSON linting on specific files
@@ -182,6 +229,11 @@ run_config_linting() {
       hadolint -c .linting/config/dockerfile-rules.yml "$file"
     done
   fi
+
+  # Update cache for each file
+  for file in "${files[@]}"; do
+    update_cache "$file"
+  done
 }
 
 # Function to run Markdown linting on specific files
@@ -200,7 +252,17 @@ run_md_linting() {
 
   # Run link-check on the files
   npx markdown-link-check --config .linting/docs/link-check.json "${files[@]}"
+
+  # Update cache for each file
+  for file in "${files[@]}"; do
+    update_cache "$file"
+  done
 }
+
+# Reset results before starting
+if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; then
+  node .linting/scripts/cache-manager.js reset
+fi
 
 # Main execution
 if [ "$FORCE_ALL" = true ]; then
@@ -209,11 +271,23 @@ if [ "$FORCE_ALL" = true ]; then
   exit $?
 fi
 
-# Get changed files by type
-java_files=$(get_changed_files "*.java" "$COMMIT_RANGE" | sort -u)
-ts_files=$(get_changed_files "*.ts *.tsx *.js *.jsx" "$COMMIT_RANGE" | grep -E '^debate-ui/' | sort -u)
-config_files=$(get_changed_files "*.yml *.yaml *.json Dockerfile" "$COMMIT_RANGE" | sort -u)
-md_files=$(get_changed_files "*.md" "$COMMIT_RANGE" | sort -u)
+# If include pattern is provided, use it
+if [ -n "$INCLUDE_PATTERN" ]; then
+  log "Using include pattern: $INCLUDE_PATTERN"
+  files=$(find . -type f -path "$INCLUDE_PATTERN" | sort -u)
+
+  # Filter files by type
+  java_files=$(echo "$files" | grep -E '\.java$' || echo "")
+  ts_files=$(echo "$files" | grep -E '\.(ts|tsx|js|jsx)$' || echo "")
+  config_files=$(echo "$files" | grep -E '\.(yml|yaml|json)$|Dockerfile' || echo "")
+  md_files=$(echo "$files" | grep -E '\.md$' || echo "")
+else
+  # Get changed files by type
+  java_files=$(get_changed_files "*.java" "$COMMIT_RANGE" | sort -u)
+  ts_files=$(get_changed_files "*.ts *.tsx *.js *.jsx" "$COMMIT_RANGE" | grep -E '^debate-ui/' | sort -u)
+  config_files=$(get_changed_files "*.yml *.yaml *.json Dockerfile" "$COMMIT_RANGE" | sort -u)
+  md_files=$(get_changed_files "*.md" "$COMMIT_RANGE" | sort -u)
+fi
 
 # Filter files that have changed since last lint
 java_files_to_lint=()
@@ -249,6 +323,11 @@ run_java_linting "${java_files_to_lint[@]}"
 run_ts_linting "${ts_files_to_lint[@]}"
 run_config_linting "${config_files_to_lint[@]}"
 run_md_linting "${md_files_to_lint[@]}"
+
+# Clean old cache entries
+if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; then
+  node .linting/scripts/cache-manager.js clean
+fi
 
 log "Incremental linting completed successfully"
 exit 0

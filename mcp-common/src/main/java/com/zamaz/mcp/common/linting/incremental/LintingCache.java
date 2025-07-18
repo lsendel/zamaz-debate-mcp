@@ -7,6 +7,8 @@ import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -116,6 +118,52 @@ public class LintingCache {
      */
     public int size() {
         return cache.size();
+    }
+
+    /**
+     * Clean up cache by removing entries for files that no longer exist.
+     */
+    public void cleanup() {
+        logger.info("Starting cache cleanup");
+        int removedEntries = 0;
+        
+        List<String> keysToRemove = new ArrayList<>();
+        
+        for (String cacheKey : cache.keySet()) {
+            Path file = Path.of(cacheKey);
+            if (!Files.exists(file)) {
+                keysToRemove.add(cacheKey);
+                removedEntries++;
+            }
+        }
+        
+        keysToRemove.forEach(cache::remove);
+        
+        logger.info("Cache cleanup completed. Removed {} stale entries", removedEntries);
+    }
+
+    /**
+     * Get cache entry details for debugging.
+     */
+    public Map<String, Object> getCacheDetails() {
+        Map<String, Object> details = new HashMap<>();
+        details.put("size", cache.size());
+        details.put("statistics", statistics);
+        
+        // File type distribution
+        Map<String, Integer> fileTypeDistribution = new HashMap<>();
+        for (String cacheKey : cache.keySet()) {
+            String extension = getFileExtension(Path.of(cacheKey).getFileName().toString());
+            fileTypeDistribution.merge(extension, 1, Integer::sum);
+        }
+        details.put("fileTypeDistribution", fileTypeDistribution);
+        
+        return details;
+    }
+
+    private String getFileExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "no-extension";
     }
 
     /**

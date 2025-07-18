@@ -3,21 +3,12 @@ FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 # Set working directory
 WORKDIR /build
 
-# Copy Maven configuration files first for better layer caching
+# Copy all source code and build configuration
 COPY pom.xml .
-COPY .mvn/ .mvn/
-COPY */pom.xml ./
-RUN mkdir -p mcp-common/src/main/java mcp-security/src/main/java
+COPY mcp-common/ mcp-common/
+COPY mcp-organization/ mcp-organization/
 
-# Download dependencies (this layer will be cached if pom files don't change)
-RUN mvn dependency:go-offline -B
-
-# Copy source code - only necessary directories
-COPY mcp-common/src/ mcp-common/src/
-COPY mcp-security/src/ mcp-security/src/
-COPY mcp-organization/src/ mcp-organization/src/
-
-# Build the specific module
+# Build the specific module only
 RUN mvn clean package -pl mcp-organization -am -DskipTests
 
 # Security: Verify JAR file exists

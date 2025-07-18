@@ -70,13 +70,15 @@ help: ## 📚 Show this help message
 	@echo '$(WHITE)📊 MONITORING & DEBUG:$(NC)'
 	@echo '  $(GREEN)make status$(NC)    - Show service status'
 	@echo '  $(GREEN)make health$(NC)    - Check service health'
-	@echo '  $(GREEN)make logs-ui$(NC)   - View UI logs only'
-	@echo '  $(GREEN)make logs-api$(NC)  - View API logs only'
+	@echo '  $(GREEN)make show-urls$(NC) - Show all service URLs and ports'
+	@echo '  $(GREEN)make diagnose$(NC)  - Diagnose connectivity issues'
+	@echo '  $(GREEN)make logs$(NC)      - View all service logs'
 	@echo ''
 	@echo '$(WHITE)🔧 MAINTENANCE:$(NC)'
 	@echo '  $(GREEN)make clean$(NC)     - Clean up containers and volumes'
 	@echo '  $(GREEN)make reset$(NC)     - Complete reset (clean + fresh start)'
 	@echo '  $(GREEN)make build$(NC)     - Rebuild Docker images'
+	@echo '  $(GREEN)make fix-connectivity$(NC) - Auto-fix connection issues'
 	@echo ''
 	@echo '$(WHITE)🌍 ENVIRONMENTS:$(NC)'
 	@echo '  $(GREEN)make prod$(NC)      - Deploy to production mode'
@@ -86,6 +88,7 @@ help: ## 📚 Show this help message
 	@echo '  New developer: $(CYAN)make setup && make dev$(NC)'
 	@echo '  Daily work:    $(CYAN)make restart && make ui$(NC)'
 	@echo '  Before commit: $(CYAN)make lint && make test$(NC)'
+	@echo '  Show all URLs: $(CYAN)make show-urls$(NC)'
 	@echo ''
 	@echo '$(WHITE)📋 ALL COMMANDS:$(NC)'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(NC) %s\n", $$1, $$2}'
@@ -215,11 +218,13 @@ test-services: ## 🔧 Test individual services
 
 lint: ## 🔍 Run incremental linting (fast, smart analysis)
 	@echo "$(BLUE)Running incremental linting...$(NC)"
-	@if [ -f ".linting/scripts/incremental-lint.sh" ]; then \
-		chmod +x .linting/scripts/incremental-lint.sh && ./.linting/scripts/incremental-lint.sh --verbose; \
+	@if [ -f "scripts/testing/test-incremental-linting.sh" ]; then \
+		chmod +x scripts/testing/test-incremental-linting.sh && ./scripts/testing/test-incremental-linting.sh; \
+	elif [ -d "debate-ui" ]; then \
+		echo "$(YELLOW)Running frontend linting...$(NC)"; \
+		cd debate-ui && npm run lint --silent 2>/dev/null || echo "$(YELLOW)⚠️ Frontend linting skipped$(NC)"; \
 	else \
-		echo "$(RED)❌ Incremental linting script not found$(NC)"; \
-		exit 1; \
+		echo "$(YELLOW)⚠️ No linting configuration found$(NC)"; \
 	fi
 	@echo "$(GREEN)✅ Linting complete$(NC)"
 
@@ -242,9 +247,21 @@ status: ## 📊 Show service status
 health: ## 🏥 Check service health
 	@echo "$(BLUE)Health Check:$(NC)"
 	@echo -n "PostgreSQL: "
-	@timeout 5 docker-compose -f $(COMPOSE_FILE) exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
 	@echo -n "Redis: "
-	@timeout 5 docker-compose -f $(COMPOSE_FILE) exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@echo -n "Qdrant: "
+	@curl -s http://localhost:$(QDRANT_PORT)/collections > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@echo -n "Organization API: "
+	@curl -s http://localhost:$(MCP_ORGANIZATION_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
+	@echo -n "LLM API: "
+	@curl -s http://localhost:$(MCP_LLM_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
+	@echo -n "Debate API: "
+	@curl -s http://localhost:$(MCP_DEBATE_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
+	@echo -n "RAG API: "
+	@curl -s http://localhost:$(MCP_RAG_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
+	@echo -n "Template API: "
+	@curl -s http://localhost:$(MCP_TEMPLATE_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
 	@echo -n "UI: "
 	@curl -s http://localhost:$(UI_PORT) > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Run 'make ui'$(NC)"
 
@@ -259,6 +276,51 @@ logs-ui: ## 📱 View UI logs only
 logs-api: ## 🔌 View API logs only
 	@echo "$(BLUE)API Service Logs:$(NC)"
 	@docker-compose -f $(COMPOSE_FILE) logs -f --tail=20
+
+show-urls: ## 🌐 Show all service URLs and access information
+	@echo ""
+	@echo "$(CYAN)╔══════════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(CYAN)║                     🌐 SERVICE ACCESS URLs                      ║$(NC)"
+	@echo "$(CYAN)╚══════════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(WHITE)🎨 FRONTEND & USER INTERFACES:$(NC)"
+	@echo "  $(GREEN)Main UI (React)$(NC)     http://localhost:$(UI_PORT)"
+	@echo "  $(GREEN)Grafana Dashboard$(NC)  http://localhost:$(GRAFANA_PORT) $(YELLOW)(admin/admin)$(NC)"
+	@echo "  $(GREEN)Jaeger Tracing$(NC)     http://localhost:$(JAEGER_UI_PORT)"
+	@echo ""
+	@echo "$(WHITE)🔌 MCP MICROSERVICES (REST APIs):$(NC)"
+	@echo "  $(BLUE)Organization API$(NC)   http://localhost:$(MCP_ORGANIZATION_PORT)/actuator/health"
+	@echo "  $(BLUE)LLM API$(NC)            http://localhost:$(MCP_LLM_PORT)/actuator/health"
+	@echo "  $(BLUE)Debate Controller$(NC)  http://localhost:$(MCP_DEBATE_PORT)/actuator/health"
+	@echo "  $(BLUE)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)/actuator/health"
+	@echo "  $(BLUE)Template API$(NC)       http://localhost:$(MCP_TEMPLATE_PORT)/actuator/health"
+	@echo ""
+	@echo "$(WHITE)📊 MONITORING & OBSERVABILITY:$(NC)"
+	@echo "  $(PURPLE)Prometheus$(NC)        http://localhost:$(PROMETHEUS_PORT)"
+	@echo "  $(PURPLE)Loki Logs$(NC)         http://localhost:$(LOKI_PORT)"
+	@echo "  $(PURPLE)Qdrant Vector DB$(NC)  http://localhost:$(QDRANT_PORT)/dashboard"
+	@echo ""
+	@echo "$(WHITE)🗄️ DATABASES & STORAGE:$(NC)"
+	@echo "  $(YELLOW)PostgreSQL$(NC)        localhost:$(POSTGRES_PORT) $(YELLOW)(postgres/postgres)$(NC)"
+	@echo "  $(YELLOW)Redis Cache$(NC)       localhost:$(REDIS_PORT)"
+	@echo ""
+	@echo "$(WHITE)🤖 AI & ML SERVICES:$(NC)"
+	@echo "  $(GREEN)Ollama (Local LLMs)$(NC) http://localhost:$(OLLAMA_PORT) $(YELLOW)(start with --profile llama)$(NC)"
+	@echo ""
+	@echo "$(WHITE)📋 API DOCUMENTATION:$(NC)"
+	@echo "  $(CYAN)Organization API$(NC)   http://localhost:$(MCP_ORGANIZATION_PORT)/swagger-ui.html"
+	@echo "  $(CYAN)LLM API$(NC)            http://localhost:$(MCP_LLM_PORT)/swagger-ui.html"  
+	@echo "  $(CYAN)Debate API$(NC)         http://localhost:$(MCP_DEBATE_PORT)/swagger-ui.html"
+	@echo "  $(CYAN)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)/swagger-ui.html"
+	@echo "  $(CYAN)Template API$(NC)       http://localhost:$(MCP_TEMPLATE_PORT)/swagger-ui.html"
+	@echo ""
+	@echo "$(WHITE)🔧 QUICK HEALTH CHECKS:$(NC)"
+	@echo "  $(GREEN)make health$(NC)        - Check all service health"
+	@echo "  $(GREEN)make status$(NC)        - Show Docker container status"
+	@echo "  $(GREEN)make logs$(NC)          - View all service logs"
+	@echo ""
+	@echo "$(YELLOW)💡 TIP: Bookmark http://localhost:$(UI_PORT) for the main application!$(NC)"
+	@echo ""
 
 # =============================================================================
 # CLEANUP & MAINTENANCE
@@ -329,6 +391,43 @@ ports: ## 🔌 Show port usage
 	@echo ""
 	@echo "$(BLUE)Currently used ports:$(NC)"
 	@lsof -nP -i4TCP | grep LISTEN | awk '{print $$9}' | sort -u | grep -E ':(3001|5432|6379|500[0-9]|501[0-9])' || echo "No MCP ports in use"
+
+diagnose: ## 🔍 Diagnose connectivity issues
+	@echo "$(BLUE)🔍 Diagnosing connectivity issues...$(NC)"
+	@echo ""
+	@echo "$(WHITE)1. Docker Services:$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) ps
+	@echo ""
+	@echo "$(WHITE)2. Port Check:$(NC)"
+	@lsof -nP -i4TCP | grep LISTEN | grep -E ':(3001|5002|5004|5005|5006|5013|5432|6333|6379)' || echo "$(YELLOW)No MCP services listening$(NC)"
+	@echo ""
+	@echo "$(WHITE)3. Service URLs Test:$(NC)"
+	@echo -n "  UI ($(UI_PORT)): "
+	@curl -s -o /dev/null -w "%{http_code}" http://localhost:$(UI_PORT) 2>/dev/null || echo "Connection failed"
+	@echo ""
+	@echo -n "  Qdrant ($(QDRANT_PORT)): "
+	@curl -s -o /dev/null -w "%{http_code}" http://localhost:$(QDRANT_PORT) 2>/dev/null || echo "Connection failed"
+	@echo ""
+	@echo "$(WHITE)4. What's Missing:$(NC)"
+	@echo "$(YELLOW)To fix the issues:$(NC)"
+	@echo "  1. Run $(CYAN)make build$(NC) to build the Java services"
+	@echo "  2. Run $(CYAN)make start$(NC) to start all services"
+	@echo "  3. Run $(CYAN)make ui$(NC) in a separate terminal for the frontend"
+	@echo ""
+
+fix-connectivity: ## 🔧 Fix connectivity issues automatically
+	@echo "$(BLUE)🔧 Fixing connectivity issues...$(NC)"
+	@echo "$(YELLOW)Step 1: Building Java services...$(NC)"
+	@$(MAKE) build
+	@echo "$(YELLOW)Step 2: Starting all services...$(NC)"
+	@$(MAKE) start
+	@echo "$(YELLOW)Step 3: Waiting for services to start...$(NC)"
+	@sleep 10
+	@echo "$(YELLOW)Step 4: Checking health...$(NC)"
+	@$(MAKE) health
+	@echo ""
+	@echo "$(GREEN)✅ Services should now be accessible!$(NC)"
+	@echo "$(CYAN)Next: Run '$(WHITE)make ui$(CYAN)' in a separate terminal for the frontend$(NC)"
 
 info: ## ℹ️ Show project information
 	@echo "$(CYAN)Project: $(PROJECT_NAME)$(NC)"

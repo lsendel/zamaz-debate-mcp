@@ -1,0 +1,102 @@
+name: Incremental Linting
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Incremental Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git diff
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install linting dependencies
+        run: |
+          npm install -g jsonlint yamllint markdownlint-cli markdown-link-check
+          pip install hadolint
+
+      - name: Determine changed files
+        id: changes
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "COMMIT_RANGE=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          else
+            # For push events, compare with the previous commit
+            echo "COMMIT_RANGE=$(git rev-parse HEAD^)..$(git rev-parse HEAD)" >> $GITHUB_ENV
+          fi
+
+      - name: Run incremental linting
+        run: |
+          chmod +x .linting/scripts/incremental-lint.sh
+          .linting/scripts/incremental-lint.sh --verbose --commit-range="${COMMIT_RANGE}"
+
+      - name: Generate linting report
+        if: always()
+        run: |
+          mkdir -p .linting/reports
+          echo "# Linting Report" > .linting/reports/lint-report.md
+          echo "Generated on $(date)" >> .linting/reports/lint-report.md
+          echo "Commit range: ${COMMIT_RANGE}" >> .linting/reports/lint-report.md
+          echo "" >> .linting/reports/lint-report.md
+
+          if [ -f ".linting/cache/lint-results.json" ]; then
+            echo "## Results" >> .linting/reports/lint-report.md
+            cat .linting/cache/lint-results.json | jq -r '.summary' >> .linting/reports/lint-report.md
+
+            echo "## Issues" >> .linting/reports/lint-report.md
+            cat .linting/cache/lint-results.json | jq -r '.issues[] | "- **" + .severity + "**: " + .message + " in `" + .file + "` line " + (.line|tostring)' >> .linting/reports/lint-report.md
+          else
+            echo "No linting results found." >> .linting/reports/lint-report.md
+          fi
+
+      - name: Upload linting report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-report
+          path: .linting/reports/
+
+      - name: Comment PR with linting results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            try {
+              const reportPath = '.linting/reports/lint-report.md';
+              if (fs.existsSync(reportPath)) {
+                const reportContent = fs.readFileSync(reportPath, 'utf8');
+                const issueNumber = context.issue.number;
+
+                github.rest.issues.createComment({
+                  issue_number: issueNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: reportContent
+                });
+              }
+            } catch (error) {
+              console.error('Error posting comment:', error);
+            }

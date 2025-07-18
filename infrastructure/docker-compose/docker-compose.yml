@@ -220,7 +220,7 @@ services:
       qdrant:
         condition: service_started
     volumes:
-      - ./mcp-rag/config:/app/config
+      - ../../mcp-rag/config:/app/config
       - rag_data:/app/data
     networks:
       - mcp-network
@@ -235,7 +235,7 @@ services:
   # Java MCP Template Service
   mcp-template:
     build:
-      context: .
+      context: ../..
       dockerfile: mcp-template/Dockerfile
     environment:
       - DB_HOST=postgres
@@ -256,7 +256,7 @@ services:
       mcp-organization:
         condition: service_started
     volumes:
-      - ./mcp-template/config:/app/config
+      - ../../mcp-template/config:/app/config
       - template-data:/app/data
     networks:
       - mcp-network
@@ -285,7 +285,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.91.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
-      - ./docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ../../docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml
       - otel_logs:/var/log/otel
     ports:
       - "${OTEL_GRPC_PORT:-4317}:4317"    # OTLP gRPC receiver
@@ -329,7 +329,7 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     networks:
       - mcp-network
@@ -345,7 +345,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ../../monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
     depends_on:
       - prometheus
     networks:
@@ -359,7 +359,7 @@ services:
     ports:
       - "${LOKI_PORT:-3100}:3100"
     volumes:
-      - ./docker/loki-config.yaml:/etc/loki/local-config.yaml
+      - ../../docker/loki-config.yaml:/etc/loki/local-config.yaml
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
     networks:
@@ -374,7 +374,7 @@ services:
   promtail:
     image: grafana/promtail:3.3.0
     volumes:
-      - ./docker/promtail-config.yaml:/etc/promtail/config.yml
+      - ../../docker/promtail-config.yaml:/etc/promtail/config.yml
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock

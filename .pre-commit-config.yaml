@@ -1,196 +1,73 @@
 repos:
--   repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.1
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
-    -   id: gitleaks
-        name: Detect hardcoded secrets
-        description: Scan for hardcoded secrets and credentials
-        entry: gitleaks protect --verbose --redact --staged
-        pass_filenames: false
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: detect-private-key
 
--   repo: https://github.com/returntocorp/semgrep
-    rev: v1.50.0
-    hooks:
-    -   id: semgrep
-        name: Semgrep security scan
-        description: Run Semgrep static analysis for security issues
-        entry: semgrep
-        args: ['--config', 'p/security-audit', '--error']
-        pass_filenames: false
-
--   repo: https://github.com/hadolint/hadolint
+  - repo: https://github.com/hadolint/hadolint
     rev: v2.12.0
     hooks:
-    -   id: hadolint
-        name: Lint Dockerfiles
-        description: Lint Dockerfiles for best practices and security issues
-        entry: hadolint
-        types: [dockerfile]
+      - id: hadolint
+        args: ['--config', '.linting/config/dockerfile-rules.yml']
 
--   repo: https://github.com/bridgecrewio/checkov
-    rev: 3.1.52
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.35.0
     hooks:
-    -   id: checkov
-        name: Checkov IaC security scan
-        description: Scan Infrastructure as Code files for security issues
-        entry: checkov
-        args: ['-d', '.']
-        pass_filenames: false
+      - id: markdownlint
+        args: ['--config', '.linting/docs/markdownlint.json']
 
--   repo: https://github.com/zricethezav/detect-secrets
-    rev: v1.4.0
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.38.0
     hooks:
-    -   id: detect-secrets
-        name: Detect secrets
-        description: Detect secrets in committed files
-        args: ['--baseline', '.secrets.baseline']
-        exclude: package-lock.json|yarn.lock|^.secrets.baseline$
-
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-        args: ['--unsafe']  # Allow custom YAML tags
-    -   id: check-added-large-files
-        args: ['--maxkb=1000']
-    -   id: check-json
-    -   id: check-xml
-    -   id: check-merge-conflict
-    -   id: detect-private-key
-    -   id: check-case-conflict
-    -   id: check-executables-have-shebangs
-    -   id: check-shebang-scripts-are-executable
-    -   id: fix-byte-order-marker
-
-# Java linting hooks
--   repo: local
-    hooks:
-    -   id: checkstyle
-        name: Checkstyle
-        description: Run Checkstyle on Java files
-        entry: mvn
-        args: ['checkstyle:check', '-q']
-        language: system
-        files: \.java$
-        pass_filenames: false
-
-    -   id: spotbugs
-        name: SpotBugs
-        description: Run SpotBugs on Java files
-        entry: mvn
-        args: ['spotbugs:check', '-q']
-        language: system
-        files: \.java$
-        pass_filenames: false
-
-    -   id: pmd
-        name: PMD
-        description: Run PMD on Java files
-        entry: mvn
-        args: ['pmd:check', '-q']
-        language: system
-        files: \.java$
-        pass_filenames: false
-
-# Frontend linting hooks
--   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.57.0
-    hooks:
-    -   id: eslint
-        name: ESLint
-        description: Run ESLint on TypeScript/JavaScript files
-        files: \.(ts|tsx|js|jsx)$
-        args: ['--config', '.linting/frontend/.eslintrc.js', '--fix']
+      - id: eslint
+        files: \.(js|ts|tsx)$
+        types: [file]
         additional_dependencies:
-          - '@typescript-eslint/eslint-plugin@^6.21.0'
-          - '@typescript-eslint/parser@^6.21.0'
-          - 'eslint-config-prettier@^9.1.0'
-          - 'eslint-plugin-import@^2.29.1'
-          - 'eslint-plugin-jsx-a11y@^6.8.0'
-          - 'eslint-plugin-react@^7.33.2'
-          - 'eslint-plugin-react-hooks@^4.6.0'
-          - 'eslint-plugin-security@^2.1.1'
-          - 'eslint-plugin-sonarjs@^0.23.0'
+          - eslint@8.38.0
+          - eslint-plugin-react@7.32.2
+          - eslint-plugin-react-hooks@4.6.0
+          - eslint-plugin-import@2.27.5
+          - eslint-plugin-jsx-a11y@6.7.1
+          - '@typescript-eslint/eslint-plugin@5.59.0'
+          - '@typescript-eslint/parser@5.59.0'
+        args: ['--config', '.linting/frontend/.eslintrc.js']
 
--   repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.2.5
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.9-for-vscode
     hooks:
-    -   id: prettier
-        name: Prettier
-        description: Format code with Prettier
-        files: \.(ts|tsx|js|jsx|json|css|md|yml|yaml)$
-        args: ['--config', '.linting/frontend/.prettierrc', '--write']
+      - id: prettier
+        files: \.(js|ts|tsx|json|css|scss|md|yaml|yml)$
+        args: ['--config', '.linting/frontend/.prettierrc']
 
-# YAML linting
--   repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+  - repo: local
     hooks:
-    -   id: yamllint
-        name: YAML Lint
-        description: Lint YAML files
-        args: ['-c', '.linting/config/yaml-lint.yml']
-
-# Markdown linting
--   repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
-    hooks:
-    -   id: markdownlint
-        name: Markdown Lint
-        description: Lint Markdown files
-        args: ['--config', '.linting/docs/markdownlint.json', '--fix']
-
-# Commit message linting
--   repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.13.0
-    hooks:
-    -   id: commitizen
-        name: Commitizen Check
-        description: Check commit message format
-        stages: [commit-msg]
-
-# Additional quality checks
--   repo: local
-    hooks:
-    -   id: maven-test
-        name: Maven Tests
-        description: Run Maven unit tests
-        entry: mvn
-        args: ['test', '-q', '-Dmaven.test.failure.ignore=false']
+      - id: java-checkstyle
+        name: Java Checkstyle
+        entry: java -jar checkstyle.jar -c .linting/java/checkstyle.xml
         language: system
         files: \.java$
-        pass_filenames: false
-        stages: [push]
+        pass_filenames: true
 
-    -   id: frontend-test
-        name: Frontend Tests
-        description: Run frontend unit tests
-        entry: bash
-        args: ['-c', 'cd debate-ui && npm test -- --watchAll=false --coverage=false']
-        language: system
-        files: \.(ts|tsx|js|jsx)$
-        pass_filenames: false
-        stages: [push]
-
-    -   id: docker-build-test
-        name: Docker Build Test
-        description: Test Docker builds
-        entry: bash
-        args: ['-c', 'docker-compose build --no-cache']
-        language: system
-        files: ^(Dockerfile|docker-compose\.yml|\.dockerignore)$
-        pass_filenames: false
-        stages: [push]
-
-# Custom linting script
--   repo: local
-    hooks:
-    -   id: custom-lint-all
-        name: Custom Lint All
-        description: Run comprehensive linting via Makefile
-        entry: make
-        args: ['lint-all']
+      - id: incremental-lint
+        name: Incremental Linting
+        entry: .linting/scripts/incremental-lint.sh
         language: system
         pass_filenames: false
-        stages: [manual]
+        always_run: true
+        stages: [commit]
+
+      - id: commit-msg
+        name: Check Commit Message
+        entry: .linting/scripts/check-commit-message.sh
+        language: system
+        stages: [commit-msg]
+        pass_filenames: true

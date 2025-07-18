@@ -18,6 +18,7 @@ make dev            # Start everything for development
 # Daily development
 make restart        # Restart services
 make ui            # Start UI (in separate terminal)
+make show-urls     # See all service URLs and ports
 make logs          # View all logs
 make health        # Check if everything is working
 
@@ -57,8 +58,9 @@ make test          # Quick validation tests
 ### 📊 Monitoring
 - `make status` - Service status
 - `make health` - Health checks
+- `make show-urls` - **Show all service URLs and ports**
 - `make logs` - All logs
-- `make ports` - Port usage
+- `make ports` - Port usage (diagnostic)
 
 ### 🧹 Maintenance
 - `make clean` - Clean up (with confirmation)
@@ -111,12 +113,13 @@ make reset
 
 ## 🔧 Key Improvements
 
-1. **Incremental Linting Integration** - Uses the new smart linting system
-2. **Unified Help System** - Single `make help` shows everything
-3. **Safe Cleanup** - Asks for confirmation before destructive operations
-4. **Environment Detection** - Automatically detects what's available
-5. **Clear Error Messages** - Helpful when things go wrong
-6. **Consistent Naming** - No more confusion about command names
+1. **Comprehensive URL Display** - `make start` and `make show-urls` show all service URLs with descriptions
+2. **Incremental Linting Integration** - Uses the new smart linting system
+3. **Unified Help System** - Single `make help` shows everything
+4. **Safe Cleanup** - Asks for confirmation before destructive operations
+5. **Environment Detection** - Automatically detects what's available
+6. **Clear Error Messages** - Helpful when things go wrong
+7. **Consistent Naming** - No more confusion about command names
 
 ## 📝 Migration Notes
 
@@ -129,3 +132,16 @@ If you were using the old Makefile:
 - `make lint-all` → `make lint` (now incremental)
 
 The old complex Makefile has been moved to `archive/Makefile.complex.backup` for reference.
+
+## 🌐 New URL Display Feature
+
+When you run `make start` or `make dev`, you'll now see a comprehensive list of all available services:
+
+- **Frontend UIs** - Main React app, Grafana, Jaeger
+- **REST APIs** - All MCP microservices with health endpoints
+- **Documentation** - Swagger UI for each API
+- **Monitoring** - Prometheus, Loki, Qdrant dashboards
+- **Databases** - PostgreSQL and Redis connection details
+- **AI Services** - Ollama for local LLMs
+
+Run `make show-urls` anytime to see the complete list with URLs, ports, and access credentials!
