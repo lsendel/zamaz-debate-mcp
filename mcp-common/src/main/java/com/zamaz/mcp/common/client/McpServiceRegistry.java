@@ -18,26 +18,26 @@ import java.util.Optional;
 @Slf4j
 public class McpServiceRegistry {
 
-    // Default service URLs - can be overridden by properties
-    @Value("${mcp.services.organization.url:http://localhost:5005}")
+    // Service URLs from environment variables
+    @Value("${ORGANIZATION_SERVICE_URL}")
     private String organizationServiceUrl;
 
-    @Value("${mcp.services.context.url:http://localhost:5007}")
+    @Value("${CONTEXT_SERVICE_URL}")
     private String contextServiceUrl;
 
-    @Value("${mcp.services.llm.url:http://localhost:5002}")
+    @Value("${LLM_SERVICE_URL}")
     private String llmServiceUrl;
 
-    @Value("${mcp.services.controller.url:http://localhost:5013}")
+    @Value("${CONTROLLER_SERVICE_URL}")
     private String controllerServiceUrl;
 
-    @Value("${mcp.services.rag.url:http://localhost:5004}")
+    @Value("${RAG_SERVICE_URL}")
     private String ragServiceUrl;
 
-    @Value("${mcp.services.template.url:http://localhost:5006}")
+    @Value("${TEMPLATE_SERVICE_URL}")
     private String templateServiceUrl;
 
-    @Value("${mcp.services.gateway.url:http://localhost:8080}")
+    @Value("${GATEWAY_SERVICE_URL}")
     private String gatewayServiceUrl;
 
     private final McpServiceClient mcpServiceClient;

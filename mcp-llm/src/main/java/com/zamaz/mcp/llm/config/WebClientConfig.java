@@ -127,7 +127,7 @@ public class WebClientConfig {
         }
 
         String baseUrl = providerConfig.getBaseUrl() != null ? 
-                providerConfig.getBaseUrl() : "http://localhost:11434";
+                providerConfig.getBaseUrl() : System.getenv("OLLAMA_ENDPOINT");
         
         Duration timeout = providerConfig.getTimeout() != null ? 
                 providerConfig.getTimeout() : Duration.ofMinutes(2); // Ollama can be slower

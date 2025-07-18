@@ -32,26 +32,32 @@ public class RoutingConfig {
     private final RequestValidationGatewayFilterFactory validationFilter;
     private final CircuitBreakerGatewayFilterFactory circuitBreakerFilter;
 
-    @Value("${gateway.services.organization.url:http://localhost:5005}")
+    @Value("${ORGANIZATION_SERVICE_URL}")
     private String organizationServiceUrl;
 
-    @Value("${gateway.services.controller.url:http://localhost:5013}")
+    @Value("${CONTROLLER_SERVICE_URL}")
     private String controllerServiceUrl;
 
-    @Value("${gateway.services.llm.url:http://localhost:5002}")
+    @Value("${LLM_SERVICE_URL}")
     private String llmServiceUrl;
 
-    @Value("${gateway.services.rag.url:http://localhost:5004}")
+    @Value("${RAG_SERVICE_URL}")
     private String ragServiceUrl;
 
-    @Value("${gateway.services.template.url:http://localhost:5006}")
+    @Value("${TEMPLATE_SERVICE_URL}")
     private String templateServiceUrl;
 
-    @Value("${gateway.services.context.url:http://localhost:5007}")
+    @Value("${CONTEXT_SERVICE_URL}")
     private String contextServiceUrl;
 
-    @Value("${gateway.services.security.url:http://localhost:5008}")
+    @Value("${SECURITY_SERVICE_URL}")
     private String securityServiceUrl;
+
+    @Value("${WEBSOCKET_URL}")
+    private String websocketUrl;
+
+    @Value("${LLM_CANARY_URL:http://localhost:5002-canary}")
+    private String llmCanaryUrl;
 
     /**
      * Configure comprehensive routing for all microservices
@@ -251,7 +257,7 @@ public class RoutingConfig {
                 .filters(f -> f
                     .filter(authFilter.apply(config -> config.setRequireAuth(true)))
                 )
-                .uri("ws://localhost:5014")
+                .uri(websocketUrl)
             )
 
             // API Documentation Routes
@@ -386,7 +392,7 @@ public class RoutingConfig {
                     ))
                     .setRequestHeader("X-Route-To", "canary")
                 )
-                .uri("http://localhost:5002-canary")
+                .uri(llmCanaryUrl)
             )
 
             // A/B testing route

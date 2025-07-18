@@ -17,7 +17,7 @@ spring:
           '[/**]':
             allowedOriginPatterns: 
               - "http://localhost:*"
-              - "${ALLOWED_ORIGINS:http://localhost:3000}"
+              - "${CORS_ALLOWED_ORIGINS}"
             allowedMethods:
               - GET
               - POST
@@ -39,7 +39,7 @@ spring:
       routes:
         # Organization Service
         - id: organization-service
-          uri: http://mcp-organization:5005
+          uri: ${DOCKER_ORGANIZATION_SERVICE_URL}
           predicates:
             - Path=/api/v1/organizations/**, /api/v1/auth/**
           filters:
@@ -60,7 +60,7 @@ spring:
         
         # LLM Service
         - id: llm-service
-          uri: http://mcp-llm:5002
+          uri: ${DOCKER_LLM_SERVICE_URL}
           predicates:
             - Path=/api/v1/llm/**, /api/v1/completions/**, /api/v1/providers/**
           filters:
@@ -76,7 +76,7 @@ spring:
         
         # Controller Service
         - id: controller-service
-          uri: http://mcp-controller:5013
+          uri: ${DOCKER_CONTROLLER_SERVICE_URL}
           predicates:
             - Path=/api/v1/debates/**, /api/v1/rounds/**
           filters:
@@ -87,7 +87,7 @@ spring:
         
         # RAG Service
         - id: rag-service
-          uri: http://mcp-rag:5004
+          uri: ${DOCKER_RAG_SERVICE_URL}
           predicates:
             - Path=/api/v1/rag/**, /api/v1/knowledge/**, /api/v1/search/**
           filters:
@@ -98,7 +98,7 @@ spring:
         
         # Template Service
         - id: template-service
-          uri: http://mcp-template:5006
+          uri: ${DOCKER_TEMPLATE_SERVICE_URL}
           predicates:
             - Path=/api/v1/templates/**
           filters:

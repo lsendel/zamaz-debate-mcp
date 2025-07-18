@@ -15,8 +15,9 @@ public class TemplateServiceProperties {
     
     /**
      * Template service base URL.
+     * This should be configured via template.service.url property.
      */
-    private String url = "http://localhost:5006";
+    private String url;
     
     /**
      * Whether template service integration is enabled.
