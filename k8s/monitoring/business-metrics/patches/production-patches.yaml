@@ -1,0 +1,307 @@
+# Production environment patches for business metrics monitoring
+
+# Increase resource allocations for production workload
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-sla-tracker
+  namespace: monitoring
+spec:
+  replicas: 3  # Increased for production
+  template:
+    spec:
+      containers:
+      - name: sla-tracker
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        env:
+        - name: LOG_LEVEL
+          value: "WARN"  # Reduced logging for production
+        - name: EVALUATION_INTERVAL
+          value: "30s"  # More frequent evaluation
+        - name: ALERT_BUFFER_SIZE
+          value: "1000"
+        - name: METRICS_CACHE_SIZE
+          value: "10000"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-business-metrics-collector
+  namespace: monitoring
+spec:
+  replicas: 3  # Increased for production
+  template:
+    spec:
+      containers:
+      - name: metrics-collector
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        env:
+        - name: LOG_LEVEL
+          value: "WARN"  # Reduced logging for production
+        - name: COLLECTION_INTERVAL
+          value: "15s"  # More frequent collection
+        - name: BATCH_SIZE
+          value: "500"  # Larger batches for efficiency
+        - name: PARALLEL_WORKERS
+          value: "4"
+        - name: METRICS_CACHE_TTL
+          value: "30m"
+        - name: DATABASE_POOL_SIZE
+          value: "20"
+        - name: REDIS_POOL_SIZE
+          value: "10"
+---
+# Production AlertManager configuration patches
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.mcp-debate.com:587'
+      smtp_from: 'alerts@mcp-debate.com'
+      smtp_auth_username: 'alerts@mcp-debate.com'
+      smtp_auth_password_file: '/etc/alertmanager/secrets/smtp-password'
+      slack_api_url_file: '/etc/alertmanager/secrets/slack-webhook-url'
+      pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+      
+    # Production routing with shorter response times
+    route:
+      group_by: ['alertname', 'severity', 'team', 'organization_id']
+      group_wait: 5s  # Reduced for production
+      group_interval: 30s
+      repeat_interval: 30m  # More frequent repeats
+      receiver: 'default-receiver'
+      routes:
+      # Critical business impact - immediate escalation
+      - match_re:
+          severity: critical
+          impact: business|revenue
+        receiver: 'critical-business-impact'
+        group_wait: 0s
+        repeat_interval: 5m
+        continue: true
+        
+      # SLA violations - immediate response
+      - match:
+          severity: critical
+          sla_type: availability
+        receiver: 'sla-critical-production'
+        group_wait: 0s
+        repeat_interval: 2m
+        continue: true
+        
+      # Production-specific escalation for LLM issues
+      - match:
+          team: ai
+          severity: critical
+        receiver: 'ai-critical-production'
+        group_wait: 30s
+        repeat_interval: 10m
+        
+    # Production receivers with enhanced notifications
+    receivers:
+    - name: 'critical-business-impact'
+      email_configs:
+      - to: 'ceo@mcp-debate.com,cto@mcp-debate.com,sre-oncall@mcp-debate.com'
+        subject: '🚨 CRITICAL BUSINESS IMPACT - {{ .GroupLabels.alertname }}'
+        headers:
+          Priority: 'high'
+      slack_configs:
+      - channel: '#critical-alerts'
+        color: 'danger'
+        title: '🚨 CRITICAL BUSINESS IMPACT'
+        text: |
+          *IMMEDIATE ATTENTION REQUIRED*
+          Alert: {{ .GroupLabels.alertname }}
+          Impact: {{ .GroupLabels.impact }}
+          Organization: {{ .GroupLabels.organization_id }}
+          Time: {{ .CommonAnnotations.timestamp }}
+        actions:
+        - type: button
+          text: 'Emergency Dashboard'
+          url: 'https://grafana.mcp-debate.com/d/emergency-overview'
+        - type: button
+          text: 'Incident Response'
+          url: 'https://incident.mcp-debate.com/create'
+      pagerduty_configs:
+      - routing_key: 'PRODUCTION_CRITICAL_KEY'
+        severity: 'critical'
+        description: 'Critical business impact: {{ .GroupLabels.alertname }}'
+        
+    - name: 'sla-critical-production'
+      email_configs:
+      - to: 'sre-team@mcp-debate.com,platform-leads@mcp-debate.com'
+        subject: '🚨 SLA VIOLATION - {{ .GroupLabels.alertname }}'
+      slack_configs:
+      - channel: '#sla-violations'
+        color: 'danger'
+        title: '🚨 SLA VIOLATION'
+        text: |
+          *SLA BREACH DETECTED*
+          Service: {{ .GroupLabels.service }}
+          SLA Type: {{ .GroupLabels.sla_type }}
+          Current Value: {{ .CommonAnnotations.current_value }}
+          Target: {{ .CommonAnnotations.target_value }}
+      pagerduty_configs:
+      - routing_key: 'PRODUCTION_SLA_KEY'
+        severity: 'critical'
+        
+    inhibit_rules:
+    # Production-specific inhibition rules
+    - source_match:
+        severity: 'critical'
+        impact: 'business'
+      target_match:
+        severity: 'warning'
+      equal: ['service', 'organization_id']
+      
+    # Inhibit capacity alerts during known maintenance
+    - source_match:
+        alertname: 'MaintenanceWindow'
+      target_match_re:
+        alertname: '.*Capacity.*|.*Performance.*'
+      equal: ['service']
+---
+# Production resource quotas and limits
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: business-metrics-quota
+  namespace: monitoring
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    persistentvolumeclaims: "5"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+---
+# Production network policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: business-metrics-production-netpol
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      component: business-metrics
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow Prometheus to scrape metrics
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+  # Allow Grafana to access APIs
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+      podSelector:
+        matchLabels:
+          app: grafana
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow health checks from istio
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+  egress:
+  # Allow access to production databases
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: production
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+  # Allow access to monitoring infrastructure
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090  # Prometheus
+    - protocol: TCP
+      port: 3000  # Grafana
+  # Allow external notifications (Slack, PagerDuty, Email)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 587  # SMTP
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Production-grade monitoring for the monitoring stack
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: business-metrics-production-monitoring
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      component: business-metrics
+  endpoints:
+  - port: http-metrics
+    interval: 10s
+    path: /metrics
+    honorLabels: true
+    metricRelabelings:
+    # Add production environment label
+    - sourceLabels: [__name__]
+      targetLabel: environment
+      replacement: 'production'
+    # Add cluster information
+    - sourceLabels: [__name__]
+      targetLabel: cluster
+      replacement: 'production-cluster'
+    # High-cardinality metric filtering for production
+    - sourceLabels: [__name__]
+      regex: '.*_bucket|.*_sum|.*_count'
+      action: keep
+    - sourceLabels: [organization_id]
+      regex: '.{50,}'  # Drop very long org IDs
+      action: drop

@@ -1,0 +1,426 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway-lb
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: load-balancer
+  annotations:
+    # AWS Load Balancer Controller annotations
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "60"
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-timeout: "60"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/health"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8080"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTP"
+    # Performance optimizations
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: |
+      deregistration_delay.timeout_seconds=30,
+      load_balancing.algorithm.type=least_outstanding_requests,
+      stickiness.enabled=true,
+      stickiness.type=source_ip,
+      stickiness.source_ip.duration_seconds=86400,
+      target_group_health.dns_failover.minimum_healthy_targets.count=1,
+      target_group_health.dns_failover.minimum_healthy_targets.percentage=off,
+      target_group_health.unhealthy_state_routing.minimum_healthy_targets.count=1,
+      target_group_health.unhealthy_state_routing.minimum_healthy_targets.percentage=off
+    # SSL/TLS configuration
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT-ID"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+    # Access logging
+    service.beta.kubernetes.io/aws-load-balancer-access-log-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-name: "mcp-loadbalancer-logs"
+    service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-prefix: "mcp-gateway"
+spec:
+  type: LoadBalancer
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 86400  # 24 hours
+  selector:
+    app: mcp-gateway
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+---
+# Internal load balancer for inter-service communication
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-internal-lb
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: internal-load-balancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: |
+      deregistration_delay.timeout_seconds=15,
+      load_balancing.algorithm.type=round_robin,
+      preserve_client_ip.enabled=true
+spec:
+  type: LoadBalancer
+  selector:
+    app: mcp-gateway
+  ports:
+  - name: http-internal
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: grpc-internal
+    port: 9000
+    targetPort: 9000
+    protocol: TCP
+---
+# Application Load Balancer Ingress for advanced routing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mcp-alb-ingress
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: application-load-balancer
+  annotations:
+    # AWS ALB Ingress Controller annotations
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/backend-protocol: "HTTP"
+    alb.ingress.kubernetes.io/load-balancer-name: "mcp-debate-alb"
+    alb.ingress.kubernetes.io/group.name: "mcp-debate"
+    alb.ingress.kubernetes.io/group.order: "100"
+    # SSL/TLS configuration
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT-ID"
+    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    # Health check configuration
+    alb.ingress.kubernetes.io/healthcheck-path: "/health"
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+    # Performance optimizations
+    alb.ingress.kubernetes.io/target-group-attributes: |
+      deregistration_delay.timeout_seconds=30,
+      load_balancing.algorithm.type=least_outstanding_requests,
+      stickiness.enabled=true,
+      stickiness.duration_seconds=86400,
+      stickiness.type=lb_cookie
+    # Access control
+    alb.ingress.kubernetes.io/inbound-cidrs: "0.0.0.0/0"
+    alb.ingress.kubernetes.io/security-groups: "sg-xxxxxxxxx,sg-yyyyyyyyy"
+    # WAF integration
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:us-east-1:ACCOUNT:regional/webacl/mcp-debate-waf/xxxxx"
+    # Tags
+    alb.ingress.kubernetes.io/tags: |
+      Environment=production,
+      Application=mcp-debate,
+      Team=platform,
+      CostCenter=engineering
+spec:
+  rules:
+  - host: api.mcp-debate.com
+    http:
+      paths:
+      # API Gateway routes
+      - path: /api/v1/organizations
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-organization
+            port:
+              number: 8080
+      - path: /api/v1/context
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-context
+            port:
+              number: 8080
+      - path: /api/v1/llm
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-llm
+            port:
+              number: 8080
+      - path: /api/v1/debates
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-debate
+            port:
+              number: 8080
+      - path: /api/v1/rag
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-rag
+            port:
+              number: 8080
+      # Default route to gateway
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-gateway
+            port:
+              number: 8080
+  # Additional hosts
+  - host: staging.mcp-debate.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-gateway
+            port:
+              number: 8080
+  - host: admin.mcp-debate.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-organization
+            port:
+              number: 8080
+  tls:
+  - hosts:
+    - api.mcp-debate.com
+    - staging.mcp-debate.com
+    - admin.mcp-debate.com
+    secretName: mcp-tls-secret
+---
+# Target Group Binding for fine-grained control
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: mcp-gateway-tgb
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: target-group-binding
+spec:
+  serviceRef:
+    name: mcp-gateway
+    port: 8080
+  targetGroupARN: arn:aws:elasticloadbalancing:us-east-1:ACCOUNT:targetgroup/mcp-gateway-tg/xxxxx
+  targetType: ip
+  vpcID: vpc-xxxxxxxxx
+  networking:
+    ingress:
+    - from:
+      - securityGroup:
+          groupID: sg-xxxxxxxxx
+      ports:
+      - protocol: TCP
+        port: 8080
+---
+# Service for database load balancing (if using RDS Proxy)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-database-lb
+  namespace: production
+  labels:
+    app: postgresql
+    component: database-load-balancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: postgresql
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+  selector:
+    app: postgresql
+---
+# Ingress for monitoring dashboards
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mcp-monitoring-ingress
+  namespace: monitoring
+  labels:
+    app: monitoring
+    component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT-ID"
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/group.name: "mcp-monitoring"
+    # Authentication
+    alb.ingress.kubernetes.io/auth-type: "cognito"
+    alb.ingress.kubernetes.io/auth-idp-cognito: |
+      {
+        "userPoolArn": "arn:aws:cognito-idp:us-east-1:ACCOUNT:userpool/us-east-1_xxxxxxxxx",
+        "userPoolClientId": "xxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "userPoolDomain": "mcp-auth.auth.us-east-1.amazoncognito.com"
+      }
+    alb.ingress.kubernetes.io/auth-on-unauthenticated-request: "authenticate"
+    alb.ingress.kubernetes.io/auth-session-cookie: "AWSELBAuthSessionCookie"
+    alb.ingress.kubernetes.io/auth-session-timeout: "86400"
+spec:
+  rules:
+  - host: grafana.mcp-debate.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+  - host: prometheus.mcp-debate.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus
+            port:
+              number: 9090
+  - host: alertmanager.mcp-debate.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: alertmanager
+            port:
+              number: 9093
+  tls:
+  - hosts:
+    - grafana.mcp-debate.com
+    - prometheus.mcp-debate.com
+    - alertmanager.mcp-debate.com
+    secretName: monitoring-tls-secret
+---
+# EndpointSlice for custom load balancing
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: mcp-gateway-custom-endpoints
+  namespace: production
+  labels:
+    kubernetes.io/service-name: mcp-gateway
+    app: mcp-gateway
+    component: custom-endpoints
+addressType: IPv4
+ports:
+- name: http
+  port: 8080
+  protocol: TCP
+- name: metrics
+  port: 9090
+  protocol: TCP
+endpoints:
+# These would be dynamically managed by the endpoint controller
+# but can be customized for specific routing needs
+- addresses:
+  - "10.0.1.100"
+  conditions:
+    ready: true
+    serving: true
+    terminating: false
+  hints:
+    forZones:
+    - name: "us-east-1a"
+  nodeName: "ip-10-0-1-100.ec2.internal"
+  zone: "us-east-1a"
+- addresses:
+  - "10.0.2.100"
+  conditions:
+    ready: true
+    serving: true
+    terminating: false
+  hints:
+    forZones:
+    - name: "us-east-1b"
+  nodeName: "ip-10-0-2-100.ec2.internal"
+  zone: "us-east-1b"
+---
+# Network Load Balancer for gRPC services
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-grpc-lb
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: grpc-load-balancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: |
+      preserve_client_ip.enabled=true,
+      proxy_protocol_v2.enabled=true,
+      deregistration_delay.timeout_seconds=30
+spec:
+  type: LoadBalancer
+  ports:
+  - name: grpc-gateway
+    port: 9000
+    targetPort: 9000
+    protocol: TCP
+  - name: grpc-organization
+    port: 9001
+    targetPort: 9000
+    protocol: TCP
+  - name: grpc-context
+    port: 9002
+    targetPort: 9000
+    protocol: TCP
+  - name: grpc-llm
+    port: 9003
+    targetPort: 9000
+    protocol: TCP
+  - name: grpc-debate
+    port: 9004
+    targetPort: 9000
+    protocol: TCP
+  - name: grpc-rag
+    port: 9005
+    targetPort: 9000
+    protocol: TCP
+  selector:
+    app: mcp-gateway

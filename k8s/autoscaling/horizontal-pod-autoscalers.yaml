@@ -1,0 +1,469 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-gateway-hpa
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-gateway
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  # CPU-based scaling
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  # Memory-based scaling
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  # Custom metrics scaling
+  - type: Pods
+    pods:
+      metric:
+        name: nginx_http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"
+  # Business metrics scaling
+  - type: Object
+    object:
+      metric:
+        name: mcp_debate_creation_rate
+      target:
+        type: Value
+        value: "50"
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: mcp-gateway
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 30
+      - type: Pods
+        value: 4
+        periodSeconds: 30
+      selectPolicy: Max
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-organization-hpa
+  namespace: production
+  labels:
+    app: mcp-organization
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-organization
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_organization_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "20"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600  # Longer for stateful services
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 120
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-context-hpa
+  namespace: production
+  labels:
+    app: mcp-context
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-context
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+  # Context-specific metrics
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_context_processing_queue_size
+      target:
+        type: AverageValue
+        averageValue: "50"
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_context_cache_miss_rate
+      target:
+        type: AverageValue
+        averageValue: "20"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 3
+        periodSeconds: 30
+      selectPolicy: Max
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-llm-hpa
+  namespace: production
+  labels:
+    app: mcp-llm
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-llm
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60  # Lower threshold for AI workloads
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  # LLM-specific metrics
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_llm_queue_depth
+      target:
+        type: AverageValue
+        averageValue: "10"
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_llm_response_time_p95
+      target:
+        type: AverageValue
+        averageValue: "5000"  # 5 seconds
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600  # Slower scale down for expensive LLM instances
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 180
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-debate-hpa
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-debate
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  # Debate-specific metrics
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_debate_active_sessions
+      target:
+        type: AverageValue
+        averageValue: "20"
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_debate_processing_latency
+      target:
+        type: AverageValue
+        averageValue: "2000"  # 2 seconds
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 90
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 75
+        periodSeconds: 45
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-rag-hpa
+  namespace: production
+  labels:
+    app: mcp-rag
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-rag
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+  # RAG-specific metrics
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_rag_search_queue_size
+      target:
+        type: AverageValue
+        averageValue: "25"
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_rag_embedding_processing_time
+      target:
+        type: AverageValue
+        averageValue: "3000"  # 3 seconds
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 120
+    scaleUp:
+      stabilizationWindowSeconds: 90
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+---
+# Custom metrics autoscaler for business load
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-business-load-hpa
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: business-autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-gateway
+  minReplicas: 3
+  maxReplicas: 25
+  metrics:
+  # Business hours scaling
+  - type: External
+    external:
+      metric:
+        name: mcp_business_hours_multiplier
+      target:
+        type: Value
+        value: "1.5"
+  # Organization activity scaling
+  - type: External
+    external:
+      metric:
+        name: mcp_active_organizations_count
+      target:
+        type: Value
+        value: "10"
+  # Predictive scaling based on historical patterns
+  - type: External
+    external:
+      metric:
+        name: mcp_predicted_load_next_5min
+      target:
+        type: Value
+        value: "1000"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Percent
+        value: 15
+        periodSeconds: 180
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 5
+        periodSeconds: 30
+      selectPolicy: Max
+---
+# Database connection pool autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-database-pool-hpa
+  namespace: production
+  labels:
+    app: mcp-context
+    component: database-autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-context
+  minReplicas: 2
+  maxReplicas: 12
+  metrics:
+  # Database connection utilization
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_database_connection_utilization
+      target:
+        type: AverageValue
+        averageValue: "80"
+  # Database query queue depth
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_database_query_queue_depth
+      target:
+        type: AverageValue
+        averageValue: "20"
+  # Database response time
+  - type: Pods
+    pods:
+      metric:
+        name: mcp_database_response_time_p95
+      target:
+        type: AverageValue
+        averageValue: "100"  # 100ms
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 900  # 15 minutes - conservative for DB
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 90

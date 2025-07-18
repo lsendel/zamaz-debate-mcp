@@ -1,0 +1,401 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-gateway-vpa
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-gateway
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 3
+  resourcePolicy:
+    containerPolicies:
+    - containerName: mcp-gateway
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+    - containerName: istio-proxy
+      minAllowed:
+        cpu: 50m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 500m
+        memory: 512Mi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-organization-vpa
+  namespace: production
+  labels:
+    app: mcp-organization
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-organization
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+    - containerName: mcp-organization
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 1500m
+        memory: 3Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+    - containerName: istio-proxy
+      minAllowed:
+        cpu: 50m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 300m
+        memory: 256Mi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-context-vpa
+  namespace: production
+  labels:
+    app: mcp-context
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-context
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 3
+  resourcePolicy:
+    containerPolicies:
+    - containerName: mcp-context
+      minAllowed:
+        cpu: 200m
+        memory: 512Mi
+      maxAllowed:
+        cpu: 3000m
+        memory: 8Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      # Context service needs more memory for caching
+      mode: Auto
+    - containerName: istio-proxy
+      minAllowed:
+        cpu: 50m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 500m
+        memory: 512Mi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-llm-vpa
+  namespace: production
+  labels:
+    app: mcp-llm
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-llm
+  updatePolicy:
+    updateMode: "Initial"  # More conservative for LLM workloads
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+    - containerName: mcp-llm
+      minAllowed:
+        cpu: 500m
+        memory: 1Gi
+      maxAllowed:
+        cpu: 4000m
+        memory: 8Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      # LLM service needs significant resources
+      mode: Auto
+    - containerName: istio-proxy
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 500m
+        memory: 512Mi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-debate-vpa
+  namespace: production
+  labels:
+    app: mcp-debate
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-debate
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 3
+  resourcePolicy:
+    containerPolicies:
+    - containerName: mcp-debate
+      minAllowed:
+        cpu: 200m
+        memory: 512Mi
+      maxAllowed:
+        cpu: 2500m
+        memory: 6Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+    - containerName: istio-proxy
+      minAllowed:
+        cpu: 50m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 400m
+        memory: 512Mi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-rag-vpa
+  namespace: production
+  labels:
+    app: mcp-rag
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-rag
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+    - containerName: mcp-rag
+      minAllowed:
+        cpu: 300m
+        memory: 1Gi
+      maxAllowed:
+        cpu: 3000m
+        memory: 8Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      # RAG needs significant memory for embeddings
+    - containerName: istio-proxy
+      minAllowed:
+        cpu: 50m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 400m
+        memory: 512Mi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+# VPA for PostgreSQL (if managed in K8s)
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: postgresql-vpa
+  namespace: production
+  labels:
+    app: postgresql
+    component: database-autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: postgresql
+  updatePolicy:
+    updateMode: "Initial"  # Conservative for databases
+    minReplicas: 1
+  resourcePolicy:
+    containerPolicies:
+    - containerName: postgresql
+      minAllowed:
+        cpu: 500m
+        memory: 1Gi
+      maxAllowed:
+        cpu: 4000m
+        memory: 16Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+---
+# VPA for Redis (if managed in K8s)
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: redis-vpa
+  namespace: production
+  labels:
+    app: redis
+    component: cache-autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: redis
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 1
+  resourcePolicy:
+    containerPolicies:
+    - containerName: redis
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 8Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+---
+# VPA for monitoring components
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: prometheus-vpa
+  namespace: monitoring
+  labels:
+    app: prometheus
+    component: monitoring-autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: prometheus
+  updatePolicy:
+    updateMode: "Initial"  # Conservative for monitoring
+    minReplicas: 1
+  resourcePolicy:
+    containerPolicies:
+    - containerName: prometheus
+      minAllowed:
+        cpu: 500m
+        memory: 2Gi
+      maxAllowed:
+        cpu: 4000m
+        memory: 32Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: grafana-vpa
+  namespace: monitoring
+  labels:
+    app: grafana
+    component: monitoring-autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: grafana
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: grafana
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 1000m
+        memory: 2Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+# VPA for business metrics collector
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-business-metrics-collector-vpa
+  namespace: monitoring
+  labels:
+    app: mcp-business-metrics-collector
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-business-metrics-collector
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+    - containerName: metrics-collector
+      minAllowed:
+        cpu: 200m
+        memory: 512Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+# VPA for SLA tracker
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: mcp-sla-tracker-vpa
+  namespace: monitoring
+  labels:
+    app: mcp-sla-tracker
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-sla-tracker
+  updatePolicy:
+    updateMode: "Auto"
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+    - containerName: sla-tracker
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 1000m
+        memory: 2Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits

@@ -1,0 +1,503 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-predictive-scaler
+  namespace: monitoring
+  labels:
+    app: mcp-predictive-scaler
+    component: autoscaling
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-predictive-scaler
+  template:
+    metadata:
+      labels:
+        app: mcp-predictive-scaler
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: mcp-predictive-scaler
+      containers:
+      - name: predictive-scaler
+        image: mcp-debate/predictive-scaler:latest
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: http-api
+        env:
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.monitoring.svc.cluster.local:9090"
+        - name: KUBERNETES_API_URL
+          value: "https://kubernetes.default.svc"
+        - name: PREDICTION_WINDOW_MINUTES
+          value: "30"
+        - name: PREDICTION_INTERVAL_SECONDS
+          value: "60"
+        - name: ML_MODEL_PATH
+          value: "/models/scaling-model.pkl"
+        - name: FEATURE_STORE_URL
+          value: "http://feature-store.monitoring.svc.cluster.local:8080"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: models
+          mountPath: /models
+          readOnly: true
+        - name: config
+          mountPath: /etc/scaler
+          readOnly: true
+      volumes:
+      - name: models
+        configMap:
+          name: ml-models
+      - name: config
+        configMap:
+          name: predictive-scaler-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-predictive-scaler
+  namespace: monitoring
+  labels:
+    app: mcp-predictive-scaler
+spec:
+  selector:
+    app: mcp-predictive-scaler
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+  - name: http-api
+    port: 8081
+    targetPort: 8081
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: predictive-scaler-config
+  namespace: monitoring
+  labels:
+    app: mcp-predictive-scaler
+data:
+  config.yaml: |
+    # Predictive scaling configuration
+    scaling_targets:
+      mcp-gateway:
+        namespace: production
+        deployment: mcp-gateway
+        min_replicas: 3
+        max_replicas: 20
+        prediction_features:
+          - mcp_debate_creation_rate
+          - mcp_active_users_5m
+          - mcp_gateway_requests_per_second
+          - time_of_day
+          - day_of_week
+          - organization_activity_score
+        scaling_algorithm: "linear_regression"
+        confidence_threshold: 0.8
+        scale_up_factor: 1.5
+        scale_down_factor: 0.8
+        cooldown_seconds: 300
+        
+      mcp-llm:
+        namespace: production
+        deployment: mcp-llm
+        min_replicas: 2
+        max_replicas: 8
+        prediction_features:
+          - mcp_llm_requests_per_second
+          - mcp_llm_queue_depth
+          - mcp_debate_creation_rate
+          - mcp_llm_response_time_p95
+        scaling_algorithm: "random_forest"
+        confidence_threshold: 0.85
+        scale_up_factor: 2.0
+        scale_down_factor: 0.5
+        cooldown_seconds: 600
+        
+      mcp-context:
+        namespace: production
+        deployment: mcp-context
+        min_replicas: 3
+        max_replicas: 15
+        prediction_features:
+          - mcp_context_processing_queue_size
+          - mcp_context_cache_miss_rate
+          - mcp_debate_active_sessions
+          - mcp_context_memory_usage
+        scaling_algorithm: "neural_network"
+        confidence_threshold: 0.9
+        scale_up_factor: 1.3
+        scale_down_factor: 0.7
+        cooldown_seconds: 180
+        
+    # Machine learning configuration
+    ml_config:
+      model_retrain_interval_hours: 24
+      feature_window_minutes: 60
+      prediction_horizon_minutes: 30
+      training_data_days: 30
+      validation_split: 0.2
+      
+    # Business-aware scaling
+    business_rules:
+      # Scale up during business hours
+      business_hours:
+        enabled: true
+        timezone: "America/New_York"
+        weekday_hours: "08:00-18:00"
+        weekend_hours: "10:00-16:00"
+        scale_factor: 1.5
+        
+      # Scale for expected events
+      scheduled_events:
+        - name: "Product Launch"
+          start_time: "2024-01-15T09:00:00Z"
+          end_time: "2024-01-15T18:00:00Z"
+          scale_factor: 3.0
+          services: ["mcp-gateway", "mcp-debate"]
+          
+        - name: "Marketing Campaign"
+          start_time: "2024-02-01T00:00:00Z"
+          end_time: "2024-02-07T23:59:59Z"
+          scale_factor: 2.0
+          services: ["mcp-gateway", "mcp-organization"]
+          
+      # Organization-specific scaling
+      organization_scaling:
+        enabled: true
+        large_org_threshold: 100  # users
+        large_org_scale_factor: 1.8
+        enterprise_scale_factor: 2.5
+        
+    # Alert configuration
+    alerting:
+      enabled: true
+      webhook_url: "http://alertmanager.monitoring.svc.cluster.local:9093/api/v1/alerts"
+      prediction_accuracy_threshold: 0.7
+      scaling_failure_threshold: 3
+      
+    # Metrics collection
+    metrics:
+      collection_interval_seconds: 30
+      retention_days: 7
+      export_to_prometheus: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-models
+  namespace: monitoring
+  labels:
+    app: mcp-predictive-scaler
+data:
+  # Base64 encoded ML models would go here
+  # This is a placeholder - in practice, models would be stored in object storage
+  scaling-model.pkl: |
+    # Placeholder for ML model
+    # In production, this would be a serialized scikit-learn, TensorFlow, or PyTorch model
+    # Models should be versioned and stored in S3/GCS with proper CI/CD for model updates
+    placeholder_model_data: "base64_encoded_model"
+    
+  model-metadata.json: |
+    {
+      "version": "1.0.0",
+      "created_at": "2024-01-01T00:00:00Z",
+      "features": [
+        "mcp_debate_creation_rate",
+        "mcp_active_users_5m", 
+        "mcp_gateway_requests_per_second",
+        "time_of_day",
+        "day_of_week",
+        "organization_activity_score"
+      ],
+      "accuracy_metrics": {
+        "mae": 0.15,
+        "rmse": 0.23,
+        "r2_score": 0.87
+      },
+      "training_data": {
+        "start_date": "2023-10-01",
+        "end_date": "2023-12-31",
+        "sample_count": 50000
+      }
+    }
+---
+# CronJob for model retraining
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mcp-model-trainer
+  namespace: monitoring
+  labels:
+    app: mcp-predictive-scaler
+    component: model-training
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mcp-model-trainer
+        spec:
+          serviceAccountName: mcp-predictive-scaler
+          restartPolicy: OnFailure
+          containers:
+          - name: model-trainer
+            image: mcp-debate/model-trainer:latest
+            env:
+            - name: PROMETHEUS_URL
+              value: "http://prometheus.monitoring.svc.cluster.local:9090"
+            - name: S3_BUCKET
+              value: "mcp-ml-models"
+            - name: TRAINING_DATA_DAYS
+              value: "30"
+            - name: MODEL_OUTPUT_PATH
+              value: "/models/output"
+            resources:
+              requests:
+                cpu: 2000m
+                memory: 4Gi
+              limits:
+                cpu: 4000m
+                memory: 8Gi
+            volumeMounts:
+            - name: model-output
+              mountPath: /models/output
+          volumes:
+          - name: model-output
+            emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-predictive-scaler
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-predictive-scaler
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "deployments/scale"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list"]
+- apiGroups: ["custom.metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list"]
+- apiGroups: ["external.metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-predictive-scaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-predictive-scaler
+subjects:
+- kind: ServiceAccount
+  name: mcp-predictive-scaler
+  namespace: monitoring
+---
+# Custom Resource Definition for Predictive Scaling Policies
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: predictivescalingpolicies.autoscaling.mcp-debate.com
+spec:
+  group: autoscaling.mcp-debate.com
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              targetRef:
+                type: object
+                properties:
+                  apiVersion:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                required: ["apiVersion", "kind", "name"]
+              predictionFeatures:
+                type: array
+                items:
+                  type: string
+              scalingAlgorithm:
+                type: string
+                enum: ["linear_regression", "random_forest", "neural_network", "time_series"]
+              confidenceThreshold:
+                type: number
+                minimum: 0.5
+                maximum: 1.0
+              scaleUpFactor:
+                type: number
+                minimum: 1.0
+                maximum: 5.0
+              scaleDownFactor:
+                type: number
+                minimum: 0.1
+                maximum: 1.0
+              cooldownSeconds:
+                type: integer
+                minimum: 60
+                maximum: 3600
+              businessRules:
+                type: object
+                properties:
+                  businessHours:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                      timezone:
+                        type: string
+                      weekdayHours:
+                        type: string
+                      weekendHours:
+                        type: string
+                      scaleFactor:
+                        type: number
+                  scheduledEvents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        startTime:
+                          type: string
+                        endTime:
+                          type: string
+                        scaleFactor:
+                          type: number
+            required: ["targetRef", "predictionFeatures", "scalingAlgorithm"]
+          status:
+            type: object
+            properties:
+              lastPrediction:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                  predictedReplicas:
+                    type: integer
+                  confidence:
+                    type: number
+                  features:
+                    type: object
+              lastScaling:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                  fromReplicas:
+                    type: integer
+                  toReplicas:
+                    type: integer
+                  reason:
+                    type: string
+              modelMetrics:
+                type: object
+                properties:
+                  accuracy:
+                    type: number
+                  lastTrained:
+                    type: string
+                  version:
+                    type: string
+  scope: Namespaced
+  names:
+    plural: predictivescalingpolicies
+    singular: predictivescalingpolicy
+    kind: PredictiveScalingPolicy
+    shortNames:
+    - psp
+---
+# Example Predictive Scaling Policy
+apiVersion: autoscaling.mcp-debate.com/v1
+kind: PredictiveScalingPolicy
+metadata:
+  name: mcp-gateway-predictive-scaling
+  namespace: production
+  labels:
+    app: mcp-gateway
+    component: predictive-scaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-gateway
+  predictionFeatures:
+    - mcp_debate_creation_rate
+    - mcp_active_users_5m
+    - mcp_gateway_requests_per_second
+    - time_of_day
+    - day_of_week
+    - organization_activity_score
+  scalingAlgorithm: random_forest
+  confidenceThreshold: 0.8
+  scaleUpFactor: 1.5
+  scaleDownFactor: 0.8
+  cooldownSeconds: 300
+  businessRules:
+    businessHours:
+      enabled: true
+      timezone: "America/New_York"
+      weekdayHours: "08:00-18:00"
+      weekendHours: "10:00-16:00"
+      scaleFactor: 1.3
+    scheduledEvents:
+    - name: "Monday Morning Rush"
+      startTime: "2024-01-01T08:00:00Z"
+      endTime: "2024-12-31T10:00:00Z"
+      scaleFactor: 2.0
+      recurring: "weekly"
+      dayOfWeek: "monday"

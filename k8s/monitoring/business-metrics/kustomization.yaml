@@ -1,0 +1,111 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: mcp-business-metrics
+  namespace: monitoring
+
+# Resources to deploy
+resources:
+  # Prometheus rules for business metrics and SLA tracking
+  - prometheus-rules.yaml
+  
+  # Service monitors for collecting business metrics
+  - service-monitors.yaml
+  
+  # SLA tracking service and configuration
+  - sla-tracking-service.yaml
+  
+  # Business metrics collector service
+  - business-metrics-collector.yaml
+  
+  # Alertmanager configuration for business alerts
+  - alertmanager-config.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app: mcp-debate
+  component: business-metrics
+  environment: production
+  managed-by: kustomize
+
+# Namespace for all resources
+namespace: monitoring
+
+# Configuration patches for different environments
+patchesStrategicMerge:
+  - patches/production-patches.yaml
+
+# ConfigMap generators for environment-specific configs
+configMapGenerator:
+  - name: business-metrics-env-config
+    literals:
+      - ENVIRONMENT=production
+      - METRICS_RETENTION_DAYS=90
+      - SLA_EVALUATION_INTERVAL=5m
+      - ALERT_COOLDOWN_PERIOD=15m
+      - COST_TRACKING_ENABLED=true
+      - REVENUE_TRACKING_ENABLED=true
+
+# Secret generators for sensitive configuration
+secretGenerator:
+  - name: business-metrics-secrets
+    literals:
+      - database-url=postgresql://metrics_user:CHANGE_ME@postgres.monitoring:5432/business_metrics
+      - redis-url=redis://redis.monitoring:6379/2
+      - analytics-api-token=CHANGE_ME
+    type: Opaque
+    options:
+      disableNameSuffixHash: true
+  
+  - name: alerting-secrets
+    literals:
+      - slack-webhook-url=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+      - pagerduty-key=YOUR_PAGERDUTY_INTEGRATION_KEY
+      - email-smtp-password=CHANGE_ME
+    type: Opaque
+    options:
+      disableNameSuffixHash: true
+
+# Images to use (can be customized per environment)
+images:
+  - name: mcp-debate/sla-tracker
+    newTag: v1.0.0
+  - name: mcp-debate/business-metrics-collector
+    newTag: v1.0.0
+
+# Replacements for templating
+replacements:
+  - source:
+      kind: ConfigMap
+      name: business-metrics-env-config
+      fieldPath: data.METRICS_RETENTION_DAYS
+    targets:
+      - select:
+          kind: ConfigMap
+          name: business-metrics-config
+        fieldPaths:
+          - data.[config.yaml]
+        options:
+          delimiter: ':'
+  
+  - source:
+      kind: ConfigMap
+      name: business-metrics-env-config
+      fieldPath: data.SLA_EVALUATION_INTERVAL
+    targets:
+      - select:
+          kind: ConfigMap
+          name: sla-tracker-config
+        fieldPaths:
+          - data.[config.yaml]
+        options:
+          delimiter: ':'
+
+# Resource transformers
+transformers:
+  - resource-quotas.yaml
+
+# Generators for additional resources
+generators:
+  - dashboards-generator.yaml

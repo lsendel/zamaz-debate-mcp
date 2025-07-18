@@ -1,0 +1,376 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-business-metrics-collector
+  namespace: monitoring
+  labels:
+    app: mcp-business-metrics-collector
+    component: business-metrics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-business-metrics-collector
+  template:
+    metadata:
+      labels:
+        app: mcp-business-metrics-collector
+        metrics: business
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: mcp-business-metrics-collector
+      containers:
+      - name: metrics-collector
+        image: mcp-debate/business-metrics-collector:latest
+        ports:
+        - containerPort: 9090
+          name: http-metrics
+        - containerPort: 8080
+          name: http-api
+        env:
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.monitoring.svc.cluster.local:9090"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: business-metrics-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: business-metrics-secrets
+              key: redis-url
+        - name: COLLECTION_INTERVAL
+          value: "30s"
+        - name: BATCH_SIZE
+          value: "100"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: METRICS_RETENTION_DAYS
+          value: "90"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: config
+          mountPath: /etc/metrics-collector
+          readOnly: true
+        - name: cache
+          mountPath: /var/cache/metrics
+      volumes:
+      - name: config
+        configMap:
+          name: business-metrics-config
+      - name: cache
+        emptyDir:
+          sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-business-metrics-collector
+  namespace: monitoring
+  labels:
+    app: mcp-business-metrics-collector
+    metrics: business
+spec:
+  selector:
+    app: mcp-business-metrics-collector
+  ports:
+  - name: http-metrics
+    port: 9090
+    targetPort: 9090
+  - name: http-api
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: business-metrics-config
+  namespace: monitoring
+  labels:
+    app: mcp-business-metrics-collector
+data:
+  config.yaml: |
+    # Business metrics collection configuration
+    metrics:
+      # Debate-specific metrics
+      debate_metrics:
+        - name: "mcp_debate_creation_rate"
+          query: "rate(mcp_debates_created_total[5m])"
+          labels: ["organization_id", "user_tier"]
+          description: "Rate of debate creation per second"
+          
+        - name: "mcp_debate_completion_rate"
+          query: "rate(mcp_debates_completed_total[5m])"
+          labels: ["organization_id", "completion_reason"]
+          description: "Rate of debate completion per second"
+          
+        - name: "mcp_debate_engagement_score"
+          query: |
+            (
+              avg(mcp_debate_message_count) by (organization_id) * 0.4 +
+              avg(mcp_debate_duration_minutes) by (organization_id) * 0.3 +
+              avg(mcp_debate_participant_satisfaction) by (organization_id) * 0.3
+            )
+          labels: ["organization_id"]
+          description: "Composite engagement score for debates"
+          
+        - name: "mcp_debate_success_ratio"
+          query: |
+            (
+              rate(mcp_debates_completed_total{completion_reason="success"}[5m]) /
+              rate(mcp_debates_created_total[5m])
+            ) * 100
+          labels: ["organization_id"]
+          description: "Percentage of successfully completed debates"
+      
+      # User engagement metrics
+      user_metrics:
+        - name: "mcp_active_users_total"
+          query: "count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[5m]))"
+          labels: ["organization_id"]
+          description: "Number of active users in the last 5 minutes"
+          
+        - name: "mcp_user_retention_rate"
+          query: |
+            (
+              count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[7d])) /
+              count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[30d]))
+            ) * 100
+          labels: ["organization_id"]
+          description: "Weekly user retention rate"
+          
+        - name: "mcp_new_user_conversion_rate"
+          query: |
+            (
+              rate(mcp_user_actions_total{action="first_debate"}[1h]) /
+              rate(mcp_user_actions_total{action="signup"}[1h])
+            ) * 100
+          labels: ["organization_id"]
+          description: "Rate of new users creating their first debate"
+      
+      # LLM performance and cost metrics
+      llm_metrics:
+        - name: "mcp_llm_cost_per_request"
+          query: |
+            (
+              rate(mcp_llm_cost_total[5m]) /
+              rate(mcp_llm_requests_total[5m])
+            )
+          labels: ["provider", "model", "organization_id"]
+          description: "Average cost per LLM request"
+          
+        - name: "mcp_llm_quality_score"
+          query: |
+            (
+              avg(mcp_llm_response_quality_rating) by (provider, model) * 0.4 +
+              avg(mcp_llm_relevance_score) by (provider, model) * 0.3 +
+              avg(mcp_llm_safety_score) by (provider, model) * 0.3
+            )
+          labels: ["provider", "model"]
+          description: "Composite LLM quality score"
+          
+        - name: "mcp_llm_efficiency_ratio"
+          query: |
+            (
+              avg(mcp_llm_output_tokens) by (provider, model) /
+              avg(mcp_llm_input_tokens) by (provider, model)
+            )
+          labels: ["provider", "model"]
+          description: "Output to input token ratio"
+      
+      # Organization health metrics
+      organization_metrics:
+        - name: "mcp_organization_health_score"
+          query: |
+            (
+              (rate(mcp_debates_created_total[1h]) * 10 +
+               rate(mcp_user_activity_total{action="login"}[1h]) * 2 +
+               rate(mcp_user_activity_total{action="debate_participation"}[1h]) * 5) /
+              (mcp_organization_user_count + 1)
+            )
+          labels: ["organization_id", "org_tier"]
+          description: "Organization health based on activity and user count"
+          
+        - name: "mcp_organization_growth_rate"
+          query: |
+            (
+              (count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[7d])) -
+               count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[7d] offset 7d))) /
+              count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[7d] offset 7d))
+            ) * 100
+          labels: ["organization_id"]
+          description: "Weekly user growth rate for organization"
+      
+      # Cost and revenue metrics  
+      financial_metrics:
+        - name: "mcp_revenue_per_user"
+          query: |
+            (
+              sum(rate(mcp_billing_events_total{event_type="charge"}[1h])) by (organization_id) /
+              count by (organization_id) (count by (user_id, organization_id) (mcp_user_activity_total[1h]))
+            )
+          labels: ["organization_id", "subscription_plan"]
+          description: "Revenue per active user per hour"
+          
+        - name: "mcp_cost_efficiency_score"
+          query: |
+            (
+              (100 - avg(mcp_llm_cost_per_debate) by (organization_id) * 10) * 0.4 +
+              avg(mcp_context_cache_hit_rate) by (organization_id) * 0.3 +
+              avg(mcp_context_optimization_ratio) by (organization_id) * 0.3
+            )
+          labels: ["organization_id"]
+          description: "Cost efficiency score based on LLM costs and optimizations"
+    
+    # Data processing configuration
+    processing:
+      batch_size: 100
+      flush_interval: "30s"
+      retry_attempts: 3
+      retry_delay: "5s"
+      
+    # Storage configuration
+    storage:
+      primary:
+        type: "postgresql"
+        retention_days: 90
+        partition_by: "day"
+        
+      cache:
+        type: "redis"
+        ttl: "1h"
+        max_entries: 10000
+        
+    # Export configuration
+    exports:
+      prometheus:
+        enabled: true
+        port: 9090
+        path: "/metrics"
+        
+      grafana:
+        enabled: true
+        datasource: "business-metrics"
+        
+      webhook:
+        enabled: true
+        endpoints:
+          - url: "http://mcp-analytics-api:8080/metrics"
+            headers:
+              Authorization: "Bearer ${ANALYTICS_API_TOKEN}"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-business-metrics-collector
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-business-metrics-collector
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "prometheusrules"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-business-metrics-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-business-metrics-collector
+subjects:
+- kind: ServiceAccount
+  name: mcp-business-metrics-collector
+  namespace: monitoring
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: business-metrics-secrets
+  namespace: monitoring
+type: Opaque
+stringData:
+  database-url: "postgresql://metrics_user:password@postgres.monitoring:5432/business_metrics"
+  redis-url: "redis://redis.monitoring:6379/2"
+  analytics-api-token: "your-analytics-api-token"
+---
+# CronJob for daily metrics aggregation
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mcp-daily-metrics-aggregation
+  namespace: monitoring
+spec:
+  schedule: "0 1 * * *"  # Daily at 1 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mcp-daily-metrics-aggregation
+        spec:
+          serviceAccountName: mcp-business-metrics-collector
+          restartPolicy: OnFailure
+          containers:
+          - name: aggregator
+            image: mcp-debate/business-metrics-collector:latest
+            command: ["/usr/local/bin/aggregate-daily-metrics"]
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: business-metrics-secrets
+                  key: database-url
+            - name: AGGREGATION_DATE
+              value: "yesterday"
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                cpu: 2000m
+                memory: 2Gi
+---
+# PodDisruptionBudget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mcp-business-metrics-collector-pdb
+  namespace: monitoring
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: mcp-business-metrics-collector

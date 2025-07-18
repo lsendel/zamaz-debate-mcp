@@ -1,0 +1,332 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@mcp-debate.com'
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+# Routing tree for alerts
+route:
+  group_by: ['alertname', 'severity', 'team']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+  routes:
+  # Critical SLA violations - immediate escalation
+  - match:
+      severity: critical
+      sla_type: availability
+    receiver: 'sla-critical'
+    group_wait: 5s
+    repeat_interval: 5m
+    
+  # Performance SLA issues
+  - match:
+      severity: warning
+      sla_type: performance
+    receiver: 'sla-performance'
+    group_wait: 30s
+    repeat_interval: 15m
+    
+  # Business impact alerts
+  - match:
+      impact: business
+    receiver: 'business-impact'
+    group_wait: 2m
+    repeat_interval: 30m
+    
+  # Cost-related alerts
+  - match:
+      impact: cost
+    receiver: 'cost-alerts'
+    group_wait: 5m
+    repeat_interval: 1h
+    
+  # Revenue and billing issues
+  - match:
+      impact: revenue
+    receiver: 'revenue-critical'
+    group_wait: 1m
+    repeat_interval: 10m
+    
+  # AI/LLM specific alerts
+  - match:
+      team: ai
+    receiver: 'ai-team'
+    group_wait: 1m
+    repeat_interval: 20m
+    
+  # Platform infrastructure alerts
+  - match:
+      team: platform
+    receiver: 'platform-team'
+    group_wait: 2m
+    repeat_interval: 30m
+    
+  # Capacity planning alerts
+  - match:
+      impact: capacity
+    receiver: 'capacity-planning'
+    group_wait: 5m
+    repeat_interval: 2h
+
+# Alert receivers
+receivers:
+- name: 'web.hook'
+  webhook_configs:
+  - url: 'http://mcp-alertmanager-webhook:5001/alerts'
+    send_resolved: true
+
+# Critical SLA violations - immediate response required
+- name: 'sla-critical'
+  email_configs:
+  - to: 'sre-oncall@mcp-debate.com'
+    subject: '🚨 CRITICAL SLA VIOLATION - {{ .GroupLabels.alertname }}'
+    body: |
+      CRITICAL SLA Violation Detected
+      
+      Alert: {{ .GroupLabels.alertname }}
+      Severity: {{ .GroupLabels.severity }}
+      
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      Runbook: {{ .Annotations.runbook_url }}
+      Started: {{ .StartsAt }}
+      {{ end }}
+      
+      This requires IMMEDIATE attention.
+  slack_configs:
+  - channel: '#sre-alerts'
+    color: 'danger'
+    title: '🚨 CRITICAL SLA VIOLATION'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Severity:* {{ .GroupLabels.severity }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      *Runbook:* {{ .Annotations.runbook_url }}
+      {{ end }}
+    actions:
+    - type: button
+      text: 'View Dashboard'
+      url: 'https://grafana.mcp-debate.com/d/mcp-business-metrics'
+    - type: button
+      text: 'View Runbook'
+      url: '{{ .CommonAnnotations.runbook_url }}'
+  pagerduty_configs:
+  - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+    description: 'Critical SLA violation: {{ .GroupLabels.alertname }}'
+    severity: 'critical'
+    details:
+      alert_name: '{{ .GroupLabels.alertname }}'
+      description: '{{ .CommonAnnotations.description }}'
+      runbook: '{{ .CommonAnnotations.runbook_url }}'
+
+# Performance SLA warnings
+- name: 'sla-performance'
+  email_configs:
+  - to: 'performance-team@mcp-debate.com'
+    subject: '⚠️ Performance SLA Warning - {{ .GroupLabels.alertname }}'
+    body: |
+      Performance SLA Warning
+      
+      Alert: {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      Current Value: {{ .Annotations.current_value }}
+      {{ end }}
+  slack_configs:
+  - channel: '#performance-alerts'
+    color: 'warning'
+    title: '⚠️ Performance SLA Warning'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+
+# Business impact alerts
+- name: 'business-impact'
+  email_configs:
+  - to: 'product-team@mcp-debate.com'
+    subject: '📊 Business Impact Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      Business Impact Detected
+      
+      Alert: {{ .GroupLabels.alertname }}
+      Impact Level: {{ .GroupLabels.impact }}
+      
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      {{ end }}
+      
+      Please investigate potential business impact.
+  slack_configs:
+  - channel: '#product-alerts'
+    color: '#FF9500'
+    title: '📊 Business Impact Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Impact:* {{ .GroupLabels.impact }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+
+# Cost-related alerts
+- name: 'cost-alerts'
+  email_configs:
+  - to: 'finance-team@mcp-debate.com,engineering-leads@mcp-debate.com'
+    subject: '💰 Cost Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      Cost Alert Triggered
+      
+      Alert: {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      Current Cost: ${{ .Annotations.current_cost }}
+      {{ end }}
+      
+      Please review cost optimization opportunities.
+  slack_configs:
+  - channel: '#cost-optimization'
+    color: '#FF6B6B'
+    title: '💰 Cost Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+
+# Revenue and billing critical issues
+- name: 'revenue-critical'
+  email_configs:
+  - to: 'billing-team@mcp-debate.com,leadership@mcp-debate.com'
+    subject: '💸 CRITICAL Revenue Issue - {{ .GroupLabels.alertname }}'
+    body: |
+      CRITICAL Revenue/Billing Issue
+      
+      Alert: {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      {{ end }}
+      
+      Immediate investigation required.
+  slack_configs:
+  - channel: '#billing-alerts'
+    color: 'danger'
+    title: '💸 CRITICAL Revenue Issue'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+      <!channel> Immediate attention required!
+
+# AI team alerts
+- name: 'ai-team'
+  email_configs:
+  - to: 'ai-team@mcp-debate.com'
+    subject: '🤖 AI System Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      AI System Alert
+      
+      Alert: {{ .GroupLabels.alertname }}
+      Provider: {{ .GroupLabels.provider }}
+      
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      {{ end }}
+  slack_configs:
+  - channel: '#ai-alerts'
+    color: '#4ECDC4'
+    title: '🤖 AI System Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Provider:* {{ .GroupLabels.provider }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+    actions:
+    - type: button
+      text: 'LLM Dashboard'
+      url: 'https://grafana.mcp-debate.com/d/mcp-llm-metrics'
+
+# Platform team alerts
+- name: 'platform-team'
+  email_configs:
+  - to: 'platform-team@mcp-debate.com'
+    subject: '🏗️ Platform Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      Platform Infrastructure Alert
+      
+      Alert: {{ .GroupLabels.alertname }}
+      Severity: {{ .GroupLabels.severity }}
+      
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      {{ end }}
+  slack_configs:
+  - channel: '#platform-alerts'
+    color: '#95A5A6'
+    title: '🏗️ Platform Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Severity:* {{ .GroupLabels.severity }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+
+# Capacity planning alerts
+- name: 'capacity-planning'
+  email_configs:
+  - to: 'capacity-planning@mcp-debate.com,platform-team@mcp-debate.com'
+    subject: '📈 Capacity Planning Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      Capacity Planning Alert
+      
+      Alert: {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      Description: {{ .Annotations.description }}
+      Current Utilization: {{ .Annotations.current_utilization }}%
+      {{ end }}
+      
+      Consider scaling resources.
+  slack_configs:
+  - channel: '#capacity-planning'
+    color: '#F39C12'
+    title: '📈 Capacity Planning Alert'
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      *Description:* {{ .Annotations.description }}
+      {{ end }}
+    actions:
+    - type: button
+      text: 'Capacity Dashboard'
+      url: 'https://grafana.mcp-debate.com/d/mcp-capacity-metrics'
+
+# Inhibition rules to prevent spam
+inhibit_rules:
+# Inhibit any warning if the same alert is already critical
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  equal: ['alertname', 'team', 'instance']
+
+# Inhibit capacity alerts if there's already an SLA violation
+- source_match:
+    sla_type: 'availability'
+  target_match:
+    impact: 'capacity'
+  equal: ['service']
+
+# Inhibit business impact alerts if there's a critical infrastructure issue
+- source_match:
+    severity: 'critical'
+    team: 'platform'
+  target_match:
+    impact: 'business'
+
+# Templates for reusable message formatting
+templates:
+- '/etc/alertmanager/templates/*.tmpl'

@@ -1,0 +1,344 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-sla-tracker
+  namespace: monitoring
+  labels:
+    app: mcp-sla-tracker
+    component: business-metrics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-sla-tracker
+  template:
+    metadata:
+      labels:
+        app: mcp-sla-tracker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: mcp-sla-tracker
+      containers:
+      - name: sla-tracker
+        image: mcp-debate/sla-tracker:latest
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: http-health
+        env:
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.monitoring.svc.cluster.local:9090"
+        - name: GRAFANA_URL
+          value: "http://grafana.monitoring.svc.cluster.local:3000"
+        - name: SLACK_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: alerting-secrets
+              key: slack-webhook-url
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: sla-tracker-secrets
+              key: database-url
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - name: config
+          mountPath: /etc/sla-tracker
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: sla-tracker-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-sla-tracker
+  namespace: monitoring
+  labels:
+    app: mcp-sla-tracker
+    monitoring: sla
+spec:
+  selector:
+    app: mcp-sla-tracker
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+  - name: http-health
+    port: 8081
+    targetPort: 8081
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sla-tracker-config
+  namespace: monitoring
+  labels:
+    app: mcp-sla-tracker
+data:
+  config.yaml: |
+    sla_definitions:
+      availability:
+        target: 99.9
+        measurement_window: "5m"
+        evaluation_window: "1h"
+        grace_period: "2m"
+        
+      response_time:
+        p95_target_ms: 2000
+        p99_target_ms: 5000
+        measurement_window: "5m"
+        evaluation_window: "15m"
+        
+      llm_quality:
+        error_rate_threshold: 5.0
+        response_quality_threshold: 4.0
+        measurement_window: "10m"
+        evaluation_window: "1h"
+        
+    service_tiers:
+      gold:
+        availability_target: 99.95
+        response_time_p95_ms: 500
+        response_time_p99_ms: 1000
+        
+      silver:
+        availability_target: 99.9
+        response_time_p95_ms: 1000
+        response_time_p99_ms: 2500
+        
+      bronze:
+        availability_target: 99.5
+        response_time_p95_ms: 2000
+        response_time_p99_ms: 5000
+        
+    business_metrics:
+      debate_creation_rate:
+        healthy_threshold: 10  # debates per minute
+        warning_threshold: 5
+        critical_threshold: 1
+        
+      user_engagement:
+        active_users_threshold: 50  # users per 5 minutes
+        retention_rate_threshold: 75  # percentage
+        
+      cost_efficiency:
+        llm_cost_per_debate_threshold: 1.0  # USD
+        context_optimization_threshold: 50  # percentage
+        
+    alerting:
+      cooldown_period: "15m"
+      escalation_rules:
+        - condition: "severity == 'critical'"
+          escalate_after: "5m"
+          notify: ["sre-oncall", "management"]
+        - condition: "impact == 'business'"
+          escalate_after: "15m"
+          notify: ["product-team"]
+        - condition: "impact == 'revenue'"
+          escalate_after: "2m"
+          notify: ["billing-team", "leadership"]
+          
+    reporting:
+      daily_report:
+        enabled: true
+        time: "09:00"
+        recipients: ["sre-team@mcp-debate.com"]
+        
+      weekly_report:
+        enabled: true
+        day: "monday"
+        time: "08:00"
+        recipients: ["leadership@mcp-debate.com", "product-team@mcp-debate.com"]
+        
+      monthly_report:
+        enabled: true
+        day: 1
+        time: "08:00"
+        recipients: ["board@mcp-debate.com", "leadership@mcp-debate.com"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-sla-tracker
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-sla-tracker
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["prometheusrules", "servicemonitors"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-sla-tracker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mcp-sla-tracker
+subjects:
+- kind: ServiceAccount
+  name: mcp-sla-tracker
+  namespace: monitoring
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sla-tracker-secrets
+  namespace: monitoring
+type: Opaque
+stringData:
+  database-url: "postgresql://sla_tracker:password@postgres.monitoring:5432/sla_tracking"
+  grafana-api-key: "eyJrIjoiY2hhbmdlLW1lIiwidXNlciI6InNsYS10cmFja2VyIn0="
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alerting-secrets
+  namespace: monitoring
+type: Opaque
+stringData:
+  slack-webhook-url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  pagerduty-key: "YOUR_PAGERDUTY_INTEGRATION_KEY"
+  email-smtp-password: "your-smtp-password"
+---
+# Horizontal Pod Autoscaler for SLA tracker
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-sla-tracker-hpa
+  namespace: monitoring
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-sla-tracker
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+---
+# Network Policy for SLA tracker
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-sla-tracker-netpol
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-sla-tracker
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow access to Prometheus
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  # Allow access to Grafana
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 3000
+  # Allow access to database
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow external HTTPS for Slack/PagerDuty
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53

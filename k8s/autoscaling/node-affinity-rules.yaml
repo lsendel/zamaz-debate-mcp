@@ -1,0 +1,583 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: production
+  labels:
+    app: mcp-gateway
+    workload-type: api-gateway
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - prefer general purpose nodes
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values: ["amd64"]
+              - key: node-type
+                operator: In
+                values: ["general", "compute"]
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["general"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: instance-type
+                operator: In
+                values: ["m5.large", "m5.xlarge"]
+          - weight: 60
+            preference:
+              matchExpressions:
+              - key: availability-zone
+                operator: In
+                values: ["us-east-1a", "us-east-1b"]
+        # Pod affinity - prefer to be with other gateway pods but spread across zones
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 50
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["mcp-gateway"]
+              topologyKey: kubernetes.io/hostname
+        # Pod anti-affinity - spread across availability zones
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["mcp-gateway"]
+            topologyKey: topology.kubernetes.io/zone
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAntiAffinity:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["mcp-gateway"]
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "node-type"
+        operator: "Equal"
+        value: "general"
+        effect: "NoSchedule"
+      - key: "spot-instance"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+        tolerationSeconds: 300
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-llm
+  namespace: production
+  labels:
+    app: mcp-llm
+    workload-type: ai-inference
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - require compute-optimized nodes
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["compute"]
+              - key: workload
+                operator: In
+                values: ["llm", "ai"]
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: instance-type
+                operator: In
+                values: ["c5.2xlarge", "c5.4xlarge"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: cpu-generation
+                operator: In
+                values: ["5", "6"]
+        # Pod anti-affinity - spread LLM pods for redundancy
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["mcp-llm"]
+            topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["mcp-llm"]
+            topologyKey: topology.kubernetes.io/zone
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "llm"
+        effect: "NoSchedule"
+      - key: "node-type"
+        operator: "Equal"
+        value: "compute"
+        effect: "NoSchedule"
+      nodeSelector:
+        workload: "llm"
+        node-type: "compute"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-context
+  namespace: production
+  labels:
+    app: mcp-context
+    workload-type: memory-intensive
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - prefer memory-optimized nodes
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["memory", "general"]
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["memory"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: instance-type
+                operator: In
+                values: ["r5.xlarge", "r5.2xlarge"]
+          - weight: 60
+            preference:
+              matchExpressions:
+              - key: memory-to-cpu-ratio
+                operator: In
+                values: ["high"]
+        # Pod affinity - co-locate with databases when possible
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 70
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["postgresql", "redis"]
+              topologyKey: kubernetes.io/hostname
+        # Pod anti-affinity - spread across zones
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["mcp-context"]
+            topologyKey: topology.kubernetes.io/zone
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "context"
+        effect: "NoSchedule"
+      - key: "node-type"
+        operator: "Equal"
+        value: "memory"
+        effect: "NoSchedule"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-debate
+  namespace: production
+  labels:
+    app: mcp-debate
+    workload-type: stateful-service
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - general purpose nodes with good network
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["general"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: network-performance
+                operator: In
+                values: ["high"]
+          - weight: 60
+            preference:
+              matchExpressions:
+              - key: ebs-optimized
+                operator: In
+                values: ["true"]
+        # Pod affinity - co-locate with context service
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 80
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["mcp-context"]
+              topologyKey: kubernetes.io/hostname
+          - weight: 60
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["mcp-llm"]
+              topologyKey: topology.kubernetes.io/zone
+        # Pod anti-affinity - spread across zones and nodes
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["mcp-debate"]
+            topologyKey: topology.kubernetes.io/zone
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAntiAffinity:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["mcp-debate"]
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "spot-instance"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+        tolerationSeconds: 600  # Allow longer for stateful workloads
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-rag
+  namespace: production
+  labels:
+    app: mcp-rag
+    workload-type: vector-processing
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - prefer compute or memory nodes for vector processing
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["compute", "memory"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: instance-type
+                operator: In
+                values: ["c5.xlarge", "r5.xlarge"]
+          - weight: 60
+            preference:
+              matchExpressions:
+              - key: cpu-features
+                operator: In
+                values: ["avx2", "avx512"]
+        # Pod affinity - co-locate with vector databases
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 90
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["qdrant", "pinecone-proxy"]
+              topologyKey: kubernetes.io/hostname
+        # Pod anti-affinity - distribute for availability
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["mcp-rag"]
+            topologyKey: topology.kubernetes.io/zone
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "rag"
+        effect: "NoSchedule"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  namespace: production
+  labels:
+    app: postgresql
+    workload-type: database
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - require dedicated database nodes
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["database", "memory"]
+              - key: storage-type
+                operator: In
+                values: ["ssd", "nvme"]
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: instance-type
+                operator: In
+                values: ["r5.xlarge", "r5.2xlarge"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: ebs-optimized
+                operator: In
+                values: ["true"]
+        # Pod anti-affinity - never co-locate database replicas
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["postgresql"]
+            topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["postgresql"]
+            topologyKey: topology.kubernetes.io/zone
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "database"
+        effect: "NoSchedule"
+      - key: "node-type"
+        operator: "Equal"
+        value: "database"
+        effect: "NoSchedule"
+      nodeSelector:
+        workload: "database"
+        storage-type: "ssd"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: production
+  labels:
+    app: redis
+    workload-type: cache
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - prefer memory-optimized nodes
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["memory", "general"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: instance-type
+                operator: In
+                values: ["r5.large", "r5.xlarge"]
+        # Pod affinity - co-locate with context service
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 70
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["mcp-context"]
+              topologyKey: kubernetes.io/hostname
+        # Pod anti-affinity - spread Redis instances
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["redis"]
+            topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "cache"
+        effect: "NoSchedule"
+---
+# Monitoring components affinity
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+    workload-type: monitoring
+spec:
+  template:
+    spec:
+      affinity:
+        # Node affinity - prefer dedicated monitoring nodes
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["monitoring", "general"]
+          - weight: 80
+            preference:
+              matchExpressions:
+              - key: storage-type
+                operator: In
+                values: ["ssd"]
+        # Pod anti-affinity - separate Prometheus instances
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["prometheus"]
+            topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+      nodeSelector:
+        monitoring: "enabled"
+---
+# Batch job affinity for cost optimization
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mcp-daily-metrics-aggregation
+  namespace: monitoring
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          affinity:
+            # Node affinity - prefer spot instances for batch jobs
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                preference:
+                  matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values: ["spot"]
+              - weight: 80
+                preference:
+                  matchExpressions:
+                  - key: instance-type
+                    operator: In
+                    values: ["m5.large", "c5.large"]
+          tolerations:
+          - key: "spot-instance"
+            operator: "Equal"
+            value: "true"
+            effect: "NoSchedule"
+          - key: "workload"
+            operator: "Equal"
+            value: "batch"
+            effect: "NoSchedule"
+          nodeSelector:
+            node-type: "spot"
+---
+# TopologySpreadConstraints for even distribution
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: production
+spec:
+  template:
+    spec:
+      topologySpreadConstraints:
+      # Spread across availability zones
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: mcp-gateway
+      # Spread across nodes within zones
+      - maxSkew: 2
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: mcp-gateway
+      # Spread across instance types
+      - maxSkew: 3
+        topologyKey: node.kubernetes.io/instance-type
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: mcp-gateway
