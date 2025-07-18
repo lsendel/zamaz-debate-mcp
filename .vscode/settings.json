@@ -63,5 +63,28 @@
     "davidanson.vscode-markdownlint",
     "redhat.vscode-yaml",
     "exiasr.hadolint"
-  ]
+  ],
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.linting.mypyEnabled": true,
+  "python.linting.banditEnabled": true,
+  "python.formatting.provider": "none",
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "ruff.format.args": ["--line-length=120"],
+  "ruff.lint.args": ["--config=${workspaceFolder}/pyproject.toml"],
+  "shellcheck.enable": true,
+  "shellcheck.run": "onSave",
+  "shellcheck.customArgs": ["--rcfile=${workspaceFolder}/.shellcheckrc"],
+  "shellcheck.exclude": ["SC1090", "SC1091"],
+  "files.associations": {
+    "Dockerfile*": "dockerfile",
+    "*.sh": "shellscript"
+  }
 }

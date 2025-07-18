@@ -208,6 +208,28 @@ run_config_linting() {
 
   log "Running config linting on ${#files[@]} files"
 
+  # Run Python linting with Ruff - NEW for 2025
+  local python_files=($(echo "${files[@]}" | tr ' ' '\n' | grep -E '\.pyi?$'))
+  if [ ${#python_files[@]} -gt 0 ]; then
+    log "Running Ruff on ${#python_files[@]} Python files"
+    if command -v ruff &> /dev/null; then
+      ruff check "${python_files[@]}" --config pyproject.toml
+    else
+      log "WARNING: Ruff not installed, skipping Python linting"
+    fi
+  fi
+
+  # Run Shell script linting with ShellCheck - NEW for 2025
+  local shell_files=($(echo "${files[@]}" | tr ' ' '\n' | grep -E '\.(sh|bash)$'))
+  if [ ${#shell_files[@]} -gt 0 ]; then
+    log "Running ShellCheck on ${#shell_files[@]} shell scripts"
+    if command -v shellcheck &> /dev/null; then
+      shellcheck --rcfile .shellcheckrc "${shell_files[@]}"
+    else
+      log "WARNING: ShellCheck not installed, skipping shell script linting"
+    fi
+  fi
+
   # Run yamllint on YAML files
   local yaml_files=($(echo "${files[@]}" | tr ' ' '\n' | grep -E '\.ya?ml$'))
   if [ ${#yaml_files[@]} -gt 0 ]; then

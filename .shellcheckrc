@@ -1,0 +1,24 @@
+# ShellCheck configuration for zamaz-debate-mcp
+# https://www.shellcheck.net/wiki/Ignore
+
+# Enable all optional checks for maximum security
+enable=all
+
+# Disable specific checks that are problematic for our codebase
+disable=SC1091  # Can't follow source when the file is not specified as a constant
+disable=SC2034  # Variable appears unused (often used in sourced files)
+disable=SC2162  # read without -r will mangle backslashes (sometimes intentional)
+
+# Set the shell dialect
+shell=bash
+
+# Source path for includes
+source-path=SCRIPTDIR
+
+# External sources (for scripts that source other scripts)
+external-sources=true
+
+# Additional shellcheck directives:
+# - Use `# shellcheck disable=SC2086` inline to disable specific warnings
+# - Use `# shellcheck source=/dev/null` when sourcing dynamic files
+# - Use `# shellcheck shell=bash` to override shell detection

@@ -1,0 +1,106 @@
+name: Shell Script Linting
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.sh'
+      - '.shellcheckrc'
+      - '.github/workflows/shell-linting.yml'
+      - 'scripts/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.sh'
+      - '.shellcheckrc'
+      - '.github/workflows/shell-linting.yml'
+      - 'scripts/**'
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install ShellCheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+        shellcheck --version
+    
+    - name: Run ShellCheck on all shell scripts
+      id: shellcheck
+      run: |
+        echo "::group::Finding shell scripts"
+        # Find all shell scripts
+        scripts=$(find . -name "*.sh" -type f -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./debate-ui/node_modules/*" | sort)
+        echo "Found $(echo "$scripts" | wc -l) shell scripts"
+        echo "::endgroup::"
+        
+        echo "::group::Running ShellCheck"
+        # Run shellcheck and capture results
+        failed=0
+        for script in $scripts; do
+          echo "Checking: $script"
+          if ! shellcheck --format=gcc "$script"; then
+            failed=$((failed + 1))
+          fi
+        done
+        echo "::endgroup::"
+        
+        echo "failed_count=$failed" >> $GITHUB_OUTPUT
+        
+        if [ $failed -gt 0 ]; then
+          echo "❌ ShellCheck found issues in $failed scripts"
+          exit 1
+        else
+          echo "✅ All shell scripts passed ShellCheck"
+        fi
+    
+    - name: Run ShellCheck with JSON output for detailed analysis
+      if: failure()
+      run: |
+        # Generate detailed JSON report
+        find . -name "*.sh" -type f -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./debate-ui/node_modules/*" \
+          -exec shellcheck --format=json {} \; > shellcheck-report.json 2>&1 || true
+    
+    - name: Upload ShellCheck report
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: shellcheck-report
+        path: shellcheck-report.json
+    
+    - name: Generate summary
+      if: always()
+      run: |
+        echo "## Shell Script Linting Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        total_scripts=$(find . -name "*.sh" -type f -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./debate-ui/node_modules/*" | wc -l)
+        echo "**Total shell scripts scanned:** $total_scripts" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.shellcheck.outputs.failed_count }}" -eq 0 ]; then
+          echo "### ✅ All scripts passed ShellCheck" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No security or quality issues detected in shell scripts." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ❌ ShellCheck found issues" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed scripts:** ${{ steps.shellcheck.outputs.failed_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Common issues to fix:" >> $GITHUB_STEP_SUMMARY
+          echo "- Quote variables to prevent word splitting" >> $GITHUB_STEP_SUMMARY
+          echo "- Use \`\$(...)\` instead of backticks" >> $GITHUB_STEP_SUMMARY
+          echo "- Check exit codes explicitly" >> $GITHUB_STEP_SUMMARY
+          echo "- Use shellcheck directives to suppress false positives" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Security Best Practices" >> $GITHUB_STEP_SUMMARY
+        echo "- Always quote variables: \`\"\$var\"\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Use \`set -euo pipefail\` for safer scripts" >> $GITHUB_STEP_SUMMARY
+        echo "- Validate user input before using it" >> $GITHUB_STEP_SUMMARY
+        echo "- Use \`--\` to separate options from arguments" >> $GITHUB_STEP_SUMMARY

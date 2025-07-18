@@ -1,0 +1,98 @@
+name: Python Linting
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.py'
+      - 'pyproject.toml'
+      - '.github/workflows/python-linting.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.py'
+      - 'pyproject.toml'
+      - '.github/workflows/python-linting.yml'
+
+jobs:
+  python-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff mypy bandit[toml]
+        
+    - name: Run Ruff linting
+      run: |
+        echo "::group::Running Ruff linting"
+        ruff check . --output-format=github
+        echo "::endgroup::"
+      
+    - name: Run Ruff formatting check
+      run: |
+        echo "::group::Running Ruff formatting check"
+        ruff format --check .
+        echo "::endgroup::"
+      
+    - name: Run mypy type checking
+      run: |
+        echo "::group::Running mypy type checking"
+        mypy . --ignore-missing-imports || true
+        echo "::endgroup::"
+      continue-on-error: true
+      
+    - name: Run Bandit security scan
+      run: |
+        echo "::group::Running Bandit security scan"
+        bandit -r . -f json -o bandit-report.json || true
+        echo "::endgroup::"
+      continue-on-error: true
+      
+    - name: Upload Bandit security report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-security-report
+        path: bandit-report.json
+        
+    - name: Generate summary
+      if: always()
+      run: |
+        echo "## Python Linting Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Ruff Linting" >> $GITHUB_STEP_SUMMARY
+        if ruff check . --quiet; then
+          echo "✅ No linting issues found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Linting issues detected" >> $GITHUB_STEP_SUMMARY
+          echo "<details><summary>View issues</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ruff check . || true >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Bandit Security Scan" >> $GITHUB_STEP_SUMMARY
+        if [ -f bandit-report.json ]; then
+          issues=$(jq '.metrics._totals | to_entries | map(select(.value > 0)) | length' bandit-report.json)
+          if [ "$issues" -eq 0 ]; then
+            echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Security issues detected - see artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi

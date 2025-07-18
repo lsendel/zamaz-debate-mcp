@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
   
   try {
     console.log('Navigating to UI...');
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:3002');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000); // Give React time to render
     

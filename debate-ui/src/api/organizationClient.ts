@@ -1,4 +1,5 @@
 import BaseApiClient from './baseClient';
+import { MOCK_CREDENTIALS, MOCK_AUTH_RESPONSE } from './mockAuth';
 
 export interface Organization {
   id: string;
@@ -43,8 +44,20 @@ class OrganizationClient extends BaseApiClient {
 
   // Authentication
   async login(credentials: AuthRequest): Promise<AuthResponse> {
-    const response = await this.client.post('/auth/login', credentials);
-    return response.data;
+    try {
+      const response = await this.client.post('/auth/login', credentials);
+      return response.data;
+    } catch (error) {
+      // Development mode: Allow mock login when backend is not available
+      if (process.env.NODE_ENV === 'development') {
+        if (credentials.username === MOCK_CREDENTIALS.username && 
+            credentials.password === MOCK_CREDENTIALS.password) {
+          console.log('🔐 Using mock authentication (backend not available)');
+          return Promise.resolve(MOCK_AUTH_RESPONSE);
+        }
+      }
+      throw error;
+    }
   }
 
   async register(data: AuthRequest & { email: string; organizationName: string }): Promise<AuthResponse> {
@@ -58,8 +71,15 @@ class OrganizationClient extends BaseApiClient {
   }
 
   async getOrganization(id: string): Promise<Organization> {
-    const response = await this.client.get(`/organizations/${id}`);
-    return response.data;
+    try {
+      const response = await this.client.get(`/organizations/${id}`);
+      return response.data;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development' && id === 'org-123') {
+        return Promise.resolve(MOCK_AUTH_RESPONSE.organization);
+      }
+      throw error;
+    }
   }
 
   async updateOrganization(id: string, data: Partial<Organization>): Promise<Organization> {

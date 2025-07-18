@@ -1,0 +1,468 @@
+#!/usr/bin/env python3
+"""
+claude-lint: Unified linting interface optimized for AI code validation
+Supports all major languages with auto-detection and quick validation
+"""
+
+import sys
+import json
+import subprocess
+import tempfile
+import argparse
+import os
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+import re
+
+class ClaudeLinter:
+    """Unified linting interface optimized for AI usage."""
+    
+    # Language detection patterns
+    LANGUAGE_MARKERS = {
+        'python': [
+            r'^#!/usr/bin/env python', r'^#!/usr/bin/python',
+            r'^import\s+', r'^from\s+\w+\s+import',
+            r'^def\s+\w+\s*\(', r'^class\s+\w+',
+            r'^if\s+__name__\s*==', r'print\s*\(',
+            r'^\s*@\w+', r'^\s*async\s+def'
+        ],
+        'javascript': [
+            r'^#!/usr/bin/env node',
+            r'^const\s+\w+\s*=', r'^let\s+\w+\s*=', r'^var\s+\w+\s*=',
+            r'^function\s+\w+', r'^console\.\w+',
+            r'^import\s+.*\s+from', r'^export\s+',
+            r'=>', r'^\s*async\s+function'
+        ],
+        'typescript': [
+            r'^interface\s+\w+', r'^type\s+\w+\s*=',
+            r':\s*(string|number|boolean|any)\s*(;|,|\))',
+            r'^export\s+interface', r'^export\s+type',
+            r'^enum\s+\w+', r'<\w+>'
+        ],
+        'java': [
+            r'^package\s+[\w.]+;', r'^import\s+[\w.]+;',
+            r'^public\s+class\s+\w+', r'^public\s+interface',
+            r'^public\s+static\s+void\s+main',
+            r'@Override', r'@Autowired', r'^private\s+\w+\s+\w+;'
+        ],
+        'shell': [
+            r'^#!/bin/bash', r'^#!/bin/sh', r'^#!/usr/bin/env\s+bash',
+            r'^set\s+-[euo]', r'^\s*echo\s+',
+            r'^\s*if\s+\[\s*', r'^\s*export\s+\w+=',
+            r'^\$\(', r'^\s*function\s+\w+',
+            r'^\s*\w+\(\)\s*\{', r'^\s*case\s+'
+        ],
+        'yaml': [
+            r'^---', r'^\w+:', r'^-\s+\w+:',
+            r'^\s+-\s+', r'^\s*#.*', r':\s*\|', r':\s*>'
+        ],
+        'json': [
+            r'^\s*\{', r'^\s*\[', r'"\s*:\s*"', r'"\s*:\s*\d+',
+            r'"\s*:\s*\{', r'"\s*:\s*\[', r'"\s*:\s*(true|false|null)'
+        ],
+        'markdown': [
+            r'^#+\s+', r'^\*\s+', r'^-\s+', r'^\d+\.\s+',
+            r'^\[.*\]\(.*\)', r'^```', r'^\|.*\|', r'^>\s+'
+        ]
+    }
+    
+    # File extension mappings
+    EXTENSION_MAP = {
+        '.py': 'python',
+        '.js': 'javascript',
+        '.jsx': 'javascript',
+        '.ts': 'typescript',
+        '.tsx': 'typescript',
+        '.java': 'java',
+        '.sh': 'shell',
+        '.bash': 'shell',
+        '.yml': 'yaml',
+        '.yaml': 'yaml',
+        '.json': 'json',
+        '.md': 'markdown'
+    }
+    
+    # Linter configurations
+    LINTER_CONFIGS = {
+        'python': {
+            'command': ['ruff', 'check', '--output-format=json'],
+            'fix_command': ['ruff', 'check', '--fix'],
+            'format_command': ['ruff', 'format'],
+            'security_command': ['bandit', '-r', '-f', 'json'],
+            'parse_json': True
+        },
+        'javascript': {
+            'command': ['eslint', '--format=json'],
+            'fix_command': ['eslint', '--fix'],
+            'parse_json': True
+        },
+        'typescript': {
+            'command': ['eslint', '--format=json'],
+            'fix_command': ['eslint', '--fix'],
+            'parse_json': True
+        },
+        'java': {
+            'command': ['checkstyle', '-f', 'json'],
+            'parse_json': True
+        },
+        'shell': {
+            'command': ['shellcheck', '--format=json', '--severity=info'],
+            'parse_json': True
+        },
+        'yaml': {
+            'command': ['yamllint', '--format=parsable'],
+            'parse_json': False
+        },
+        'json': {
+            'command': ['jsonlint', '--compact'],
+            'parse_json': False
+        },
+        'markdown': {
+            'command': ['markdownlint', '--json'],
+            'parse_json': True
+        }
+    }
+    
+    def __init__(self):
+        self.available_linters = self._check_available_linters()
+    
+    def _check_available_linters(self) -> Dict[str, bool]:
+        """Check which linters are available on the system."""
+        linters = {
+            'ruff': 'python',
+            'eslint': 'javascript/typescript',
+            'checkstyle': 'java',
+            'shellcheck': 'shell',
+            'yamllint': 'yaml',
+            'jsonlint': 'json',
+            'markdownlint': 'markdown'
+        }
+        
+        available = {}
+        for linter, lang in linters.items():
+            try:
+                subprocess.run([linter, '--version'], 
+                             capture_output=True, 
+                             check=False,
+                             timeout=2)
+                available[linter] = True
+            except (subprocess.SubprocessError, FileNotFoundError):
+                available[linter] = False
+        
+        return available
+    
+    def detect_language(self, code: str, filename: Optional[str] = None) -> Optional[str]:
+        """Auto-detect language from code content or filename."""
+        # First try filename extension
+        if filename:
+            ext = Path(filename).suffix.lower()
+            if ext in self.EXTENSION_MAP:
+                return self.EXTENSION_MAP[ext]
+        
+        # Then try content patterns
+        lines = code.strip().split('\n')[:20]  # Check first 20 lines
+        
+        scores = {}
+        for lang, patterns in self.LANGUAGE_MARKERS.items():
+            score = 0
+            for pattern in patterns:
+                for line in lines:
+                    if re.match(pattern, line.strip()):
+                        score += 1
+            if score > 0:
+                scores[lang] = score
+        
+        if scores:
+            # Return language with highest score
+            return max(scores, key=scores.get)
+        
+        return None
+    
+    def create_temp_file(self, code: str, language: str) -> str:
+        """Create a temporary file with appropriate extension."""
+        extensions = {
+            'python': '.py',
+            'javascript': '.js',
+            'typescript': '.ts',
+            'java': '.java',
+            'shell': '.sh',
+            'yaml': '.yml',
+            'json': '.json',
+            'markdown': '.md'
+        }
+        
+        ext = extensions.get(language, '.txt')
+        with tempfile.NamedTemporaryFile(mode='w', suffix=ext, delete=False) as f:
+            f.write(code)
+            return f.name
+    
+    def parse_ruff_output(self, output: str) -> List[Dict]:
+        """Parse Ruff JSON output."""
+        try:
+            data = json.loads(output)
+            issues = []
+            for issue in data:
+                issues.append({
+                    'file': issue.get('filename', ''),
+                    'line': issue.get('location', {}).get('row', 0),
+                    'column': issue.get('location', {}).get('column', 0),
+                    'severity': 'error' if issue.get('code', '').startswith(('E', 'F', 'S')) else 'warning',
+                    'code': issue.get('code', ''),
+                    'message': issue.get('message', ''),
+                    'fixable': issue.get('fix') is not None
+                })
+            return issues
+        except json.JSONDecodeError:
+            return []
+    
+    def parse_shellcheck_output(self, output: str) -> List[Dict]:
+        """Parse ShellCheck JSON output."""
+        try:
+            data = json.loads(output)
+            issues = []
+            for issue in data:
+                severity_map = {'error': 'error', 'warning': 'warning', 'info': 'info', 'style': 'info'}
+                issues.append({
+                    'file': issue.get('file', ''),
+                    'line': issue.get('line', 0),
+                    'column': issue.get('column', 0),
+                    'severity': severity_map.get(issue.get('level', 'warning'), 'warning'),
+                    'code': f"SC{issue.get('code', '')}",
+                    'message': issue.get('message', ''),
+                    'fixable': False
+                })
+            return issues
+        except json.JSONDecodeError:
+            return []
+    
+    def lint_code(self, code: str, language: Optional[str] = None, 
+                  filename: Optional[str] = None, fix: bool = False) -> Dict:
+        """Lint code and return structured results."""
+        # Auto-detect language if not provided
+        if not language:
+            language = self.detect_language(code, filename)
+            if not language:
+                return {
+                    'success': False,
+                    'error': 'Could not detect language. Please specify with --lang',
+                    'language': None
+                }
+        
+        # Check if linter is available
+        linter_config = self.LINTER_CONFIGS.get(language)
+        if not linter_config:
+            return {
+                'success': False,
+                'error': f'No linter configured for {language}',
+                'language': language
+            }
+        
+        # Create temp file
+        temp_file = self.create_temp_file(code, language)
+        
+        try:
+            # Run linter
+            command = linter_config['command'].copy()
+            if fix and 'fix_command' in linter_config:
+                command = linter_config['fix_command'].copy()
+            
+            # Add filename to command
+            command.append(temp_file)
+            
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            # Parse output
+            issues = []
+            if language == 'python':
+                issues = self.parse_ruff_output(result.stdout)
+            elif language == 'shell':
+                issues = self.parse_shellcheck_output(result.stdout)
+            elif linter_config.get('parse_json'):
+                try:
+                    issues = json.loads(result.stdout)
+                except json.JSONDecodeError:
+                    pass
+            
+            # If we fixed, read the fixed code
+            fixed_code = None
+            if fix and 'fix_command' in linter_config:
+                with open(temp_file, 'r') as f:
+                    fixed_code = f.read()
+            
+            # Calculate summary
+            summary = {
+                'total_issues': len(issues),
+                'errors': sum(1 for i in issues if i.get('severity') == 'error'),
+                'warnings': sum(1 for i in issues if i.get('severity') == 'warning'),
+                'fixable': sum(1 for i in issues if i.get('fixable', False)),
+                'security': sum(1 for i in issues if i.get('code', '').startswith('S')),
+                'clean': len(issues) == 0
+            }
+            
+            return {
+                'success': True,
+                'language': language,
+                'issues': issues,
+                'summary': summary,
+                'fixed_code': fixed_code
+            }
+            
+        except subprocess.TimeoutExpired:
+            return {
+                'success': False,
+                'error': f'Linter timeout for {language}',
+                'language': language
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'language': language
+            }
+        finally:
+            # Clean up temp file
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+    
+    def format_output(self, result: Dict, format_type: str = 'human') -> str:
+        """Format linting results for output."""
+        if format_type == 'json':
+            return json.dumps(result, indent=2)
+        
+        if not result['success']:
+            return f"❌ Error: {result['error']}"
+        
+        summary = result['summary']
+        
+        # Human-readable output
+        output = []
+        
+        # Header
+        lang = result['language'].title()
+        if summary['clean']:
+            output.append(f"✅ {lang} code is clean - no issues found!")
+        else:
+            output.append(f"🔍 {lang} Linting Results")
+            output.append(f"{'='*40}")
+            
+            # Summary
+            output.append(f"Total Issues: {summary['total_issues']}")
+            output.append(f"  • Errors: {summary['errors']}")
+            output.append(f"  • Warnings: {summary['warnings']}")
+            if summary['security'] > 0:
+                output.append(f"  • Security: {summary['security']} ⚠️")
+            if summary['fixable'] > 0:
+                output.append(f"  • Auto-fixable: {summary['fixable']} 🔧")
+            
+            output.append("")
+            
+            # Issues
+            if result['issues']:
+                output.append("Issues found:")
+                for i, issue in enumerate(result['issues'][:10]):  # Show first 10
+                    severity_icon = {
+                        'error': '❌',
+                        'warning': '⚠️ ',
+                        'info': 'ℹ️ '
+                    }.get(issue.get('severity', 'warning'), '• ')
+                    
+                    line = issue.get('line', 0)
+                    code = issue.get('code', '')
+                    msg = issue.get('message', '')
+                    
+                    output.append(f"{severity_icon} Line {line}: [{code}] {msg}")
+                
+                if len(result['issues']) > 10:
+                    output.append(f"... and {len(result['issues']) - 10} more issues")
+        
+        return '\n'.join(output)
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Claude Lint - Unified linting for AI code validation',
+        epilog='Examples:\n'
+               '  claude-lint file.py\n'
+               '  echo "print(\'hello\')" | claude-lint --stdin --lang python\n'
+               '  claude-lint file.js --fix\n'
+               '  claude-lint --stdin --auto < code.txt',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument('file', nargs='?', help='File to lint')
+    parser.add_argument('--stdin', action='store_true', help='Read code from stdin')
+    parser.add_argument('--lang', '--language', help='Specify language (python, javascript, shell, etc.)')
+    parser.add_argument('--auto', action='store_true', help='Auto-detect language')
+    parser.add_argument('--fix', action='store_true', help='Auto-fix issues where possible')
+    parser.add_argument('--format', choices=['human', 'json'], default='human', help='Output format')
+    parser.add_argument('--quick', action='store_true', help='Quick mode - security issues only')
+    parser.add_argument('--available', action='store_true', help='Show available linters')
+    
+    args = parser.parse_args()
+    
+    linter = ClaudeLinter()
+    
+    # Show available linters
+    if args.available:
+        print("Available linters:")
+        for name, available in linter.available_linters.items():
+            status = "✅" if available else "❌"
+            print(f"  {status} {name}")
+        return
+    
+    # Get code to lint
+    code = None
+    filename = None
+    
+    if args.stdin:
+        code = sys.stdin.read()
+    elif args.file:
+        if args.file == '-':
+            code = sys.stdin.read()
+        else:
+            try:
+                with open(args.file, 'r') as f:
+                    code = f.read()
+                filename = args.file
+            except IOError as e:
+                print(f"❌ Error reading file: {e}")
+                sys.exit(1)
+    else:
+        parser.print_help()
+        sys.exit(1)
+    
+    # Determine language
+    language = args.lang
+    if args.auto and not language:
+        language = None  # Will auto-detect
+    
+    # Lint the code
+    result = linter.lint_code(code, language, filename, args.fix)
+    
+    # Output results
+    output = linter.format_output(result, args.format)
+    print(output)
+    
+    # If fixed, output the fixed code
+    if args.fix and result.get('fixed_code'):
+        print("\n" + "="*40)
+        print("Fixed code:")
+        print("="*40)
+        print(result['fixed_code'])
+    
+    # Exit with appropriate code
+    if result['success'] and result['summary']['clean']:
+        sys.exit(0)
+    elif result['success']:
+        sys.exit(1)  # Issues found
+    else:
+        sys.exit(2)  # Error
+
+if __name__ == '__main__':
+    main()

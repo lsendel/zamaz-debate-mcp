@@ -152,9 +152,21 @@ public class DefaultLintingEngine implements LintingEngine {
         // Add Java files
         files.addAll(findFilesByExtension(context.getProjectRoot(), "java"));
         
+        // Add Python files - NEW for 2025
+        files.addAll(findFilesByExtension(context.getProjectRoot(), "py"));
+        files.addAll(findFilesByExtension(context.getProjectRoot(), "pyi"));
+        
+        // Add Shell scripts - NEW for 2025
+        files.addAll(findFilesByExtension(context.getProjectRoot(), "sh"));
+        files.addAll(findFilesByExtension(context.getProjectRoot(), "bash"));
+        
         // Add TypeScript files
         files.addAll(findFilesByExtension(context.getProjectRoot(), "ts"));
         files.addAll(findFilesByExtension(context.getProjectRoot(), "tsx"));
+        
+        // Add JavaScript files
+        files.addAll(findFilesByExtension(context.getProjectRoot(), "js"));
+        files.addAll(findFilesByExtension(context.getProjectRoot(), "jsx"));
         
         // Add configuration files
         files.addAll(findFilesByExtension(context.getProjectRoot(), "yml"));
@@ -208,6 +220,16 @@ public class DefaultLintingEngine implements LintingEngine {
         
         // Java files
         mappings.put("java", Arrays.asList("checkstyle", "spotbugs", "pmd"));
+        
+        // Python files - NEW for 2025
+        mappings.put("py", Arrays.asList("ruff", "mypy", "bandit"));
+        mappings.put("pyi", Arrays.asList("ruff", "mypy"));
+        
+        // Shell scripts - NEW for 2025
+        mappings.put("sh", Arrays.asList("shellcheck"));
+        mappings.put("bash", Arrays.asList("shellcheck"));
+        mappings.put("ksh", Arrays.asList("shellcheck"));
+        mappings.put("zsh", Arrays.asList("shellcheck"));
         
         // TypeScript/JavaScript files
         mappings.put("ts", Arrays.asList("eslint", "prettier"));

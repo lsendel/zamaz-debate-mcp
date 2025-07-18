@@ -65,6 +65,14 @@ class BaseApiClient {
           return Promise.reject(apiError);
         }
         
+        // In development, check if this is a connection error to backend
+        if (process.env.NODE_ENV === 'development' && 
+            (error.message.includes('ECONNREFUSED') || 
+             error.code === 'ERR_NETWORK' ||
+             error.message.includes('Network Error'))) {
+          console.log('🔧 Backend service not available, using development mode');
+        }
+        
         return Promise.reject({
           message: error.message || 'Network error',
           error_type: 'NetworkError',

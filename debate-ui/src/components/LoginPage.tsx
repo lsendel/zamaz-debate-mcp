@@ -98,6 +98,15 @@ const LoginPage: React.FC = () => {
 
           <TabPanel value={tab} index={0}>
             <Box component="form" onSubmit={handleLogin}>
+              {process.env.NODE_ENV === 'development' && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2">
+                    <strong>Development Mode</strong><br />
+                    Username: <code>demo</code><br />
+                    Password: <code>demo123</code>
+                  </Typography>
+                </Alert>
+              )}
               <TextField
                 margin="normal"
                 required
