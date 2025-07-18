@@ -76,7 +76,7 @@ class DebateClient extends BaseApiClient {
     new Map();
 
   constructor() {
-    super("/api/debate");
+    super("/api/v1");
   }
 
   // Debate management
