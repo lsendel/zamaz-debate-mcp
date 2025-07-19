@@ -2,11 +2,15 @@ package com.example.workflow.infrastructure;
 
 import com.example.workflow.domain.*;
 import com.example.workflow.domain.ports.TelemetryRepository;
+import com.example.workflow.infrastructure.influxdb.InfluxDbBatchProcessor;
+import com.example.workflow.infrastructure.influxdb.InfluxDbPerformanceMonitor;
 import com.influxdb.client.*;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -14,22 +18,24 @@ import org.springframework.stereotype.Repository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * InfluxDB implementation of TelemetryRepository
  * Provides high-performance time-series storage with batch operations and retention policies
+ * Enhanced with batch processing, performance monitoring, and schema management
  */
 @Repository
 public class InfluxDbTelemetryRepository implements TelemetryRepository {
     
+    private static final Logger logger = LoggerFactory.getLogger(InfluxDbTelemetryRepository.class);
+    
     private final InfluxDBClient influxDBClient;
     private final WriteApiBlocking writeApi;
-    private final WriteApi writeApiAsync;
     private final QueryApi queryApi;
+    private final InfluxDbBatchProcessor batchProcessor;
+    private final InfluxDbPerformanceMonitor performanceMonitor;
     
     @Value("${influxdb.bucket:telemetry}")
     private String bucket;
@@ -37,54 +43,100 @@ public class InfluxDbTelemetryRepository implements TelemetryRepository {
     @Value("${influxdb.organization:workflow-org}")
     private String organization;
     
-    @Value("${influxdb.batch.size:1000}")
-    private int batchSize;
-    
-    @Value("${influxdb.flush.interval:1000}")
-    private int flushIntervalMs;
-    
-    // Batch processing
-    private final Map<String, List<TelemetryData>> batchBuffer = new ConcurrentHashMap<>();
-    private final Object batchLock = new Object();
-    
     @Autowired
-    public InfluxDbTelemetryRepository(InfluxDBClient influxDBClient) {
+    public InfluxDbTelemetryRepository(InfluxDBClient influxDBClient,
+                                     InfluxDbBatchProcessor batchProcessor,
+                                     InfluxDbPerformanceMonitor performanceMonitor) {
         this.influxDBClient = influxDBClient;
         this.writeApi = influxDBClient.getWriteApiBlocking();
-        this.writeApiAsync = influxDBClient.makeWriteApi();
         this.queryApi = influxDBClient.getQueryApi();
+        this.batchProcessor = batchProcessor;
+        this.performanceMonitor = performanceMonitor;
         
-        // Configure batch writing
-        configureAsyncWriteApi();
-    }
-    
-    private void configureAsyncWriteApi() {
-        writeApiAsync.listenEvents(WriteSuccessEvent.class, event -> {
-            // Handle successful writes
-        });
-        
-        writeApiAsync.listenEvents(WriteErrorEvent.class, event -> {
-            // Handle write errors
-            System.err.println("InfluxDB write error: " + event.getThrowable().getMessage());
-        });
+        logger.info("InfluxDB Telemetry Repository initialized with enhanced batch processing and monitoring");
     }
     
     @Override
     public void saveTimeSeries(TelemetryData data) {
-        Point point = createTimeSeriesPoint(data);
-        writeApi.writePoint(bucket, organization, point);
+        Instant start = Instant.now();
+        try {
+            // Use batch processor for high-frequency data
+            boolean queued = batchProcessor.addTelemetryData(data);
+            if (!queued) {
+                // Fallback to direct write if queue is full
+                Point point = createTimeSeriesPoint(data);
+                writeApi.writePoint(bucket, organization, point);
+                logger.warn("Direct write fallback for device: {}", data.getDeviceId().getValue());
+            }
+            
+            performanceMonitor.recordWriteOperation(Duration.between(start, Instant.now()), true);
+            
+        } catch (Exception e) {
+            performanceMonitor.recordWriteOperation(Duration.between(start, Instant.now()), false);
+            logger.error("Failed to save time-series data for device: {}", data.getDeviceId().getValue(), e);
+            throw e;
+        }
     }
     
     @Override
     public void saveSpatialData(TelemetryData data) {
-        if (data.hasSpatialData()) {
-            Point point = createSpatialPoint(data);
-            writeApi.writePoint(bucket, organization, point);
+        if (!data.hasSpatialData()) {
+            return;
+        }
+        
+        Instant start = Instant.now();
+        try {
+            // Use batch processor for spatial data as well
+            boolean queued = batchProcessor.addTelemetryData(data);
+            if (!queued) {
+                // Fallback to direct write
+                Point point = createSpatialPoint(data);
+                writeApi.writePoint(bucket, organization, point);
+                logger.warn("Direct spatial write fallback for device: {}", data.getDeviceId().getValue());
+            }
+            
+            performanceMonitor.recordWriteOperation(Duration.between(start, Instant.now()), true);
+            
+        } catch (Exception e) {
+            performanceMonitor.recordWriteOperation(Duration.between(start, Instant.now()), false);
+            logger.error("Failed to save spatial data for device: {}", data.getDeviceId().getValue(), e);
+            throw e;
         }
     }
     
     @Override
     public void saveBatch(List<TelemetryData> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return;
+        }
+        
+        Instant start = Instant.now();
+        try {
+            // Use batch processor for optimal performance
+            int queued = batchProcessor.addTelemetryDataBatch(dataList);
+            
+            if (queued < dataList.size()) {
+                // Some items couldn't be queued, process them directly
+                List<TelemetryData> remaining = dataList.subList(queued, dataList.size());
+                processBatchDirectly(remaining);
+                logger.warn("Processed {} items directly due to queue capacity", remaining.size());
+            }
+            
+            performanceMonitor.recordWriteOperation(Duration.between(start, Instant.now()), true);
+            logger.debug("Batch saved: {} items queued, {} items processed directly", 
+                queued, dataList.size() - queued);
+            
+        } catch (Exception e) {
+            performanceMonitor.recordWriteOperation(Duration.between(start, Instant.now()), false);
+            logger.error("Failed to save batch of {} items", dataList.size(), e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Process batch directly when queue is full
+     */
+    private void processBatchDirectly(List<TelemetryData> dataList) {
         List<Point> points = dataList.stream()
             .map(this::createTimeSeriesPoint)
             .collect(Collectors.toList());
@@ -104,17 +156,28 @@ public class InfluxDbTelemetryRepository implements TelemetryRepository {
     
     @Override
     public Stream<TelemetryData> queryTimeSeries(String deviceId, Instant start, Instant end) {
-        String flux = String.format(
-            "from(bucket: \"%s\") " +
-            "|> range(start: %s, stop: %s) " +
-            "|> filter(fn: (r) => r._measurement == \"telemetry\") " +
-            "|> filter(fn: (r) => r.device_id == \"%s\") " +
-            "|> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")",
-            bucket, start, end, deviceId
-        );
-        
-        List<FluxTable> tables = queryApi.query(flux, organization);
-        return convertFluxTablesToTelemetryStream(tables);
+        Instant queryStart = Instant.now();
+        try {
+            String flux = String.format(
+                "from(bucket: \"%s\") " +
+                "|> range(start: %s, stop: %s) " +
+                "|> filter(fn: (r) => r._measurement == \"telemetry\") " +
+                "|> filter(fn: (r) => r.device_id == \"%s\") " +
+                "|> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")",
+                bucket, start, end, deviceId
+            );
+            
+            List<FluxTable> tables = queryApi.query(flux, organization);
+            Stream<TelemetryData> result = convertFluxTablesToTelemetryStream(tables);
+            
+            performanceMonitor.recordReadOperation(Duration.between(queryStart, Instant.now()), true);
+            return result;
+            
+        } catch (Exception e) {
+            performanceMonitor.recordReadOperation(Duration.between(queryStart, Instant.now()), false);
+            logger.error("Failed to query time series for device: {}", deviceId, e);
+            throw e;
+        }
     }
     
     @Override

@@ -112,40 +112,76 @@ public class Neo4jWorkflowRepository implements WorkflowRepository {
     // Search and filtering
     @Override
     public WorkflowSearchResult search(WorkflowSearchQuery query) {
-        List<WorkflowEntity> entities = entityRepository.searchWorkflows(
-            query.organizationId(),
-            query.namePattern(),
-            query.statuses() != null && !query.statuses().isEmpty() ? 
-                query.statuses().get(0).name() : null,
-            query.offset(),
-            query.limit()
-        );
+        List<WorkflowEntity> entities;
+        long totalCount;
         
-        long totalCount = entityRepository.countSearchResults(
-            query.organizationId(),
-            query.namePattern(),
-            query.statuses() != null && !query.statuses().isEmpty() ? 
-                query.statuses().get(0).name() : null
-        );
+        // Use full-text search if search term is provided
+        if (query.namePattern() != null && !query.namePattern().trim().isEmpty()) {
+            entities = entityRepository.fullTextSearch(
+                query.organizationId(),
+                query.namePattern(),
+                query.offset(),
+                query.limit()
+            );
+            totalCount = entityRepository.countFullTextSearch(
+                query.organizationId(),
+                query.namePattern()
+            );
+        } else {
+            // Use complex filter query
+            List<String> statusStrings = query.statuses() != null ? 
+                query.statuses().stream().map(Enum::name).collect(Collectors.toList()) : null;
+            List<String> nodeTypeStrings = query.nodeTypes() != null ? 
+                query.nodeTypes().stream().map(Enum::name).collect(Collectors.toList()) : null;
+                
+            entities = entityRepository.findWithComplexFilter(
+                query.organizationId(),
+                statusStrings,
+                nodeTypeStrings,
+                query.minNodes(),
+                query.maxNodes(),
+                query.createdAfter(),
+                query.createdBefore(),
+                query.offset(),
+                query.limit()
+            );
+            
+            totalCount = entityRepository.countWithComplexFilter(
+                query.organizationId(),
+                statusStrings,
+                nodeTypeStrings,
+                query.minNodes(),
+                query.maxNodes(),
+                query.createdAfter(),
+                query.createdBefore()
+            );
+        }
         
         List<Workflow> workflows = mapper.toDomains(entities);
-        
         return new WorkflowSearchResult(workflows, totalCount, query.offset(), query.limit());
     }
     
     @Override
     public List<Workflow> findAll(String organizationId, WorkflowFilter filter) {
-        // For simplicity, using basic organization query and filtering in memory
-        // In production, this should be optimized with custom Cypher queries
-        List<Workflow> workflows = findByOrganization(organizationId);
+        // Use optimized Cypher query instead of in-memory filtering
+        List<String> statusStrings = filter.statuses() != null ? 
+            filter.statuses().stream().map(Enum::name).collect(Collectors.toList()) : null;
+        List<String> nodeTypeStrings = filter.requiredNodeTypes() != null ? 
+            filter.requiredNodeTypes().stream().map(Enum::name).collect(Collectors.toList()) : null;
+            
+        List<WorkflowEntity> entities = entityRepository.findWithComplexFilter(
+            organizationId,
+            statusStrings,
+            nodeTypeStrings,
+            filter.minNodes(),
+            filter.maxNodes(),
+            filter.createdAfter(),
+            filter.updatedAfter(),
+            0,
+            Integer.MAX_VALUE
+        );
         
-        return workflows.stream()
-            .filter(w -> filter.statuses() == null || filter.statuses().contains(w.getStatus()))
-            .filter(w -> filter.minNodes() == null || w.getNodes().size() >= filter.minNodes())
-            .filter(w -> filter.maxNodes() == null || w.getNodes().size() <= filter.maxNodes())
-            .filter(w -> filter.createdAfter() == null || w.getCreatedAt().isAfter(filter.createdAfter()))
-            .filter(w -> filter.updatedAfter() == null || w.getUpdatedAt().isAfter(filter.updatedAfter()))
-            .collect(Collectors.toList());
+        return mapper.toDomains(entities);
     }
     
     // Statistics and analytics
@@ -197,5 +233,101 @@ public class Neo4jWorkflowRepository implements WorkflowRepository {
             .map(WorkflowId::getValue)
             .collect(Collectors.toList());
         entityRepository.deleteAllByIds(ids);
+    }
+    
+    // Additional workflow analysis methods
+    
+    /**
+     * Check if workflow has valid structure (no orphaned edges, cycles, etc.)
+     */
+    public boolean isWorkflowValid(WorkflowId workflowId) {
+        String id = workflowId.getValue();
+        return !entityRepository.hasOrphanedEdges(id) && 
+               !entityRepository.hasIsolatedNodes(id) && 
+               !entityRepository.hasSelfLoops(id);
+    }
+    
+    /**
+     * Check if workflow has cycles
+     */
+    public boolean hasWorkflowCycles(WorkflowId workflowId) {
+        return entityRepository.hasCycles(workflowId.getValue());
+    }
+    
+    /**
+     * Get maximum path length in workflow
+     */
+    public int getMaxPathLength(WorkflowId workflowId) {
+        Integer maxLength = entityRepository.findMaxPathLength(workflowId.getValue());
+        return maxLength != null ? maxLength : 0;
+    }
+    
+    /**
+     * Check if there's a path between two nodes
+     */
+    public boolean hasPathBetweenNodes(WorkflowId workflowId, NodeId startNodeId, NodeId endNodeId) {
+        return entityRepository.hasPathBetweenNodes(
+            workflowId.getValue(), 
+            startNodeId.getValue(), 
+            endNodeId.getValue()
+        );
+    }
+    
+    /**
+     * Count nodes by type in a workflow
+     */
+    public long countNodesByType(WorkflowId workflowId, NodeType nodeType) {
+        return entityRepository.countNodesByType(workflowId.getValue(), nodeType.name());
+    }
+    
+    /**
+     * Get workflow with all nodes and edges loaded (optimized query)
+     */
+    public Optional<Workflow> findByIdWithFullStructure(WorkflowId workflowId) {
+        return entityRepository.findByIdWithNodesAndEdges(workflowId.getValue())
+            .map(mapper::toDomain);
+    }
+    
+    /**
+     * Get workflows for organization with nodes pre-loaded (optimized query)
+     */
+    public List<Workflow> findByOrganizationWithNodes(String organizationId) {
+        List<WorkflowEntity> entities = entityRepository.findByOrganizationWithNodes(organizationId);
+        return mapper.toDomains(entities);
+    }
+    
+    /**
+     * Batch upsert workflows for bulk operations
+     */
+    public void batchUpsertWorkflows(List<Workflow> workflows) {
+        List<Map<String, Object>> workflowMaps = workflows.stream()
+            .map(this::workflowToMap)
+            .collect(Collectors.toList());
+        entityRepository.batchUpsertWorkflows(workflowMaps);
+    }
+    
+    /**
+     * Convert workflow to map for batch operations
+     */
+    private Map<String, Object> workflowToMap(Workflow workflow) {
+        Map<String, Object> workflowMap = new HashMap<>();
+        workflowMap.put("id", workflow.getId().getValue());
+        workflowMap.put("name", workflow.getName());
+        workflowMap.put("organizationId", workflow.getOrganizationId());
+        workflowMap.put("status", workflow.getStatus().name());
+        workflowMap.put("updatedAt", workflow.getUpdatedAt());
+        
+        List<Map<String, Object>> nodeMaps = workflow.getNodes().stream()
+            .map(node -> {
+                Map<String, Object> nodeMap = new HashMap<>();
+                nodeMap.put("id", node.getId().getValue());
+                nodeMap.put("type", node.getType().name());
+                nodeMap.put("name", node.getLabel());
+                return nodeMap;
+            })
+            .collect(Collectors.toList());
+        workflowMap.put("nodes", nodeMaps);
+        
+        return workflowMap;
     }
 }

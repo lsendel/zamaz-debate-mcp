@@ -37,12 +37,16 @@ public interface WorkflowEntityMapper {
     // WorkflowNode mappings
     @Mapping(source = "id.value", target = "id")
     @Mapping(source = "type", target = "type", qualifiedByName = "nodeTypeToString")
+    @Mapping(source = "label", target = "label")
     @Mapping(source = "position.x", target = "positionX")
     @Mapping(source = "position.y", target = "positionY")
+    @Mapping(target = "isStartNode", expression = "java(node.isStartNode())")
+    @Mapping(target = "isEndNode", expression = "java(node.isEndNode())")
     WorkflowNodeEntity toNodeEntity(WorkflowNode node);
     
     @Mapping(source = "id", target = "id", qualifiedByName = "stringToNodeId")
     @Mapping(source = "type", target = "type", qualifiedByName = "stringToNodeType")
+    @Mapping(source = "label", target = "label")
     @Mapping(source = "positionX", target = "position.x")
     @Mapping(source = "positionY", target = "position.y")
     WorkflowNode toNodeDomain(WorkflowNodeEntity entity);
@@ -50,10 +54,16 @@ public interface WorkflowEntityMapper {
     // WorkflowEdge mappings
     @Mapping(source = "id.value", target = "id")
     @Mapping(source = "type", target = "type", qualifiedByName = "edgeTypeToString")
+    @Mapping(source = "source.value", target = "sourceId")
+    @Mapping(source = "target.value", target = "targetId")
+    @Mapping(source = "label", target = "label")
     WorkflowEdgeEntity toEdgeEntity(WorkflowEdge edge);
     
     @Mapping(source = "id", target = "id", qualifiedByName = "stringToEdgeId")
     @Mapping(source = "type", target = "type", qualifiedByName = "stringToEdgeType")
+    @Mapping(source = "sourceId", target = "source", qualifiedByName = "stringToNodeId")
+    @Mapping(source = "targetId", target = "target", qualifiedByName = "stringToNodeId")
+    @Mapping(source = "label", target = "label")
     WorkflowEdge toEdgeDomain(WorkflowEdgeEntity entity);
     
     // Custom conversion methods
