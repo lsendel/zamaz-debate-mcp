@@ -1,0 +1,419 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-organization-vs
+  namespace: default
+  labels:
+    app: mcp-organization
+    component: virtual-service
+spec:
+  hosts:
+  - mcp-organization
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/organizations
+    route:
+    - destination:
+        host: mcp-organization
+        port:
+          number: 5005
+        subset: v1
+      weight: 90
+    - destination:
+        host: mcp-organization
+        port:
+          number: 5005
+        subset: canary
+      weight: 10
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: gateway-error,connect-failure,refused-stream
+    fault:
+      delay:
+        percentage:
+          value: 0.1
+        fixedDelay: 100ms
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-organization-dr
+  namespace: default
+  labels:
+    app: mcp-organization
+    component: destination-rule
+spec:
+  host: mcp-organization
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 50
+        connectTimeout: 30s
+      http:
+        http1MaxPendingRequests: 25
+        http2MaxRequests: 50
+        maxRequestsPerConnection: 5
+        maxRetries: 3
+        idleTimeout: 60s
+    loadBalancer:
+      simple: LEAST_CONN
+    circuitBreaker:
+      consecutiveGatewayErrors: 3
+      consecutive5xxErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: canary
+    labels:
+      version: canary
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-llm-vs
+  namespace: default
+  labels:
+    app: mcp-llm
+    component: virtual-service
+spec:
+  hosts:
+  - mcp-llm
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/llm
+    route:
+    - destination:
+        host: mcp-llm
+        port:
+          number: 5002
+        subset: v1
+      weight: 100
+    timeout: 120s
+    retries:
+      attempts: 2
+      perTryTimeout: 60s
+      retryOn: gateway-error,connect-failure,refused-stream
+    headers:
+      request:
+        add:
+          x-service-timeout: "120s"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-llm-dr
+  namespace: default
+  labels:
+    app: mcp-llm
+    component: destination-rule
+spec:
+  host: mcp-llm
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 20
+        connectTimeout: 30s
+      http:
+        http1MaxPendingRequests: 10
+        http2MaxRequests: 20
+        maxRequestsPerConnection: 2
+        maxRetries: 2
+        idleTimeout: 300s
+    loadBalancer:
+      simple: ROUND_ROBIN
+    circuitBreaker:
+      consecutiveGatewayErrors: 3
+      consecutive5xxErrors: 3
+      interval: 60s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 30
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-debate-vs
+  namespace: default
+  labels:
+    app: mcp-debate
+    component: virtual-service
+spec:
+  hosts:
+  - mcp-debate
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/debates
+    route:
+    - destination:
+        host: mcp-debate
+        port:
+          number: 5013
+        subset: v1
+      weight: 100
+    timeout: 60s
+    retries:
+      attempts: 3
+      perTryTimeout: 20s
+      retryOn: gateway-error,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-debate-dr
+  namespace: default
+  labels:
+    app: mcp-debate
+    component: destination-rule
+spec:
+  host: mcp-debate
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 30
+        connectTimeout: 30s
+      http:
+        http1MaxPendingRequests: 15
+        http2MaxRequests: 30
+        maxRequestsPerConnection: 3
+        maxRetries: 3
+        idleTimeout: 120s
+    loadBalancer:
+      simple: RANDOM
+    circuitBreaker:
+      consecutiveGatewayErrors: 4
+      consecutive5xxErrors: 4
+      interval: 45s
+      baseEjectionTime: 45s
+      maxEjectionPercent: 40
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-rag-vs
+  namespace: default
+  labels:
+    app: mcp-rag
+    component: virtual-service
+spec:
+  hosts:
+  - mcp-rag
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/rag
+    route:
+    - destination:
+        host: mcp-rag
+        port:
+          number: 5004
+        subset: v1
+      weight: 100
+    timeout: 90s
+    retries:
+      attempts: 2
+      perTryTimeout: 45s
+      retryOn: gateway-error,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-rag-dr
+  namespace: default
+  labels:
+    app: mcp-rag
+    component: destination-rule
+spec:
+  host: mcp-rag
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 25
+        connectTimeout: 30s
+      http:
+        http1MaxPendingRequests: 12
+        http2MaxRequests: 25
+        maxRequestsPerConnection: 3
+        maxRetries: 2
+        idleTimeout: 180s
+    loadBalancer:
+      simple: LEAST_CONN
+    circuitBreaker:
+      consecutiveGatewayErrors: 3
+      consecutive5xxErrors: 3
+      interval: 60s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 35
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-security-vs
+  namespace: default
+  labels:
+    app: mcp-security
+    component: virtual-service
+spec:
+  hosts:
+  - mcp-security
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/security
+    route:
+    - destination:
+        host: mcp-security
+        port:
+          number: 8082
+        subset: v1
+      weight: 100
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: gateway-error,connect-failure,refused-stream
+    headers:
+      request:
+        add:
+          x-security-priority: "high"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-security-dr
+  namespace: default
+  labels:
+    app: mcp-security
+    component: destination-rule
+spec:
+  host: mcp-security
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 40
+        connectTimeout: 30s
+      http:
+        http1MaxPendingRequests: 20
+        http2MaxRequests: 40
+        maxRequestsPerConnection: 4
+        maxRetries: 3
+        idleTimeout: 90s
+    loadBalancer:
+      simple: ROUND_ROBIN
+    circuitBreaker:
+      consecutiveGatewayErrors: 2
+      consecutive5xxErrors: 2
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 60
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-services-peer-auth
+  namespace: default
+  labels:
+    component: peer-authentication
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: mcp-platform
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-inter-service-authz
+  namespace: default
+  labels:
+    component: authorization
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: mcp-platform
+  rules:
+  - from:
+    - source:
+        principals: 
+        - "cluster.local/ns/default/sa/mcp-sidecar"
+        - "cluster.local/ns/default/sa/mcp-organization"
+        - "cluster.local/ns/default/sa/mcp-llm"
+        - "cluster.local/ns/default/sa/mcp-debate"
+        - "cluster.local/ns/default/sa/mcp-rag"
+        - "cluster.local/ns/default/sa/mcp-security"
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/*"]
+    when:
+    - key: source.namespace
+      values: ["default"]
+  - from:
+    - source:
+        namespaces: ["istio-system"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/actuator/health", "/actuator/prometheus"]
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-services-telemetry
+  namespace: default
+  labels:
+    component: telemetry
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: mcp-platform
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        platform:
+          operation: UPSERT
+          value: "mcp"
+        environment:
+          operation: UPSERT
+          value: "production"
+  accessLogging:
+  - providers:
+    - name: otel
+  tracing:
+  - providers:
+    - name: jaeger
+    customTags:
+      platform:
+        literal:
+          value: "mcp"
+      service_mesh:
+        literal:
+          value: "istio"

@@ -18,16 +18,12 @@ MASTER_RESULTS_DIR=".linting/test-results/master"
 COVERAGE_TARGET=80
 START_TIME=$(date +%s)
 
-# Test suite tracking
-declare -A TEST_SUITES=(
-    ["core_integration"]=".linting/scripts/integration-test-suite.sh"
-    ["performance"]=".linting/scripts/performance-integration-tests.sh"
-    ["workflow"]=".linting/scripts/workflow-integration-tests.sh"
-    ["e2e"]=".linting/scripts/e2e-test.sh"
-)
+# Test suite tracking (using simple arrays instead of associative arrays)
+TEST_SUITE_NAMES="core_integration performance workflow e2e"
+TEST_SUITE_SCRIPTS=".linting/scripts/integration-test-suite.sh .linting/scripts/performance-integration-tests.sh .linting/scripts/workflow-integration-tests.sh .linting/scripts/e2e-test.sh"
 
-declare -A SUITE_STATUS=()
-declare -A SUITE_COVERAGE=()
+# Coverage areas
+COVERAGE_AREAS="java_linting frontend_linting config_linting doc_linting security_linting incremental_linting cache_management ide_integration ci_cd_integration reporting error_handling performance service_overrides pre_commit_hooks quality_gates workflow_integration end_to_end"
 
 # Initialize master test environment
 initialize_master_tests() {

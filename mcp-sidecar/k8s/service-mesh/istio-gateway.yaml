@@ -1,0 +1,243 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: mcp-sidecar-gateway
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - mcp-sidecar.local
+    - api.mcp.local
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: mcp-tls-cert
+    hosts:
+    - mcp-sidecar.local
+    - api.mcp.local
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mcp-sidecar-vs
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: virtual-service
+spec:
+  hosts:
+  - mcp-sidecar.local
+  - api.mcp.local
+  gateways:
+  - mcp-sidecar-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/dashboard
+    route:
+    - destination:
+        host: mcp-sidecar
+        port:
+          number: 8080
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: gateway-error,connect-failure,refused-stream
+  - match:
+    - uri:
+        prefix: /api/v1/security
+    route:
+    - destination:
+        host: mcp-sidecar
+        port:
+          number: 8080
+    timeout: 30s
+    headers:
+      request:
+        add:
+          x-security-scan: "enabled"
+  - match:
+    - uri:
+        prefix: /api/v1/mesh
+    route:
+    - destination:
+        host: mcp-sidecar
+        port:
+          number: 8080
+    timeout: 30s
+  - match:
+    - uri:
+        prefix: /api/v1
+    route:
+    - destination:
+        host: mcp-sidecar
+        port:
+          number: 8080
+      weight: 100
+    timeout: 30s
+    fault:
+      delay:
+        percentage:
+          value: 0.1
+        fixedDelay: 5s
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: mcp-sidecar
+        port:
+          number: 8080
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mcp-sidecar-dr
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: destination-rule
+spec:
+  host: mcp-sidecar
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 30s
+        tcpKeepalive:
+          time: 7200s
+          interval: 75s
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+        idleTimeout: 60s
+        h2UpgradePolicy: UPGRADE
+    loadBalancer:
+      simple: ROUND_ROBIN
+    circuitBreaker:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+    trafficPolicy:
+      connectionPool:
+        tcp:
+          maxConnections: 50
+  - name: canary
+    labels:
+      version: canary
+    trafficPolicy:
+      connectionPool:
+        tcp:
+          maxConnections: 25
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: mcp-sidecar-peer-auth
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: peer-authentication
+spec:
+  selector:
+    matchLabels:
+      app: mcp-sidecar
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mcp-sidecar-authz
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: authorization
+spec:
+  selector:
+    matchLabels:
+      app: mcp-sidecar
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/default/sa/mcp-client"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/api/v1/*"]
+    when:
+    - key: source.namespace
+      values: ["default", "mcp-system"]
+  - from:
+    - source:
+        namespaces: ["istio-system"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/actuator/health", "/actuator/prometheus"]
+  - to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/actuator/health"]
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mcp-sidecar-telemetry
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: telemetry
+spec:
+  selector:
+    matchLabels:
+      app: mcp-sidecar
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        request_protocol:
+          operation: UPSERT
+          value: "HTTP"
+        service_name:
+          operation: UPSERT
+          value: "mcp-sidecar"
+  accessLogging:
+  - providers:
+    - name: otel
+  tracing:
+  - providers:
+    - name: jaeger

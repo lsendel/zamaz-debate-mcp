@@ -1,0 +1,312 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mcp-sidecar-rate-limit
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: envoy-filter
+spec:
+  workloadSelector:
+    labels:
+      app: mcp-sidecar
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: local_rate_limiter
+            token_bucket:
+              max_tokens: 1000
+              tokens_per_fill: 100
+              fill_interval: 1s
+            filter_enabled:
+              runtime_key: local_rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: local_rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            response_headers_to_add:
+            - append: false
+              header:
+                key: x-local-rate-limit
+                value: 'true'
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mcp-security-headers
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: envoy-filter
+spec:
+  workloadSelector:
+    labels:
+      app: mcp-sidecar
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.header_mutation
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+          mutations:
+            response_mutations:
+            - append:
+                header:
+                  key: "X-Content-Type-Options"
+                  value: "nosniff"
+            - append:
+                header:
+                  key: "X-Frame-Options"
+                  value: "DENY"
+            - append:
+                header:
+                  key: "X-XSS-Protection"
+                  value: "1; mode=block"
+            - append:
+                header:
+                  key: "Strict-Transport-Security"
+                  value: "max-age=31536000; includeSubDomains"
+            - append:
+                header:
+                  key: "Referrer-Policy"
+                  value: "strict-origin-when-cross-origin"
+            - append:
+                header:
+                  key: "Content-Security-Policy"
+                  value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mcp-request-id
+  namespace: default
+  labels:
+    component: envoy-filter
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/part-of: mcp-platform
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.header_mutation
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+          mutations:
+            request_mutations:
+            - append:
+                header:
+                  key: "x-request-id"
+                  value: "%REQ(x-request-id)%"
+            - append:
+                header:
+                  key: "x-forwarded-for"
+                  value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+            - append:
+                header:
+                  key: "x-service-mesh"
+                  value: "istio"
+            response_mutations:
+            - append:
+                header:
+                  key: "x-envoy-upstream-service-time"
+                  value: "%RESP(x-envoy-upstream-service-time)%"
+            - append:
+                header:
+                  key: "x-response-time"
+                  value: "%DURATION%"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mcp-access-log
+  namespace: default
+  labels:
+    component: envoy-filter
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/part-of: mcp-platform
+  configPatches:
+  - applyTo: NETWORK_FILTER
+    match:
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: MERGE
+      value:
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          access_log:
+          - name: envoy.access_loggers.file
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              path: /dev/stdout
+              format: |
+                {
+                  "timestamp": "%START_TIME%",
+                  "method": "%REQ(:METHOD)%",
+                  "url": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+                  "protocol": "%PROTOCOL%",
+                  "response_code": "%RESPONSE_CODE%",
+                  "response_flags": "%RESPONSE_FLAGS%",
+                  "bytes_received": "%BYTES_RECEIVED%",
+                  "bytes_sent": "%BYTES_SENT%",
+                  "duration": "%DURATION%",
+                  "upstream_service_time": "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%",
+                  "x_forwarded_for": "%REQ(X-FORWARDED-FOR)%",
+                  "user_agent": "%REQ(USER-AGENT)%",
+                  "request_id": "%REQ(X-REQUEST-ID)%",
+                  "authority": "%REQ(:AUTHORITY)%",
+                  "upstream_host": "%UPSTREAM_HOST%",
+                  "upstream_cluster": "%UPSTREAM_CLUSTER%",
+                  "upstream_local_address": "%UPSTREAM_LOCAL_ADDRESS%",
+                  "downstream_local_address": "%DOWNSTREAM_LOCAL_ADDRESS%",
+                  "downstream_remote_address": "%DOWNSTREAM_REMOTE_ADDRESS%",
+                  "service_name": "%REQ(X-SERVICE-NAME)%",
+                  "service_version": "%REQ(X-SERVICE-VERSION)%"
+                }
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mcp-cors-filter
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: envoy-filter
+spec:
+  workloadSelector:
+    labels:
+      app: mcp-sidecar
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.cors
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: mcp-wasm-security
+  namespace: default
+  labels:
+    app: mcp-sidecar
+    component: envoy-filter
+spec:
+  workloadSelector:
+    labels:
+      app: mcp-sidecar
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.wasm
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+          config:
+            name: "security_filter"
+            root_id: "security_filter"
+            configuration:
+              "@type": type.googleapis.com/google.protobuf.StringValue
+              value: |
+                {
+                  "rules": [
+                    {
+                      "pattern": ".*\\.\\./.*",
+                      "action": "block",
+                      "reason": "Path traversal attempt"
+                    },
+                    {
+                      "pattern": ".*<script.*>.*",
+                      "action": "block",
+                      "reason": "XSS attempt"
+                    },
+                    {
+                      "pattern": ".*union.*select.*",
+                      "action": "block",
+                      "reason": "SQL injection attempt"
+                    }
+                  ]
+                }
+            vm_config:
+              vm_id: "security_filter"
+              runtime: "envoy.wasm.runtime.v8"
+              code:
+                local:
+                  inline_string: |
+                    const RULES = JSON.parse(rootContext.getConfiguration());
+                    
+                    class SecurityFilter extends HttpFilter {
+                      onRequestHeaders() {
+                        const path = this.getRequestHeader(":path");
+                        const userAgent = this.getRequestHeader("user-agent");
+                        
+                        for (const rule of RULES.rules) {
+                          if (new RegExp(rule.pattern, "i").test(path) || 
+                              new RegExp(rule.pattern, "i").test(userAgent)) {
+                            this.sendLocalResponse(403, 
+                              `Blocked: ${rule.reason}`, 
+                              {"content-type": "application/json"}, 
+                              `{"error": "Request blocked", "reason": "${rule.reason}"}`
+                            );
+                            return FilterHeadersStatus.StopIteration;
+                          }
+                        }
+                        
+                        return FilterHeadersStatus.Continue;
+                      }
+                    }
+                    
+                    registerHttpFilter("security_filter", SecurityFilter);

@@ -246,8 +246,8 @@ lint-fix: ## 🔧 Auto-fix linting issues
 test-integration: ## 🧪 Run comprehensive integration tests (80% coverage target)
 	@echo "$(BLUE)Running comprehensive integration tests...$(NC)"
 	@echo "$(YELLOW)Target: 80% functionality coverage$(NC)"
-	@if [ -f "./run-integration-tests.sh" ]; then \
-		chmod +x ./run-integration-tests.sh && ./run-integration-tests.sh; \
+	@if [ -f ".linting/scripts/simple-integration-test.sh" ]; then \
+		chmod +x .linting/scripts/simple-integration-test.sh && .linting/scripts/simple-integration-test.sh; \
 	else \
 		echo "$(RED)❌ Integration test runner not found$(NC)"; \
 		exit 1; \

@@ -1,6 +1,6 @@
 package com.zamaz.mcp.sidecar.controller;
 
-import com.zamaz.mcp.sidecar.service.SecurityScanningService;
+import com.zamaz.mcp.sidecar.security.AdvancedSecurityMiddleware;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Security Controller for MCP Sidecar
  * 
- * Provides security management and monitoring endpoints
+ * Provides REST endpoints for security monitoring and management
  */
 @RestController
 @RequestMapping("/api/v1/security")
@@ -21,107 +21,196 @@ import java.util.Map;
 @Slf4j
 public class SecurityController {
 
-    private final SecurityScanningService securityScanningService;
+    private final AdvancedSecurityMiddleware securityMiddleware;
 
     /**
      * Get security statistics
      */
     @GetMapping("/statistics")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY') or hasRole('MONITOR')")
     public Mono<ResponseEntity<Map<String, Object>>> getSecurityStatistics() {
-        return securityScanningService.getSecurityStatistics()
+        return Mono.fromCallable(() -> securityMiddleware.getSecurityStatistics())
                 .map(ResponseEntity::ok)
                 .doOnSuccess(response -> log.debug("Security statistics requested"))
                 .onErrorResume(error -> {
-                    log.error("Error getting security statistics", error);
+                    log.error("Error getting security statistics: {}", error.getMessage());
                     return Mono.just(ResponseEntity.internalServerError().build());
                 });
     }
 
     /**
-     * Check IP reputation
+     * Get security profile for IP
      */
-    @GetMapping("/ip-reputation/{ip}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY')")
-    public Mono<ResponseEntity<Map<String, Object>>> checkIPReputation(@PathVariable String ip) {
-        return securityScanningService.checkIPReputation(ip)
-                .map(safe -> {
-                    Map<String, Object> result = Map.of(
-                        "ip", ip,
-                        "safe", safe,
-                        "timestamp", System.currentTimeMillis()
-                    );
-                    return ResponseEntity.ok(result);
-                })
-                .doOnSuccess(response -> log.debug("IP reputation check requested for: {}", ip))
-                .onErrorResume(error -> {
-                    log.error("Error checking IP reputation for: {}", ip, error);
-                    return Mono.just(ResponseEntity.internalServerError().build());
-                });
+    @GetMapping("/profiles/{ipAddress}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY') or hasRole('MONITOR')")
+    public Mono<ResponseEntity<SecurityProfileResponse>> getSecurityProfile(@PathVariable String ipAddress) {
+        return Mono.fromCallable(() -> {
+            AdvancedSecurityMiddleware.SecurityProfile profile = securityMiddleware.getSecurityProfile(ipAddress);
+            if (profile == null) {
+                return ResponseEntity.notFound().<SecurityProfileResponse>build();
+            }
+            
+            SecurityProfileResponse response = new SecurityProfileResponse(
+                profile.getIpAddress(),
+                profile.getTotalRequests(),
+                profile.getSuspiciousRequests(),
+                profile.getBlockedRequests(),
+                profile.getThreatLevel().name(),
+                profile.getFirstSeen(),
+                profile.getLastSeen(),
+                profile.getUserAgentCounts(),
+                profile.getEndpointCounts()
+            );
+            
+            return ResponseEntity.ok(response);
+        })
+        .doOnSuccess(response -> log.debug("Security profile requested for IP: {}", ipAddress))
+        .onErrorResume(error -> {
+            log.error("Error getting security profile for IP {}: {}", ipAddress, error.getMessage());
+            return Mono.just(ResponseEntity.internalServerError().build());
+        });
     }
 
     /**
-     * Manual security scan
-     */
-    @PostMapping("/scan")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY')")
-    public Mono<ResponseEntity<Map<String, Object>>> performSecurityScan(
-            @RequestParam String clientId,
-            @RequestParam String path,
-            @RequestParam String method,
-            @RequestBody(required = false) Map<String, Object> request) {
-        
-        String payload = request != null ? request.toString() : null;
-        Map<String, String> headers = request != null && request.containsKey("headers") ? 
-            (Map<String, String>) request.get("headers") : Map.of();
-        
-        return securityScanningService.scanRequest(clientId, path, method, headers, payload)
-                .map(scanResult -> {
-                    Map<String, Object> result = Map.of(
-                        "blocked", scanResult.isBlocked(),
-                        "reason", scanResult.getReason(),
-                        "riskScore", scanResult.getRiskScore(),
-                        "threatsDetected", scanResult.getThreats().size(),
-                        "threats", scanResult.getThreats(),
-                        "timestamp", System.currentTimeMillis()
-                    );
-                    return ResponseEntity.ok(result);
-                })
-                .doOnSuccess(response -> log.debug("Manual security scan performed: clientId={}, path={}", clientId, path))
-                .onErrorResume(error -> {
-                    log.error("Error performing manual security scan", error);
-                    return Mono.just(ResponseEntity.internalServerError().build());
-                });
-    }
-
-    /**
-     * Get security health status
+     * Get security health
      */
     @GetMapping("/health")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY') or hasRole('MONITOR')")
     public Mono<ResponseEntity<Map<String, Object>>> getSecurityHealth() {
-        return securityScanningService.getSecurityStatistics()
-                .map(stats -> {
-                    Map<String, Object> health = Map.of(
-                        "scanningEnabled", stats.get("scanningEnabled"),
-                        "threatIntelligenceEnabled", stats.containsKey("threatIntelligenceEnabled") ? 
-                            stats.get("threatIntelligenceEnabled") : false,
-                        "recentThreats", stats.get("totalThreats"),
-                        "suspiciousActivities", stats.get("suspiciousActivities"),
-                        "status", "UP",
-                        "timestamp", System.currentTimeMillis()
-                    );
-                    return ResponseEntity.ok(health);
-                })
-                .doOnSuccess(response -> log.debug("Security health check requested"))
-                .onErrorResume(error -> {
-                    log.error("Error getting security health", error);
-                    Map<String, Object> errorHealth = Map.of(
-                        "status", "DOWN",
-                        "error", error.getMessage(),
-                        "timestamp", System.currentTimeMillis()
-                    );
-                    return Mono.just(ResponseEntity.ok(errorHealth));
-                });
+        return Mono.fromCallable(() -> {
+            Map<String, Object> statistics = securityMiddleware.getSecurityStatistics();
+            
+            long highRiskIps = (Long) statistics.get("highRiskIps");
+            long blockedIps = (Long) statistics.get("blockedIps");
+            boolean securityEnabled = (Boolean) statistics.get("securityEnabled");
+            
+            String status = "UP";
+            if (!securityEnabled) {
+                status = "DOWN";
+            } else if (highRiskIps > 10 || blockedIps > 50) {
+                status = "DEGRADED";
+            }
+            
+            Map<String, Object> health = Map.of(
+                "status", status,
+                "securityEnabled", securityEnabled,
+                "highRiskIps", highRiskIps,
+                "blockedIps", blockedIps,
+                "totalProfiles", statistics.get("totalProfiles")
+            );
+            
+            return ResponseEntity.ok(health);
+        })
+        .doOnSuccess(response -> log.debug("Security health check requested"))
+        .onErrorResume(error -> {
+            log.error("Error getting security health: {}", error.getMessage());
+            return Mono.just(ResponseEntity.internalServerError().build());
+        });
+    }
+
+    /**
+     * Get threat level distribution
+     */
+    @GetMapping("/threat-levels")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY') or hasRole('MONITOR')")
+    public Mono<ResponseEntity<Map<String, Object>>> getThreatLevelDistribution() {
+        return Mono.fromCallable(() -> {
+            Map<String, Object> statistics = securityMiddleware.getSecurityStatistics();
+            Map<String, Object> response = Map.of(
+                "threatLevelDistribution", statistics.get("threatLevelDistribution"),
+                "totalProfiles", statistics.get("totalProfiles")
+            );
+            return ResponseEntity.ok(response);
+        })
+        .doOnSuccess(response -> log.debug("Threat level distribution requested"))
+        .onErrorResume(error -> {
+            log.error("Error getting threat level distribution: {}", error.getMessage());
+            return Mono.just(ResponseEntity.internalServerError().build());
+        });
+    }
+
+    /**
+     * Test security scanning
+     */
+    @PostMapping("/test-scan")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY')")
+    public Mono<ResponseEntity<Map<String, Object>>> testSecurityScan(
+            @RequestBody SecurityTestRequest request) {
+        
+        return Mono.fromCallable(() -> {
+            // This would normally perform a security scan on the provided content
+            // For now, we'll return a simulated response
+            
+            boolean containsSuspiciousContent = request.getContent().contains("script") ||
+                    request.getContent().contains("union") ||
+                    request.getContent().contains("../");
+            
+            Map<String, Object> result = Map.of(
+                "testContent", request.getContent(),
+                "suspicious", containsSuspiciousContent,
+                "threatLevel", containsSuspiciousContent ? "HIGH" : "LOW",
+                "patterns", containsSuspiciousContent ? 
+                    java.util.List.of("potential_injection", "suspicious_pattern") : 
+                    java.util.List.of(),
+                "recommendation", containsSuspiciousContent ? 
+                    "Content blocked due to suspicious patterns" : 
+                    "Content appears safe"
+            );
+            
+            return ResponseEntity.ok(result);
+        })
+        .doOnSuccess(response -> log.debug("Security scan test performed"))
+        .onErrorResume(error -> {
+            log.error("Error performing security scan test: {}", error.getMessage());
+            return Mono.just(ResponseEntity.internalServerError().build());
+        });
+    }
+
+    /**
+     * Response DTOs
+     */
+    public static class SecurityProfileResponse {
+        private final String ipAddress;
+        private final long totalRequests;
+        private final long suspiciousRequests;
+        private final long blockedRequests;
+        private final String threatLevel;
+        private final java.time.Instant firstSeen;
+        private final java.time.Instant lastSeen;
+        private final Map<String, java.util.concurrent.atomic.AtomicInteger> userAgentCounts;
+        private final Map<String, java.util.concurrent.atomic.AtomicInteger> endpointCounts;
+
+        public SecurityProfileResponse(String ipAddress, long totalRequests, long suspiciousRequests,
+                                     long blockedRequests, String threatLevel, java.time.Instant firstSeen,
+                                     java.time.Instant lastSeen, 
+                                     Map<String, java.util.concurrent.atomic.AtomicInteger> userAgentCounts,
+                                     Map<String, java.util.concurrent.atomic.AtomicInteger> endpointCounts) {
+            this.ipAddress = ipAddress;
+            this.totalRequests = totalRequests;
+            this.suspiciousRequests = suspiciousRequests;
+            this.blockedRequests = blockedRequests;
+            this.threatLevel = threatLevel;
+            this.firstSeen = firstSeen;
+            this.lastSeen = lastSeen;
+            this.userAgentCounts = userAgentCounts;
+            this.endpointCounts = endpointCounts;
+        }
+
+        public String getIpAddress() { return ipAddress; }
+        public long getTotalRequests() { return totalRequests; }
+        public long getSuspiciousRequests() { return suspiciousRequests; }
+        public long getBlockedRequests() { return blockedRequests; }
+        public String getThreatLevel() { return threatLevel; }
+        public java.time.Instant getFirstSeen() { return firstSeen; }
+        public java.time.Instant getLastSeen() { return lastSeen; }
+        public Map<String, java.util.concurrent.atomic.AtomicInteger> getUserAgentCounts() { return userAgentCounts; }
+        public Map<String, java.util.concurrent.atomic.AtomicInteger> getEndpointCounts() { return endpointCounts; }
+    }
+
+    public static class SecurityTestRequest {
+        private String content;
+        
+        public String getContent() { return content; }
+        public void setContent(String content) { this.content = content; }
     }
 }

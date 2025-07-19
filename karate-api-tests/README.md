@@ -172,9 +172,17 @@ karate-api-tests/
 ├── scripts/                            # Utility scripts
 │   ├── run-tests.sh                    # Test execution script
 │   ├── setup-test-env.sh               # Environment setup script
+│   ├── generate-evidence-reports.sh    # Evidence generation script
 │   └── cleanup-test-data.sh            # Data cleanup script
+├── test-evidence-reports/              # 📊 TEST EVIDENCE REPORTS (GENERATED)
+│   ├── index.html                      # Main evidence dashboard
+│   ├── consolidated-evidence-*.html    # Consolidated service reports
+│   ├── html/                           # Individual service HTML reports
+│   ├── json/                           # Raw evidence data (JSON)
+│   └── summary/                        # Text summaries
 ├── docker-compose.test.yml             # Test environment Docker Compose
 ├── pom.xml                             # Maven configuration
+├── EVIDENCE_GENERATION_GUIDE.md        # Detailed evidence generation guide
 └── README.md                           # This file
 ```
 
@@ -402,15 +410,68 @@ jobs:
           path: karate-api-tests/target/karate-reports/
 ```
 
-## Reporting
+## Evidence Generation and Reporting
+
+### 📊 Evidence Reports
+
+This framework generates comprehensive evidence reports for all services:
+
+```bash
+# Generate evidence reports for all services
+./scripts/generate-evidence-reports.sh
+
+# Generate evidence for specific services only
+./scripts/generate-evidence-reports.sh --services "authentication,organization,llm"
+
+# Custom output directory
+./scripts/generate-evidence-reports.sh --output-dir "custom-reports"
+```
+
+### 🌐 Viewing Evidence Reports
+
+After generation, reports are located in `test-evidence-reports/`:
+
+```bash
+# Method 1: Direct browser access
+open test-evidence-reports/index.html
+
+# Method 2: HTTP Server (recommended)
+cd test-evidence-reports
+python3 -m http.server 8080
+# Then open: http://localhost:8080
+
+# Method 3: VS Code Live Server
+code test-evidence-reports
+# Use Live Server extension on index.html
+```
+
+### 📋 Evidence Report Structure
+
+- **📋 index.html** - Main dashboard with links to all reports
+- **🔍 consolidated-evidence-*.html** - Overview of all services  
+- **🚀 html/** - Individual service evidence reports
+- **📄 json/** - Raw evidence data for programmatic access
+- **📝 summary/** - Text summaries for quick review
+
+### 📊 What Evidence Reports Include
+
+- **API Coverage**: All endpoints tested with request/response examples
+- **Performance Metrics**: Response times, throughput, and load testing results
+- **Security Validation**: Authentication, authorization, and data protection evidence
+- **Integration Testing**: Cross-service communication and workflow validation
+- **Error Handling**: Comprehensive error scenario testing
+- **Quality Metrics**: Validation results and test coverage statistics
 
 ### HTML Reports
 
 After test execution, detailed HTML reports are generated:
 
 ```bash
-# View reports
+# View basic Karate reports
 open target/karate-reports/karate-summary.html
+
+# View comprehensive evidence reports
+open test-evidence-reports/index.html
 ```
 
 ### JSON Reports
@@ -422,6 +483,10 @@ Machine-readable reports for CI/CD integration:
 jq '.scenariosPassed' target/karate-reports/karate-summary.json
 jq '.scenariosFailed' target/karate-reports/karate-summary.json
 jq '.elapsedTime' target/karate-reports/karate-summary.json
+
+# Parse evidence data
+jq '.summary' test-evidence-reports/json/authentication-evidence-*.json
+jq '.performance.totalRequests' test-evidence-reports/json/llm-evidence-*.json
 ```
 
 ## Best Practices

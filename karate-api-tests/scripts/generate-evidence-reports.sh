@@ -13,7 +13,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-EVIDENCE_DIR="target/evidence-reports"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+EVIDENCE_DIR="$PROJECT_ROOT/test-evidence-reports"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SERVICES=("authentication" "organization" "llm" "debate" "rag" "integration")
 
@@ -437,11 +438,26 @@ print_summary() {
     echo "  - Summary Files: $(find "$EVIDENCE_DIR" -name "*.txt" | wc -l)"
     echo "  - Log Files: $(find "$EVIDENCE_DIR" -name "*.log" | wc -l)"
     echo ""
-    echo -e "${BLUE}To view evidence:${NC}"
-    echo "  1. Open $EVIDENCE_DIR/index.html in your browser"
-    echo "  2. Review individual service reports"
-    echo "  3. Check consolidated report for overview"
-    echo "  4. Examine JSON files for detailed evidence"
+    echo -e "${BLUE}🌐 To view evidence reports:${NC}"
+    echo ""
+    echo -e "${GREEN}  Method 1 - Direct Browser Access:${NC}"
+    echo "    open $EVIDENCE_DIR/index.html"
+    echo ""
+    echo -e "${GREEN}  Method 2 - HTTP Server (recommended):${NC}"
+    echo "    cd $EVIDENCE_DIR"
+    echo "    python3 -m http.server 8080"
+    echo "    # Then open: http://localhost:8080"
+    echo ""
+    echo -e "${GREEN}  Method 3 - VS Code Live Server:${NC}"
+    echo "    code $EVIDENCE_DIR"
+    echo "    # Use Live Server extension on index.html"
+    echo ""
+    echo -e "${BLUE}📊 Report Structure:${NC}"
+    echo "  1. 📋 index.html - Main dashboard with links to all reports"
+    echo "  2. 🔍 consolidated-evidence-*.html - Overview of all services" 
+    echo "  3. 🚀 html/ - Individual service evidence reports"
+    echo "  4. 📄 json/ - Raw evidence data for programmatic access"
+    echo "  5. 📝 summary/ - Text summaries for quick review"
 }
 
 # Main execution

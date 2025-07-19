@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  web:
+    image: nginx
+    ports:
+     - "80:80"  # Wrong indentation
+    environment:
+      - PASSWORD=plaintext  # Security issue

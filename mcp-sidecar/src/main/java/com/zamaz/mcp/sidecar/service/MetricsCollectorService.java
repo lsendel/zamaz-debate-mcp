@@ -657,4 +657,18 @@ public class MetricsCollectorService {
         
         log.debug("Recorded audit event: type={}, severity={}, outcome={}", eventType, severity, outcome);
     }
+
+    /**
+     * Record security threat
+     */
+    public void recordSecurityThreat(String threatType, String threatLevel) {
+        Counter.builder("sidecar.security.threats")
+                .tag("threat_type", threatType)
+                .tag("threat_level", threatLevel)
+                .description("Security threats detected")
+                .register(meterRegistry)
+                .increment();
+        
+        log.debug("Recorded security threat: type={}, level={}", threatType, threatLevel);
+    }
 }

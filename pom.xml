@@ -88,6 +88,7 @@
         <module>mcp-debate-engine</module>
         <module>mcp-llm</module>
         <module>mcp-rag</module>
+        <module>mcp-docs</module>
         <module>mcp-gateway</module>
         <module>mcp-testing</module>
         <module>mcp-pattern-recognition</module>

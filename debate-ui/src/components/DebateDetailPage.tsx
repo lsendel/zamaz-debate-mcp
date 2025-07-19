@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -14,6 +14,8 @@ import {
   LinearProgress,
   Tooltip,
   Grid,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -34,6 +36,8 @@ import {
 } from "../store/slices/debateSlice";
 import { addNotification } from "../store/slices/uiSlice";
 import debateClient from "../api/debateClient";
+import { useDebatePolling } from "../hooks/useDebatePolling";
+import DebateProgress from "./DebateProgress";
 
 const DebateDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,17 +46,43 @@ const DebateDetailPage: React.FC = () => {
   const { currentDebate, loading, isConnected } = useAppSelector(
     (state) => state.debate,
   );
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [lastRoundCount, setLastRoundCount] = useState(0);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchDebate(id));
-      dispatch(connectToDebate(id));
+      // Only connect to WebSocket for active debates
+      // For now, disable WebSocket since our simple service doesn't support it
+      // dispatch(connectToDebate(id));
     }
 
     return () => {
       dispatch(disconnectFromDebate());
     };
   }, [id, dispatch]);
+
+  // Use polling for active debates
+  const { isPolling } = useDebatePolling({
+    debateId: id || '',
+    enabled: !!id && !!currentDebate && 
+             (currentDebate.status === 'IN_PROGRESS' || currentDebate.status === 'CREATED'),
+    interval: 2000,
+    onUpdate: (debate) => {
+      // Show notification when new rounds are added
+      const newRoundCount = debate.rounds?.length || 0;
+      if (newRoundCount > lastRoundCount) {
+        setShowUpdateNotification(true);
+        setLastRoundCount(newRoundCount);
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (currentDebate) {
+      setLastRoundCount(currentDebate.rounds?.length || 0);
+    }
+  }, [currentDebate]);
 
   const handleExport = async (format: "json" | "pdf" | "markdown") => {
     if (!currentDebate) return;
@@ -126,7 +156,7 @@ const DebateDetailPage: React.FC = () => {
             label={`Format: ${currentDebate.format || 'OXFORD'}`}
             variant="outlined"
           />
-          {isConnected && (
+          {(isPolling || isConnected) && (
             <Chip
               label="Live"
               color="success"
@@ -150,12 +180,17 @@ const DebateDetailPage: React.FC = () => {
         </Paper>
       )}
 
+      {/* Add Debate Progress Component */}
+      {currentDebate && (
+        <DebateProgress debate={currentDebate} isPolling={isPolling} />
+      )}
+
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
               <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                Debate Progress
+                Debate Responses
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
                 {currentDebate.status === "CREATED" && (
@@ -364,6 +399,22 @@ const DebateDetailPage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+      
+      {/* Update Notification */}
+      <Snackbar
+        open={showUpdateNotification}
+        autoHideDuration={3000}
+        onClose={() => setShowUpdateNotification(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShowUpdateNotification(false)}
+          severity="info"
+          sx={{ width: '100%' }}
+        >
+          New round added to the debate!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

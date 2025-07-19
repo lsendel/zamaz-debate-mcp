@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: mcp-docs-test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    show-sql: true
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+  
+  flyway:
+    enabled: false
+  
+  security:
+    jwt:
+      secret: test-secret-key-for-testing-purposes-only
+      expiration: 86400000
+      refresh-expiration: 604800000
+
+server:
+  port: 0  # Random port for tests
+
+logging:
+  level:
+    root: WARN
+    com.zamaz.mcp.docs: DEBUG
+
+app:
+  rag:
+    base-url: http://localhost:5004
+    timeout: 5s
+    retry:
+      max-attempts: 1
+      delay: 100ms
+  
+  documents:
+    max-size: 1MB
+    allowed-types: md,txt
+    cache-ttl: 60
+  
+  tenant:
+    isolation-mode: test
+    default-app-name: test-app

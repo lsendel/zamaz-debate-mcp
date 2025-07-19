@@ -1,0 +1,354 @@
+# Service Mesh Configuration for MCP Sidecar
+app:
+  service-mesh:
+    # Enable/disable service mesh integration
+    enabled: ${SERVICE_MESH_ENABLED:false}
+    
+    # Service mesh type: istio, linkerd, consul-connect, envoy
+    type: ${SERVICE_MESH_TYPE:istio}
+    
+    # Kubernetes namespace for service mesh
+    namespace: ${SERVICE_MESH_NAMESPACE:default}
+    
+    # Service discovery configuration
+    discovery:
+      # Interval for service discovery
+      interval: ${SERVICE_MESH_DISCOVERY_INTERVAL:30s}
+      
+      # Enable automatic service registration
+      auto-register: ${SERVICE_MESH_AUTO_REGISTER:true}
+      
+      # Service discovery endpoints
+      endpoints:
+        istio: "http://istiod.istio-system.svc.cluster.local:15010"
+        consul: "http://consul.consul-system.svc.cluster.local:8500"
+        linkerd: "http://linkerd-controller-api.linkerd.svc.cluster.local:8085"
+    
+    # Health check configuration
+    health-check:
+      # Interval for health checks
+      interval: ${SERVICE_MESH_HEALTH_CHECK_INTERVAL:15s}
+      
+      # Timeout for health checks
+      timeout: ${SERVICE_MESH_HEALTH_CHECK_TIMEOUT:5s}
+      
+      # Number of consecutive failures before marking unhealthy
+      failure-threshold: ${SERVICE_MESH_HEALTH_FAILURE_THRESHOLD:3}
+      
+      # Number of consecutive successes before marking healthy
+      success-threshold: ${SERVICE_MESH_HEALTH_SUCCESS_THRESHOLD:1}
+    
+    # Envoy admin configuration
+    envoy-admin-port: ${SERVICE_MESH_ENVOY_ADMIN_PORT:15000}
+    
+    # Metrics collection configuration
+    metrics:
+      # Interval for collecting mesh metrics
+      interval: ${SERVICE_MESH_METRICS_INTERVAL:60s}
+      
+      # Enable Prometheus metrics collection
+      prometheus-enabled: ${SERVICE_MESH_PROMETHEUS_ENABLED:true}
+      
+      # Enable Jaeger tracing
+      jaeger-enabled: ${SERVICE_MESH_JAEGER_ENABLED:true}
+      
+      # Metrics retention period
+      retention-period: ${SERVICE_MESH_METRICS_RETENTION:24h}
+    
+    # Traffic management configuration
+    traffic:
+      # Default traffic policy settings
+      default-policy:
+        # Circuit breaker settings
+        circuit-breaker:
+          consecutive-errors: ${SERVICE_MESH_CB_CONSECUTIVE_ERRORS:5}
+          interval: ${SERVICE_MESH_CB_INTERVAL:30s}
+          base-ejection-time: ${SERVICE_MESH_CB_BASE_EJECTION_TIME:30s}
+          max-ejection-percent: ${SERVICE_MESH_CB_MAX_EJECTION_PERCENT:50}
+        
+        # Retry settings
+        retry:
+          attempts: ${SERVICE_MESH_RETRY_ATTEMPTS:3}
+          per-try-timeout: ${SERVICE_MESH_RETRY_PER_TRY_TIMEOUT:5s}
+          retry-on: ${SERVICE_MESH_RETRY_ON:5xx,gateway-error,connect-failure}
+        
+        # Timeout settings
+        timeout:
+          request-timeout: ${SERVICE_MESH_REQUEST_TIMEOUT:30s}
+          idle-timeout: ${SERVICE_MESH_IDLE_TIMEOUT:300s}
+        
+        # Load balancing settings
+        load-balancing:
+          method: ${SERVICE_MESH_LB_METHOD:ROUND_ROBIN}
+          
+        # Connection pool settings
+        connection-pool:
+          max-connections: ${SERVICE_MESH_MAX_CONNECTIONS:100}
+          connect-timeout: ${SERVICE_MESH_CONNECT_TIMEOUT:30s}
+          tcp-keepalive-time: ${SERVICE_MESH_TCP_KEEPALIVE_TIME:7200s}
+          tcp-keepalive-interval: ${SERVICE_MESH_TCP_KEEPALIVE_INTERVAL:75s}
+          max-pending-requests: ${SERVICE_MESH_MAX_PENDING_REQUESTS:50}
+          max-requests-per-connection: ${SERVICE_MESH_MAX_REQUESTS_PER_CONNECTION:10}
+          max-retries: ${SERVICE_MESH_MAX_RETRIES:3}
+          idle-timeout: ${SERVICE_MESH_CONNECTION_IDLE_TIMEOUT:60s}
+    
+    # Security configuration
+    security:
+      # Enable mutual TLS
+      mtls-enabled: ${SERVICE_MESH_MTLS_ENABLED:true}
+      
+      # mTLS mode: STRICT, PERMISSIVE, DISABLE
+      mtls-mode: ${SERVICE_MESH_MTLS_MODE:STRICT}
+      
+      # Enable authorization policies
+      authz-enabled: ${SERVICE_MESH_AUTHZ_ENABLED:true}
+      
+      # Allowed service principals
+      allowed-principals:
+        - "cluster.local/ns/default/sa/mcp-sidecar"
+        - "cluster.local/ns/default/sa/mcp-organization"
+        - "cluster.local/ns/default/sa/mcp-llm"
+        - "cluster.local/ns/default/sa/mcp-debate"
+        - "cluster.local/ns/default/sa/mcp-rag"
+        - "cluster.local/ns/default/sa/mcp-security"
+      
+      # Allowed namespaces
+      allowed-namespaces:
+        - "default"
+        - "mcp-system"
+        - "istio-system"
+    
+    # Chaos engineering configuration
+    chaos:
+      # Enable chaos engineering features
+      enabled: ${SERVICE_MESH_CHAOS_ENABLED:false}
+      
+      # Default fault injection settings
+      fault-injection:
+        # Delay injection
+        delay:
+          percentage: ${SERVICE_MESH_FAULT_DELAY_PERCENTAGE:0.1}
+          fixed-delay: ${SERVICE_MESH_FAULT_DELAY_FIXED:100ms}
+        
+        # Abort injection
+        abort:
+          percentage: ${SERVICE_MESH_FAULT_ABORT_PERCENTAGE:0.1}
+          http-status: ${SERVICE_MESH_FAULT_ABORT_STATUS:503}
+    
+    # Canary deployment configuration
+    canary:
+      # Enable canary deployments
+      enabled: ${SERVICE_MESH_CANARY_ENABLED:true}
+      
+      # Default canary traffic percentage
+      default-traffic-percent: ${SERVICE_MESH_CANARY_DEFAULT_TRAFFIC:10}
+      
+      # Canary promotion thresholds
+      promotion:
+        success-rate-threshold: ${SERVICE_MESH_CANARY_SUCCESS_RATE:0.95}
+        latency-p99-threshold: ${SERVICE_MESH_CANARY_LATENCY_P99:200ms}
+        error-rate-threshold: ${SERVICE_MESH_CANARY_ERROR_RATE:0.05}
+    
+    # Observability configuration
+    observability:
+      # Enable distributed tracing
+      tracing-enabled: ${SERVICE_MESH_TRACING_ENABLED:true}
+      
+      # Tracing sampling rate
+      tracing-sampling-rate: ${SERVICE_MESH_TRACING_SAMPLING_RATE:0.1}
+      
+      # Enable access logging
+      access-logging-enabled: ${SERVICE_MESH_ACCESS_LOGGING_ENABLED:true}
+      
+      # Access log format
+      access-log-format: ${SERVICE_MESH_ACCESS_LOG_FORMAT:json}
+      
+      # Enable metrics collection
+      metrics-enabled: ${SERVICE_MESH_METRICS_ENABLED:true}
+      
+      # Metrics collection interval
+      metrics-interval: ${SERVICE_MESH_METRICS_COLLECTION_INTERVAL:30s}
+    
+    # Service-specific configurations
+    services:
+      mcp-organization:
+        traffic-policy:
+          circuit-breaker:
+            consecutive-errors: 3
+            interval: 30s
+            base-ejection-time: 30s
+            max-ejection-percent: 50
+          retry:
+            attempts: 3
+            per-try-timeout: 10s
+          timeout:
+            request-timeout: 30s
+          load-balancing:
+            method: LEAST_CONN
+      
+      mcp-llm:
+        traffic-policy:
+          circuit-breaker:
+            consecutive-errors: 3
+            interval: 60s
+            base-ejection-time: 60s
+            max-ejection-percent: 30
+          retry:
+            attempts: 2
+            per-try-timeout: 60s
+          timeout:
+            request-timeout: 120s
+            idle-timeout: 300s
+          connection-pool:
+            max-connections: 20
+            max-pending-requests: 10
+            max-requests-per-connection: 2
+      
+      mcp-debate:
+        traffic-policy:
+          circuit-breaker:
+            consecutive-errors: 4
+            interval: 45s
+            base-ejection-time: 45s
+            max-ejection-percent: 40
+          retry:
+            attempts: 3
+            per-try-timeout: 20s
+          timeout:
+            request-timeout: 60s
+            idle-timeout: 120s
+          load-balancing:
+            method: RANDOM
+      
+      mcp-rag:
+        traffic-policy:
+          circuit-breaker:
+            consecutive-errors: 3
+            interval: 60s
+            base-ejection-time: 60s
+            max-ejection-percent: 35
+          retry:
+            attempts: 2
+            per-try-timeout: 45s
+          timeout:
+            request-timeout: 90s
+            idle-timeout: 180s
+          load-balancing:
+            method: LEAST_CONN
+      
+      mcp-security:
+        traffic-policy:
+          circuit-breaker:
+            consecutive-errors: 2
+            interval: 30s
+            base-ejection-time: 30s
+            max-ejection-percent: 60
+          retry:
+            attempts: 3
+            per-try-timeout: 10s
+          timeout:
+            request-timeout: 30s
+            idle-timeout: 90s
+          connection-pool:
+            max-connections: 40
+            max-pending-requests: 20
+            max-requests-per-connection: 4
+
+# Kubernetes client configuration
+kubernetes:
+  client:
+    # Connection timeout
+    connection-timeout: ${K8S_CONNECTION_TIMEOUT:30s}
+    
+    # Read timeout
+    read-timeout: ${K8S_READ_TIMEOUT:60s}
+    
+    # Write timeout
+    write-timeout: ${K8S_WRITE_TIMEOUT:60s}
+    
+    # Enable debugging
+    debugging: ${K8S_CLIENT_DEBUGGING:false}
+    
+    # API version
+    api-version: ${K8S_API_VERSION:v1}
+
+# Spring Cloud Gateway configuration for service mesh routing
+spring:
+  cloud:
+    gateway:
+      # Enable service mesh routing
+      discovery:
+        locator:
+          enabled: ${SERVICE_MESH_GATEWAY_DISCOVERY_ENABLED:true}
+          lower-case-service-id: true
+      
+      # Default filters for service mesh
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 100
+            redis-rate-limiter.burstCapacity: 200
+            redis-rate-limiter.requestedTokens: 1
+        
+        - name: CircuitBreaker
+          args:
+            name: defaultCircuitBreaker
+            fallbackUri: forward:/fallback
+        
+        - name: Retry
+          args:
+            retries: 3
+            methods: GET,POST,PUT,DELETE
+            statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+            backoff:
+              firstBackoff: 50ms
+              maxBackoff: 500ms
+              factor: 2
+        
+        - name: AddRequestHeader
+          args:
+            name: X-Service-Mesh
+            value: istio
+        
+        - name: AddResponseHeader
+          args:
+            name: X-Response-Source
+            value: mcp-sidecar
+
+# Actuator endpoints for service mesh monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,mesh,gateway,circuitbreakers
+  
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  
+  health:
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+  
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      service: mcp-sidecar
+      mesh: istio
+      environment: ${ENVIRONMENT:development}
+
+# Logging configuration for service mesh
+logging:
+  level:
+    com.zamaz.mcp.sidecar.service.ServiceMeshIntegrationService: ${SERVICE_MESH_LOG_LEVEL:INFO}
+    com.zamaz.mcp.sidecar.controller.ServiceMeshController: ${SERVICE_MESH_LOG_LEVEL:INFO}
+    io.kubernetes.client: ${K8S_CLIENT_LOG_LEVEL:WARN}
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"

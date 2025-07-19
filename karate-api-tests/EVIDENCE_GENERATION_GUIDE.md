@@ -37,7 +37,7 @@ cd karate-api-tests
 ### Directory Layout
 
 ```
-target/evidence-reports/
+karate-api-tests/test-evidence-reports/
 ├── index.html                          # Main evidence index
 ├── consolidated-evidence-{timestamp}.html  # Consolidated report
 ├── html/                               # HTML reports
