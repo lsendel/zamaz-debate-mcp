@@ -389,4 +389,6 @@ if __name__ == "__main__":
 
             time.sleep(1)
     except KeyboardInterrupt:
-        pass
+        print("\nShutting down mock MCP server gracefully...")
+        server.shutdown()
+        print("Mock MCP server stopped.")

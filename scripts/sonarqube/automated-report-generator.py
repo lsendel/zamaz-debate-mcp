@@ -310,7 +310,8 @@ class SonarQubeReportGenerator:
                 return f"{hours}h {total_minutes % 60}m"
             else:
                 return f"{total_minutes}m"
-        except:
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to format technical debt: {e}")
             return minutes
 
     def _generate_issues_by_severity(self, issues: list[dict[str, Any]]) -> str:
@@ -471,7 +472,7 @@ class SonarQubeReportGenerator:
                     trend = "➡️ No change"
 
                 trends.append(f"- **{metric}**: {curr} {trend}")
-            except:
+            except (ValueError, TypeError):
                 trends.append(f"- **{metric}**: {current_val} (no comparison available)")
 
         return "\n".join(trends)
@@ -641,7 +642,7 @@ class SonarQubeReportGenerator:
                     "change_percent": change_percent,
                     "direction": "up" if change > 0 else "down" if change < 0 else "stable",
                 }
-            except:
+            except (ValueError, TypeError):
                 trends["metrics"][metric] = {
                     "current": current_val,
                     "previous": previous_val,

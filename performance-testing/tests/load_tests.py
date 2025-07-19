@@ -598,7 +598,8 @@ class SpikeLoadTest(PerformanceTestBase):
             self.metrics.record_operation("spike_operation", duration, True, {"worker_id": worker_id, "phase": "spike"})
 
         except asyncio.CancelledError:
-            pass
+            # Expected during shutdown, no need to log
+            self.logger.debug(f"Spike worker {worker_id} cancelled")
         except Exception as e:
             self.metrics.record_operation(
                 "spike_operation", 0, False, {"worker_id": worker_id, "phase": "spike", "error": str(e)}

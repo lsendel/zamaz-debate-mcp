@@ -126,8 +126,8 @@ class DetailedLintingReporter:
                         if str(file_path) not in self.issues_by_file:
                             self.issues_by_file[str(file_path)] = []
                         self.issues_by_file[str(file_path)].append(detailed_issue)
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as e:
+                    print(f"Warning: Failed to parse shellcheck JSON output for {file_path}: {e}")
 
         return self.shell_issues
 
@@ -196,8 +196,8 @@ class DetailedLintingReporter:
                             if file_path not in self.issues_by_file:
                                 self.issues_by_file[file_path] = []
                             self.issues_by_file[file_path].append(detailed_issue)
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as e:
+                    print(f"Warning: Failed to parse eslint JSON output: {e}")
 
         return self.typescript_issues
 

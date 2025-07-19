@@ -38,15 +38,16 @@ def get_python_issues():
                     issue["line_content"] = lines[line_num - 1].strip() if line_num <= len(lines) else ""
                     issue["context_before"] = [line.strip() for line in lines[max(0, line_num - 3) : line_num - 1]]
                     issue["context_after"] = [line.strip() for line in lines[line_num : min(len(lines), line_num + 2)]]
-                except Exception:
+                except Exception as e:
                     # Handle file read errors gracefully
+                    print(f"Warning: Could not read file {issue['filename']}: {e}")
                     issue["line_content"] = ""
                     issue["context_before"] = []
                     issue["context_after"] = []
 
                 issues.append(issue)
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as e:
+            print(f"Warning: Failed to parse ruff JSON output: {e}")
 
     # Group by type
     by_type = defaultdict(list)
@@ -75,7 +76,7 @@ def get_shell_issues():
                     issues.append(issue)
             except json.JSONDecodeError:
                 # Skip files with invalid JSON output
-                pass
+                print(f"Warning: Failed to parse shellcheck output for {file}")
 
     return issues
 
@@ -96,9 +97,9 @@ def get_typescript_issues():
                 for msg in file_result.get("messages", []):
                     msg["filename"] = file_result["filePath"]
                     issues.append(msg)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             # Skip invalid JSON output
-            pass
+            print(f"Warning: Failed to parse eslint JSON output: {e}")
 
     return issues
 
@@ -140,8 +141,8 @@ def fix_python_security():
 
                     with Path(file).open("w") as f:
                         f.write(content)
-        except:
-            pass
+        except Exception as e:
+            print(f"Warning: Failed to fix S311 security issues: {e}")
 
     # Fix S113 - Add timeouts to requests
     stdout, _, _ = run_command("ruff check . --select S113 --output-format=json")  # noqa: S602 (calling known development tool)
@@ -165,8 +166,8 @@ def fix_python_security():
 
                 with Path(file).open("w") as f:
                     f.writelines(lines)
-        except:
-            pass
+        except Exception as e:
+            print(f"Warning: Failed to fix S113 timeout issues: {e}")
 
 
 def fix_shell_issues():
@@ -248,8 +249,9 @@ def generate_report(iteration):
     # Print summary
 
     if python_by_type:
-        for _code, _issues in sorted(python_by_type.items(), key=lambda x: len(x[1]), reverse=True)[:5]:
-            pass
+        # Log top issue types
+        for code, issues in sorted(python_by_type.items(), key=lambda x: len(x[1]), reverse=True)[:5]:
+            print(f"  {code}: {len(issues)} issues")
 
     return total, report
 
@@ -324,12 +326,13 @@ def main():
     final_total, final_report = generate_report("final")
 
     if final_total == 0:
-        pass
+        print("✅ All linting issues fixed!")
 
     # Show remaining critical issues
     elif final_report["critical_issues"]:
-        for _issue in final_report["critical_issues"][:10]:
-            pass
+        print("⚠️  Remaining critical issues:")
+        for issue in final_report["critical_issues"][:10]:
+            print(f"  - {issue['file']}:{issue['line']} - {issue['code']}: {issue['message']}")
 
 
 if __name__ == "__main__":

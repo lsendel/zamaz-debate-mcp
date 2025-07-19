@@ -474,8 +474,9 @@ class JMeterExecutor:
             result = subprocess.run(["which", "jmeter"], capture_output=True, text=True, check=False)  # noqa: S603, S607 (calling known development tool)
             if result.returncode == 0:
                 return result.stdout.strip()
-        except:
-            pass
+        except Exception as e:
+            # Log error but continue, as jmeter might be in custom location
+            logger.debug(f"which command failed: {e}")
 
         # Check common locations
         for path in possible_paths:

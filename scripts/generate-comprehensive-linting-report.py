@@ -596,8 +596,8 @@ class ComprehensiveLintingReporter:
                         else:
                             self.manual_fixes_required.append(detailed_issue)
 
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as e:
+                    print(f"Warning: Failed to parse shellcheck JSON output for {file}: {e}")
 
         return self.shell_issues
 
@@ -767,8 +767,8 @@ class ComprehensiveLintingReporter:
                         else:
                             self.manual_fixes_required.append(detailed_issue)
 
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                print(f"Warning: Failed to parse eslint JSON output: {e}")
 
         return self.typescript_issues
 
@@ -938,8 +938,8 @@ class ComprehensiveLintingReporter:
                 self.java_issues.append(detailed_issue)
                 self.issues_by_file[file_path].append(detailed_issue)
 
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: Failed to process Java file {file_path}: {e}")
 
     def _extract_java_context(self, lines: list[str], line_num: int) -> dict[str, Any]:
         """Extract Java context."""
