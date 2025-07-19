@@ -1,24 +1,18 @@
-import React from 'react'
-import { WorkflowEditor } from './components/WorkflowEditor'
-import { MapViewer } from './components/MapViewer'
-import './App.css'
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import WorkflowEditor from './components/WorkflowEditor';
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <div className="app">
-      <header className="app-header">
+    <QueryClientProvider client={queryClient}>
+      <div className="App">
         <h1>Workflow Editor</h1>
-      </header>
-      <main className="app-main">
-        <div className="editor-container">
-          <WorkflowEditor />
-        </div>
-        <div className="map-container">
-          <MapViewer />
-        </div>
-      </main>
-    </div>
-  )
+        <WorkflowEditor />
+      </div>
+    </QueryClientProvider>
+  );
 }
 
-export default App
+export default App;

@@ -1,0 +1,27 @@
+type Query {
+    workflows(organizationId: String!): [Workflow!]!
+    workflow(id: ID!): Workflow
+}
+
+type Mutation {
+    createWorkflow(input: CreateWorkflowInput!): Workflow!
+    executeWorkflow(id: ID!): WorkflowExecution!
+}
+
+type Workflow {
+    id: ID!
+    name: String!
+    organizationId: String!
+    status: String!
+}
+
+type WorkflowExecution {
+    id: ID!
+    workflowId: ID!
+    status: String!
+}
+
+input CreateWorkflowInput {
+    name: String!
+    organizationId: String!
+}

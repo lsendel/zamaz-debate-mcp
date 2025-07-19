@@ -1,0 +1,159 @@
+SON
+scalar JTING
+}
+D
+    WAILE
+    CANCEL  FAILEDOMPLETED
+   C
+   ED
+    PAUSNNING
+    RUus {ecutionStat Exum
+en_FLOW
+}
+ CONTROLFLOW
+     DATA_   ERROR
+  SS
+ E
+    SUCCEONAL_FALS   CONDITI
+ TRUEDITIONAL_ONULT
+    C DEFAeType {
+   
+enum Edg}
+ ACTION
+ION
+   ONDIT  C
+  T    OUTPU  INPUT
+ND
+    E TASK
+  N
+   ECISIOT
+    D  STAR
+  ype {m NodeT
+}
+
+enuCHIVEDILED
+    AR
+    FADMPLETECOSED
+    VE
+    PAU  ACTI   DRAFT
+  s {
+ orkflowStatu
+enum Wg!
+}
+  end: Strinng!
+  start: Stri   {
+ nge  TimeRa
+input}
+t!
+Floangitude:   loloat!
+  e: Fatitudut {
+    lLocationInp GeoinputInput
+}
+
+ GeoLocation location:
+   ics: JSON!etr mring!
+   deviceId: St   taInput {
+  TelemetryDaut
+}
+
+inp y: Float!!
+     x: Floatt {
+  npunIioPositt pue!
+}
+
+indgeTyp  type: E
+   ID!target:
+    urce: ID!
+    so  id: ID! {
+  geInputlowEdinput WorkfON
+}
+
+uration: JSnfig  coput!
+  sitionInition: Po
+    pos String!
+    label:e!eTyp: Nod
+    type
+    id: ID!Input {lowNodekf Wor
+}
+
+inputnput!]lowEdgeI [Workf   edges:eInput!]
+ lowNod: [Workf  nodesString
+  me:  na   t {
+puorkflowIndateW Upput]!
+}
+
+inEdgeInput!flowdges: [Work]!
+    eput!NodeInrkflownodes: [Wo  String!
+  nId: organizationg!
+    name: Stri    put {
+owInorkfl CreateWput
+inString
+}
+t: tedAcomplering!
+    : StAt  startedID
+  eId: rentNodcur   !
+ onStatus Executi status: ID!
+   Id:workflowID!
+    
+    id: {ecution flowEx
+type Workloat!
+}
+itude: F  long
+  tude: Float!tilaon {
+    ocati GeoL
+}
+
+typeGeoLocationcation:    loON!
+ rics: JS    mettring!
+ Smp:timestag!
+    Id: Strinvicede ID!
+     id:ata {
+    TelemetryDype
+}
+
+t: Float!at!
+    y
+    x: Floion {type Positype!
+}
+
+EdgeT
+    type: D!arget: I ID!
+    tsource:
+    : ID!{
+    idorkflowEdge type WON
+}
+
+ion: JSatguronfi   ction!
+ si Po position:g!
+   inStrabel: ype!
+    lpe: NodeT!
+    ty id: IDde {
+   owNotype Workflring!
+}
+
+pdatedAt: Stg!
+    utrinedAt: S
+    creatge!]!lowEdges: [Workfed!]!
+    delowNorkfWo   nodes: [atus!
+ : WorkflowSt  status String!
+  d:ionInizat  orga String!
+      name:  id: ID!
+w {
+  pe Workflo
+
+tyryData!
+}g!): Telemet: Strin(deviceIdreamyStlemetrn!
+    teutiolowExec!): WorkflowId: IDution(workfworkflowExec    ription {
+
+type Subsc}
+ion!
+cutrkflowExenput): WoDataI: TelemetryDataelemetryid: ID!, trkflow(cuteWo!
+    exelowut!): WorkfflowInpateWork, input: Updid: ID!Workflow(ate!
+    updflowWorkInput!): orkflowput: CreateWw(infloeWork{
+    creatn pe Mutatio}
+
+tyData!]!
+elemetry!): [TmeRangeimeRange: Tiing!, td: Stra(deviceIelemetryDat   tw
+  WorkfloID!):: rkflow(id
+    wokflow!]!: [WorId: String!)izationkflows(organworry {
+    ype Quet
