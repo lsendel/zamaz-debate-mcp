@@ -71,6 +71,18 @@
             <artifactId>spring-integration-redis</artifactId>
         </dependency>
 
+        <!-- Spring Cloud Config Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+        
+        <!-- Spring Cloud Bootstrap -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+        </dependency>
+
         <!-- Spring State Machine -->
         <dependency>
             <groupId>org.springframework.statemachine</groupId>

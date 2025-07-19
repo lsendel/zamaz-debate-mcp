@@ -1,0 +1,99 @@
+# MCP RAG Service Configuration
+spring:
+  application:
+    name: mcp-rag
+  
+  # Database configuration for RAG service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mcp_rag}
+    username: ${DB_USERNAME:mcp_user}
+    password: ${DB_PASSWORD:mcp_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-test-query: SELECT 1
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:10}
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:5004}
+  servlet:
+    context-path: /api/v1/rag
+
+# RAG service specific configuration
+rag:
+  # Vector database configuration
+  vector-db:
+    type: ${VECTOR_DB_TYPE:qdrant}
+    qdrant:
+      host: ${QDRANT_HOST:localhost}
+      port: ${QDRANT_PORT:6333}
+      api-key: ${QDRANT_API_KEY:}
+      collection-name: ${QDRANT_COLLECTION:mcp_documents}
+      use-tls: ${QDRANT_USE_TLS:false}
+    
+    # Alternative vector DB configurations
+    pinecone:
+      enabled: ${PINECONE_ENABLED:false}
+      api-key: ${PINECONE_API_KEY:}
+      environment: ${PINECONE_ENVIRONMENT:}
+      index-name: ${PINECONE_INDEX:mcp-documents}
+    
+    weaviate:
+      enabled: ${WEAVIATE_ENABLED:false}
+      host: ${WEAVIATE_HOST:localhost}
+      port: ${WEAVIATE_PORT:8080}
+      scheme: ${WEAVIATE_SCHEME:http}
+  
+  # Embedding configuration
+  embeddings:
+    provider: ${EMBEDDING_PROVIDER:openai}
+    model: ${EMBEDDING_MODEL:text-embedding-ada-002}
+    dimension: ${EMBEDDING_DIMENSION:1536}
+    batch-size: ${EMBEDDING_BATCH_SIZE:100}
+  
+  # Document processing
+  document:
+    max-chunk-size: ${DOC_MAX_CHUNK_SIZE:1000}
+    chunk-overlap: ${DOC_CHUNK_OVERLAP:200}
+    supported-formats: ${DOC_SUPPORTED_FORMATS:pdf,txt,md,html,docx}
+    max-file-size: ${DOC_MAX_FILE_SIZE:10485760}
+  
+  # Search configuration
+  search:
+    max-results: ${SEARCH_MAX_RESULTS:10}
+    min-score: ${SEARCH_MIN_SCORE:0.7}
+    use-reranking: ${SEARCH_USE_RERANKING:true}
+    reranking-model: ${RERANKING_MODEL:}
+  
+  # Cache configuration
+  cache:
+    enabled: ${RAG_CACHE_ENABLED:true}
+    embedding-cache-ttl: ${EMBEDDING_CACHE_TTL:86400}
+    search-cache-ttl: ${SEARCH_CACHE_TTL:3600}
+
+# Integration with LLM service
+integrations:
+  llm-service:
+    url: ${LLM_SERVICE_URL:http://localhost:5002}
+    timeout: ${LLM_SERVICE_TIMEOUT:30000}
+
+# API documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+
+# Monitoring
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+  metrics:
+    tags:
+      service: rag

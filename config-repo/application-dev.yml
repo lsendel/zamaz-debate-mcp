@@ -1,0 +1,83 @@
+# Development environment configuration
+# Overrides for development environment
+
+spring:
+  profiles:
+    active: dev
+  
+  # Development database configuration
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # Development security - more permissive
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8888/auth/realms/mcp}
+
+# Logging - more verbose for development
+logging:
+  level:
+    root: INFO
+    com.zamaz.mcp: DEBUG
+    org.springframework: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Management endpoints - expose all for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Server configuration for development
+server:
+  error:
+    include-stacktrace: always
+    include-exception: true
+
+# Development CORS - more permissive
+cors:
+  allowed-origins: "*"
+  allowed-methods: "*"
+  allowed-headers: "*"
+  allow-credentials: true
+
+# Cache configuration - disabled for development
+spring.cache:
+  type: none
+
+# Development-specific feature flags
+features:
+  debug-mode: true
+  swagger-enabled: true
+  mock-external-services: false
+
+# Development JWT configuration
+jwt:
+  expiration: 3600 # 1 hour for development
+  refresh-expiration: 86400 # 24 hours
+
+# Development rate limiting - more permissive
+rate-limiting:
+  enabled: false
+  requests-per-minute: 1000
+
+# Development monitoring
+monitoring:
+  tracing:
+    enabled: true
+    sampling-rate: 1.0 # Sample all requests in dev

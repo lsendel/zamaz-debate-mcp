@@ -1,0 +1,89 @@
+# MCP Template Service Configuration
+spring:
+  application:
+    name: mcp-template
+  
+  # Database configuration for template service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mcp_template}
+    username: ${DB_USERNAME:mcp_user}
+    password: ${DB_PASSWORD:mcp_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-test-query: SELECT 1
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:5}
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:5006}
+  servlet:
+    context-path: /api/v1/template
+
+# Template service specific configuration
+template:
+  # Template engine configuration
+  engine:
+    type: ${TEMPLATE_ENGINE_TYPE:freemarker}
+    cache-enabled: ${TEMPLATE_CACHE_ENABLED:true}
+    cache-ttl: ${TEMPLATE_CACHE_TTL:3600}
+    auto-reload: ${TEMPLATE_AUTO_RELOAD:false}
+  
+  # Template storage
+  storage:
+    type: ${TEMPLATE_STORAGE_TYPE:database}
+    file-system:
+      base-path: ${TEMPLATE_FILE_PATH:/opt/mcp/templates}
+    s3:
+      enabled: ${S3_ENABLED:false}
+      bucket: ${S3_BUCKET:mcp-templates}
+      prefix: ${S3_PREFIX:templates/}
+  
+  # Template categories
+  categories:
+    - debate-formats
+    - question-types
+    - response-formats
+    - evaluation-criteria
+    - report-templates
+  
+  # Template validation
+  validation:
+    enabled: ${TEMPLATE_VALIDATION_ENABLED:true}
+    strict-mode: ${TEMPLATE_STRICT_MODE:false}
+    max-template-size: ${MAX_TEMPLATE_SIZE:102400}
+  
+  # Default templates
+  defaults:
+    debate-format: ${DEFAULT_DEBATE_FORMAT:standard}
+    response-format: ${DEFAULT_RESPONSE_FORMAT:structured}
+    evaluation-format: ${DEFAULT_EVALUATION_FORMAT:comprehensive}
+
+# Cache configuration
+cache:
+  templates:
+    max-size: ${TEMPLATE_CACHE_MAX_SIZE:100}
+    expire-after-write: ${TEMPLATE_CACHE_EXPIRE:3600}
+  compiled-templates:
+    max-size: ${COMPILED_CACHE_MAX_SIZE:50}
+    expire-after-access: ${COMPILED_CACHE_EXPIRE:1800}
+
+# API documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+
+# Monitoring
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+  metrics:
+    tags:
+      service: template

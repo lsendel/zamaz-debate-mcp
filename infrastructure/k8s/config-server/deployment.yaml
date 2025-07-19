@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-config-server
+  namespace: mcp-system
+  labels:
+    app: mcp-config-server
+    component: configuration
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-config-server
+  template:
+    metadata:
+      labels:
+        app: mcp-config-server
+        component: configuration
+    spec:
+      serviceAccountName: mcp-config-server
+      containers:
+      - name: config-server
+        image: zamaz/mcp-config-server:latest
+        ports:
+        - containerPort: 8888
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes,bus"
+        - name: CONFIG_GIT_REPO_URI
+          valueFrom:
+            configMapKeyRef:
+              name: config-server-config
+              key: git.repo.uri
+        - name: CONFIG_GIT_BRANCH
+          valueFrom:
+            configMapKeyRef:
+              name: config-server-config
+              key: git.branch
+        - name: CONFIG_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: config-server-secrets
+              key: encryption.key
+        - name: CONFIG_SERVER_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: config-server-secrets
+              key: server.username
+        - name: CONFIG_SERVER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: config-server-secrets
+              key: server.password
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: password
+        - name: GIT_SSH_KEY
+          valueFrom:
+            secretKeyRef:
+              name: config-server-secrets
+              key: git.ssh.key
+              optional: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8888
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8888
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-repo
+          mountPath: /app/config-repo
+        - name: ssh-keys
+          mountPath: /app/.ssh
+          readOnly: true
+      volumes:
+      - name: config-repo
+        emptyDir: {}
+      - name: ssh-keys
+        secret:
+          secretName: config-server-ssh-keys
+          defaultMode: 0400
+          optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-config-server
+  namespace: mcp-system
+  labels:
+    app: mcp-config-server
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8888
+    targetPort: 8888
+    protocol: TCP
+    name: http
+  selector:
+    app: mcp-config-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-config-server
+  namespace: mcp-system

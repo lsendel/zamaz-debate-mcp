@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp-config-server.fullname" . }}
+  labels:
+    {{- include "mcp-config-server.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mcp-config-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "mcp-config-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mcp-config-server.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ .Values.config.profiles.active | quote }}
+            - name: CONFIG_GIT_REPO_URI
+              value: {{ .Values.config.git.uri | quote }}
+            - name: CONFIG_GIT_BRANCH
+              value: {{ .Values.config.git.branch | quote }}
+            - name: CONFIG_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp-config-server.fullname" . }}-secret
+                  key: encryption-key
+            {{- if .Values.config.security.enabled }}
+            - name: CONFIG_SERVER_USERNAME
+              value: {{ .Values.config.security.username | quote }}
+            - name: CONFIG_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp-config-server.fullname" . }}-secret
+                  key: server-password
+            {{- end }}
+            {{- if .Values.bus.enabled }}
+            - name: RABBITMQ_HOST
+              value: {{ include "mcp-config-server.fullname" . }}-rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              value: {{ .Values.rabbitmq.auth.username | quote }}
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.rabbitmq.auth.existingPasswordSecret }}
+                  key: rabbitmq-password
+            {{- end }}
+            {{- if .Values.secrets.gitSshKey }}
+            - name: GIT_SSH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp-config-server.fullname" . }}-secret
+                  key: git-ssh-key
+            {{- end }}
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: config-repo
+              mountPath: /app/config-repo
+            {{- if .Values.secrets.gitSshKey }}
+            - name: ssh-keys
+              mountPath: /app/.ssh
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "mcp-config-server.fullname" . }}-config
+        - name: config-repo
+          emptyDir: {}
+        {{- if .Values.secrets.gitSshKey }}
+        - name: ssh-keys
+          secret:
+            secretName: {{ include "mcp-config-server.fullname" . }}-ssh-keys
+            defaultMode: 0400
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,9 @@
+# Test configuration for test-app in development profile
+test:
+  app:
+    environment: development
+    debug: true
+
+logging:
+  level:
+    com.zamaz: DEBUG

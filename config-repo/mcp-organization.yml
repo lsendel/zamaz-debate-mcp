@@ -1,0 +1,70 @@
+# MCP Organization Service Configuration
+spring:
+  application:
+    name: mcp-organization
+  
+  # Database configuration for organization service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mcp_organization}
+    username: ${DB_USERNAME:mcp_user}
+    password: ${DB_PASSWORD:mcp_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-test-query: SELECT 1
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:10}
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+  # Redis cache configuration
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:5005}
+  servlet:
+    context-path: /api/v1/organization
+
+# Organization service specific configuration
+organization:
+  # Default organization settings
+  defaults:
+    max-users-per-org: ${MAX_USERS_PER_ORG:100}
+    max-debates-per-org: ${MAX_DEBATES_PER_ORG:1000}
+    trial-period-days: ${TRIAL_PERIOD_DAYS:30}
+  
+  # Feature toggles
+  features:
+    multi-tenant: ${MULTI_TENANT_ENABLED:true}
+    audit-logging: ${AUDIT_LOGGING_ENABLED:true}
+    soft-delete: ${SOFT_DELETE_ENABLED:true}
+  
+  # Cache configuration
+  cache:
+    organization-ttl: ${ORG_CACHE_TTL:3600}
+    user-ttl: ${USER_CACHE_TTL:1800}
+    permission-ttl: ${PERMISSION_CACHE_TTL:900}
+
+# API documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+
+# Monitoring
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+  metrics:
+    tags:
+      service: organization

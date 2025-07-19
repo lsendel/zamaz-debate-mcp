@@ -1,0 +1,42 @@
+# Bootstrap configuration for MCP Organization Service
+# This file is loaded before application.yml and sets up connection to Config Server
+
+spring:
+  application:
+    name: mcp-organization
+  
+  cloud:
+    config:
+      # Config Server URI
+      uri: ${CONFIG_SERVER_URI:http://localhost:8888}
+      
+      # Enable fail-fast to prevent startup if Config Server is unavailable
+      fail-fast: ${CONFIG_FAIL_FAST:true}
+      
+      # Retry configuration
+      retry:
+        initial-interval: ${CONFIG_RETRY_INTERVAL:1000}
+        max-attempts: ${CONFIG_RETRY_MAX_ATTEMPTS:6}
+        max-interval: ${CONFIG_RETRY_MAX_INTERVAL:2000}
+        multiplier: ${CONFIG_RETRY_MULTIPLIER:1.1}
+      
+      # Request timeout
+      request-read-timeout: ${CONFIG_REQUEST_TIMEOUT:5000}
+      
+      # Authentication for Config Server (if secured)
+      username: ${CONFIG_SERVER_USERNAME:}
+      password: ${CONFIG_SERVER_PASSWORD:}
+      
+      # Label (branch) to use
+      label: ${CONFIG_LABEL:main}
+  
+  # Active profiles
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+# Management endpoints for Config refresh
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh,health,info

@@ -1,0 +1,28 @@
+# Simplified configuration when using Spring Cloud Config Server
+# Most configuration is loaded from the Config Server
+# This file contains only local overrides and non-externalized settings
+
+# Import shared configuration properties
+spring:
+  config:
+    import: optional:configserver:
+
+# Enable configuration properties classes
+mcp:
+  database:
+    enabled: true
+  security:
+    enabled: true
+  monitoring:
+    enabled: true
+
+# Local logging configuration (not externalized)
+logging:
+  file:
+    name: logs/mcp-organization.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Local server configuration
+server:
+  port: ${SERVER_PORT:5005}

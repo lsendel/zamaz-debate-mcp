@@ -49,6 +49,56 @@ services:
     networks:
       - mcp-network
 
+  # RabbitMQ for Spring Cloud Bus
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-admin}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Cloud Config Server
+  mcp-config-server:
+    build:
+      context: ../..
+      dockerfile: mcp-config-server/Dockerfile
+    environment:
+      CONFIG_GIT_REPO_URI: ${CONFIG_GIT_REPO_URI:-https://github.com/zamaz/mcp-config-repo.git}
+      CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY:?Encryption key must be provided}
+      CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME:-admin}
+      CONFIG_SERVER_PASSWORD: ${CONFIG_SERVER_PASSWORD:-admin}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-admin}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-admin}
+      SPRING_PROFILES_ACTIVE: docker,bus
+    ports:
+      - "${CONFIG_SERVER_PORT:-8888}:8888"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - config_server_data:/app/config-repo
+
   # Initialize databases
   postgres-init:
     image: postgres:17-alpine
@@ -81,6 +131,8 @@ services:
       context: ../..
       dockerfile: mcp-organization/Dockerfile
     environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=organization_db
@@ -101,6 +153,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mcp-config-server:
+        condition: service_healthy
     volumes:
       - ../../mcp-organization/config:/app/config
     networks:
@@ -119,6 +173,8 @@ services:
       context: ../..
       dockerfile: mcp-llm/Dockerfile
     environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CLAUDE_API_KEY=${ANTHROPIC_API_KEY}
@@ -134,6 +190,8 @@ services:
       - "${MCP_LLM_PORT:-5002}:5002"
     depends_on:
       redis:
+        condition: service_healthy
+      mcp-config-server:
         condition: service_healthy
     volumes:
       - ../../mcp-llm/config:/app/config
@@ -154,6 +212,8 @@ services:
       context: ../..
       dockerfile: mcp-controller/Dockerfile
     environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=debate_db
@@ -174,6 +234,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mcp-config-server:
         condition: service_healthy
       mcp-organization:
         condition: service_started
@@ -197,6 +259,8 @@ services:
       context: ../..
       dockerfile: mcp-rag/Dockerfile
     environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=rag_db
@@ -219,6 +283,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+      mcp-config-server:
+        condition: service_healthy
     volumes:
       - ../../mcp-rag/config:/app/config
       - rag_data:/app/data
@@ -238,6 +304,8 @@ services:
       context: ../..
       dockerfile: mcp-template/Dockerfile
     environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=template_db
@@ -252,6 +320,8 @@ services:
       - "${MCP_TEMPLATE_PORT:-5006}:5006"
     depends_on:
       postgres:
+        condition: service_healthy
+      mcp-config-server:
         condition: service_healthy
       mcp-organization:
         condition: service_started
@@ -393,6 +463,8 @@ volumes:
   postgres_data:
   redis_data:
   qdrant_data:
+  rabbitmq_data:
+  config_server_data:
   llm_cache:
   rag_data:
   template-data:

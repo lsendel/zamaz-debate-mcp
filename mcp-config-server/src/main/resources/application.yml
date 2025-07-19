@@ -43,7 +43,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,refresh,env
+        include: health,info,refresh,env,busrefresh,busenv
   endpoint:
     health:
       show-details: always
@@ -81,6 +81,29 @@ spring:
           default-key: application
           profile-separator: '-'
 
+# Spring Cloud Bus Configuration
+---
+spring:
+  profiles: bus
+  cloud:
+    bus:
+      enabled: ${CLOUD_BUS_ENABLED:true}
+      refresh:
+        enabled: true
+      env:
+        enabled: true
+      destination: ${CLOUD_BUS_DESTINATION:}
+      ack:
+        enabled: ${CLOUD_BUS_ACK_ENABLED:true}
+  
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:60000}
+    
 # AWS Secrets Manager Configuration (optional - activated with 'aws' profile)  
 ---
 spring:
