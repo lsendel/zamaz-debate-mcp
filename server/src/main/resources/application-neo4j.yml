@@ -1,0 +1,30 @@
+spring:
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USERNAME:neo4j}
+      password: ${NEO4J_PASSWORD:password}
+    connection:
+      pool:
+        max-connection-pool-size: 50
+        connection-acquisition-timeout: 30s
+        max-connection-lifetime: 1h
+        idle-time-before-connection-test: 10m
+        max-transaction-retry-time: 30s
+    database: ${NEO4J_DATABASE:neo4j}
+    
+# Neo4j specific logging
+logging:
+  level:
+    org.springframework.data.neo4j: DEBUG
+    org.neo4j.driver: INFO
+    org.neo4j.driver.internal.logging: WARN
+    
+# Neo4j performance tuning
+workflow:
+  neo4j:
+    init-constraints: true
+    batch-size: 1000
+    query-timeout: 30s
+    transaction-timeout: 60s
+    enable-query-logging: true

@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Neo4j entity for WorkflowEdge
- * Represents connections between workflow nodes
+ * Neo4j relationship entity for WorkflowEdge
+ * Represents connections between workflow nodes as Neo4j relationships
  */
 @RelationshipProperties
 public class WorkflowEdgeEntity {
@@ -29,6 +29,15 @@ public class WorkflowEdgeEntity {
     @Property("workflowId")
     private String workflowId;
     
+    @Property("sourceId")
+    private String sourceId;
+    
+    @Property("targetId")
+    private String targetId;
+    
+    @Property("order")
+    private Integer order;
+    
     @TargetNode
     private WorkflowNodeEntity targetNode;
     
@@ -37,6 +46,7 @@ public class WorkflowEdgeEntity {
     
     public WorkflowEdgeEntity(String id, String type, String label, String condition,
                              Map<String, Object> properties, String workflowId,
+                             String sourceId, String targetId, Integer order,
                              WorkflowNodeEntity targetNode) {
         this.id = id;
         this.type = type;
@@ -44,6 +54,9 @@ public class WorkflowEdgeEntity {
         this.condition = condition;
         this.properties = properties;
         this.workflowId = workflowId;
+        this.sourceId = sourceId;
+        this.targetId = targetId;
+        this.order = order;
         this.targetNode = targetNode;
     }
     
@@ -65,6 +78,15 @@ public class WorkflowEdgeEntity {
     
     public String getWorkflowId() { return workflowId; }
     public void setWorkflowId(String workflowId) { this.workflowId = workflowId; }
+    
+    public String getSourceId() { return sourceId; }
+    public void setSourceId(String sourceId) { this.sourceId = sourceId; }
+    
+    public String getTargetId() { return targetId; }
+    public void setTargetId(String targetId) { this.targetId = targetId; }
+    
+    public Integer getOrder() { return order; }
+    public void setOrder(Integer order) { this.order = order; }
     
     public WorkflowNodeEntity getTargetNode() { return targetNode; }
     public void setTargetNode(WorkflowNodeEntity targetNode) { this.targetNode = targetNode; }
@@ -88,6 +110,8 @@ public class WorkflowEdgeEntity {
                 "id='" + id + '\'' +
                 ", type='" + type + '\'' +
                 ", label='" + label + '\'' +
+                ", sourceId='" + sourceId + '\'' +
+                ", targetId='" + targetId + '\'' +
                 ", workflowId='" + workflowId + '\'' +
                 '}';
     }

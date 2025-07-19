@@ -1,12 +1,13 @@
 package com.example.workflow.infrastructure.neo4j;
 
 import org.springframework.data.neo4j.core.schema.*;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
  * Neo4j entity for WorkflowNode
- * Represents individual nodes within a workflow graph
+ * Represents individual nodes within a workflow graph with proper relationship mappings
  */
 @Node("WorkflowNode")
 public class WorkflowNodeEntity {
@@ -35,12 +36,29 @@ public class WorkflowNodeEntity {
     @Property("workflowId")
     private String workflowId;
     
+    @Property("label")
+    private String label;
+    
+    @Property("isStartNode")
+    private Boolean isStartNode;
+    
+    @Property("isEndNode")
+    private Boolean isEndNode;
+    
+    // Outgoing relationships to other nodes
+    @Relationship(type = "CONNECTS_TO", direction = Relationship.Direction.OUTGOING)
+    private List<WorkflowEdgeEntity> outgoingEdges;
+    
+    // Incoming relationships from other nodes
+    @Relationship(type = "CONNECTS_TO", direction = Relationship.Direction.INCOMING)
+    private List<WorkflowEdgeEntity> incomingEdges;
+    
     // Default constructor for Neo4j
     public WorkflowNodeEntity() {}
     
     public WorkflowNodeEntity(String id, String type, String name, String description,
                              Map<String, Object> configuration, Double positionX, Double positionY,
-                             String workflowId) {
+                             String workflowId, String label, Boolean isStartNode, Boolean isEndNode) {
         this.id = id;
         this.type = type;
         this.name = name;
@@ -49,6 +67,9 @@ public class WorkflowNodeEntity {
         this.positionX = positionX;
         this.positionY = positionY;
         this.workflowId = workflowId;
+        this.label = label;
+        this.isStartNode = isStartNode;
+        this.isEndNode = isEndNode;
     }
     
     // Getters and Setters
@@ -76,6 +97,21 @@ public class WorkflowNodeEntity {
     public String getWorkflowId() { return workflowId; }
     public void setWorkflowId(String workflowId) { this.workflowId = workflowId; }
     
+    public String getLabel() { return label; }
+    public void setLabel(String label) { this.label = label; }
+    
+    public Boolean getIsStartNode() { return isStartNode; }
+    public void setIsStartNode(Boolean isStartNode) { this.isStartNode = isStartNode; }
+    
+    public Boolean getIsEndNode() { return isEndNode; }
+    public void setIsEndNode(Boolean isEndNode) { this.isEndNode = isEndNode; }
+    
+    public List<WorkflowEdgeEntity> getOutgoingEdges() { return outgoingEdges; }
+    public void setOutgoingEdges(List<WorkflowEdgeEntity> outgoingEdges) { this.outgoingEdges = outgoingEdges; }
+    
+    public List<WorkflowEdgeEntity> getIncomingEdges() { return incomingEdges; }
+    public void setIncomingEdges(List<WorkflowEdgeEntity> incomingEdges) { this.incomingEdges = incomingEdges; }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -95,7 +131,10 @@ public class WorkflowNodeEntity {
                 "id='" + id + '\'' +
                 ", type='" + type + '\'' +
                 ", name='" + name + '\'' +
+                ", label='" + label + '\'' +
                 ", workflowId='" + workflowId + '\'' +
+                ", isStartNode=" + isStartNode +
+                ", isEndNode=" + isEndNode +
                 '}';
     }
 }
