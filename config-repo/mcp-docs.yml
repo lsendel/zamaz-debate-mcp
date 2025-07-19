@@ -1,0 +1,106 @@
+spring:
+  application:
+    name: mcp-docs
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:docs_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration: 86400000  # 24 hours
+      refresh-expiration: 604800000  # 7 days
+
+server:
+  port: ${MCP_DOCS_PORT:${SERVER_PORT:5007}}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: ${API_DOCS_PATH:/api-docs}
+  swagger-ui:
+    path: ${SWAGGER_UI_PATH:/swagger-ui.html}
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+logging:
+  level:
+    root: INFO
+    com.zamaz.mcp.docs: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:${UI_PORT:3001},http://localhost:${MCP_GATEWAY_PORT:8080}}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+  
+  # MCP-rag service integration
+  rag:
+    base-url: ${MCP_RAG_URL:http://localhost:5004}
+    timeout: 30s
+    retry:
+      max-attempts: 3
+      delay: 1s
+  
+  # Document storage configuration
+  documents:
+    max-size: ${DOC_MAX_SIZE:10MB}
+    allowed-types: ${DOC_ALLOWED_TYPES:md,txt,html,json,yaml,yml}
+    cache-ttl: ${DOC_CACHE_TTL:3600}
+  
+  # Multi-tenant configuration
+  tenant:
+    isolation-mode: ${TENANT_ISOLATION:row-level-security}
+    default-app-name: ${DEFAULT_APP_NAME:default}

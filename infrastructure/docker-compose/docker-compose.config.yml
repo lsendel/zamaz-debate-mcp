@@ -1,0 +1,205 @@
+# Docker Compose override for Config Server integration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.config.yml up
+
+version: '3.8'
+
+services:
+  # Gateway Service
+  mcp-gateway:
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mcp-config-server:
+        condition: service_healthy
+
+  # Auth Server
+  mcp-auth-server:
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-config-server:
+        condition: service_healthy
+
+  # Sidecar Service
+  mcp-sidecar:
+    build:
+      context: ../..
+      dockerfile: mcp-sidecar/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8090
+    ports:
+      - "${MCP_SIDECAR_PORT:-8090}:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
+  # Debate Engine Service
+  mcp-debate-engine:
+    build:
+      context: ../..
+      dockerfile: mcp-debate-engine/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=debate_engine_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SERVER_PORT=5020
+    ports:
+      - "${MCP_DEBATE_ENGINE_PORT:-5020}:5020"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5020/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Pattern Recognition Service
+  mcp-pattern-recognition:
+    build:
+      context: ../..
+      dockerfile: mcp-pattern-recognition/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=5030
+    ports:
+      - "${MCP_PATTERN_PORT:-5030}:5030"
+    depends_on:
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    volumes:
+      - ../../:/workspace:ro
+
+  # GitHub Integration Service
+  github-integration:
+    build:
+      context: ../..
+      dockerfile: github-integration/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SERVER_PORT=5040
+    ports:
+      - "${GITHUB_INTEGRATION_PORT:-5040}:5040"
+    depends_on:
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
+  # Modulith Service
+  mcp-modulith:
+    build:
+      context: ../..
+      dockerfile: mcp-modulith/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=modulith_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - SERVER_PORT=5050
+    ports:
+      - "${MCP_MODULITH_PORT:-5050}:5050"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
+  # Documentation Service
+  mcp-docs:
+    build:
+      context: ../..
+      dockerfile: mcp-docs/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8095
+    ports:
+      - "${MCP_DOCS_PORT:-8095}:8095"
+    depends_on:
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    volumes:
+      - ../../docs:/app/docs:ro
+
+  # Context Client Service
+  mcp-context-client:
+    build:
+      context: ../..
+      dockerfile: mcp-context-client/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=5015
+    ports:
+      - "${MCP_CONTEXT_CLIENT_PORT:-5015}:5015"
+    depends_on:
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
+  # Legacy Debate Service
+  mcp-debate:
+    build:
+      context: ../..
+      dockerfile: mcp-debate/Dockerfile
+    environment:
+      - CONFIG_SERVER_URI=http://mcp-config-server:8888
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=debate_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - SERVER_PORT=5001
+    ports:
+      - "${MCP_DEBATE_LEGACY_PORT:-5001}:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mcp-config-server:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    profiles:
+      - legacy

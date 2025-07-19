@@ -1,0 +1,22 @@
+# Production configuration for mcp-template
+logging:
+  level:
+    com.zamaz.mcp: WARN
+    root: INFO
+
+# Production database
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres-prod:5432/mcp_template_db}
+    username: ${DB_USER:prod_user}
+    password: ${DB_PASSWORD:{cipher}encrypted_prod_password}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+# Production-specific settings
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus

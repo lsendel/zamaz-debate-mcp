@@ -1,0 +1,164 @@
+spring:
+  application:
+    name: mcp-debate-engine
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:debate_engine_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+    show-sql: false
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    schemas: public
+  
+  integration:
+    redis:
+      enabled: true
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000 # 10 minutes
+      cache-null-values: false
+
+server:
+  port: ${SERVER_PORT:5013}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus,info,flyway
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: ${API_DOCS_PATH:/api-docs}
+  swagger-ui:
+    path: ${SWAGGER_UI_PATH:/swagger-ui.html}
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+logging:
+  level:
+    root: INFO
+    com.zamaz.mcp.debateengine: DEBUG
+    org.springframework.statemachine: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Consolidated service configuration
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+  
+  # Debate Engine Configuration
+  debate:
+    max-participants: ${MAX_PARTICIPANTS:10}
+    max-rounds: ${MAX_ROUNDS:10}
+    default-round-timeout: ${DEFAULT_ROUND_TIMEOUT:300000} # 5 minutes
+    analysis:
+      enabled: ${ANALYSIS_ENABLED:true}
+      async: ${ANALYSIS_ASYNC:true}
+    
+  # Context Management Configuration
+  context:
+    max-messages: ${MAX_CONTEXT_MESSAGES:1000}
+    default-window-size: ${DEFAULT_WINDOW_SIZE:4096}
+    max-total-tokens: ${MAX_TOTAL_TOKENS:32768}
+    cleanup:
+      enabled: ${CONTEXT_CLEANUP_ENABLED:true}
+      interval: ${CONTEXT_CLEANUP_INTERVAL:3600000} # 1 hour
+      retention-days: ${CONTEXT_RETENTION_DAYS:30}
+  
+  # WebSocket Configuration
+  websocket:
+    allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+    heartbeat-interval: ${WS_HEARTBEAT_INTERVAL:30000} # 30 seconds
+    max-sessions-per-user: ${WS_MAX_SESSIONS:5}
+  
+  # External Service Integration
+  services:
+    llm:
+      base-url: ${LLM_SERVICE_URL:http://localhost:5002}
+      timeout: ${LLM_SERVICE_TIMEOUT:30000}
+      retry:
+        max-attempts: ${LLM_RETRY_ATTEMPTS:3}
+        delay: ${LLM_RETRY_DELAY:1000}
+    
+    rag:
+      base-url: ${RAG_SERVICE_URL:http://localhost:5004}
+      timeout: ${RAG_SERVICE_TIMEOUT:15000}
+      enabled: ${RAG_ENABLED:true}
+    
+    template:
+      base-url: ${TEMPLATE_SERVICE_URL:http://localhost:5006}
+      timeout: ${TEMPLATE_SERVICE_TIMEOUT:10000}
+      enabled: ${TEMPLATE_ENABLED:true}
+
+# State Machine Configuration
+debate.statemachine:
+  enabled: true
+  auto-startup: true
+  trace-enabled: false
+
+# Hexagonal Architecture Configuration
+debate-engine:
+  ai:
+    llm-service-url: ${LLM_SERVICE_URL:http://localhost:5002}
+    quality-analysis-enabled: ${QUALITY_ANALYSIS_ENABLED:true}
+    timeout: ${AI_SERVICE_TIMEOUT:30000}
+  
+  domain-events:
+    async: ${DOMAIN_EVENTS_ASYNC:true}
+    retry-attempts: ${DOMAIN_EVENTS_RETRY:3}
+  
+  persistence:
+    batch-size: ${PERSISTENCE_BATCH_SIZE:50}
+    fetch-size: ${PERSISTENCE_FETCH_SIZE:100}
+  
+  validation:
+    strict-mode: ${VALIDATION_STRICT_MODE:true}
+    enable-cross-reference-checks: ${VALIDATION_CROSS_REF:true}

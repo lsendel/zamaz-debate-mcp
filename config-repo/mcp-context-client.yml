@@ -1,0 +1,4 @@
+# Converted from application.properties
+# Please review and adjust as needed
+
+mcp.context.client.baseUrl: ${GATEWAY_SERVICE_URL}
