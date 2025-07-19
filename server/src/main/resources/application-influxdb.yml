@@ -1,0 +1,33 @@
+# InfluxDB Configuration for Telemetry Data Storage
+influxdb:
+  # InfluxDB connection settings
+  url: ${INFLUXDB_URL:http://localhost:8086}
+  token: ${INFLUXDB_TOKEN:}
+  username: ${INFLUXDB_USERNAME:admin}
+  password: ${INFLUXDB_PASSWORD:password}
+  
+  # Database settings
+  bucket: ${INFLUXDB_BUCKET:telemetry}
+  organization: ${INFLUXDB_ORG:workflow-org}
+  
+  # Performance settings
+  batch:
+    size: ${INFLUXDB_BATCH_SIZE:1000}
+    flush-interval: ${INFLUXDB_FLUSH_INTERVAL:1000}
+  
+  # Retention policies
+  retention:
+    raw-data-days: ${INFLUXDB_RAW_RETENTION:30}
+    aggregated-data-days: ${INFLUXDB_AGGREGATED_RETENTION:365}
+  
+  # Connection pool settings
+  connection:
+    timeout: ${INFLUXDB_CONNECTION_TIMEOUT:10000}
+    read-timeout: ${INFLUXDB_READ_TIMEOUT:30000}
+    write-timeout: ${INFLUXDB_WRITE_TIMEOUT:10000}
+
+# Logging configuration for InfluxDB
+logging:
+  level:
+    com.influxdb: ${INFLUXDB_LOG_LEVEL:INFO}
+    com.example.workflow.infrastructure.InfluxDbTelemetryRepository: DEBUG

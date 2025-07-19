@@ -1,0 +1,58 @@
+# PostGIS Configuration for Spatial Data Storage
+spring:
+  datasource:
+    # PostgreSQL with PostGIS connection
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/workflow_db}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    
+    # Connection pool settings
+    hikari:
+      maximum-pool-size: ${POSTGRES_MAX_POOL_SIZE:20}
+      minimum-idle: ${POSTGRES_MIN_IDLE:5}
+      connection-timeout: ${POSTGRES_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${POSTGRES_IDLE_TIMEOUT:600000}
+      max-lifetime: ${POSTGRES_MAX_LIFETIME:1800000}
+      leak-detection-threshold: ${POSTGRES_LEAK_DETECTION:60000}
+  
+  # JPA configuration for PostGIS
+  jpa:
+    database-platform: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+    hibernate:
+      ddl-auto: ${POSTGRES_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+        format_sql: true
+        show_sql: ${POSTGRES_SHOW_SQL:false}
+        jdbc:
+          batch_size: ${POSTGRES_BATCH_SIZE:25}
+          fetch_size: ${POSTGRES_FETCH_SIZE:50}
+
+# PostGIS specific settings
+postgis:
+  # Spatial reference systems
+  default-srid: ${POSTGIS_DEFAULT_SRID:4326}
+  
+  # Performance settings
+  spatial-index:
+    enabled: ${POSTGIS_SPATIAL_INDEX:true}
+    gist-index: ${POSTGIS_GIST_INDEX:true}
+  
+  # Geometry settings
+  geometry:
+    precision: ${POSTGIS_PRECISION:6}
+    simplify-tolerance: ${POSTGIS_SIMPLIFY_TOLERANCE:0.0001}
+  
+  # Sample data settings
+  sample-data:
+    stamford-addresses: ${POSTGIS_SAMPLE_STAMFORD:true}
+    geographic-features: ${POSTGIS_SAMPLE_FEATURES:true}
+
+# Logging configuration for PostGIS
+logging:
+  level:
+    org.hibernate.spatial: ${POSTGIS_LOG_LEVEL:INFO}
+    com.example.workflow.infrastructure.PostGisSpatialRepository: DEBUG
+    org.postgresql: ${POSTGRES_LOG_LEVEL:WARN}

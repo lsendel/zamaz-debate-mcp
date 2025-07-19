@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: workflow-server
+  profiles:
+    active: dev
+    
+  # Neo4j Configuration
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: password
+    connection:
+      pool:
+        max-connection-pool-size: 50
+        connection-acquisition-timeout: 30s
+        max-connection-lifetime: 1h
+        
+  # PostgreSQL Configuration (for PostGIS)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/workflow_db
+    username: workflow_user
+    password: workflow_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+        format_sql: true
+        
+  # GraphQL Configuration
+  graphql:
+    websocket:
+      path: /graphql
+    path: /graphql
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "*"
+      
+  # Security Configuration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/workflow
+          
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    
+# Management Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      
+# Logging Configuration
+logging:
+  level:
+    com.example.workflow: DEBUG
+    org.springframework.data.neo4j: DEBUG
+    org.neo4j.driver: INFO
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/workflow-server.log
+
+# Custom Application Properties
+workflow:
+  neo4j:
+    init-constraints: true
+    batch-size: 1000
+  telemetry:
+    frequency: 10Hz
+    batch-size: 100
+  performance:
+    max-nodes: 10000
+    cache-size: 1000
