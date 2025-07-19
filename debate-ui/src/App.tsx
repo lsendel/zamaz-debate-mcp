@@ -16,6 +16,7 @@ import Layout from "./components/Layout";
 import LoginPage from "./components/LoginPage";
 import DebatesPage from "./components/DebatesPage";
 import DebateDetailPage from "./components/DebateDetailPage";
+import WorkflowEditorPage from "./components/WorkflowEditorPage";
 import AnalyticsPage from "./components/AnalyticsPage";
 import SettingsPage from "./components/SettingsPage";
 import OrganizationManagementPage from "./components/OrganizationManagementPage";
@@ -73,6 +74,7 @@ function AppContent() {
           <Route index element={<DebatesPage />} />
           <Route path="debates" element={<DebatesPage />} />
           <Route path="debates/:id" element={<DebateDetailPage />} />
+          <Route path="workflow-editor" element={<WorkflowEditorPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="organization-management" element={<OrganizationManagementPage />} />

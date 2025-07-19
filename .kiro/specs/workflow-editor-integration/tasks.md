@@ -1,6 +1,8 @@
 # Implementation Plan
 
-- [ ] 1. Set up 5-subproject architecture with hexagonal design
+- [x] 1. Set up 5-subproject architecture with hexagonal design
+
+
   - Create Subproject 1: client/workflow-editor/ with React-Flow, React-QueryBuilder, Zustand, MapLibre GL JS
   - Create Subproject 2: server/src/main/java/com/example/workflow/graphql/ with Spring GraphQL and hexagonal architecture
   - Create Subproject 3: server/src/main/java/com/example/workflow/telemetry/ for 10Hz telemetry emulation
@@ -11,7 +13,10 @@
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
 - [ ] 2. Implement core domain entities and services
-- [ ] 2.1 Create workflow domain entities and value objects
+- [x] 2.1 Create workflow domain entities and value objects
+
+
+
   - Implement Workflow, WorkflowNode, WorkflowConnection entities with proper encapsulation
   - Create WorkflowId, NodeId, ConnectionId value objects
   - Implement WorkflowStatus enumeration and state transitions

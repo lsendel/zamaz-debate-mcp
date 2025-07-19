@@ -41,7 +41,7 @@
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
   "[markdown]": {
-    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "files.associations": {
     "Dockerfile*": "dockerfile"

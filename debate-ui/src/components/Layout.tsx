@@ -17,6 +17,7 @@ import {
 import {
   Menu as MenuIcon,
   Forum as ForumIcon,
+  AccountTree as AccountTreeIcon,
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
@@ -47,6 +48,7 @@ const Layout: React.FC = () => {
 
   const menuItems = [
     { text: "Debates", icon: <ForumIcon />, path: "/debates" },
+    { text: "Workflow Editor", icon: <AccountTreeIcon />, path: "/workflow-editor" },
     { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];

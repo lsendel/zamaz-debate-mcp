@@ -118,6 +118,14 @@ gateway:
       url: ${SECURITY_SERVICE_URL:http://localhost:5008}
       timeout: 5s
       
+    workflow:
+      url: ${WORKFLOW_SERVICE_URL:http://localhost:5009}
+      timeout: 10s
+      
+    workflow-ui:
+      url: ${WORKFLOW_UI_URL:http://localhost:3001}
+      timeout: 5s
+      
   # Rate limiting configuration
   rate-limiting:
     enabled: true
