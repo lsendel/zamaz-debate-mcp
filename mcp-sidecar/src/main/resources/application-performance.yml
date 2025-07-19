@@ -1,0 +1,370 @@
+# Performance Optimization Configuration for MCP Sidecar
+app:
+  performance:
+    # Enable/disable performance optimization
+    optimization:
+      enabled: ${PERFORMANCE_OPTIMIZATION_ENABLED:true}
+    
+    # Request batching configuration
+    batch:
+      # Maximum batch size
+      size: ${PERFORMANCE_BATCH_SIZE:100}
+      
+      # Maximum wait time before flushing batch
+      timeout: ${PERFORMANCE_BATCH_TIMEOUT:100ms}
+      
+      # Enable automatic batching
+      auto-batch: ${PERFORMANCE_AUTO_BATCH:true}
+    
+    # Connection pooling configuration
+    connection-pool:
+      # Default connection pool size
+      size: ${PERFORMANCE_CONNECTION_POOL_SIZE:50}
+      
+      # Connection idle timeout
+      idle-timeout: ${PERFORMANCE_CONNECTION_IDLE_TIMEOUT:5m}
+      
+      # Connection acquisition timeout
+      acquisition-timeout: ${PERFORMANCE_CONNECTION_ACQUISITION_TIMEOUT:30s}
+      
+      # Enable connection validation
+      validate-on-borrow: ${PERFORMANCE_CONNECTION_VALIDATE:true}
+    
+    # Thread pool configuration
+    thread-pool:
+      # Core thread pool size
+      core-size: ${PERFORMANCE_THREAD_POOL_CORE_SIZE:10}
+      
+      # Maximum thread pool size
+      max-size: ${PERFORMANCE_THREAD_POOL_MAX_SIZE:50}
+      
+      # Thread keep-alive time
+      keep-alive-time: ${PERFORMANCE_THREAD_KEEP_ALIVE_TIME:60s}
+      
+      # Queue capacity
+      queue-capacity: ${PERFORMANCE_THREAD_QUEUE_CAPACITY:1000}
+    
+    # Caching configuration
+    cache:
+      # Enable predictive preloading
+      preload:
+        enabled: ${PERFORMANCE_CACHE_PRELOAD_ENABLED:true}
+        
+        # Preload interval
+        interval: ${PERFORMANCE_CACHE_PRELOAD_INTERVAL:5m}
+        
+        # Preload batch size
+        batch-size: ${PERFORMANCE_CACHE_PRELOAD_BATCH_SIZE:50}
+        
+        # Preload threshold (minimum access count)
+        threshold: ${PERFORMANCE_CACHE_PRELOAD_THRESHOLD:10}
+      
+      # Cache warming on startup
+      warm-on-startup: ${PERFORMANCE_CACHE_WARM_ON_STARTUP:true}
+      
+      # Multi-level caching
+      multi-level:
+        enabled: ${PERFORMANCE_CACHE_MULTI_LEVEL_ENABLED:true}
+        
+        # L1 cache (in-memory)
+        l1:
+          max-size: ${PERFORMANCE_CACHE_L1_MAX_SIZE:1000}
+          ttl: ${PERFORMANCE_CACHE_L1_TTL:5m}
+        
+        # L2 cache (Redis)
+        l2:
+          ttl: ${PERFORMANCE_CACHE_L2_TTL:30m}
+    
+    # Compression configuration
+    compression:
+      # Enable automatic compression
+      enabled: ${PERFORMANCE_COMPRESSION_ENABLED:true}
+      
+      # Minimum size for compression (bytes)
+      min-size: ${PERFORMANCE_COMPRESSION_MIN_SIZE:1024}
+      
+      # Compression level (1-9)
+      level: ${PERFORMANCE_COMPRESSION_LEVEL:6}
+      
+      # Compression algorithms
+      algorithms:
+        - gzip
+        - deflate
+        - br
+    
+    # Resource pooling configuration
+    resource-pool:
+      # ByteBuffer pool
+      byte-buffer:
+        size: ${PERFORMANCE_RESOURCE_POOL_BYTE_BUFFER_SIZE:100}
+        buffer-size: ${PERFORMANCE_RESOURCE_POOL_BYTE_BUFFER_BUFFER_SIZE:8192}
+        direct: ${PERFORMANCE_RESOURCE_POOL_BYTE_BUFFER_DIRECT:true}
+      
+      # StringBuilder pool
+      string-builder:
+        size: ${PERFORMANCE_RESOURCE_POOL_STRING_BUILDER_SIZE:50}
+        initial-capacity: ${PERFORMANCE_RESOURCE_POOL_STRING_BUILDER_CAPACITY:1024}
+    
+    # Request deduplication
+    deduplication:
+      # Enable request deduplication
+      enabled: ${PERFORMANCE_DEDUPLICATION_ENABLED:true}
+      
+      # Deduplication cache size
+      cache-size: ${PERFORMANCE_DEDUPLICATION_CACHE_SIZE:1000}
+      
+      # Deduplication timeout
+      timeout: ${PERFORMANCE_DEDUPLICATION_TIMEOUT:5s}
+    
+    # Resource cleanup
+    cleanup:
+      # Cleanup interval
+      interval: ${PERFORMANCE_CLEANUP_INTERVAL:1m}
+      
+      # Expired resource retention
+      retention: ${PERFORMANCE_CLEANUP_RETENTION:5m}
+    
+    # Bulkhead configuration
+    bulkhead:
+      # Default bulkhead settings
+      default:
+        max-concurrent-calls: ${PERFORMANCE_BULKHEAD_DEFAULT_MAX_CALLS:50}
+        max-wait-duration: ${PERFORMANCE_BULKHEAD_DEFAULT_MAX_WAIT:30s}
+      
+      # Service-specific bulkheads
+      services:
+        database:
+          max-concurrent-calls: ${PERFORMANCE_BULKHEAD_DB_MAX_CALLS:20}
+          max-wait-duration: ${PERFORMANCE_BULKHEAD_DB_MAX_WAIT:30s}
+        
+        external-api:
+          max-concurrent-calls: ${PERFORMANCE_BULKHEAD_API_MAX_CALLS:50}
+          max-wait-duration: ${PERFORMANCE_BULKHEAD_API_MAX_WAIT:60s}
+        
+        cache:
+          max-concurrent-calls: ${PERFORMANCE_BULKHEAD_CACHE_MAX_CALLS:100}
+          max-wait-duration: ${PERFORMANCE_BULKHEAD_CACHE_MAX_WAIT:10s}
+    
+    # Async processing configuration
+    async:
+      # Enable async optimizations
+      enabled: ${PERFORMANCE_ASYNC_ENABLED:true}
+      
+      # Parallel execution threshold
+      parallel-threshold: ${PERFORMANCE_ASYNC_PARALLEL_THRESHOLD:3}
+      
+      # Maximum parallelism
+      max-parallelism: ${PERFORMANCE_ASYNC_MAX_PARALLELISM:10}
+      
+      # Buffering strategy
+      buffer-size: ${PERFORMANCE_ASYNC_BUFFER_SIZE:256}
+      
+      # Backpressure strategy
+      backpressure: ${PERFORMANCE_ASYNC_BACKPRESSURE:BUFFER}
+    
+    # Network I/O optimization
+    network:
+      # Enable TCP no-delay
+      tcp-no-delay: ${PERFORMANCE_NETWORK_TCP_NO_DELAY:true}
+      
+      # Socket buffer sizes
+      send-buffer-size: ${PERFORMANCE_NETWORK_SEND_BUFFER_SIZE:65536}
+      receive-buffer-size: ${PERFORMANCE_NETWORK_RECEIVE_BUFFER_SIZE:65536}
+      
+      # Connection timeout
+      connect-timeout: ${PERFORMANCE_NETWORK_CONNECT_TIMEOUT:30s}
+      
+      # Read timeout
+      read-timeout: ${PERFORMANCE_NETWORK_READ_TIMEOUT:60s}
+      
+      # Write timeout
+      write-timeout: ${PERFORMANCE_NETWORK_WRITE_TIMEOUT:60s}
+    
+    # Memory management
+    memory:
+      # Enable memory optimization
+      optimization-enabled: ${PERFORMANCE_MEMORY_OPTIMIZATION_ENABLED:true}
+      
+      # Off-heap memory size (MB)
+      off-heap-size: ${PERFORMANCE_MEMORY_OFF_HEAP_SIZE:256}
+      
+      # Direct memory size (MB)
+      direct-memory-size: ${PERFORMANCE_MEMORY_DIRECT_SIZE:512}
+      
+      # GC tuning
+      gc:
+        # Use G1GC
+        use-g1gc: ${PERFORMANCE_MEMORY_GC_USE_G1GC:true}
+        
+        # Target pause time (ms)
+        target-pause-time: ${PERFORMANCE_MEMORY_GC_TARGET_PAUSE_TIME:200}
+        
+        # Parallel GC threads
+        parallel-gc-threads: ${PERFORMANCE_MEMORY_GC_PARALLEL_THREADS:4}
+    
+    # Query optimization
+    query:
+      # Enable query caching
+      cache-enabled: ${PERFORMANCE_QUERY_CACHE_ENABLED:true}
+      
+      # Query cache size
+      cache-size: ${PERFORMANCE_QUERY_CACHE_SIZE:500}
+      
+      # Query timeout
+      timeout: ${PERFORMANCE_QUERY_TIMEOUT:30s}
+      
+      # Batch query size
+      batch-size: ${PERFORMANCE_QUERY_BATCH_SIZE:100}
+      
+      # Enable query plan caching
+      plan-cache-enabled: ${PERFORMANCE_QUERY_PLAN_CACHE_ENABLED:true}
+    
+    # Monitoring and metrics
+    monitoring:
+      # Enable performance monitoring
+      enabled: ${PERFORMANCE_MONITORING_ENABLED:true}
+      
+      # Metrics collection interval
+      interval: ${PERFORMANCE_MONITORING_INTERVAL:30s}
+      
+      # Enable detailed metrics
+      detailed-metrics: ${PERFORMANCE_MONITORING_DETAILED:false}
+      
+      # Performance thresholds
+      thresholds:
+        # Response time threshold (ms)
+        response-time: ${PERFORMANCE_THRESHOLD_RESPONSE_TIME:1000}
+        
+        # CPU usage threshold (%)
+        cpu-usage: ${PERFORMANCE_THRESHOLD_CPU_USAGE:80}
+        
+        # Memory usage threshold (%)
+        memory-usage: ${PERFORMANCE_THRESHOLD_MEMORY_USAGE:85}
+        
+        # Cache hit rate threshold (%)
+        cache-hit-rate: ${PERFORMANCE_THRESHOLD_CACHE_HIT_RATE:70}
+
+# Spring-specific performance configurations
+spring:
+  # Reactor configuration
+  reactor:
+    # Enable debug mode
+    debug-agent:
+      enabled: ${REACTOR_DEBUG_ENABLED:false}
+    
+    # Netty configuration
+    netty:
+      # Worker thread count
+      worker-count: ${REACTOR_NETTY_WORKER_COUNT:0}
+      
+      # Connection pool configuration
+      pool:
+        # Maximum connections
+        max-connections: ${REACTOR_NETTY_POOL_MAX_CONNECTIONS:500}
+        
+        # Pending acquire timeout
+        acquire-timeout: ${REACTOR_NETTY_POOL_ACQUIRE_TIMEOUT:45s}
+        
+        # Maximum idle time
+        max-idle-time: ${REACTOR_NETTY_POOL_MAX_IDLE_TIME:60s}
+        
+        # Maximum life time
+        max-life-time: ${REACTOR_NETTY_POOL_MAX_LIFE_TIME:600s}
+  
+  # Task execution configuration
+  task:
+    execution:
+      pool:
+        # Core pool size
+        core-size: ${TASK_EXECUTION_POOL_CORE_SIZE:8}
+        
+        # Maximum pool size
+        max-size: ${TASK_EXECUTION_POOL_MAX_SIZE:20}
+        
+        # Queue capacity
+        queue-capacity: ${TASK_EXECUTION_POOL_QUEUE_CAPACITY:1000}
+        
+        # Keep alive time
+        keep-alive: ${TASK_EXECUTION_POOL_KEEP_ALIVE:60s}
+    
+    scheduling:
+      pool:
+        # Scheduling pool size
+        size: ${TASK_SCHEDULING_POOL_SIZE:5}
+  
+  # WebFlux configuration
+  webflux:
+    # Base path
+    base-path: ${WEBFLUX_BASE_PATH:/}
+    
+    # Static resources
+    static-path-pattern: ${WEBFLUX_STATIC_PATH_PATTERN:/**}
+    
+    # Multipart configuration
+    multipart:
+      # Maximum in-memory size
+      max-in-memory-size: ${WEBFLUX_MULTIPART_MAX_IN_MEMORY_SIZE:1MB}
+      
+      # Maximum disk usage per part
+      max-disk-usage-per-part: ${WEBFLUX_MULTIPART_MAX_DISK_USAGE_PER_PART:10MB}
+  
+  # Cache configuration
+  cache:
+    # Cache type
+    type: ${SPRING_CACHE_TYPE:redis}
+    
+    # Cache names
+    cache-names:
+      - performance-metrics
+      - query-results
+      - compiled-patterns
+      - security-profiles
+    
+    # Redis cache configuration
+    redis:
+      # Time to live
+      time-to-live: ${SPRING_CACHE_REDIS_TTL:600s}
+      
+      # Enable cache null values
+      cache-null-values: ${SPRING_CACHE_REDIS_CACHE_NULL_VALUES:true}
+      
+      # Use key prefix
+      use-key-prefix: ${SPRING_CACHE_REDIS_USE_KEY_PREFIX:true}
+      
+      # Key prefix
+      key-prefix: ${SPRING_CACHE_REDIS_KEY_PREFIX:perf:}
+
+# JVM performance flags (to be set as environment variables)
+# -XX:+UseG1GC
+# -XX:MaxGCPauseMillis=200
+# -XX:+UseStringDeduplication
+# -XX:+AlwaysPreTouch
+# -XX:+DisableExplicitGC
+# -XX:+UseCompressedOops
+# -XX:+UseCompressedClassPointers
+# -XX:CompressedClassSpaceSize=1G
+# -XX:MetaspaceSize=256M
+# -XX:MaxMetaspaceSize=512M
+# -XX:InitialRAMPercentage=50.0
+# -XX:MaxRAMPercentage=75.0
+# -XX:+HeapDumpOnOutOfMemoryError
+# -XX:HeapDumpPath=/var/log/mcp-sidecar/heapdump.hprof
+# -XX:+PrintGCDetails
+# -XX:+PrintGCDateStamps
+# -XX:+PrintGCTimeStamps
+# -XX:+UseGCLogFileRotation
+# -XX:NumberOfGCLogFiles=10
+# -XX:GCLogFileSize=10M
+# -Xlog:gc*:file=/var/log/mcp-sidecar/gc.log
+
+# Logging configuration for performance monitoring
+logging:
+  level:
+    com.zamaz.mcp.sidecar.service.PerformanceOptimizationService: ${PERFORMANCE_LOG_LEVEL:INFO}
+    com.zamaz.mcp.sidecar.controller.PerformanceController: ${PERFORMANCE_LOG_LEVEL:INFO}
+    reactor.netty: ${REACTOR_NETTY_LOG_LEVEL:WARN}
+    io.netty: ${NETTY_LOG_LEVEL:WARN}
+    
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} [PERF] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} [PERF] - %msg%n"

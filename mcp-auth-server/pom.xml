@@ -5,9 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.zamaz</groupId>
+        <groupId>com.zamaz.mcp</groupId>
         <artifactId>mcp-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>mcp-auth-server</artifactId>
@@ -101,9 +102,9 @@
 
         <!-- MCP Common -->
         <dependency>
-            <groupId>com.zamaz</groupId>
+            <groupId>com.zamaz.mcp</groupId>
             <artifactId>mcp-common</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Testing -->
@@ -128,6 +129,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

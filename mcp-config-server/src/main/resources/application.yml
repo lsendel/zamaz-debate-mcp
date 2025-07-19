@@ -1,0 +1,95 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: mcp-config-server
+  
+  cloud:
+    config:
+      server:
+        git:
+          # Git repository URI for configuration files
+          # This should be overridden via environment variables in production
+          uri: ${CONFIG_GIT_REPO_URI:https://github.com/zamaz/mcp-config-repo.git}
+          # Clone repository on startup for faster first request
+          clone-on-start: true
+          # Force pull to get latest changes
+          force-pull: true
+          # Default branch to use
+          default-label: main
+          # Timeout for Git operations
+          timeout: 10
+          # Search paths within the repository
+          search-paths:
+            - '{application}'
+            - 'shared'
+        # Enable encryption support
+        encrypt:
+          enabled: true
+
+  # Security configuration for Config Server
+  security:
+    user:
+      name: ${CONFIG_SERVER_USERNAME:config-admin}
+      password: ${CONFIG_SERVER_PASSWORD:change-me-in-production}
+
+# Encryption key for sensitive properties
+encrypt:
+  key: ${CONFIG_ENCRYPTION_KEY:change-me-in-production}
+
+# Management endpoints configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,env
+  endpoint:
+    health:
+      show-details: always
+
+# Logging configuration
+logging:
+  level:
+    org.springframework.cloud.config: INFO
+    com.zamaz.mcp.configserver: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Vault Configuration (optional - activated with 'vault' profile)
+---
+spring:
+  profiles: vault
+  cloud:
+    vault:
+      host: ${VAULT_HOST:localhost}
+      port: ${VAULT_PORT:8200}
+      scheme: ${VAULT_SCHEME:https}
+      authentication: TOKEN
+      token: ${VAULT_TOKEN}
+      kv:
+        enabled: true
+        backend: secret
+        default-context: mcp
+      config:
+        order: -10  # Vault config takes precedence
+    config:
+      server:
+        vault:
+          backend: secret
+          default-key: application
+          profile-separator: '-'
+
+# AWS Secrets Manager Configuration (optional - activated with 'aws' profile)  
+---
+spring:
+  profiles: aws
+  cloud:
+    config:
+      server:
+        aws-secretsmanager:
+          region: ${AWS_REGION:us-east-1}
+          endpoint: ${AWS_SECRETS_MANAGER_ENDPOINT:}
+          prefix: /secret/mcp
+          profile-separator: '-'

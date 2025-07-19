@@ -2,16 +2,17 @@ package com.zamaz.mcp.security.jwt;
 
 import com.zamaz.mcp.security.model.McpUser;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -19,23 +20,32 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Service for JWT token generation and validation.
+ * Modern JWT service using JJWT 0.12.x with updated builder patterns.
+ * Implements RS256 signing for production and proper key management.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    private final JwtKeyManager keyManager;
 
     @Value("${jwt.expiration:86400000}") // Default 24 hours
     private long expiration;
 
-    private SecretKey key;
+    @Value("${jwt.issuer:mcp-auth-server}")
+    private String issuer;
+
+    private JwtParser jwtParser;
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.jwtParser = Jwts.parser()
+                .verifyWith((java.security.Key) keyManager.getVerificationKey())
+                .requireIssuer(issuer)
+                .build();
+
+        log.info("JWT Service initialized with algorithm: {}", keyManager.getSigningAlgorithm());
     }
 
     /**
@@ -48,42 +58,50 @@ public class JwtService {
         claims.put("organizationId", user.getCurrentOrganizationId());
         claims.put("organizationIds", user.getOrganizationIds());
         claims.put("roles", user.getRoles());
-        
+
         return createToken(claims, user.getId());
     }
 
     /**
-     * Create token with claims.
+     * Create token with claims using modern JJWT 0.12.x builder patterns.
      */
     private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+        Instant now = Instant.now();
+        Instant expiry = now.plus(expiration, ChronoUnit.MILLIS);
+
+        JwtBuilder builder = Jwts.builder()
+                .claims(claims)
+                .subject(subject)
+                .issuer(issuer)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry))
+                .signWith((java.security.Key) keyManager.getSigningKey());
+
+        return builder.compact();
     }
 
     /**
-     * Create token from existing claims.
+     * Create token from existing claims using modern patterns.
      */
     private String createToken(Claims claims) {
+        Instant now = Instant.now();
+        Instant expiry = now.plus(expiration, ChronoUnit.MILLIS);
+
         return Jwts.builder()
-                .setClaims(claims)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .claims(claims)
+                .issuer(issuer)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry))
+                .signWith((java.security.Key) keyManager.getSigningKey())
                 .compact();
     }
 
     /**
-     * Validate token.
+     * Validate token using modern JJWT 0.12.x parser.
      */
     public boolean isTokenValid(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
+            jwtParser.parseSignedClaims(token);
             return !isTokenExpired(token);
         } catch (Exception e) {
             log.debug("Token validation failed: {}", e.getClass().getSimpleName());
@@ -144,14 +162,10 @@ public class JwtService {
     }
 
     /**
-     * Extract all claims from token.
+     * Extract all claims from token using modern JJWT 0.12.x parser.
      */
     public Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        return jwtParser.parseSignedClaims(token).getPayload();
     }
 
     /**
@@ -162,15 +176,22 @@ public class JwtService {
     }
 
     /**
-     * Generate refresh token with existing claims.
+     * Generate refresh token with existing claims using modern patterns.
      */
     public String refreshToken(String token) {
         final Claims claims = extractAllClaims(token);
-        claims.setIssuedAt(new Date(System.currentTimeMillis()));
-        claims.setExpiration(new Date(System.currentTimeMillis() + expiration));
-        return createToken(claims);
+
+        // Create new claims map from existing claims
+        Map<String, Object> refreshClaims = new HashMap<>(claims);
+
+        // Remove timing claims as they will be set by createToken
+        refreshClaims.remove("iat");
+        refreshClaims.remove("exp");
+        refreshClaims.remove("nbf");
+
+        return createToken(refreshClaims, claims.getSubject());
     }
-    
+
     /**
      * Get configured expiration time in milliseconds.
      */

@@ -1,4 +1,4 @@
-package com.zamaz.mcp.auth;
+package com.zamaz.mcp.authserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

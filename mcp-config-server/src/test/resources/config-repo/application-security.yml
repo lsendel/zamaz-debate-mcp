@@ -1,0 +1,142 @@
+# Global Security Configuration (common across all environments)
+security:
+  # JWT Configuration
+  jwt:
+    issuer-uri: ${JWT_ISSUER_URI:http://localhost:9000}
+    audience: mcp-services
+    algorithm: RS256
+    access-token-validity: 900  # 15 minutes
+    refresh-token-validity: 86400  # 24 hours
+    key-rotation-interval: 86400  # 24 hours
+    
+  # OAuth2 Configuration
+  oauth2:
+    resource-server:
+      jwt:
+        jwk-set-uri: ${JWT_ISSUER_URI:http://localhost:9000}/.well-known/jwks.json
+        
+  # CORS Configuration
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:3001
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - X-Organization-ID
+      - X-Request-ID
+    expose-headers:
+      - X-Request-ID
+    allow-credentials: true
+    max-age: 3600
+    
+  # Security Headers
+  headers:
+    frame-options: DENY
+    xss-protection: "1; mode=block"
+    content-type-options: nosniff
+    referrer-policy: strict-origin-when-cross-origin
+    content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com; frame-ancestors 'none';"
+    
+  # Password Policy
+  password-policy:
+    min-length: 12
+    max-length: 128
+    require-uppercase: true
+    require-lowercase: true
+    require-digits: true
+    require-special: true
+    special-characters: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    password-history-count: 5
+    max-age-days: 90
+    min-age-hours: 24
+    breach-check-enabled: false  # Disabled by default, enabled in production
+    
+  # Account Lockout Policy
+  lockout-policy:
+    enabled: true
+    max-attempts: 5
+    lockout-duration: 900  # 15 minutes
+    reset-duration: 1800  # 30 minutes
+    exponential-backoff: true
+    base-delay: 1000  # 1 second
+    max-delay: 300000  # 5 minutes
+    
+  # MFA Configuration
+  mfa:
+    totp:
+      enabled: true
+      issuer: "MCP Services"
+      digits: 6
+      period: 30
+      algorithm: HmacSHA256
+      qr-code-width: 200
+      qr-code-height: 200
+    backup-codes:
+      enabled: true
+      count: 10
+      length: 8
+      
+  # Audit Configuration
+  audit:
+    enabled: true
+    retention-days: 90
+    high-risk-events:
+      - LOGIN_FAILURE
+      - ACCOUNT_LOCKED
+      - PERMISSION_DENIED
+      - SUSPICIOUS_ACTIVITY
+      - TOKEN_REVOKED
+    alert-threshold: 10
+    alert-window-minutes: 5
+    
+  # Session Configuration
+  session:
+    timeout: 1800  # 30 minutes
+    max-concurrent: 5
+    store-type: redis
+    cookie:
+      name: MCP_SESSION
+      secure: true
+      http-only: true
+      same-site: strict
+      max-age: 1800
+      
+  # Rate Limiting
+  rate-limiting:
+    enabled: true
+    default-limit: 100
+    default-window: 60  # 1 minute
+    endpoints:
+      - path: "/api/*/auth/login"
+        limit: 5
+        window: 300  # 5 minutes
+      - path: "/api/*/auth/register"
+        limit: 3
+        window: 3600  # 1 hour
+      - path: "/api/*/auth/forgot-password"
+        limit: 3
+        window: 3600  # 1 hour
+        
+  # Encryption
+  encryption:
+    algorithm: AES/GCM/NoPadding
+    key-size: 256
+    
+# Validation Rules
+validation:
+  security:
+    min-jwt-validity: 300  # 5 minutes
+    min-password-length: 8
+    min-lockout-attempts: 3
+    max-session-timeout: 7200  # 2 hours
+    required-headers:
+      - X-Frame-Options
+      - X-Content-Type-Options
+      - X-XSS-Protection

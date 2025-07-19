@@ -1,0 +1,68 @@
+# Development Environment Security Configuration
+security:
+  # JWT Configuration - Development
+  jwt:
+    issuer-uri: http://localhost:9000
+    # Using symmetric key for development (override in production)
+    signing-key: ${JWT_SIGNING_KEY:dev-secret-key-change-me-in-production}
+    
+  # OAuth2 Configuration - Development
+  oauth2:
+    client:
+      registration:
+        mcp-ui:
+          client-id: mcp-ui-client
+          client-secret: ${OAUTH2_UI_CLIENT_SECRET:ui-secret-dev}
+        mcp-api:
+          client-id: mcp-api-client
+          client-secret: ${OAUTH2_API_CLIENT_SECRET:api-secret-dev}
+          
+  # CORS Configuration - Development (more permissive)
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:3001
+      - http://localhost:8080
+      - chrome-extension://*
+      
+  # Security Headers - Development (less restrictive CSP)
+  headers:
+    content-security-policy: "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; connect-src 'self' http://localhost:* ws://localhost:* https://api.anthropic.com;"
+    
+  # Password Policy - Development (relaxed for testing)
+  password-policy:
+    min-length: 8
+    require-uppercase: false
+    require-lowercase: true
+    require-digits: true
+    require-special: false
+    breach-check-enabled: false
+    
+  # Account Lockout Policy - Development (more lenient)
+  lockout-policy:
+    enabled: false  # Disabled for development
+    
+  # MFA Configuration - Development
+  mfa:
+    totp:
+      enabled: false  # Optional in development
+      
+  # Audit Configuration - Development
+  audit:
+    enabled: true
+    retention-days: 7  # Shorter retention in dev
+    
+  # Session Configuration - Development
+  session:
+    timeout: 3600  # 1 hour (longer for development)
+    cookie:
+      secure: false  # Allow non-HTTPS in development
+      
+  # Rate Limiting - Development (disabled)
+  rate-limiting:
+    enabled: false
+    
+# Validation Rules - Development (relaxed)
+validation:
+  security:
+    enforcement-mode: warn  # Only warn, don't fail

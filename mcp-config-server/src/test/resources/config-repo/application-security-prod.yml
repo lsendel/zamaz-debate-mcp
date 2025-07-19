@@ -1,0 +1,152 @@
+# Production Environment Security Configuration
+security:
+  # JWT Configuration - Production
+  jwt:
+    issuer-uri: https://auth.mcp-services.com
+    # RS256 with JWK endpoint and key rotation
+    jwk-set-uri: https://auth.mcp-services.com/.well-known/jwks.json
+    key-rotation-interval: 43200  # 12 hours
+    access-token-validity: 600  # 10 minutes (shorter for production)
+    refresh-token-validity: 43200  # 12 hours
+    
+  # OAuth2 Configuration - Production
+  oauth2:
+    client:
+      registration:
+        mcp-ui:
+          client-id: ${vault:secret/oauth2/ui/client-id}
+          client-secret: ${vault:secret/oauth2/ui/client-secret}
+        mcp-api:
+          client-id: ${vault:secret/oauth2/api/client-id}
+          client-secret: ${vault:secret/oauth2/api/client-secret}
+          
+  # CORS Configuration - Production (restrictive)
+  cors:
+    allowed-origins:
+      - https://app.mcp-services.com
+      - https://www.mcp-services.com
+      
+  # Security Headers - Production (strict)
+  headers:
+    strict-transport-security: "max-age=63072000; includeSubDomains; preload"
+    content-security-policy: "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.mcp-services.com https://api.anthropic.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    permissions-policy: "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()"
+    
+  # Password Policy - Production (strict)
+  password-policy:
+    min-length: 14
+    max-length: 128
+    require-uppercase: true
+    require-lowercase: true
+    require-digits: true
+    require-special: true
+    password-history-count: 12
+    max-age-days: 60
+    breach-check-enabled: true
+    breach-check-api: ${vault:secret/security/hibp-api-key}
+    
+  # Account Lockout Policy - Production
+  lockout-policy:
+    enabled: true
+    max-attempts: 3
+    lockout-duration: 1800  # 30 minutes
+    permanent-lockout-threshold: 10
+    
+  # MFA Configuration - Production (required)
+  mfa:
+    required: true
+    grace-period-days: 7  # New users have 7 days to enable MFA
+    totp:
+      enabled: true
+    webauthn:
+      enabled: true
+      rp-id: mcp-services.com
+      rp-name: "MCP Services"
+      attestation: direct
+      user-verification: required
+    sms:
+      enabled: true
+      provider: twilio
+      account-sid: ${vault:secret/twilio/account-sid}
+      auth-token: ${vault:secret/twilio/auth-token}
+      from-number: ${vault:secret/twilio/from-number}
+      
+  # Audit Configuration - Production
+  audit:
+    enabled: true
+    retention-days: 365  # 1 year
+    export-to-siem: true
+    siem-endpoint: ${vault:secret/siem/endpoint}
+    siem-api-key: ${vault:secret/siem/api-key}
+    real-time-alerting: true
+    alert-email: security@mcp-services.com
+    
+  # Session Configuration - Production
+  session:
+    timeout: 900  # 15 minutes
+    max-concurrent: 3
+    redis:
+      cluster:
+        nodes:
+          - ${vault:secret/redis/cluster/node1}
+          - ${vault:secret/redis/cluster/node2}
+          - ${vault:secret/redis/cluster/node3}
+      password: ${vault:secret/redis/password}
+      ssl: true
+      
+  # Rate Limiting - Production (strict)
+  rate-limiting:
+    enabled: true
+    default-limit: 60
+    default-window: 60
+    endpoints:
+      - path: "/api/*/auth/login"
+        limit: 3
+        window: 900  # 15 minutes
+      - path: "/api/*/auth/register"
+        limit: 2
+        window: 3600  # 1 hour
+      - path: "/api/*/auth/forgot-password"
+        limit: 2
+        window: 3600  # 1 hour
+    redis:
+      cluster:
+        nodes:
+          - ${vault:secret/redis/cluster/node1}
+          - ${vault:secret/redis/cluster/node2}
+          - ${vault:secret/redis/cluster/node3}
+          
+  # Encryption - Production
+  encryption:
+    master-key: ${vault:secret/encryption/master-key}
+    data-keys:
+      rotation-interval: 2592000  # 30 days
+      
+  # TLS Configuration
+  tls:
+    min-version: TLSv1.3
+    cipher-suites:
+      - TLS_AES_256_GCM_SHA384
+      - TLS_AES_128_GCM_SHA256
+      - TLS_CHACHA20_POLY1305_SHA256
+      
+# Validation Rules - Production (strict with fail-fast)
+validation:
+  security:
+    enforcement-mode: fail-fast
+    pre-deployment-check: true
+    
+# Monitoring and Alerting
+monitoring:
+  security:
+    metrics-enabled: true
+    metrics-export: prometheus
+    alert-rules:
+      - name: high-failed-login-rate
+        threshold: 100
+        window: 300
+        severity: critical
+      - name: suspicious-api-usage
+        threshold: 1000
+        window: 60
+        severity: warning

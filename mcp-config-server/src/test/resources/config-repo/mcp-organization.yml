@@ -1,0 +1,14 @@
+# Test configuration for mcp-organization service
+server:
+  port: 5005
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+
+mcp:
+  organization:
+    name: Test Organization
+    max-users: 100

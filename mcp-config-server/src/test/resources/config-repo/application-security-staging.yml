@@ -1,0 +1,81 @@
+# Staging Environment Security Configuration
+security:
+  # JWT Configuration - Staging
+  jwt:
+    issuer-uri: https://auth-staging.mcp-services.com
+    # RS256 with JWK endpoint for staging
+    jwk-set-uri: https://auth-staging.mcp-services.com/.well-known/jwks.json
+    
+  # OAuth2 Configuration - Staging
+  oauth2:
+    client:
+      registration:
+        mcp-ui:
+          client-id: ${OAUTH2_UI_CLIENT_ID}
+          client-secret: ${OAUTH2_UI_CLIENT_SECRET}
+        mcp-api:
+          client-id: ${OAUTH2_API_CLIENT_ID}
+          client-secret: ${OAUTH2_API_CLIENT_SECRET}
+          
+  # CORS Configuration - Staging
+  cors:
+    allowed-origins:
+      - https://app-staging.mcp-services.com
+      - https://api-staging.mcp-services.com
+      
+  # Security Headers - Staging
+  headers:
+    strict-transport-security: "max-age=31536000; includeSubDomains"
+    content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.mcp-services.com https://api.anthropic.com; frame-ancestors 'none';"
+    
+  # Password Policy - Staging (production-like)
+  password-policy:
+    min-length: 12
+    require-uppercase: true
+    require-lowercase: true
+    require-digits: true
+    require-special: true
+    breach-check-enabled: true
+    breach-check-api: ${HIBP_API_KEY}
+    
+  # Account Lockout Policy - Staging
+  lockout-policy:
+    enabled: true
+    max-attempts: 5
+    
+  # MFA Configuration - Staging
+  mfa:
+    totp:
+      enabled: true
+    webauthn:
+      enabled: true
+      rp-id: staging.mcp-services.com
+      rp-name: "MCP Services Staging"
+      
+  # Audit Configuration - Staging
+  audit:
+    enabled: true
+    retention-days: 30
+    export-to-siem: true
+    siem-endpoint: ${SIEM_ENDPOINT_STAGING}
+    
+  # Session Configuration - Staging
+  session:
+    timeout: 1800  # 30 minutes
+    redis:
+      host: ${REDIS_HOST_STAGING}
+      port: ${REDIS_PORT_STAGING:6379}
+      password: ${REDIS_PASSWORD_STAGING}
+      ssl: true
+      
+  # Rate Limiting - Staging
+  rate-limiting:
+    enabled: true
+    redis:
+      host: ${REDIS_HOST_STAGING}
+      port: ${REDIS_PORT_STAGING:6379}
+      
+# Validation Rules - Staging (strict)
+validation:
+  security:
+    enforcement-mode: strict
