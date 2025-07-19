@@ -91,6 +91,7 @@
   - Add proper indexing and constraints for performance
   - _Requirements: 5.1, 1.5_
 
+
 - [x] 3.3 Implement InfluxDB telemetry adapter
 
 
