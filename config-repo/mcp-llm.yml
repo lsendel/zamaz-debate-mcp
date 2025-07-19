@@ -1,0 +1,96 @@
+# MCP LLM Service Configuration
+spring:
+  application:
+    name: mcp-llm
+  
+  # Database configuration for LLM service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mcp_llm}
+    username: ${DB_USERNAME:mcp_user}
+    password: ${DB_PASSWORD:mcp_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-test-query: SELECT 1
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:10}
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:5002}
+  servlet:
+    context-path: /api/v1/llm
+
+# LLM service specific configuration
+llm:
+  # Provider configurations
+  providers:
+    openai:
+      enabled: ${OPENAI_ENABLED:true}
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      timeout: ${OPENAI_TIMEOUT:30000}
+      max-retries: ${OPENAI_MAX_RETRIES:3}
+      default-model: ${OPENAI_DEFAULT_MODEL:gpt-3.5-turbo}
+    
+    anthropic:
+      enabled: ${ANTHROPIC_ENABLED:true}
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com/v1}
+      timeout: ${ANTHROPIC_TIMEOUT:30000}
+      max-retries: ${ANTHROPIC_MAX_RETRIES:3}
+      default-model: ${ANTHROPIC_DEFAULT_MODEL:claude-3-sonnet-20240229}
+    
+    google:
+      enabled: ${GOOGLE_AI_ENABLED:false}
+      api-key: ${GOOGLE_AI_API_KEY:}
+      project-id: ${GOOGLE_PROJECT_ID:}
+      location: ${GOOGLE_AI_LOCATION:us-central1}
+      default-model: ${GOOGLE_DEFAULT_MODEL:gemini-pro}
+  
+  # Rate limiting configuration
+  rate-limiting:
+    enabled: ${LLM_RATE_LIMITING_ENABLED:true}
+    requests-per-minute: ${LLM_RATE_LIMIT_PER_MINUTE:60}
+    requests-per-hour: ${LLM_RATE_LIMIT_PER_HOUR:1000}
+  
+  # Response configuration
+  response:
+    max-tokens: ${LLM_MAX_TOKENS:2048}
+    temperature: ${LLM_TEMPERATURE:0.7}
+    timeout: ${LLM_TIMEOUT:60000}
+  
+  # Caching configuration
+  cache:
+    enabled: ${LLM_CACHE_ENABLED:true}
+    ttl: ${LLM_CACHE_TTL:3600}
+    max-size: ${LLM_CACHE_MAX_SIZE:1000}
+
+# Circuit breaker configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      llm-provider:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+
+# API documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+
+# Monitoring
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+  metrics:
+    tags:
+      service: llm

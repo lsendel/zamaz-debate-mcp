@@ -1,0 +1,141 @@
+# Shared Logging Configuration
+# Common logging settings used across all services
+
+logging:
+  # Log file configuration
+  file:
+    name: ${LOG_FILE:/var/log/mcp/${spring.application.name}.log}
+    max-size: ${LOG_FILE_MAX_SIZE:100MB}
+    max-history: ${LOG_FILE_MAX_HISTORY:30}
+    total-size-cap: ${LOG_FILE_TOTAL_SIZE:3GB}
+    clean-history-on-start: ${LOG_CLEAN_ON_START:false}
+    
+  # Log patterns
+  pattern:
+    # Console pattern with color coding
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+    
+    # File pattern without color coding
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%15.15t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+    
+    # JSON pattern for structured logging
+    json: '{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%level","service":"${spring.application.name}","trace":"%X{traceId:-}","span":"%X{spanId:-}","pid":"${PID:-}","thread":"%thread","class":"%logger{40}","message":"%message","stack_trace":"%exception"}'
+    
+  # Log levels
+  level:
+    # Root level
+    root: ${LOG_LEVEL_ROOT:INFO}
+    
+    # Framework levels
+    org.springframework: ${LOG_LEVEL_SPRING:INFO}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:INFO}
+    org.springframework.boot: ${LOG_LEVEL_SPRING_BOOT:INFO}
+    org.springframework.data: ${LOG_LEVEL_SPRING_DATA:INFO}
+    org.springframework.cloud: ${LOG_LEVEL_SPRING_CLOUD:INFO}
+    
+    # Database levels
+    org.hibernate: ${LOG_LEVEL_HIBERNATE:WARN}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.hibernate.type.descriptor.sql: ${LOG_LEVEL_SQL_BIND:WARN}
+    
+    # HTTP client levels
+    org.apache.http: ${LOG_LEVEL_HTTP_CLIENT:INFO}
+    feign: ${LOG_LEVEL_FEIGN:INFO}
+    
+    # Application levels
+    com.zamaz.mcp: ${LOG_LEVEL_APPLICATION:INFO}
+    
+  # Logback configuration
+  logback:
+    rollingpolicy:
+      file-name-pattern: ${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz
+      clean-history-on-start: false
+      max-file-size: ${LOG_FILE_MAX_SIZE:100MB}
+      total-size-cap: ${LOG_FILE_TOTAL_SIZE:3GB}
+      max-history: ${LOG_FILE_MAX_HISTORY:30}
+
+# Structured logging configuration
+structured-logging:
+  enabled: ${STRUCTURED_LOGGING_ENABLED:false}
+  format: ${STRUCTURED_LOG_FORMAT:json}
+  
+  # Additional fields to include in structured logs
+  fields:
+    - name: service
+      value: ${spring.application.name}
+    - name: environment
+      value: ${ENVIRONMENT:development}
+    - name: version
+      value: ${APPLICATION_VERSION:unknown}
+    - name: instance
+      value: ${HOSTNAME:unknown}
+    - name: region
+      value: ${REGION:us-east-1}
+    
+  # MDC (Mapped Diagnostic Context) fields
+  mdc:
+    - userId
+    - organizationId
+    - requestId
+    - correlationId
+    - traceId
+    - spanId
+
+# Log aggregation configuration
+log-aggregation:
+  # ELK Stack configuration
+  elk:
+    enabled: ${ELK_ENABLED:false}
+    logstash:
+      host: ${LOGSTASH_HOST:localhost}
+      port: ${LOGSTASH_PORT:5044}
+      
+  # Fluentd configuration
+  fluentd:
+    enabled: ${FLUENTD_ENABLED:false}
+    host: ${FLUENTD_HOST:localhost}
+    port: ${FLUENTD_PORT:24224}
+    
+  # CloudWatch Logs (AWS)
+  cloudwatch:
+    enabled: ${CLOUDWATCH_LOGS_ENABLED:false}
+    log-group: ${CLOUDWATCH_LOG_GROUP:/aws/ecs/mcp-services}
+    log-stream: ${CLOUDWATCH_LOG_STREAM:${spring.application.name}}
+    
+# Audit logging configuration
+audit:
+  enabled: ${AUDIT_LOGGING_ENABLED:true}
+  
+  # Events to audit
+  events:
+    - authentication
+    - authorization
+    - data-access
+    - data-modification
+    - configuration-change
+    - security-event
+    
+  # Audit log destination
+  destination:
+    type: ${AUDIT_LOG_DESTINATION:file}
+    file:
+      path: ${AUDIT_LOG_PATH:/var/log/mcp/audit/${spring.application.name}-audit.log}
+      max-size: ${AUDIT_LOG_MAX_SIZE:100MB}
+      max-history: ${AUDIT_LOG_MAX_HISTORY:90}
+      
+  # Audit log format
+  format: ${AUDIT_LOG_FORMAT:json}
+  
+  # Fields to include in audit logs
+  fields:
+    - timestamp
+    - event-type
+    - user-id
+    - organization-id
+    - ip-address
+    - user-agent
+    - resource
+    - action
+    - result
+    - duration

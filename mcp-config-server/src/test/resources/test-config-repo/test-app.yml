@@ -1,0 +1,10 @@
+# Test configuration for test-app
+test:
+  app:
+    name: test-app
+    property: test-app-value
+
+datasource:
+  url: jdbc:h2:mem:testdb
+  username: sa
+  password: "{cipher}test-encrypted-password"

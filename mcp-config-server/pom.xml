@@ -39,6 +39,12 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Spring Cloud Bus for configuration refresh -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+        </dependency>
+
         <!-- Spring Cloud Starter Vault Config -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

@@ -1,0 +1,55 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-config-server-network-policy
+  namespace: mcp-system
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-config-server
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from all MCP services
+    - namespaceSelector:
+        matchLabels:
+          name: mcp-system
+    # Allow traffic from monitoring namespace
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8888
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow access to RabbitMQ
+  - to:
+    - podSelector:
+        matchLabels:
+          app: rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  # Allow HTTPS traffic for Git repositories
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow SSH traffic for Git repositories
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 22

@@ -1,0 +1,34 @@
+# MCP Organization Service - Development Configuration
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mcp_organization_dev
+    username: mcp_user
+    password: dev_password
+  
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+# Development specific settings
+organization:
+  defaults:
+    max-users-per-org: 1000
+    max-debates-per-org: 10000
+  
+  features:
+    debug-endpoints: true
+    test-data-generation: true
+
+# Enable all actuator endpoints for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+# Verbose logging for development
+logging:
+  level:
+    com.zamaz.mcp.organization: DEBUG
+    org.springframework.security: DEBUG

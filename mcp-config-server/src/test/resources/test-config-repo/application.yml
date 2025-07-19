@@ -1,0 +1,8 @@
+# Test configuration for all applications
+spring:
+  application:
+    test-property: global-test-value
+
+test:
+  global:
+    property: test-value

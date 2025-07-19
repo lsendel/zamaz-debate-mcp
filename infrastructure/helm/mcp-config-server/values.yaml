@@ -1,0 +1,169 @@
+replicaCount: 2
+
+image:
+  repository: zamaz/mcp-config-server
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+
+service:
+  type: ClusterIP
+  port: 8888
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: config.mcp.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - mcp-config-server
+        topologyKey: kubernetes.io/hostname
+
+# Config Server specific configuration
+config:
+  git:
+    uri: "https://github.com/zamaz/mcp-config-repo.git"
+    branch: "main"
+    cloneOnStart: true
+    timeout: 10
+    searchPaths:
+      - '{application}'
+      - '{application}/{profile}'
+      - 'shared'
+    forcePull: true
+  
+  security:
+    enabled: true
+    username: "admin"
+    # password should be set via secrets
+  
+  encryption:
+    enabled: true
+    # key should be set via secrets
+  
+  profiles:
+    active: "kubernetes,bus"
+
+# Spring Cloud Bus configuration
+bus:
+  enabled: true
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  auth:
+    username: admin
+    existingPasswordSecret: rabbitmq-password
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /actuator/prometheus
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8888
+  initialDelaySeconds: 120
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8888
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Environment variables
+env:
+  - name: JAVA_OPTS
+    value: "-Xmx768m -Xms512m"
+  - name: SERVER_PORT
+    value: "8888"
+
+# Secrets
+secrets:
+  create: true
+  encryptionKey: ""  # Base64 encoded
+  serverPassword: ""  # Plain text, will be base64 encoded
+  gitSshKey: ""  # Base64 encoded SSH private key
+
+# ConfigMaps
+configMaps:
+  create: true

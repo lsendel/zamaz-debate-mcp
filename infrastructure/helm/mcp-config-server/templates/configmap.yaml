@@ -1,0 +1,80 @@
+{{- if .Values.configMaps.create -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mcp-config-server.fullname" . }}-config
+  labels:
+    {{- include "mcp-config-server.labels" . | nindent 4 }}
+data:
+  application.yml: |
+    server:
+      port: {{ .Values.service.port }}
+    
+    spring:
+      application:
+        name: mcp-config-server
+      cloud:
+        config:
+          server:
+            git:
+              uri: {{ .Values.config.git.uri }}
+              default-label: {{ .Values.config.git.branch }}
+              clone-on-start: {{ .Values.config.git.cloneOnStart }}
+              timeout: {{ .Values.config.git.timeout }}
+              search-paths:
+              {{- range .Values.config.git.searchPaths }}
+                - {{ . | quote }}
+              {{- end }}
+              force-pull: {{ .Values.config.git.forcePull }}
+            health:
+              repositories:
+                mcp:
+                  label: {{ .Values.config.git.branch }}
+                  profiles: default
+    {{- if .Values.config.security.enabled }}
+            security:
+              user:
+                name: {{ .Values.config.security.username }}
+                password: ${CONFIG_SERVER_PASSWORD}
+    {{- end }}
+    {{- if .Values.bus.enabled }}
+        bus:
+          enabled: true
+          refresh:
+            enabled: true
+        stream:
+          kafka:
+            binder:
+              brokers: ${KAFKA_BROKERS:localhost:9092}
+      rabbitmq:
+        host: ${RABBITMQ_HOST:localhost}
+        port: ${RABBITMQ_PORT:5672}
+        username: ${RABBITMQ_USERNAME:guest}
+        password: ${RABBITMQ_PASSWORD:guest}
+    {{- end }}
+    
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus,refresh,bus-refresh
+      endpoint:
+        health:
+          probes:
+            enabled: true
+      health:
+        readinessState:
+          enabled: true
+        livenessState:
+          enabled: true
+      metrics:
+        export:
+          prometheus:
+            enabled: {{ .Values.monitoring.enabled }}
+    
+    logging:
+      level:
+        org.springframework.cloud.config: INFO
+        org.springframework.cloud.bus: INFO
+        org.springframework.security: INFO
+{{- end }}

@@ -1,0 +1,38 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: mcp-config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: file://${user.dir}/src/test/resources/test-config-repo
+          default-label: main
+          clone-on-start: false
+  security:
+    user:
+      name: admin
+      password: admin
+  profiles:
+    active: test
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,refresh,bus-refresh
+  health:
+    readinessState:
+      enabled: true
+    livenessState:
+      enabled: true
+
+encrypt:
+  key: test-encryption-key-12345
+
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    org.springframework.security: DEBUG

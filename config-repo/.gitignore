@@ -1,0 +1,60 @@
+# Ignore sensitive and local files
+*.local
+*.secret
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+*.truststore
+
+# Ignore encrypted key files
+encryption-key*
+master-key*
+
+# Ignore environment-specific overrides that might contain secrets
+*-local.yml
+*-local.yaml
+*-secret.yml
+*-secret.yaml
+
+# Ignore backup files
+*.bak
+*.backup
+*.old
+
+# Ignore IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary files
+*.tmp
+*.temp
+~*
+
+# Ignore any files with credentials in the name
+*credentials*
+*password*
+*apikey*
+*api-key*
+*private*
+
+# Allow example files
+!*-example.yml
+!*-example.yaml
+
+# Ignore any .env files that might be placed here
+.env
+.env.*
+
+# Ignore any local override directories
+local/
+override/
+secrets/

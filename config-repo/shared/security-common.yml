@@ -1,0 +1,108 @@
+# Shared Security Configuration
+# Common security settings used across all services
+
+spring:
+  security:
+    # OAuth2 Resource Server configuration
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI}
+          jwk-set-uri: ${JWT_JWK_SET_URI:${JWT_ISSUER_URI}/protocol/openid-connect/certs}
+          audiences: ${JWT_AUDIENCES:mcp-services}
+          
+    # CORS configuration (can be overridden per service)
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+      allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+      allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+      exposed-headers: ${CORS_EXPOSED_HEADERS:X-Total-Count,X-Page-Number,X-Page-Size}
+      allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+      max-age: ${CORS_MAX_AGE:3600}
+
+# JWT Configuration
+jwt:
+  # Token signing key (should be encrypted in production)
+  secret: ${JWT_SECRET}
+  
+  # Token expiration times (in seconds)
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:1800}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:86400}
+  
+  # Token claims
+  issuer: ${JWT_ISSUER:mcp-auth-server}
+  audience: ${JWT_AUDIENCE:mcp-services}
+  
+  # Token validation
+  clock-skew-seconds: ${JWT_CLOCK_SKEW:60}
+  require-expiration: ${JWT_REQUIRE_EXPIRATION:true}
+
+# Security Headers
+security:
+  headers:
+    # Content Security Policy
+    content-security-policy: ${CSP_POLICY:default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:}
+    
+    # Frame Options
+    x-frame-options: ${X_FRAME_OPTIONS:SAMEORIGIN}
+    
+    # Content Type Options
+    x-content-type-options: ${X_CONTENT_TYPE_OPTIONS:nosniff}
+    
+    # XSS Protection
+    x-xss-protection: ${X_XSS_PROTECTION:1; mode=block}
+    
+    # HSTS
+    strict-transport-security: ${HSTS_HEADER:max-age=31536000; includeSubDomains}
+    
+    # Referrer Policy
+    referrer-policy: ${REFERRER_POLICY:strict-origin-when-cross-origin}
+    
+    # Permissions Policy
+    permissions-policy: ${PERMISSIONS_POLICY:geolocation=(), microphone=(), camera=()}
+
+# Authentication Configuration
+authentication:
+  # Session management
+  session:
+    timeout: ${SESSION_TIMEOUT:1800}
+    concurrent-sessions: ${MAX_CONCURRENT_SESSIONS:3}
+    
+  # Password policy
+  password:
+    min-length: ${PASSWORD_MIN_LENGTH:8}
+    require-uppercase: ${PASSWORD_REQUIRE_UPPERCASE:true}
+    require-lowercase: ${PASSWORD_REQUIRE_LOWERCASE:true}
+    require-digit: ${PASSWORD_REQUIRE_DIGIT:true}
+    require-special: ${PASSWORD_REQUIRE_SPECIAL:true}
+    history-count: ${PASSWORD_HISTORY_COUNT:5}
+    
+  # Account lockout
+  lockout:
+    enabled: ${LOCKOUT_ENABLED:true}
+    max-attempts: ${LOCKOUT_MAX_ATTEMPTS:5}
+    duration: ${LOCKOUT_DURATION:1800}
+    
+  # Multi-factor authentication
+  mfa:
+    enabled: ${MFA_ENABLED:false}
+    providers: ${MFA_PROVIDERS:totp,email}
+
+# API Security
+api:
+  security:
+    # API Key authentication (for service-to-service)
+    api-key:
+      enabled: ${API_KEY_ENABLED:true}
+      header-name: ${API_KEY_HEADER:X-API-Key}
+      
+    # Rate limiting
+    rate-limiting:
+      enabled: ${RATE_LIMITING_ENABLED:true}
+      default-limit: ${RATE_LIMIT_DEFAULT:100}
+      window-size: ${RATE_LIMIT_WINDOW:60}
+      
+    # IP whitelisting
+    ip-whitelist:
+      enabled: ${IP_WHITELIST_ENABLED:false}
+      allowed-ips: ${IP_WHITELIST:}
