@@ -3,28 +3,25 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-    paths:
-      - "mcp-*/src/**/*.java"
-      - "debate-ui/src/**/*.{ts,tsx,js,jsx}"
-      - "*.yml"
-      - "*.yaml"
-      - "pom.xml"
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    name: AI Code Review
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    # Skip for draft PRs and WIP
-    if: |
-      !github.event.pull_request.draft &&
-      !contains(github.event.pull_request.title, '[skip-review]') &&
-      !contains(github.event.pull_request.title, '[WIP]')
-    
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: read
       issues: read
       id-token: write
     
@@ -32,26 +29,50 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
-          
+          fetch-depth: 1
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@beta
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: "claude-3-5-sonnet-20241022"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
           
+          # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Review this pull request for the Zamaz Debate MCP Services project.
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
             
-            Focus on:
-            🔍 **Code Quality**: Best practices, maintainability, readability
-            🐛 **Bug Prevention**: Logic errors, edge cases, null checks
-            🚀 **Performance**: Efficiency, resource usage, scalability
-            🔒 **Security**: Input validation, authentication, data exposure
-            🧪 **Testing**: Coverage, test quality, missing tests
-            ☕ **Java/Spring**: Proper annotations, dependency injection, exception handling
-            ⚛️ **React/TypeScript**: Type safety, component design, hooks usage
-            
-            Be constructive and provide specific suggestions with code examples when helpful.
+            Be constructive and helpful in your feedback.
+
+          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          # use_sticky_comment: true
+          
+          # Optional: Customize review based on file types
+          # direct_prompt: |
+          #   Review this PR focusing on:
+          #   - For TypeScript files: Type safety and proper interface usage
+          #   - For API endpoints: Security, input validation, and error handling
+          #   - For React components: Performance, accessibility, and best practices
+          #   - For tests: Coverage, edge cases, and test quality
+          
+          # Optional: Different prompts for different authors
+          # direct_prompt: |
+          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' && 
+          #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
+          #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
+          
+          # Optional: Add specific tools for running tests or linting
+          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+          
+          # Optional: Skip review for certain conditions
+          # if: |
+          #   !contains(github.event.pull_request.title, '[skip-review]') &&
+          #   !contains(github.event.pull_request.title, '[WIP]')
 
