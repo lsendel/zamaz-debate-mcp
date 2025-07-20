@@ -18,6 +18,12 @@ import com.zamaz.mcp.controller.repository.ParticipantRepository;
 import com.zamaz.mcp.controller.repository.RoundRepository;
 import com.zamaz.mcp.controller.repository.ResponseRepository;
 import com.zamaz.mcp.controller.repository.specification.DebateSpecifications;
+import com.zamaz.mcp.common.application.agentic.AgenticFlowApplicationService;
+import com.zamaz.mcp.common.domain.agentic.AgenticFlow;
+import com.zamaz.mcp.common.domain.agentic.AgenticFlowConfiguration;
+import com.zamaz.mcp.common.domain.agentic.AgenticFlowResult;
+import com.zamaz.mcp.common.domain.agentic.AgenticFlowType;
+import com.zamaz.mcp.common.domain.agentic.PromptContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,7 +36,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +53,7 @@ public class DebateService {
     private final RoundRepository roundRepository;
     private final ResponseRepository responseRepository;
     private final OrchestrationService orchestrationService;
+    private final AgenticFlowApplicationService agenticFlowService;
 
     public DebateDto createDebate(DebateDto.CreateDebateRequest request) {
         log.debug("Creating new debate: {}", request.getTitle());
@@ -310,5 +320,228 @@ public class DebateService {
                 .completedAt(projection.getCompletedAt())
                 .participantCount((int) projection.getParticipantCount())
                 .build();
+    }
+    
+    // Agentic Flow Integration Methods
+    
+    /**
+     * Configures an agentic flow for a debate.
+     *
+     * @param debateId   The debate ID
+     * @param flowType   The type of agentic flow
+     * @param parameters The flow configuration parameters
+     * @return The created agentic flow
+     */
+    public AgenticFlow configureDebateAgenticFlow(UUID debateId, AgenticFlowType flowType, Map<String, Object> parameters) {
+        log.debug("Configuring agentic flow {} for debate {}", flowType, debateId);
+        
+        Debate debate = debateRepository.findById(debateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + debateId));
+        
+        String flowName = String.format("%s - %s Flow", debate.getTitle(), flowType.getDisplayName());
+        String flowDescription = String.format("Agentic flow for debate: %s", debate.getTopic());
+        AgenticFlowConfiguration configuration = new AgenticFlowConfiguration(parameters);
+        
+        AgenticFlow flow = agenticFlowService.createFlow(
+                flowType,
+                flowName,
+                flowDescription,
+                configuration,
+                debate.getOrganizationId().toString()
+        );
+        
+        // Store flow ID in debate settings
+        Map<String, Object> settings = debate.getSettings();
+        settings.put("agenticFlowId", flow.getId());
+        settings.put("agenticFlowType", flowType.name());
+        debate.setSettings(settings);
+        debateRepository.save(debate);
+        
+        log.info("Configured agentic flow {} for debate {}", flow.getId(), debateId);
+        return flow;
+    }
+    
+    /**
+     * Configures an agentic flow for a specific participant.
+     *
+     * @param participantId The participant ID
+     * @param flowType      The type of agentic flow
+     * @param parameters    The flow configuration parameters
+     * @return The created agentic flow
+     */
+    public AgenticFlow configureParticipantAgenticFlow(UUID participantId, AgenticFlowType flowType, 
+                                                       Map<String, Object> parameters) {
+        log.debug("Configuring agentic flow {} for participant {}", flowType, participantId);
+        
+        Participant participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Participant not found with ID: " + participantId));
+        
+        if (!"ai".equals(participant.getType())) {
+            throw new IllegalArgumentException("Agentic flows can only be configured for AI participants");
+        }
+        
+        String flowName = String.format("%s - %s Flow", participant.getName(), flowType.getDisplayName());
+        String flowDescription = String.format("Agentic flow for participant: %s", participant.getName());
+        AgenticFlowConfiguration configuration = new AgenticFlowConfiguration(parameters);
+        
+        AgenticFlow flow = agenticFlowService.createFlow(
+                flowType,
+                flowName,
+                flowDescription,
+                configuration,
+                participant.getDebate().getOrganizationId().toString()
+        );
+        
+        // Store flow ID in participant settings
+        Map<String, Object> settings = participant.getSettings();
+        settings.put("agenticFlowId", flow.getId());
+        settings.put("agenticFlowType", flowType.name());
+        participant.setSettings(settings);
+        participantRepository.save(participant);
+        
+        log.info("Configured agentic flow {} for participant {}", flow.getId(), participantId);
+        return flow;
+    }
+    
+    /**
+     * Processes a response using the configured agentic flow.
+     *
+     * @param participantId The participant ID
+     * @param prompt        The prompt to process
+     * @param roundContext  Additional context for the round
+     * @return The processed response
+     */
+    public CompletableFuture<ResponseDto> processResponseWithAgenticFlow(UUID participantId, String prompt, 
+                                                                        Map<String, Object> roundContext) {
+        log.debug("Processing response with agentic flow for participant {}", participantId);
+        
+        Participant participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Participant not found with ID: " + participantId));
+        
+        // Check if participant has configured agentic flow
+        String flowId = (String) participant.getSettings().get("agenticFlowId");
+        if (flowId == null) {
+            // Fallback to debate-level flow
+            Debate debate = participant.getDebate();
+            flowId = (String) debate.getSettings().get("agenticFlowId");
+        }
+        
+        if (flowId == null) {
+            log.warn("No agentic flow configured for participant {} or debate {}", 
+                    participantId, participant.getDebate().getId());
+            throw new IllegalStateException("No agentic flow configured for this participant or debate");
+        }
+        
+        // Create prompt context
+        PromptContext context = new PromptContext(
+                participant.getDebate().getId().toString(),
+                participantId.toString()
+        );
+        
+        // Add round context to prompt context
+        context.addContext("debateTitle", participant.getDebate().getTitle());
+        context.addContext("debateTopic", participant.getDebate().getTopic());
+        context.addContext("participantName", participant.getName());
+        context.addContext("participantPosition", participant.getPosition());
+        roundContext.forEach(context::addContext);
+        
+        // Execute flow asynchronously
+        return agenticFlowService.executeFlowAsync(flowId, prompt, context)
+                .thenApply(result -> {
+                    log.info("Agentic flow processing completed for participant {}", participantId);
+                    return createResponseFromFlowResult(participant, result, roundContext);
+                });
+    }
+    
+    /**
+     * Gets the agentic flow configuration for a debate.
+     *
+     * @param debateId The debate ID
+     * @return The agentic flow if configured
+     */
+    public Optional<AgenticFlow> getDebateAgenticFlow(UUID debateId) {
+        Debate debate = debateRepository.findById(debateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + debateId));
+        
+        String flowId = (String) debate.getSettings().get("agenticFlowId");
+        if (flowId == null) {
+            return Optional.empty();
+        }
+        
+        return agenticFlowService.getFlow(flowId);
+    }
+    
+    /**
+     * Gets the agentic flow configuration for a participant.
+     *
+     * @param participantId The participant ID
+     * @return The agentic flow if configured
+     */
+    public Optional<AgenticFlow> getParticipantAgenticFlow(UUID participantId) {
+        Participant participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Participant not found with ID: " + participantId));
+        
+        String flowId = (String) participant.getSettings().get("agenticFlowId");
+        if (flowId == null) {
+            return Optional.empty();
+        }
+        
+        return agenticFlowService.getFlow(flowId);
+    }
+    
+    /**
+     * Recommends an agentic flow type for a debate based on its characteristics.
+     *
+     * @param debateId The debate ID
+     * @return The recommended flow type
+     */
+    public AgenticFlowType recommendAgenticFlow(UUID debateId) {
+        Debate debate = debateRepository.findById(debateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Debate not found with ID: " + debateId));
+        
+        return agenticFlowService.recommendFlowType(
+                debate.getTopic(),
+                debate.getFormat(),
+                "participant" // Default role
+        );
+    }
+    
+    /**
+     * Creates a response DTO from an agentic flow result.
+     */
+    private ResponseDto createResponseFromFlowResult(Participant participant, AgenticFlowResult result,
+                                                    Map<String, Object> roundContext) {
+        // Extract round ID from context
+        UUID roundId = (UUID) roundContext.get("roundId");
+        if (roundId == null) {
+            throw new IllegalArgumentException("Round ID not found in context");
+        }
+        
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new ResourceNotFoundException("Round not found with ID: " + roundId));
+        
+        // Create response entity
+        Response response = Response.builder()
+                .round(round)
+                .participant(participant)
+                .content(result.getFinalResponse())
+                .tokenCount(result.getFinalResponse().split("\\s+").length)
+                .build();
+        
+        // Store agentic flow metadata
+        Map<String, Object> metadata = response.getMetadata();
+        if (metadata == null) {
+            metadata = new java.util.HashMap<>();
+        }
+        metadata.put("agenticFlowType", result.getMetrics().get("flowType"));
+        metadata.put("processingTime", result.getProcessingTime().toMillis());
+        metadata.put("responseChanged", result.isResponseChanged());
+        metadata.put("processingSteps", result.getProcessingSteps().size());
+        response.setMetadata(metadata);
+        
+        response = responseRepository.save(response);
+        log.info("Created response {} from agentic flow result", response.getId());
+        
+        return toResponseDto(response);
     }
 }

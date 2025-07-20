@@ -5,6 +5,7 @@ import com.zamaz.mcp.controller.integration.LlmServiceClient;
 import com.zamaz.mcp.controller.repository.*;
 import com.zamaz.mcp.controller.statemachine.DebateEvents;
 import com.zamaz.mcp.controller.statemachine.DebateStates;
+import com.zamaz.mcp.controller.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -150,54 +152,58 @@ public class OrchestrationService {
         log.debug("Generating AI response for participant {} in round {}", participant.getName(), round.getRoundNumber());
         
         try {
-            // Build context from previous responses
-            String context = buildContext(debate, participant, previousResponses);
+            // Check if participant or debate has agentic flow configured
+            boolean hasAgenticFlow = participant.getSettings().containsKey("agenticFlowId") || 
+                                   debate.getSettings().containsKey("agenticFlowId");
             
-            // Prepare messages for LLM
-            List<Map<String, String>> messages = new ArrayList<>();
+            if (hasAgenticFlow) {
+                // Use agentic flow for response generation
+                generateAiResponseWithAgenticFlow(debate, round, participant, previousResponses);
+            } else {
+                // Use standard LLM approach
+                generateStandardAiResponse(debate, round, participant, previousResponses);
+            }
             
-            // System message
-            Map<String, String> systemMessage = new HashMap<>();
-            systemMessage.put("role", "system");
-            systemMessage.put("content", String.format(
-                "You are %s, participating in a debate about: %s. Your position is: %s. " +
-                "Respond with a clear, concise argument supporting your position. " +
-                "Keep your response under 300 words.",
-                participant.getName(), debate.getTopic(), participant.getPosition()
-            ));
-            messages.add(systemMessage);
+        } catch (Exception e) {
+            log.error("Error generating AI response for participant {}", participant.getName(), e);
+        }
+    }
+    
+    private void generateAiResponseWithAgenticFlow(Debate debate, Round round, Participant participant, 
+                                                  List<Response> previousResponses) {
+        log.info("Using agentic flow for participant {} in round {}", participant.getName(), round.getRoundNumber());
+        
+        // Build context from previous responses
+        String context = buildContext(debate, participant, previousResponses);
+        
+        // Build prompt for agentic flow
+        String prompt = String.format(
+            "As %s, participating in a debate about: %s\n" +
+            "Your position is: %s\n\n" +
+            "%s\n\n" +
+            "Provide a clear, concise argument supporting your position (under 300 words).",
+            participant.getName(), debate.getTopic(), participant.getPosition(), context
+        );
+        
+        // Prepare round context
+        Map<String, Object> roundContext = new HashMap<>();
+        roundContext.put("roundId", round.getId());
+        roundContext.put("roundNumber", round.getRoundNumber());
+        roundContext.put("previousResponseCount", previousResponses.size());
+        
+        // Process with agentic flow
+        CompletableFuture<ResponseDto> futureResponse = debateService.processResponseWithAgenticFlow(
+            participant.getId(), prompt, roundContext
+        );
+        
+        // Handle the async response
+        futureResponse.thenAccept(responseDto -> {
+            log.info("Agentic flow response generated for participant {} in round {}", 
+                    participant.getName(), round.getRoundNumber());
             
-            // Add context as user message
-            Map<String, String> userMessage = new HashMap<>();
-            userMessage.put("role", "user");
-            userMessage.put("content", context);
-            messages.add(userMessage);
-            
-            // Call LLM service
-            Map<String, Object> completionRequest = new HashMap<>();
-            completionRequest.put("provider", participant.getProvider());
-            completionRequest.put("model", participant.getModel());
-            completionRequest.put("messages", messages);
-            completionRequest.put("maxTokens", 500);
-            completionRequest.put("temperature", 0.7);
-            
-            Map<String, Object> llmResponse = llmServiceClient.generateCompletion(completionRequest);
-            
-            // Extract response content
-            List<Map<String, Object>> choices = (List<Map<String, Object>>) llmResponse.get("choices");
-            Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-            String content = (String) message.get("content");
-            
-            // Save response
-            Response response = Response.builder()
-                    .round(round)
-                    .participant(participant)
-                    .content(content)
-                    .tokenCount(content.split("\\s+").length)
-                    .build();
-            
-            response = responseRepository.save(response);
-            log.info("Generated AI response for participant {} in round {}", participant.getName(), round.getRoundNumber());
+            // Response is already saved by processResponseWithAgenticFlow
+            // Get the saved response for publishing events
+            Response response = responseRepository.findById(responseDto.getId()).orElseThrow();
             
             // Publish real-time event
             publishNewResponseEvent(debate, response, participant, round);
@@ -213,9 +219,81 @@ public class OrchestrationService {
             // Check if round is complete
             checkRoundCompletion(debate.getId(), round.getId());
             
-        } catch (Exception e) {
-            log.error("Error generating AI response for participant {}", participant.getName(), e);
-        }
+        }).exceptionally(ex -> {
+            log.error("Error in agentic flow processing for participant {}", participant.getName(), ex);
+            // Fall back to standard generation
+            generateStandardAiResponse(debate, round, participant, previousResponses);
+            return null;
+        });
+    }
+    
+    private void generateStandardAiResponse(Debate debate, Round round, Participant participant, 
+                                          List<Response> previousResponses) {
+        log.debug("Using standard LLM for participant {} in round {}", participant.getName(), round.getRoundNumber());
+        
+        // Build context from previous responses
+        String context = buildContext(debate, participant, previousResponses);
+        
+        // Prepare messages for LLM
+        List<Map<String, String>> messages = new ArrayList<>();
+        
+        // System message
+        Map<String, String> systemMessage = new HashMap<>();
+        systemMessage.put("role", "system");
+        systemMessage.put("content", String.format(
+            "You are %s, participating in a debate about: %s. Your position is: %s. " +
+            "Respond with a clear, concise argument supporting your position. " +
+            "Keep your response under 300 words.",
+            participant.getName(), debate.getTopic(), participant.getPosition()
+        ));
+        messages.add(systemMessage);
+        
+        // Add context as user message
+        Map<String, String> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", context);
+        messages.add(userMessage);
+        
+        // Call LLM service
+        Map<String, Object> completionRequest = new HashMap<>();
+        completionRequest.put("provider", participant.getProvider());
+        completionRequest.put("model", participant.getModel());
+        completionRequest.put("messages", messages);
+        completionRequest.put("maxTokens", 500);
+        completionRequest.put("temperature", 0.7);
+        
+        Map<String, Object> llmResponse = llmServiceClient.generateCompletion(completionRequest);
+        
+        // Extract response content
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) llmResponse.get("choices");
+        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        String content = (String) message.get("content");
+        
+        // Save response
+        Response response = Response.builder()
+                .round(round)
+                .participant(participant)
+                .content(content)
+                .tokenCount(content.split("\\s+").length)
+                .build();
+        
+        response = responseRepository.save(response);
+        log.info("Generated standard AI response for participant {} in round {}", 
+                participant.getName(), round.getRoundNumber());
+        
+        // Publish real-time event
+        publishNewResponseEvent(debate, response, participant, round);
+        
+        // Send push notification
+        pushNotificationService.sendNewResponseNotification(
+            debate.getId().toString(),
+            debate.getOrganizationId(),
+            participant.getName(),
+            participant.getPosition()
+        );
+        
+        // Check if round is complete
+        checkRoundCompletion(debate.getId(), round.getId());
     }
     
     private String buildContext(Debate debate, Participant participant, List<Response> previousResponses) {

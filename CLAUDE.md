@@ -35,6 +35,7 @@
 - Use automated tools (like Puppeteer) to verify screens and flows before asking user to check
 - Test all UI components, not just login
 - Ensure comprehensive testing coverage
+- When referencing a URL, validate it works by using Puppet to ensure the screen is not blank
 
 ### Development Preferences
 - User prefers real functionality over mocks
