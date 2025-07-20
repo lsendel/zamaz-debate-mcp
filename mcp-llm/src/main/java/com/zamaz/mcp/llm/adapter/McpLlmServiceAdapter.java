@@ -222,7 +222,53 @@ public class McpLlmServiceAdapter implements LlmServicePort {
         @Override
         public LlmResponse generateWithToolCalling(String prompt, Map<String, Object> parameters,
                         List<ToolDefinition> tools) {
-                // Implementation for tool calling would go here
-                throw new UnsupportedOperationException("Tool calling not implemented yet");
+                Instant startTime = Instant.now();
+
+                // Add tool calling specific parameters
+                Map<String, Object> enhancedParams = new HashMap<>(parameters);
+                enhancedParams.put("temperature", parameters.getOrDefault("temperature", 0.7));
+                enhancedParams.put("response_format", "tool_calls");
+                enhancedParams.put("tools", tools);
+
+                // Check if we should use the native LLM tool calling capability
+                boolean useNativeToolCalling = Boolean.TRUE
+                                .equals(parameters.getOrDefault("use_native_tool_calling", false));
+
+                if (useNativeToolCalling) {
+                        // Use the LLM's native tool calling capability if available
+                        LlmRequest request = LlmRequest.builder()
+                                        .prompt(prompt)
+                                        .parameters(enhancedParams)
+                                        .responseFormat(ResponseFormat.TOOL_CALLS)
+                                        .build();
+
+                        LlmResponseDto responseDto = llmClient.generate(request);
+
+                        Duration processingTime = Duration.between(startTime, Instant.now());
+
+                        return LlmResponse.builder()
+                                        .text(responseDto.getText())
+                                        .processingTime(processingTime)
+                                        .addMetadata("model", responseDto.getModel())
+                                        .addMetadata("tokens", responseDto.getTokens())
+                                        .addMetadata("tool_definitions", tools)
+                                        .addMetadata("tool_calling_mode", "native")
+                                        .build();
+                } else {
+                        // Fallback to standard generation when native tool calling is not available
+                        // The ToolCallingVerificationFlowService will handle tool call extraction
+                        LlmResponse response = generate(prompt, parameters);
+
+                        Duration totalProcessingTime = Duration.between(startTime, Instant.now());
+
+                        return LlmResponse.builder()
+                                        .text(response.getText())
+                                        .processingTime(totalProcessingTime)
+                                        .addMetadata("model", response.getMetadata().getOrDefault("model", "unknown"))
+                                        .addMetadata("tokens", response.getMetadata().getOrDefault("tokens", 0))
+                                        .addMetadata("tool_definitions", tools)
+                                        .addMetadata("tool_calling_mode", "manual")
+                                        .build();
+                }
         }
 }

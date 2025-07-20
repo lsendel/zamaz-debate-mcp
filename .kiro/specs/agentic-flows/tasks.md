@@ -7,7 +7,7 @@
   - Create domain events for agentic flow execution
   - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1_
 
-- [ ] 2. Implement core agentic flow processors
+- [x] 2. Implement core agentic flow processors
 - [x] 2.1 Create Internal Monologue flow processor
   - Implement InternalMonologueFlowService with chain-of-thought prompting
   - Create prompt enhancement logic with configurable prefixes
@@ -29,7 +29,7 @@
   - Add visualization support for multi-perspective display
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [-] 2.4 Implement Tool-Calling Verification flow processor
+- [x] 2.4 Implement Tool-Calling Verification flow processor
   - Create ToolCallingVerificationFlowService with external tool integration
   - Implement tool call extraction and structured command parsing
   - Create tool execution framework with pluggable tool adapters
@@ -37,7 +37,7 @@
   - Implement tool usage logging and visualization
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8_
 
-- [ ] 2.5 Implement RAG with Re-ranking flow processor
+- [x] 2.5 Implement RAG with Re-ranking flow processor
   - Create RagWithRerankingFlowService with three-step process
   - Implement initial document retrieval with configurable count
   - Create LLM-based document re-ranking logic
@@ -45,8 +45,8 @@
   - Add document selection visualization and citation tracking
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8_
 
-- [ ] 3. Implement additional agentic flow processors
-- [ ] 3.1 Create Confidence Scoring flow processor
+- [-] 3. Implement additional agentic flow processors
+- [-] 3.1 Create Confidence Scoring flow processor
   - Implement ConfidenceScoringFlowService with confidence threshold logic
   - Create confidence score extraction and threshold checking
   - Implement conditional improvement loop triggering
@@ -103,14 +103,14 @@
   - Create data migration scripts for schema updates
   - _Requirements: 15.1, 15.2_
 
-- [ ] 4.4 Implement external tool adapters
-  - Create WebSearchToolAdapter for fact verification
-  - Implement CalculatorToolAdapter for mathematical operations
+- [x] 4.4 Implement external tool adapters
+  - Create WebSearchToolPort for fact verification
+  - Implement CalculatorToolPort for mathematical operations
   - Add pluggable tool registry for extensibility
   - Create tool execution logging and error handling
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-- [ ] 4.5 Integrate with existing mcp-llm service
+- [x] 4.5 Integrate with existing mcp-llm service
   - Create McpLlmServiceAdapter implementing LlmServicePort
   - Implement specialized LLM request methods for different flow types
   - Add performance optimization with connection pooling
