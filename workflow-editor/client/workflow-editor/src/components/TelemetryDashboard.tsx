@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useMemo, useCallback } from 'react';
 import TelemetryChart, { TelemetryDataPoint } from './TelemetryChart';
 import { motion } from 'framer-motion';
 import { useWorkflowStore } from '../store/workflowStore';
@@ -108,7 +108,8 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
     return () => clearInterval(interval);
   }, [isSimulating, metrics, refreshInterval, addTelemetryData]);
 
-  const getTimeRangeMs = () => {
+  // Memoize time range calculation
+  const timeRangeMs = useMemo(() => {
     const ranges = {
       '1m': 60 * 1000,
       '5m': 5 * 60 * 1000,
@@ -117,13 +118,17 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
       '1h': 60 * 60 * 1000
     };
     return ranges[timeRange];
-  };
+  }, [timeRange]);
 
-  const filterDataByTimeRange = (data: TelemetryDataPoint[]) => {
+  const filterDataByTimeRange = useCallback((data: TelemetryDataPoint[]) => {
     const now = Date.now();
-    const rangeMs = getTimeRangeMs();
-    return data.filter(point => now - point.timestamp <= rangeMs);
-  };
+    return data.filter(point => now - point.timestamp <= timeRangeMs);
+  }, [timeRangeMs]);
+
+  // Memoize filtered metrics
+  const filteredMetrics = useMemo(() => {
+    return metrics.filter(metric => selectedMetrics.includes(metric.id));
+  }, [metrics, selectedMetrics]);
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
@@ -175,9 +180,7 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
       </div>
 
       <div className={`grid gap-5 ${layout === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-        {metrics
-          .filter(metric => selectedMetrics.includes(metric.id))
-          .map((metric, index) => (
+        {filteredMetrics.map((metric, index) => (
             <motion.div
               key={metric.id}
               initial={{ opacity: 0, y: 20 }}
@@ -210,4 +213,4 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
   );
 };
 
-export default TelemetryDashboard;
+export default memo(TelemetryDashboard);

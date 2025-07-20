@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [-] 1. Set up core domain entities and interfaces for agentic flows
+- [x] 1. Set up core domain entities and interfaces for agentic flows
   - Create AgenticFlow, AgenticFlowType, AgenticFlowConfiguration domain entities
   - Implement AgenticFlowResult and related value objects
   - Define AgenticFlowDomainService interface and repository ports
@@ -8,28 +8,28 @@
   - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1_
 
 - [ ] 2. Implement core agentic flow processors
-- [ ] 2.1 Create Internal Monologue flow processor
+- [x] 2.1 Create Internal Monologue flow processor
   - Implement InternalMonologueFlowService with chain-of-thought prompting
   - Create prompt enhancement logic with configurable prefixes
   - Implement reasoning extraction and final answer separation
   - Add visualization metadata for UI rendering
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 2.2 Implement Self-Critique Loop flow processor
+- [x] 2.2 Implement Self-Critique Loop flow processor
   - Create SelfCritiqueLoopFlowService with Generate-Critique-Revise pattern
   - Implement configurable iteration count (1-3)
   - Create critique generation and response revision logic
   - Add tracking for changes between iterations
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-- [ ] 2.3 Implement Multi-Agent Red-Team flow processor
+- [x] 2.3 Implement Multi-Agent Red-Team flow processor
   - Create MultiAgentRedTeamFlowService with persona-based debate simulation
   - Implement Architect, Skeptic, and Judge personas with configurable prompts
   - Create sequential processing of perspectives and final judgment
   - Add visualization support for multi-perspective display
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [ ] 2.4 Implement Tool-Calling Verification flow processor
+- [-] 2.4 Implement Tool-Calling Verification flow processor
   - Create ToolCallingVerificationFlowService with external tool integration
   - Implement tool call extraction and structured command parsing
   - Create tool execution framework with pluggable tool adapters

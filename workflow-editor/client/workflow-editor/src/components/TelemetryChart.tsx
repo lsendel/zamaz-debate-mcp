@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import {
   LineChart,
   Line,
@@ -65,29 +65,33 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
   const [isLive, setIsLive] = useState(realtime);
   const chartRef = useRef<any>(null);
 
-  useEffect(() => {
-    // Format data for display
-    const formattedData = data
+  // Memoize formatted data to avoid unnecessary recalculations
+  const formattedData = useMemo(() => {
+    return data
       .slice(-maxDataPoints)
       .map(point => ({
         ...point,
         time: new Date(point.timestamp).toLocaleTimeString(),
         displayValue: point.value.toFixed(2)
       }));
-    
-    setDisplayData(formattedData);
   }, [data, maxDataPoints]);
 
-  const renderChart = () => {
-    const commonProps = {
-      data: displayData,
-      margin: { top: 5, right: 30, left: 20, bottom: 5 }
-    };
+  useEffect(() => {
+    setDisplayData(formattedData);
+  }, [formattedData]);
 
-    const commonAxisProps = {
-      stroke: '#6b7280',
-      style: { fontSize: 12 }
-    };
+  // Memoize chart props to prevent unnecessary re-renders
+  const commonProps = useMemo(() => ({
+    data: displayData,
+    margin: { top: 5, right: 30, left: 20, bottom: 5 }
+  }), [displayData]);
+
+  const commonAxisProps = useMemo(() => ({
+    stroke: '#6b7280',
+    style: { fontSize: 12 }
+  }), []);
+
+  const renderChart = useCallback(() => {
 
     const renderContent = () => {
       switch (chartType) {
@@ -195,7 +199,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
         {renderContent()}
       </ResponsiveContainer>
     );
-  };
+  }, [chartType, commonProps, commonAxisProps, threshold, color, metric, showBrush, layout, height]);
 
   return (
     <motion.div
@@ -260,4 +264,4 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label, unit }) => {
   return null;
 };
 
-export default TelemetryChart;
+export default memo(TelemetryChart);

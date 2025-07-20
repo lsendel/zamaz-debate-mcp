@@ -1,0 +1,63 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - heading "🔄 Kiro Workflow Editor" [level=1]
+  - paragraph: Complete workflow automation with real-time telemetry and spatial visualization
+- navigation:
+  - button "🔀 Workflow Editor"
+  - button "📊 Telemetry Dashboard"
+  - button "🗺️ Telemetry Map"
+  - button "🔍 Spatial Query"
+  - button "🏢 Stamford Sample"
+  - button "💬 Debate Tree"
+  - button "🌳 Decision Tree"
+  - button "📄 AI Document Analysis"
+- main:
+  - heading "Spatial Telemetry Visualization" [level=3]
+  - button "⏹ Stop"
+  - checkbox "Clustering" [checked] [disabled]
+  - text: Clustering
+  - checkbox "Heatmap" [disabled]
+  - text: Heatmap
+  - checkbox "Alerts" [checked]
+  - text: Alerts 20 Total Devices 19 Active 0 Alerts 1 Inactive
+  - region "Map"
+  - text: 🌡️ 🎯 💧 🌡️ 🎯 💧 🌡️ 🎯 ⚠️ 🌡️ 🎯 ⚠️ 🌡️ 🎯 💧 🌡️ 🎯 💧 🌡️ 🎯
+  - button "Zoom in"
+  - button "Zoom out"
+  - button "Reset bearing to north"
+  - text: 2 km
+  - group:
+    - text: ©
+    - link "OpenStreetMap":
+      - /url: https://www.openstreetmap.org/copyright
+    - text: contributors ©
+    - link "CARTO":
+      - /url: https://carto.com/attributions
+  - button "🗺️ Map Style"
+  - heading "Select Map Style" [level=4]
+  - button "🌅 Professional Light"
+  - button "🌃 Professional Dark"
+  - button "📐 Technical/Blueprint"
+  - button "🎨 Watercolor"
+  - heading "Premium Styles (API Key Required)" [level=5]
+  - paragraph: "For even more professional styles:"
+  - list:
+    - listitem:
+      - text: 🗺️
+      - strong: Mapbox
+      - text: ": Streets, Satellite, Blueprint"
+    - listitem:
+      - text: 🌍
+      - strong: MapTiler
+      - text: ": Positron, Dark Matter, Topo"
+    - listitem:
+      - text: 📍
+      - strong: Stadia
+      - text: ": Alidade Smooth, Outdoors"
+  - text: Add API keys to your .env file to enable
+- contentinfo:
+  - paragraph: Built with React, TypeScript, React-Flow, MapLibre GL JS, Spring Boot, GraphQL, Neo4j, InfluxDB, PostGIS, and Kubernetes
+  - text: "🏗️ Architecture: Hexagonal 📡 Telemetry: 10Hz Real-time 🗺️ Maps: OpenStreetMap 🤖 AI: Integrated"
+```

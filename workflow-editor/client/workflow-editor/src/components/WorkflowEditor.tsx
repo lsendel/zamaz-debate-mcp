@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, memo } from 'react';
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -209,12 +209,14 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId, onSave }) =
   );
 };
 
-const WorkflowEditorWrapper: React.FC<WorkflowEditorProps> = (props) => {
+const WorkflowEditorWrapper: React.FC<WorkflowEditorProps> = memo((props) => {
   return (
     <ReactFlowProvider>
       <WorkflowEditor {...props} />
     </ReactFlowProvider>
   );
-};
+});
+
+WorkflowEditorWrapper.displayName = 'WorkflowEditorWrapper';
 
 export default WorkflowEditorWrapper;
