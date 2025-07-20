@@ -26,12 +26,22 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
+import org.springframework.graphql.execution.ErrorType;
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
+
 /**
  * GraphQL controller for agentic flow operations.
  */
 @Controller
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class AgenticFlowGraphQLController {
 
     private final AgenticFlowApplicationService agenticFlowService;
@@ -42,10 +52,8 @@ public class AgenticFlowGraphQLController {
     @QueryMapping
     public Mono<AgenticFlow> agenticFlow(@Argument String id) {
         log.debug("Getting agentic flow with ID: {}", id);
-        return Mono.fromCallable(() -> 
-            agenticFlowService.getFlow(id)
-                .orElseThrow(() -> new RuntimeException("Agentic flow not found: " + id))
-        );
+        return Mono.fromCallable(() -> agenticFlowService.getFlow(id)
+                .orElseThrow(() -> new RuntimeException("Agentic flow not found: " + id)));
     }
 
     @QueryMapping
@@ -55,8 +63,8 @@ public class AgenticFlowGraphQLController {
     }
 
     @QueryMapping
-    public List<AgenticFlow> agenticFlowsByType(@Argument String organizationId, 
-                                               @Argument AgenticFlowType flowType) {
+    public List<AgenticFlow> agenticFlowsByType(@Argument String organizationId,
+            @Argument AgenticFlowType flowType) {
         log.debug("Getting agentic flows for organization {} and type {}", organizationId, flowType);
         return agenticFlowService.getFlowsByTypeAndOrganization(organizationId, flowType);
     }
@@ -74,15 +82,18 @@ public class AgenticFlowGraphQLController {
     }
 
     @QueryMapping
-    public Map<String, AgenticFlowApplicationService.AgenticFlowTemplate> availableFlowTemplates() {
+    public List<AgenticFlowTemplate> availableFlowTemplates() {
         log.debug("Getting available flow templates");
-        return agenticFlowService.getAvailableTemplates();
+        return agenticFlowService.getAvailableTemplates().values()
+                .stream()
+                .map(this::toTemplateDto)
+                .toList();
     }
 
     @QueryMapping
-    public AgenticFlowType recommendFlowType(@Argument String prompt, 
-                                            @Argument String debateType,
-                                            @Argument String participantRole) {
+    public AgenticFlowType recommendFlowType(@Argument String prompt,
+            @Argument String debateType,
+            @Argument String participantRole) {
         log.debug("Getting flow recommendation for debate type {} and role {}", debateType, participantRole);
         return agenticFlowService.recommendFlowType(prompt, debateType, participantRole);
     }
@@ -90,32 +101,32 @@ public class AgenticFlowGraphQLController {
     // Mutation Mappings
 
     @MutationMapping
-    public AgenticFlow createAgenticFlow(@Argument AgenticFlowType flowType,
-                                       @Argument String name,
-                                       @Argument String description,
-                                       @Argument Map<String, Object> parameters,
-                                       @Argument String organizationId) {
+    public AgenticFlow createAgenticFlow(@Argument @NotNull AgenticFlowType flowType,
+            @Argument @NotBlank String name,
+            @Argument String description,
+            @Argument @NotNull Map<String, Object> parameters,
+            @Argument @NotBlank String organizationId) {
         log.info("Creating agentic flow {} of type {}", name, flowType);
-        
+
         AgenticFlowConfiguration configuration = new AgenticFlowConfiguration(parameters);
         return agenticFlowService.createFlow(flowType, name, description, configuration, organizationId);
     }
 
     @MutationMapping
     public AgenticFlow createAgenticFlowFromTemplate(@Argument String templateName,
-                                                   @Argument String name,
-                                                   @Argument String organizationId,
-                                                   @Argument Map<String, Object> parameters) {
+            @Argument String name,
+            @Argument String organizationId,
+            @Argument Map<String, Object> parameters) {
         log.info("Creating agentic flow {} from template {}", name, templateName);
-        
+
         return agenticFlowService.createFlowFromTemplate(templateName, name, organizationId, parameters);
     }
 
     @MutationMapping
     public AgenticFlow updateAgenticFlow(@Argument String flowId,
-                                       @Argument Map<String, Object> parameters) {
+            @Argument Map<String, Object> parameters) {
         log.info("Updating agentic flow: {}", flowId);
-        
+
         AgenticFlowConfiguration configuration = new AgenticFlowConfiguration(parameters);
         return agenticFlowService.updateFlow(flowId, configuration);
     }
@@ -123,59 +134,54 @@ public class AgenticFlowGraphQLController {
     @MutationMapping
     public Boolean deleteAgenticFlow(@Argument String flowId) {
         log.info("Deleting agentic flow: {}", flowId);
-        
+
         agenticFlowService.deleteFlow(flowId);
         return true;
     }
 
     @MutationMapping
-    public Mono<AgenticFlowResult> executeAgenticFlow(@Argument String flowId,
-                                                     @Argument String prompt,
-                                                     @Argument String debateId,
-                                                     @Argument String participantId) {
+    public Mono<AgenticFlowResult> executeAgenticFlow(@Argument @NotBlank String flowId,
+            @Argument @NotBlank String prompt,
+            @Argument @NotBlank String debateId,
+            @Argument @NotBlank String participantId) {
         log.info("Executing agentic flow {} for debate {} participant {}", flowId, debateId, participantId);
-        
+
         PromptContext context = new PromptContext(debateId, participantId);
-        
-        return Mono.fromFuture(() -> 
-            CompletableFuture.supplyAsync(() -> 
-                agenticFlowService.executeFlow(flowId, prompt, context)
-            )
-        );
+
+        return Mono.fromFuture(
+                () -> CompletableFuture.supplyAsync(() -> agenticFlowService.executeFlow(flowId, prompt, context)));
     }
 
     @MutationMapping
     public Mono<AgenticFlowResult> executeAgenticFlowByType(@Argument AgenticFlowType flowType,
-                                                           @Argument String prompt,
-                                                           @Argument Map<String, Object> parameters,
-                                                           @Argument String debateId,
-                                                           @Argument String participantId) {
-        log.info("Executing agentic flow by type {} for debate {} participant {}", 
+            @Argument String prompt,
+            @Argument Map<String, Object> parameters,
+            @Argument String debateId,
+            @Argument String participantId) {
+        log.info("Executing agentic flow by type {} for debate {} participant {}",
                 flowType, debateId, participantId);
-        
+
         AgenticFlowConfiguration configuration = new AgenticFlowConfiguration(parameters);
         PromptContext context = new PromptContext(debateId, participantId);
-        
-        return Mono.fromCallable(() -> 
-            agenticFlowService.executeFlowByType(flowType, prompt, configuration, context)
-        );
+
+        return Mono.fromCallable(() -> agenticFlowService.executeFlowByType(flowType, prompt, configuration, context));
     }
 
     @MutationMapping
     public AgenticFlow configureDebateAgenticFlow(@Argument String debateId,
-                                                @Argument AgenticFlowType flowType,
-                                                @Argument Map<String, Object> parameters) {
+            @Argument AgenticFlowType flowType,
+            @Argument Map<String, Object> parameters) {
         log.info("Configuring agentic flow {} for debate {}", flowType, debateId);
-        
+
         return debateService.configureDebateAgenticFlow(UUID.fromString(debateId), flowType, parameters);
     }
 
     @MutationMapping
     public AgenticFlow configureParticipantAgenticFlow(@Argument String participantId,
-                                                     @Argument AgenticFlowType flowType,
-                                                     @Argument Map<String, Object> parameters) {
+            @Argument AgenticFlowType flowType,
+            @Argument Map<String, Object> parameters) {
         log.info("Configuring agentic flow {} for participant {}", flowType, participantId);
-        
+
         return debateService.configureParticipantAgenticFlow(UUID.fromString(participantId), flowType, parameters);
     }
 
@@ -184,42 +190,65 @@ public class AgenticFlowGraphQLController {
     @SubscriptionMapping
     public Flux<AgenticFlowExecutionEvent> agenticFlowExecutions(@Argument String organizationId) {
         log.info("Subscribing to agentic flow executions for organization: {}", organizationId);
-        
-        // TODO: Implement real-time flow execution events using reactive streams
+
+        // For now, return an empty flux - this would be implemented with a proper event
+        // stream
         return Flux.empty();
     }
 
     // Schema Mappings for nested resolvers
 
     @SchemaMapping(typeName = "AgenticFlow", field = "executionHistory")
-    public List<AgenticFlowExecution> getExecutionHistory(AgenticFlow flow, 
-                                                         @Argument Integer limit) {
+    public List<AgenticFlowExecution> getExecutionHistory(AgenticFlow flow,
+            @Argument Integer limit) {
         log.debug("Getting execution history for flow: {}", flow.getId());
-        
-        // TODO: Implement execution history retrieval
+
+        // For now, return empty list - this would be implemented with proper analytics
+        // service
         return List.of();
     }
 
     @SchemaMapping(typeName = "AgenticFlow", field = "statistics")
     public AgenticFlowStatistics getStatistics(AgenticFlow flow) {
         log.debug("Getting statistics for flow: {}", flow.getId());
-        
-        // TODO: Implement statistics calculation
-        return new AgenticFlowStatistics();
+
+        // For now, return default statistics - this would be implemented with proper
+        // analytics service
+        return AgenticFlowStatistics.builder()
+                .executionCount(0L)
+                .averageProcessingTime(0.0)
+                .responseChangeRate(0.0)
+                .errorCount(0L)
+                .lastExecutionTime(null)
+                .build();
+    }
+
+    // Helper methods for DTO conversion
+
+    private AgenticFlowTemplate toTemplateDto(AgenticFlowApplicationService.AgenticFlowTemplate template) {
+        return AgenticFlowTemplate.builder()
+                .name(template.getName())
+                .displayName(template.getDisplayName())
+                .description(template.getDescription())
+                .flowType(template.getFlowType())
+                .defaultParameters(template.getDefaultParameters())
+                .build();
     }
 
     // Helper classes for GraphQL types
 
+    @lombok.Data
+    @lombok.Builder
     public static class AgenticFlowExecutionEvent {
         private String flowId;
         private String flowType;
         private String prompt;
         private AgenticFlowResult result;
         private String timestamp;
-
-        // Getters and setters
     }
 
+    @lombok.Data
+    @lombok.Builder
     public static class AgenticFlowExecution {
         private String id;
         private String flowId;
@@ -230,17 +259,25 @@ public class AgenticFlowGraphQLController {
         private Long processingTimeMs;
         private Boolean responseChanged;
         private String createdAt;
-
-        // Getters and setters
     }
 
+    @lombok.Data
+    @lombok.Builder
     public static class AgenticFlowStatistics {
         private Long executionCount;
         private Double averageProcessingTime;
         private Double responseChangeRate;
         private Long errorCount;
         private String lastExecutionTime;
+    }
 
-        // Getters and setters
+    @lombok.Data
+    @lombok.Builder
+    public static class AgenticFlowTemplate {
+        private String name;
+        private String displayName;
+        private String description;
+        private AgenticFlowType flowType;
+        private Map<String, Object> defaultParameters;
     }
 }

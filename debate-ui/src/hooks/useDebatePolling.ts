@@ -19,6 +19,12 @@ export const useDebatePolling = ({
   const dispatch = useAppDispatch();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isPollingRef = useRef(false);
+  const onUpdateRef = useRef(onUpdate);
+  
+  // Update the ref when onUpdate changes
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     if (!enabled || !debateId) {
@@ -40,8 +46,8 @@ export const useDebatePolling = ({
           const debate = action.payload;
           
           // Call onUpdate callback if provided
-          if (onUpdate) {
-            onUpdate(debate);
+          if (onUpdateRef.current) {
+            onUpdateRef.current(debate);
           }
           
           // Stop polling if debate is completed or cancelled
@@ -71,7 +77,7 @@ export const useDebatePolling = ({
         isPollingRef.current = false;
       }
     };
-  }, [debateId, enabled, interval, dispatch, onUpdate]);
+  }, [debateId, enabled, interval, dispatch]);
 
   return {
     isPolling: isPollingRef.current

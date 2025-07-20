@@ -6,6 +6,7 @@ import com.zamaz.mcp.common.domain.agentic.AgenticFlowId;
 import com.zamaz.mcp.common.domain.agentic.AgenticFlowType;
 import com.zamaz.mcp.common.domain.organization.OrganizationId;
 import com.zamaz.mcp.controller.adapter.persistence.entity.AgenticFlowExecutionEntity;
+import com.zamaz.mcp.controller.adapter.persistence.mapper.AgenticFlowMapper;
 import com.zamaz.mcp.controller.adapter.persistence.repository.SpringDataAgenticFlowExecutionRepository;
 import com.zamaz.mcp.controller.adapter.persistence.repository.SpringDataAgenticFlowRepository;
 
@@ -36,16 +37,22 @@ public class PostgresAgenticFlowAnalyticsRepository implements AgenticFlowAnalyt
 
     private final SpringDataAgenticFlowExecutionRepository executionRepository;
     private final SpringDataAgenticFlowRepository flowRepository;
+    private final AgenticFlowMapper mapper;
 
     @Override
     public AgenticFlowExecution save(AgenticFlowExecution execution) {
         log.debug("Saving agentic flow execution: {}", execution.getId());
 
-        AgenticFlowExecutionEntity entity = toEntity(execution);
+        // Find the flow entity
+        UUID flowUuid = UUID.fromString(execution.getFlowId().getValue());
+        var flowEntity = flowRepository.findById(flowUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Flow not found: " + execution.getFlowId()));
+
+        AgenticFlowExecutionEntity entity = mapper.toExecutionEntity(execution, flowEntity);
         AgenticFlowExecutionEntity savedEntity = executionRepository.save(entity);
 
         log.info("Saved agentic flow execution with ID: {}", execution.getId());
-        return toDomain(savedEntity);
+        return mapper.toExecutionDomain(savedEntity);
     }
 
     @Override
@@ -53,7 +60,7 @@ public class PostgresAgenticFlowAnalyticsRepository implements AgenticFlowAnalyt
         log.debug("Finding agentic flow execution by ID: {}", id);
 
         return executionRepository.findById(id)
-                .map(this::toDomain);
+                .map(mapper::toExecutionDomain);
     }
 
     @Override

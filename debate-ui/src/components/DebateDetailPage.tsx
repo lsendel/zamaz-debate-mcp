@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Button,
@@ -27,6 +27,7 @@ import {
   cancelDebate,
   connectToDebate,
   disconnectFromDebate,
+  clearError,
 } from "../store/slices/debateSlice";
 import { addNotification } from "../store/slices/uiSlice";
 import debateClient from "../api/debateClient";
@@ -37,11 +38,11 @@ const DebateDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { currentDebate, loading, isConnected } = useAppSelector(
+  const { currentDebate, loading, isConnected, error, actionLoading } = useAppSelector(
     (state) => state.debate,
   );
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
-  const [lastRoundCount, setLastRoundCount] = useState(0);
+  const lastRoundCountRef = useRef(0);
 
   useEffect(() => {
     if (id) {
@@ -56,27 +57,71 @@ const DebateDetailPage: React.FC = () => {
     };
   }, [id, dispatch]);
 
-  // Use polling for active debates
+  // Use polling for active debates (only IN_PROGRESS, not CREATED)
   const { isPolling } = useDebatePolling({
     debateId: id || '',
     enabled: !!id && !!currentDebate && 
-             (currentDebate.status === 'IN_PROGRESS' || currentDebate.status === 'CREATED'),
+             (currentDebate.status === 'IN_PROGRESS'),
     interval: 2000,
-    onUpdate: (debate) => {
+    onUpdate: React.useCallback((debate) => {
       // Show notification when new rounds are added
       const newRoundCount = debate.rounds?.length || 0;
-      if (newRoundCount > lastRoundCount) {
+      if (newRoundCount > lastRoundCountRef.current) {
         setShowUpdateNotification(true);
-        setLastRoundCount(newRoundCount);
+        lastRoundCountRef.current = newRoundCount;
       }
-    }
+    }, [])
   });
 
   useEffect(() => {
     if (currentDebate) {
-      setLastRoundCount(currentDebate.rounds?.length || 0);
+      lastRoundCountRef.current = currentDebate.rounds?.length || 0;
     }
   }, [currentDebate]);
+
+  const handleStartDebate = async () => {
+    if (!currentDebate) return;
+    
+    const result = await dispatch(startDebate(currentDebate.id));
+    if (startDebate.rejected.match(result)) {
+      notification.error({
+        message: 'Failed to start debate',
+        description: result.error?.message || 'The debate service is not available. Please ensure all backend services are running.',
+        duration: 5,
+      });
+    } else if (startDebate.fulfilled.match(result)) {
+      notification.success({
+        message: 'Debate started successfully',
+        duration: 3,
+      });
+    }
+  };
+
+  const handlePauseDebate = async () => {
+    if (!currentDebate) return;
+    
+    const result = await dispatch(pauseDebate(currentDebate.id));
+    if (pauseDebate.rejected.match(result)) {
+      notification.error({
+        message: 'Failed to pause debate',
+        description: result.error?.message || 'Unable to pause the debate. Please try again.',
+        duration: 5,
+      });
+    }
+  };
+
+  const handleCancelDebate = async () => {
+    if (!currentDebate) return;
+    
+    const result = await dispatch(cancelDebate(currentDebate.id));
+    if (cancelDebate.rejected.match(result)) {
+      notification.error({
+        message: 'Failed to cancel debate',
+        description: result.error?.message || 'Unable to cancel the debate. Please try again.',
+        duration: 5,
+      });
+    }
+  };
 
   const handleExport = async (format: "json" | "pdf" | "markdown") => {
     if (!currentDebate) return;
@@ -128,14 +173,6 @@ const DebateDetailPage: React.FC = () => {
     return colors[index % colors.length];
   };
 
-  if (loading || !currentDebate) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ width: '32px', height: '32px', border: '3px solid #f3f3f3', borderTop: '3px solid #1677ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-      </div>
-    );
-  }
-
   React.useEffect(() => {
     if (showUpdateNotification) {
       notification.info({
@@ -146,8 +183,46 @@ const DebateDetailPage: React.FC = () => {
     }
   }, [showUpdateNotification]);
 
+  if (loading || !currentDebate) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div style={{ width: '32px', height: '32px', border: '3px solid #f3f3f3', borderTop: '3px solid #1677ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Show error alerts for various error types */}
+      {error && (
+        <Alert
+          message={error.includes('Failed to fetch') || error.includes('Network') || error.includes('ERR_NETWORK') 
+            ? "Service Connection Error" 
+            : "Error"}
+          description={
+            error.includes('Failed to fetch') || error.includes('Network') || error.includes('ERR_NETWORK')
+              ? "The debate service is not available. Please ensure all backend services are running."
+              : error
+          }
+          type="error"
+          closable
+          onClose={() => dispatch(clearError())}
+          style={{ marginBottom: '16px' }}
+          action={
+            (error.includes('Failed to fetch') || error.includes('Network') || error.includes('ERR_NETWORK')) && (
+              <Button size="small" danger onClick={() => dispatch(fetchDebate(id!))}>
+                Retry
+              </Button>
+            )
+          }
+        />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
         <Button
           type="text"
@@ -189,7 +264,8 @@ const DebateDetailPage: React.FC = () => {
                   <Button
                     type="primary"
                     size="small"
-                    onClick={() => dispatch(startDebate(currentDebate.id))}
+                    onClick={handleStartDebate}
+                    loading={actionLoading.start}
                     icon={<PlayCircleOutlined />}
                   >
                     Start
@@ -199,7 +275,8 @@ const DebateDetailPage: React.FC = () => {
                   <Button
                     type="default"
                     size="small"
-                    onClick={() => dispatch(pauseDebate(currentDebate.id))}
+                    onClick={handlePauseDebate}
+                    loading={actionLoading.pause}
                     icon={<PauseCircleOutlined />}
                   >
                     Pause
@@ -210,7 +287,8 @@ const DebateDetailPage: React.FC = () => {
                   <Button
                     danger
                     size="small"
-                    onClick={() => dispatch(cancelDebate(currentDebate.id))}
+                    onClick={handleCancelDebate}
+                    loading={actionLoading.cancel}
                     icon={<StopOutlined />}
                   >
                     Cancel
@@ -236,13 +314,26 @@ const DebateDetailPage: React.FC = () => {
                           Round {round.roundNumber}
                         </h3>
                     {round.responses.map((response) => {
-                          const participant = currentDebate.participants.find(
-                            (p) => p.id === response.participantId,
-                          );
-                          const participantIndex =
-                            currentDebate.participants.findIndex(
+                          // Handle both string and object participants
+                          let participant;
+                          let participantIndex = -1;
+                          let participantName = 'Unknown';
+                          
+                          if (typeof currentDebate.participants[0] === 'string') {
+                            // Participants are strings - use response index or participantId
+                            participantIndex = parseInt(response.participantId?.split('-').pop() || '0') || 0;
+                            participantName = currentDebate.participants[participantIndex] || `Participant ${participantIndex + 1}`;
+                          } else {
+                            // Participants are objects with id property
+                            participant = currentDebate.participants.find(
                               (p) => p.id === response.participantId,
                             );
+                            participantIndex = currentDebate.participants.findIndex(
+                              (p) => p.id === response.participantId,
+                            );
+                            participantName = participant?.name || 'Unknown';
+                          }
+                          
                           return (
                             <Card key={response.id} style={{ marginBottom: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
@@ -253,11 +344,11 @@ const DebateDetailPage: React.FC = () => {
                                     marginRight: '8px'
                                   }}
                                 >
-                                  {participant?.name.charAt(0)}
+                                  {participantName.charAt(0)}
                                 </Avatar>
                                 <div style={{ flex: 1 }}>
                                   <p style={{ fontWeight: '500', margin: 0 }}>
-                                    {participant?.name}
+                                    {participantName}
                                   </p>
                                 </div>
                                 <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>

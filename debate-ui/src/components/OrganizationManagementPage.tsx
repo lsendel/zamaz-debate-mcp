@@ -220,7 +220,8 @@ const OrganizationManagementPage: React.FC = () => {
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px', marginTop: '16px' }}>
             {organizations.map((org) => (
-              <Card key={org.id}>
+              <Card 
+                key={org.id}
                 title={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                     <div>

@@ -117,15 +117,15 @@
   - Create fallback mechanisms for service unavailability
   - _Requirements: 15.3, 15.4_
 
-- [ ] 5. Develop API layer for agentic flows
-- [ ] 5.1 Create GraphQL API for agentic flows
+- [-] 5. Develop API layer for agentic flows
+- [x] 5.1 Create GraphQL API for agentic flows
   - Implement AgenticFlowGraphQLController with queries and mutations
   - Create GraphQL schema definitions for agentic flow types
   - Add subscriptions for real-time flow execution updates
   - Implement proper error handling and validation
   - _Requirements: 12.1, 12.2, 12.3, 12.4_
 
-- [ ] 5.2 Implement REST API for agentic flows
+- [x] 5.2 Implement REST API for agentic flows
   - Create AgenticFlowRestController with CRUD operations
   - Implement DebateAgenticFlowRestController for debate integration
   - Add OpenAPI documentation for all endpoints
@@ -140,7 +140,7 @@
   - _Requirements: 12.6, 15.5_
 
 - [ ] 6. Develop UI components for agentic flows
-- [ ] 6.1 Create agentic flow configuration UI
+- [-] 6.1 Create agentic flow configuration UI
   - Implement AgenticFlowConfig React component
   - Create flow type selection and configuration forms
   - Add debate-level and participant-level configuration options
@@ -213,7 +213,7 @@
   - Create domain event tests
   - _Requirements: 15.1_
 
-- [ ] 9.2 Develop application layer tests
+- [-] 9.2 Develop application layer tests
   - Implement application service integration tests
   - Create mock-based tests for external dependencies
   - Add end-to-end flow execution tests

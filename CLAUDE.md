@@ -1,5 +1,86 @@
 # CLAUDE.md - Important Instructions and Context
 
+## UI Development Best Practices and Learnings
+
+### Critical UI Migration Learnings (From @zamaz/ui to Ant Design)
+
+#### Root Cause Analysis
+- **Problem**: ReactCurrentDispatcher error - "Cannot read properties of undefined"
+- **Cause**: Multiple React instances due to @zamaz/ui bundling its own React
+- **Solution**: Replace problematic UI library with well-maintained alternative (Ant Design)
+
+#### Key Lessons for Future UI Development
+
+1. **NEVER Mock UI Components**
+   - Always use real components from established libraries
+   - User explicitly stated: "memorize never use mock in the ui"
+   - If components are missing, fix by installing proper libraries, not mocking
+
+2. **Check for React Version Conflicts**
+   - Verify UI libraries use React as peerDependency, not dependency
+   - Check package.json of UI libraries before using
+   - Use `npm ls react` to detect multiple React versions
+
+3. **Systematic Component Migration Pattern**
+   ```typescript
+   // BAD - Custom/problematic UI library
+   import { Button, Card, Dialog } from '@custom/ui';
+   
+   // GOOD - Established UI library
+   import { Button, Card, Modal } from 'antd';
+   ```
+
+4. **Icon Migration Pattern**
+   ```typescript
+   // BAD - Mixed icon libraries
+   import { User, Settings } from 'lucide-react';
+   
+   // GOOD - Consistent with UI library
+   import { UserOutlined, SettingOutlined } from '@ant-design/icons';
+   ```
+
+5. **Style Migration Pattern**
+   ```typescript
+   // BAD - Tailwind classes (when not using Tailwind)
+   <div className="flex items-center gap-4">
+   
+   // GOOD - Inline styles or UI library styling
+   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+   ```
+
+#### UI Validation Checklist
+When creating or updating UI:
+- [ ] All imports from single, consistent UI library
+- [ ] No className with Tailwind unless Tailwind is configured
+- [ ] Icons from UI library's icon package
+- [ ] Form components use library's Form system
+- [ ] Modals/Dialogs use library's Modal component
+- [ ] Notifications use library's notification API
+- [ ] Tables use library's Table component
+- [ ] No hardcoded ports - use environment variables
+
+#### Component Conversion Reference
+| Old Component (@zamaz/ui) | New Component (Ant Design) |
+|--------------------------|---------------------------|
+| Dialog | Modal |
+| DialogContent | Modal content prop |
+| Card/CardContent | Card with children |
+| Toast | notification API |
+| Select/SelectTrigger | Select |
+| FormField | Form.Item |
+| Badge variant="success" | Badge status="success" |
+| Button variant="primary" | Button type="primary" |
+| CircularProgress | Spin |
+| Progress | Progress |
+| DataTable | Table |
+
+#### Testing Strategy
+1. Use Puppeteer for automated UI validation
+2. Check for console errors
+3. Verify component rendering
+4. Screenshot each major section
+5. Validate no remaining old imports
+
 ## Recent Implementation Learnings
 
 ### Hexagonal Architecture Refactoring (mcp-rag service)

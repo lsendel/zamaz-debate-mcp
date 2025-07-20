@@ -67,9 +67,9 @@ const LoginPage: React.FC = () => {
                   message="Development Mode"
                   description={
                     <>
-                      Username: <code className="bg-gray-100 px-1 rounded">demo</code>
+                      Username: <code style={{ backgroundColor: '#f0f0f0', padding: '2px 4px', borderRadius: '2px' }}>demo</code>
                       <br />
-                      Password: <code className="bg-gray-100 px-1 rounded">demo123</code>
+                      Password: <code style={{ backgroundColor: '#f0f0f0', padding: '2px 4px', borderRadius: '2px' }}>demo123</code>
                     </>
                   }
                   type="info"

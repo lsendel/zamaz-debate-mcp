@@ -79,7 +79,8 @@ class DebateClient extends BaseApiClient {
     new Map();
 
   constructor() {
-    super("/api/v1");
+    const baseURL = import.meta.env.VITE_DEBATE_API_URL || "http://localhost:5013";
+    super(`${baseURL}/api/v1`);
   }
 
   // Debate management

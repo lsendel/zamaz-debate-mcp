@@ -11,6 +11,11 @@ interface DebateState {
   loading: boolean;
   error: string | null;
   isConnected: boolean;
+  actionLoading: {
+    start: boolean;
+    pause: boolean;
+    cancel: boolean;
+  };
 }
 
 const initialState: DebateState = {
@@ -19,6 +24,11 @@ const initialState: DebateState = {
   loading: false,
   error: null,
   isConnected: false,
+  actionLoading: {
+    start: false,
+    pause: false,
+    cancel: false,
+  },
 };
 
 export const fetchDebates = createAsyncThunk(
@@ -179,13 +189,61 @@ const debateSlice = createSlice({
     });
 
     // Start debate
-    builder.addCase(startDebate.fulfilled, (state, action) => {
-      state.currentDebate = action.payload;
-      const index = state.debates.findIndex((d) => d.id === action.payload.id);
-      if (index !== -1) {
-        state.debates[index] = action.payload;
-      }
-    });
+    builder
+      .addCase(startDebate.pending, (state) => {
+        state.actionLoading.start = true;
+        state.error = null;
+      })
+      .addCase(startDebate.fulfilled, (state, action) => {
+        state.actionLoading.start = false;
+        state.currentDebate = action.payload;
+        const index = state.debates.findIndex((d) => d.id === action.payload.id);
+        if (index !== -1) {
+          state.debates[index] = action.payload;
+        }
+      })
+      .addCase(startDebate.rejected, (state, action) => {
+        state.actionLoading.start = false;
+        state.error = action.error.message || "Failed to start debate";
+      });
+
+    // Pause debate
+    builder
+      .addCase(pauseDebate.pending, (state) => {
+        state.actionLoading.pause = true;
+        state.error = null;
+      })
+      .addCase(pauseDebate.fulfilled, (state, action) => {
+        state.actionLoading.pause = false;
+        state.currentDebate = action.payload;
+        const index = state.debates.findIndex((d) => d.id === action.payload.id);
+        if (index !== -1) {
+          state.debates[index] = action.payload;
+        }
+      })
+      .addCase(pauseDebate.rejected, (state, action) => {
+        state.actionLoading.pause = false;
+        state.error = action.error.message || "Failed to pause debate";
+      });
+
+    // Cancel debate
+    builder
+      .addCase(cancelDebate.pending, (state) => {
+        state.actionLoading.cancel = true;
+        state.error = null;
+      })
+      .addCase(cancelDebate.fulfilled, (state, action) => {
+        state.actionLoading.cancel = false;
+        state.currentDebate = action.payload;
+        const index = state.debates.findIndex((d) => d.id === action.payload.id);
+        if (index !== -1) {
+          state.debates[index] = action.payload;
+        }
+      })
+      .addCase(cancelDebate.rejected, (state, action) => {
+        state.actionLoading.cancel = false;
+        state.error = action.error.message || "Failed to cancel debate";
+      });
 
     // WebSocket connection
     builder

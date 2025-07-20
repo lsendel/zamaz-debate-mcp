@@ -67,14 +67,21 @@ class BaseApiClient {
 
         // In development, check if this is a connection error to backend
         if (
-          process.env.NODE_ENV === "development" &&
-          (error.message.includes("ECONNREFUSED") ||
-            error.code === "ERR_NETWORK" ||
-            error.message.includes("Network Error"))
+          error.message.includes("ECONNREFUSED") ||
+          error.code === "ERR_NETWORK" ||
+          error.message.includes("Network Error")
         ) {
           console.log(
-            "🔧 Backend service not available, using development mode",
+            "🔧 Backend service not available",
           );
+          return Promise.reject({
+            message: "Backend service is not available. Please ensure all services are running.",
+            error_type: "ServiceUnavailable",
+            details: {
+              originalError: error.message,
+              serviceUrl: error.config?.baseURL,
+            }
+          } as ApiError);
         }
 
         return Promise.reject({
