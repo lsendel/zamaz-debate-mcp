@@ -1,0 +1,316 @@
+{
+  "components": {
+    "Input": {
+      "description": "Text input field for user data entry",
+      "variants": {
+        "text": "Standard text input",
+        "email": "Email address input with validation",
+        "password": "Password input with masked characters",
+        "number": "Numeric input with increment/decrement",
+        "search": "Search input with clear button",
+        "tel": "Telephone number input",
+        "url": "URL input with validation"
+      },
+      "states": {
+        "default": {
+          "border": "1px solid #dee2e6",
+          "background": "#ffffff",
+          "color": "#212529"
+        },
+        "hover": {
+          "borderColor": "#ced4da"
+        },
+        "focus": {
+          "borderColor": "#0066ff",
+          "boxShadow": "0 0 0 3px rgba(0, 102, 255, 0.1)",
+          "outline": "none"
+        },
+        "error": {
+          "borderColor": "#ef4444",
+          "focusBoxShadow": "0 0 0 3px rgba(239, 68, 68, 0.1)"
+        },
+        "disabled": {
+          "background": "#f8f9fa",
+          "opacity": 0.6,
+          "cursor": "not-allowed"
+        }
+      },
+      "sizes": {
+        "small": {
+          "padding": "8px 12px",
+          "fontSize": "12.8px",
+          "minHeight": "36px"
+        },
+        "medium": {
+          "padding": "12px 16px",
+          "fontSize": "16px",
+          "minHeight": "44px"
+        },
+        "large": {
+          "padding": "16px 20px",
+          "fontSize": "20px",
+          "minHeight": "52px"
+        }
+      },
+      "props": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Field label for accessibility"
+        },
+        "placeholder": {
+          "type": "string",
+          "required": false,
+          "description": "Placeholder text"
+        },
+        "helperText": {
+          "type": "string",
+          "required": false,
+          "description": "Additional help text below input"
+        },
+        "error": {
+          "type": "string",
+          "required": false,
+          "description": "Error message to display"
+        },
+        "required": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "disabled": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        }
+      }
+    },
+    "Select": {
+      "description": "Dropdown selection component",
+      "appearance": {
+        "trigger": {
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": "12px 16px",
+          "border": "1px solid #dee2e6",
+          "borderRadius": "6px",
+          "background": "#ffffff",
+          "minHeight": "44px"
+        },
+        "icon": {
+          "size": "20px",
+          "color": "#6c757d",
+          "transition": "transform 150ms"
+        },
+        "dropdown": {
+          "position": "absolute",
+          "background": "#ffffff",
+          "border": "1px solid #dee2e6",
+          "borderRadius": "8px",
+          "boxShadow": "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+          "maxHeight": "320px",
+          "overflow": "auto"
+        }
+      },
+      "item": {
+        "padding": "10px 16px",
+        "cursor": "pointer",
+        "transition": "background 150ms",
+        "hover": {
+          "background": "#f8f9fa"
+        },
+        "selected": {
+          "background": "#e6f0ff",
+          "color": "#0066ff",
+          "fontWeight": 500
+        }
+      }
+    },
+    "Checkbox": {
+      "description": "Binary selection component",
+      "appearance": {
+        "size": "20px",
+        "borderRadius": "4px",
+        "border": "2px solid #dee2e6",
+        "background": "#ffffff",
+        "transition": "all 150ms"
+      },
+      "states": {
+        "checked": {
+          "background": "#0066ff",
+          "borderColor": "#0066ff"
+        },
+        "indeterminate": {
+          "background": "#0066ff",
+          "borderColor": "#0066ff"
+        },
+        "hover": {
+          "borderColor": "#adb5bd"
+        },
+        "focus": {
+          "boxShadow": "0 0 0 3px rgba(0, 102, 255, 0.2)"
+        },
+        "disabled": {
+          "opacity": 0.5,
+          "cursor": "not-allowed"
+        }
+      }
+    },
+    "Radio": {
+      "description": "Single selection from multiple options",
+      "appearance": {
+        "size": "20px",
+        "borderRadius": "50%",
+        "border": "2px solid #dee2e6",
+        "background": "#ffffff"
+      },
+      "states": {
+        "selected": {
+          "borderColor": "#0066ff",
+          "inner": {
+            "size": "8px",
+            "background": "#0066ff",
+            "borderRadius": "50%"
+          }
+        }
+      }
+    },
+    "Switch": {
+      "description": "Toggle between two states",
+      "appearance": {
+        "width": "44px",
+        "height": "24px",
+        "borderRadius": "12px",
+        "background": "#dee2e6",
+        "padding": "2px",
+        "transition": "background 200ms"
+      },
+      "thumb": {
+        "size": "20px",
+        "borderRadius": "50%",
+        "background": "#ffffff",
+        "boxShadow": "0 2px 4px rgba(0, 0, 0, 0.2)",
+        "transition": "transform 200ms"
+      },
+      "states": {
+        "checked": {
+          "background": "#0066ff",
+          "thumbTransform": "translateX(20px)"
+        }
+      }
+    },
+    "Textarea": {
+      "description": "Multi-line text input",
+      "appearance": {
+        "minHeight": "120px",
+        "resize": "vertical",
+        "padding": "12px 16px",
+        "fontFamily": "inherit",
+        "fontSize": "16px",
+        "lineHeight": 1.5
+      }
+    }
+  },
+  "formLayout": {
+    "vertical": {
+      "description": "Labels above inputs",
+      "labelMargin": "0 0 8px 0",
+      "fieldMargin": "0 0 24px 0"
+    },
+    "horizontal": {
+      "description": "Labels beside inputs",
+      "labelWidth": "33.333%",
+      "inputWidth": "66.667%",
+      "gap": "16px"
+    },
+    "inline": {
+      "description": "Compact inline form",
+      "gap": "16px",
+      "alignment": "center"
+    }
+  },
+  "validation": {
+    "errorDisplay": {
+      "color": "#ef4444",
+      "fontSize": "12.8px",
+      "marginTop": "4px"
+    },
+    "successDisplay": {
+      "color": "#10b981",
+      "fontSize": "12.8px",
+      "marginTop": "4px"
+    },
+    "requiredIndicator": {
+      "content": "*",
+      "color": "#ef4444",
+      "marginLeft": "4px"
+    }
+  },
+  "examples": {
+    "react": {
+      "basicInput": "<Input label=\"Email Address\" type=\"email\" placeholder=\"user@example.com\" required />",
+      "withError": "<Input label=\"Password\" type=\"password\" error=\"Password must be at least 8 characters\" />",
+      "select": "<Select label=\"Country\" placeholder=\"Select a country\" options={countries} />",
+      "checkbox": "<Checkbox label=\"I agree to the terms and conditions\" />",
+      "radioGroup": "<RadioGroup label=\"Subscription Plan\" options={plans} value={selected} onChange={setSelected} />"
+    },
+    "formExample": {
+      "structure": [
+        {
+          "type": "input",
+          "name": "email",
+          "label": "Email Address",
+          "inputType": "email",
+          "required": true,
+          "validation": "email"
+        },
+        {
+          "type": "input",
+          "name": "password",
+          "label": "Password",
+          "inputType": "password",
+          "required": true,
+          "validation": "minLength:8"
+        },
+        {
+          "type": "select",
+          "name": "role",
+          "label": "User Role",
+          "options": ["Admin", "User", "Guest"],
+          "required": true
+        },
+        {
+          "type": "checkbox",
+          "name": "newsletter",
+          "label": "Subscribe to newsletter"
+        }
+      ]
+    }
+  },
+  "accessibility": {
+    "requirements": [
+      "All inputs must have associated labels",
+      "Use aria-describedby for helper and error text",
+      "Ensure proper tab order",
+      "Provide clear focus indicators",
+      "Support keyboard navigation",
+      "Announce errors to screen readers"
+    ],
+    "ariaAttributes": {
+      "required": "aria-required=\"true\"",
+      "invalid": "aria-invalid=\"true\"",
+      "describedby": "aria-describedby=\"field-error field-help\""
+    }
+  },
+  "bestPractices": [
+    "Group related fields together",
+    "Use clear, descriptive labels",
+    "Provide helpful placeholder text",
+    "Show validation errors inline",
+    "Save form state to prevent data loss",
+    "Use progressive disclosure for complex forms",
+    "Implement real-time validation where appropriate",
+    "Ensure mobile-friendly touch targets (44x44px minimum)"
+  ]
+}

@@ -1,0 +1,272 @@
+{
+  "component": "Card",
+  "description": "Container component for grouping related content",
+  "variants": {
+    "default": {
+      "description": "Standard card with subtle shadow",
+      "usage": "General content containers, list items",
+      "styles": {
+        "background": "#ffffff",
+        "border": "1px solid #e9ecef",
+        "borderRadius": "12px",
+        "boxShadow": "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
+        "padding": "24px"
+      }
+    },
+    "elevated": {
+      "description": "Card with prominent shadow",
+      "usage": "Featured content, important information",
+      "styles": {
+        "background": "#ffffff",
+        "border": "none",
+        "borderRadius": "12px",
+        "boxShadow": "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+        "padding": "24px"
+      }
+    },
+    "outlined": {
+      "description": "Card with border only",
+      "usage": "Subtle separation, nested cards",
+      "styles": {
+        "background": "#ffffff",
+        "border": "1px solid #dee2e6",
+        "borderRadius": "12px",
+        "boxShadow": "none",
+        "padding": "24px"
+      }
+    },
+    "interactive": {
+      "description": "Clickable card with hover effects",
+      "usage": "Navigation cards, selectable items",
+      "styles": {
+        "background": "#ffffff",
+        "border": "1px solid #e9ecef",
+        "borderRadius": "12px",
+        "boxShadow": "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
+        "padding": "24px",
+        "cursor": "pointer",
+        "transition": "all 200ms ease",
+        "hover": {
+          "boxShadow": "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+          "transform": "translateY(-2px)"
+        }
+      }
+    }
+  },
+  "sections": {
+    "header": {
+      "padding": "24px",
+      "borderBottom": "1px solid #e9ecef",
+      "elements": {
+        "title": {
+          "fontSize": "20px",
+          "fontWeight": 600,
+          "color": "#212529",
+          "marginBottom": "4px"
+        },
+        "subtitle": {
+          "fontSize": "14px",
+          "color": "#6c757d"
+        },
+        "actions": {
+          "position": "absolute",
+          "top": "16px",
+          "right": "16px"
+        }
+      }
+    },
+    "body": {
+      "padding": "24px",
+      "elements": {
+        "text": {
+          "fontSize": "16px",
+          "lineHeight": 1.5,
+          "color": "#495057"
+        }
+      }
+    },
+    "footer": {
+      "padding": "24px",
+      "borderTop": "1px solid #e9ecef",
+      "background": "#f8f9fa",
+      "borderRadius": "0 0 12px 12px"
+    }
+  },
+  "layouts": {
+    "basic": {
+      "structure": ["body"]
+    },
+    "withHeader": {
+      "structure": ["header", "body"]
+    },
+    "withFooter": {
+      "structure": ["body", "footer"]
+    },
+    "full": {
+      "structure": ["header", "body", "footer"]
+    },
+    "media": {
+      "structure": ["media", "body"],
+      "mediaPosition": ["top", "left", "right"]
+    }
+  },
+  "specialTypes": {
+    "statCard": {
+      "description": "Card for displaying metrics",
+      "elements": {
+        "icon": {
+          "size": "48px",
+          "color": "#0066ff",
+          "marginBottom": "16px"
+        },
+        "value": {
+          "fontSize": "32px",
+          "fontWeight": 700,
+          "color": "#212529",
+          "marginBottom": "4px"
+        },
+        "label": {
+          "fontSize": "14px",
+          "color": "#6c757d",
+          "textTransform": "uppercase",
+          "letterSpacing": "0.5px"
+        },
+        "change": {
+          "fontSize": "12px",
+          "fontWeight": 500,
+          "positive": {
+            "color": "#10b981"
+          },
+          "negative": {
+            "color": "#ef4444"
+          }
+        }
+      }
+    },
+    "profileCard": {
+      "description": "User profile display card",
+      "elements": {
+        "avatar": {
+          "size": "80px",
+          "borderRadius": "50%",
+          "marginBottom": "16px"
+        },
+        "name": {
+          "fontSize": "20px",
+          "fontWeight": 600,
+          "color": "#212529",
+          "marginBottom": "4px"
+        },
+        "role": {
+          "fontSize": "14px",
+          "color": "#6c757d",
+          "marginBottom": "16px"
+        },
+        "stats": {
+          "display": "flex",
+          "gap": "24px",
+          "borderTop": "1px solid #e9ecef",
+          "paddingTop": "16px"
+        }
+      }
+    },
+    "actionCard": {
+      "description": "Card with prominent call-to-action",
+      "elements": {
+        "icon": {
+          "size": "64px",
+          "color": "#0066ff",
+          "marginBottom": "20px"
+        },
+        "title": {
+          "fontSize": "24px",
+          "fontWeight": 600,
+          "marginBottom": "12px"
+        },
+        "description": {
+          "fontSize": "16px",
+          "color": "#6c757d",
+          "marginBottom": "24px"
+        },
+        "button": {
+          "width": "100%"
+        }
+      }
+    }
+  },
+  "props": {
+    "variant": {
+      "type": "string",
+      "default": "default",
+      "options": ["default", "elevated", "outlined", "interactive"]
+    },
+    "padding": {
+      "type": "string | number",
+      "default": "24px"
+    },
+    "onClick": {
+      "type": "function",
+      "required": false,
+      "description": "Click handler for interactive cards"
+    }
+  },
+  "examples": {
+    "react": {
+      "basic": "<Card>\n  <p>Card content goes here</p>\n</Card>",
+      "withHeader": "<Card>\n  <CardHeader>\n    <CardTitle>Card Title</CardTitle>\n    <CardSubtitle>Supporting text</CardSubtitle>\n  </CardHeader>\n  <CardBody>\n    <p>Main content</p>\n  </CardBody>\n</Card>",
+      "interactive": "<Card variant=\"interactive\" onClick={handleClick}>\n  <CardBody>\n    <h3>Click me</h3>\n    <p>Interactive card content</p>\n  </CardBody>\n</Card>",
+      "statCard": "<Card>\n  <CardBody>\n    <Icon name=\"users\" size={48} />\n    <div className=\"text-3xl font-bold\">1,234</div>\n    <div className=\"text-sm text-gray-600\">Total Users</div>\n    <div className=\"text-xs text-green-600\">+12.5%</div>\n  </CardBody>\n</Card>"
+    },
+    "html": {
+      "basic": "<div class=\"card\">\n  <div class=\"card-body\">\n    <p>Card content goes here</p>\n  </div>\n</div>",
+      "withHeader": "<div class=\"card\">\n  <div class=\"card-header\">\n    <h3 class=\"card-title\">Card Title</h3>\n    <p class=\"card-subtitle\">Supporting text</p>\n  </div>\n  <div class=\"card-body\">\n    <p>Main content</p>\n  </div>\n</div>"
+    }
+  },
+  "grid": {
+    "responsive": {
+      "mobile": "1 column",
+      "tablet": "2 columns",
+      "desktop": "3-4 columns"
+    },
+    "gap": {
+      "default": "24px",
+      "compact": "16px",
+      "spacious": "32px"
+    },
+    "example": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+  },
+  "accessibility": {
+    "interactive": {
+      "role": "button",
+      "tabindex": "0",
+      "keyboardSupport": ["Enter", "Space"]
+    },
+    "semantics": {
+      "useArticle": "For blog posts or news items",
+      "useSection": "For grouped content",
+      "headingHierarchy": "Maintain proper h1-h6 order"
+    }
+  },
+  "animations": {
+    "hover": {
+      "duration": "200ms",
+      "easing": "cubic-bezier(0, 0, 0.2, 1)",
+      "properties": ["box-shadow", "transform"]
+    },
+    "loading": {
+      "skeleton": {
+        "background": "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+        "animation": "shimmer 2s infinite"
+      }
+    }
+  },
+  "bestPractices": [
+    "Use consistent padding across cards in the same context",
+    "Limit content to maintain scannability",
+    "Group related actions in the card footer",
+    "Use elevation to establish visual hierarchy",
+    "Ensure sufficient contrast between card and background",
+    "Consider mobile touch targets for interactive cards",
+    "Use loading skeletons for async content"
+  ]
+}

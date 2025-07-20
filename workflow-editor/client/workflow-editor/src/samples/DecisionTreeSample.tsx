@@ -7,6 +7,7 @@ import ReactFlow, {
   useEdgesState,
   Controls,
   Background,
+  BackgroundVariant,
   MiniMap,
   ReactFlowProvider
 } from 'reactflow';
@@ -451,7 +452,7 @@ const DecisionTreeSample: React.FC = () => {
             onEdgesChange={onEdgesChange}
             fitView
           >
-            <Background variant="dots" gap={12} size={1} />
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
             <Controls />
             <MiniMap
               nodeColor={(node) => {
@@ -512,11 +513,11 @@ const DecisionTreeSample: React.FC = () => {
               <ConditionBuilder
                 onQueryChange={(query) => console.log('Query:', query)}
                 fields={[
-                  { name: 'creditScore', label: 'Credit Score', valueEditorType: 'number' },
-                  { name: 'annualIncome', label: 'Annual Income', valueEditorType: 'number' },
-                  { name: 'debtToIncomeRatio', label: 'Debt to Income Ratio', valueEditorType: 'number' },
-                  { name: 'amount', label: 'Transaction Amount', valueEditorType: 'number' },
-                  { name: 'location.suspicious', label: 'Suspicious Location', valueEditorType: 'checkbox' }
+                  { name: 'creditScore', label: 'Credit Score', inputType: 'number' },
+                  { name: 'annualIncome', label: 'Annual Income', inputType: 'number' },
+                  { name: 'debtToIncomeRatio', label: 'Debt to Income Ratio', inputType: 'number' },
+                  { name: 'amount', label: 'Transaction Amount', inputType: 'number' },
+                  { name: 'location.suspicious', label: 'Suspicious Location', inputType: 'checkbox' }
                 ]}
               />
             </div>

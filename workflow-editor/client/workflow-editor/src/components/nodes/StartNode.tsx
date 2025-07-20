@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { motion } from 'framer-motion';
+import { Play, Clock, Mail, User } from 'lucide-react';
 
 export interface StartNodeData {
   label: string;
@@ -17,38 +18,42 @@ const StartNode: React.FC<NodeProps<StartNodeData>> = ({ data, selected }) => {
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       whileHover={{ scale: 1.05 }}
-      style={{
-        background: '#4CAF50',
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '50px',
-        border: selected ? '2px solid #2E7D32' : '2px solid transparent',
-        minWidth: '120px',
-        textAlign: 'center',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        cursor: 'pointer',
-      }}
+      className={`
+        bg-green-500 text-white px-5 py-2.5 rounded-full min-w-[120px] text-center
+        shadow-md cursor-pointer transition-all
+        ${selected ? 'ring-2 ring-green-700 ring-offset-2' : ''}
+      `}
     >
-      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
-        <span style={{ marginRight: '8px' }}>▶</span>
+      <div className="font-bold text-sm flex items-center justify-center gap-2">
+        <Play className="h-4 w-4" />
         {data.label || 'Start'}
       </div>
       {data.configuration?.trigger && (
-        <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.9 }}>
-          {data.configuration.trigger === 'scheduled' && `⏰ ${data.configuration.schedule}`}
-          {data.configuration.trigger === 'event' && `📨 ${data.configuration.eventType}`}
-          {data.configuration.trigger === 'manual' && '👤 Manual'}
+        <div className="text-xs mt-1 opacity-90 flex items-center justify-center gap-1">
+          {data.configuration.trigger === 'scheduled' && (
+            <>
+              <Clock className="h-3 w-3" />
+              {data.configuration.schedule}
+            </>
+          )}
+          {data.configuration.trigger === 'event' && (
+            <>
+              <Mail className="h-3 w-3" />
+              {data.configuration.eventType}
+            </>
+          )}
+          {data.configuration.trigger === 'manual' && (
+            <>
+              <User className="h-3 w-3" />
+              Manual
+            </>
+          )}
         </div>
       )}
       <Handle
         type="source"
         position={Position.Right}
-        style={{
-          background: '#2E7D32',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-        }}
+        className="w-3 h-3 bg-green-700 border-2 border-white"
       />
     </motion.div>
   );

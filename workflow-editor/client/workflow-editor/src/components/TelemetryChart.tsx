@@ -17,7 +17,9 @@ import {
   ReferenceLine,
   Brush
 } from 'recharts';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@zamaz/ui';
+import { Play, Pause } from 'lucide-react';
 
 export interface TelemetryDataPoint {
   timestamp: number;
@@ -51,7 +53,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
   metric,
   unit = '',
   chartType = 'line',
-  color = '#2196F3',
+  color = '#0066ff',
   showBrush = false,
   threshold,
   onDataPointClick,
@@ -83,7 +85,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
     };
 
     const commonAxisProps = {
-      stroke: '#666',
+      stroke: '#6b7280',
       style: { fontSize: 12 }
     };
 
@@ -92,7 +94,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
         case 'area':
           return (
             <AreaChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="time" {...commonAxisProps} />
               <YAxis {...commonAxisProps} />
               <Tooltip content={<CustomTooltip unit={unit} />} />
@@ -112,7 +114,6 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
                 fill={color}
                 fillOpacity={0.3}
                 name={metric}
-                onClick={onDataPointClick}
               />
               {showBrush && <Brush dataKey="time" height={30} stroke={color} />}
             </AreaChart>
@@ -121,7 +122,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
         case 'bar':
           return (
             <BarChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="time" {...commonAxisProps} />
               <YAxis {...commonAxisProps} />
               <Tooltip content={<CustomTooltip unit={unit} />} />
@@ -138,7 +139,6 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
                 dataKey="value"
                 fill={color}
                 name={metric}
-                onClick={onDataPointClick}
               />
             </BarChart>
           );
@@ -146,7 +146,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
         case 'scatter':
           return (
             <ScatterChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="time" {...commonAxisProps} />
               <YAxis dataKey="value" {...commonAxisProps} />
               <Tooltip content={<CustomTooltip unit={unit} />} />
@@ -155,7 +155,6 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
                 name={metric}
                 data={displayData}
                 fill={color}
-                onClick={onDataPointClick}
               />
             </ScatterChart>
           );
@@ -163,7 +162,7 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
         default:
           return (
             <LineChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="time" {...commonAxisProps} />
               <YAxis {...commonAxisProps} />
               <Tooltip content={<CustomTooltip unit={unit} />} />
@@ -184,7 +183,6 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
                 dot={{ fill: color, r: 3 }}
                 activeDot={{ r: 5 }}
                 name={metric}
-                onClick={onDataPointClick}
               />
               {showBrush && <Brush dataKey="time" height={30} stroke={color} />}
             </LineChart>
@@ -203,101 +201,41 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="telemetry-chart-container"
     >
-      <div className="chart-header">
-        <h3>{title}</h3>
-        <div className="chart-controls">
-          {realtime && (
-            <button
-              className={`live-button ${isLive ? 'active' : ''}`}
-              onClick={() => setIsLive(!isLive)}
-            >
-              {isLive ? '⏸ Pause' : '▶ Live'}
-            </button>
-          )}
-          <span className="data-count">
-            {displayData.length} points
-          </span>
-        </div>
-      </div>
-      
-      <div className="chart-wrapper" ref={chartRef}>
-        {renderChart()}
-      </div>
-
-      {displayData.length === 0 && (
-        <div className="no-data">
-          <span>No telemetry data available</span>
-        </div>
-      )}
-
-      <style>{`
-        .telemetry-chart-container {
-          background: white;
-          border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          margin-bottom: 20px;
-        }
-
-        .chart-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 15px;
-        }
-
-        .chart-header h3 {
-          margin: 0;
-          color: #333;
-          font-size: 18px;
-        }
-
-        .chart-controls {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-
-        .live-button {
-          padding: 6px 12px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          background: white;
-          cursor: pointer;
-          font-size: 14px;
-          transition: all 0.2s;
-        }
-
-        .live-button.active {
-          background: #4CAF50;
-          color: white;
-          border-color: #4CAF50;
-        }
-
-        .live-button:hover {
-          border-color: #999;
-        }
-
-        .data-count {
-          font-size: 14px;
-          color: #666;
-        }
-
-        .chart-wrapper {
-          position: relative;
-        }
-
-        .no-data {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 200px;
-          color: #999;
-          font-size: 14px;
-        }
-      `}</style>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <CardTitle>{title}</CardTitle>
+            <div className="flex items-center gap-3">
+              {realtime && (
+                <Button
+                  variant={isLive ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setIsLive(!isLive)}
+                  leftIcon={isLive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                >
+                  {isLive ? 'Pause' : 'Live'}
+                </Button>
+              )}
+              <Badge variant="secondary">
+                {displayData.length} points
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          <div ref={chartRef}>
+            {displayData.length > 0 ? (
+              renderChart()
+            ) : (
+              <div className="flex items-center justify-center h-48 text-gray-500">
+                No telemetry data available
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };
@@ -306,19 +244,13 @@ const TelemetryChart: React.FC<TelemetryChartProps> = ({
 const CustomTooltip: React.FC<any> = ({ active, payload, label, unit }) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{
-        background: 'rgba(0, 0, 0, 0.8)',
-        color: 'white',
-        padding: '10px',
-        borderRadius: '4px',
-        fontSize: '12px'
-      }}>
-        <p style={{ margin: '0 0 5px 0' }}>{label}</p>
-        <p style={{ margin: 0, fontWeight: 'bold' }}>
+      <div className="bg-gray-900 text-white p-3 rounded shadow-lg text-sm">
+        <p className="mb-1">{label}</p>
+        <p className="font-bold">
           {payload[0].name}: {payload[0].value} {unit}
         </p>
         {payload[0].payload.deviceId && (
-          <p style={{ margin: '5px 0 0 0', opacity: 0.8 }}>
+          <p className="mt-1 text-gray-300 text-xs">
             Device: {payload[0].payload.deviceId}
           </p>
         )}

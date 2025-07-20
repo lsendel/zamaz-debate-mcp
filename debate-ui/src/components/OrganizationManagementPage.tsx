@@ -1,46 +1,45 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Chip,
-  Menu,
-  MenuItem,
-  Alert,
-  Tabs,
-  Tab,
-  Grid,
   Card,
   CardContent,
-  CardActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-} from "@mui/material";
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Textarea,
+  Badge,
+  Alert,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  DataTable,
+  type Column,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  FormField,
+} from "@zamaz/ui";
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
-  Business as BusinessIcon,
-  People as PeopleIcon,
-  Key as KeyIcon,
-  Settings as SettingsIcon,
-} from "@mui/icons-material";
+  Plus,
+  Edit,
+  Trash2,
+  MoreVertical,
+  Building2,
+  Users,
+  Key,
+  Settings,
+} from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../store";
 import {
   fetchOrganizations,
@@ -53,28 +52,6 @@ import organizationClient, {
   User,
 } from "../api/organizationClient";
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`org-tabpanel-${index}`}
-      aria-labelledby={`org-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
 const OrganizationManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { organizations, currentOrganization, loading } = useAppSelector(
@@ -82,13 +59,9 @@ const OrganizationManagementPage: React.FC = () => {
   );
   const { user } = useAppSelector((state) => state.auth);
 
-  const [tabValue, setTabValue] = useState(0);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [users, setUsers] = useState<User[]>([]);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
 
   const [newOrgForm, setNewOrgForm] = useState({
     name: "",
@@ -187,355 +160,324 @@ const OrganizationManagementPage: React.FC = () => {
     }
   };
 
-  const handleMenuClick = (
-    event: React.MouseEvent<HTMLElement>,
-    org: Organization,
-  ) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedOrg(org);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedOrg(null);
-  };
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
-
   if (!isAdmin) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
+      <div className="p-6">
+        <Alert variant="error">
           You don't have permission to access organization management.
         </Alert>
-      </Box>
+      </div>
     );
   }
 
+  const userColumns: Column<User>[] = [
+    {
+      key: 'username',
+      header: 'Username',
+      cell: (user) => user.username,
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      cell: (user) => user.email,
+    },
+    {
+      key: 'role',
+      header: 'Role',
+      cell: (user) => (
+        <Badge variant={user.role === "admin" ? "primary" : "default"}>
+          {user.role}
+        </Badge>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Created',
+      cell: (user) => new Date(user.createdAt).toLocaleDateString(),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      cell: (user) => (
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm">
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Organization Management
-        </Typography>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Organization Management</h1>
         <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+          variant="primary"
           onClick={() => setCreateDialogOpen(true)}
+          leftIcon={<Plus className="h-4 w-4" />}
         >
           Create Organization
         </Button>
-      </Box>
+      </div>
 
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Organizations" icon={<BusinessIcon />} />
-          <Tab label="Users" icon={<PeopleIcon />} />
-          <Tab label="API Keys" icon={<KeyIcon />} />
-          <Tab label="Settings" icon={<SettingsIcon />} />
-        </Tabs>
-      </Box>
+      <Tabs defaultValue="organizations" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="organizations" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Organizations
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="api-keys" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            API Keys
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
+          </TabsTrigger>
+        </TabsList>
 
-      <TabPanel value={tabValue} index={0}>
-        <Grid container spacing={3}>
-          {organizations.map((org) => (
-            <Grid item xs={12} md={6} lg={4} key={org.id}>
-              <Card>
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="h6" component="h2">
-                        {org.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+        <TabsContent value="organizations" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {organizations.map((org) => (
+              <Card key={org.id}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>{org.name}</CardTitle>
+                      <CardDescription>
                         {org.description || "No description"}
-                      </Typography>
-                    </Box>
-                    <IconButton
-                      onClick={(e) => handleMenuClick(e, org)}
-                      size="small"
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </Box>
-                  <Box sx={{ mt: 2 }}>
-                    <Chip
-                      size="small"
-                      label={
-                        org.id === currentOrganization?.id
-                          ? "Current"
-                          : "Available"
-                      }
-                      color={
+                      </CardDescription>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Badge
+                      variant={
                         org.id === currentOrganization?.id
                           ? "primary"
                           : "default"
                       }
-                    />
+                    >
+                      {org.id === currentOrganization?.id
+                        ? "Current"
+                        : "Available"}
+                    </Badge>
                     {org.apiKey && (
-                      <Chip
-                        size="small"
-                        label="API Key"
-                        color="secondary"
-                        sx={{ ml: 1 }}
-                      />
+                      <Badge variant="secondary">API Key</Badge>
                     )}
-                  </Box>
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">
                     Created: {new Date(org.createdAt).toLocaleDateString()}
-                  </Typography>
+                  </p>
                 </CardContent>
-                <CardActions>
-                  <Button size="small" onClick={() => setEditDialogOpen(true)}>
+                <CardFooter className="flex gap-2">
+                  <Button variant="secondary" size="sm">
                     Edit
                   </Button>
-                  <Button size="small" color="error">
+                  <Button variant="danger" size="sm">
                     Delete
                   </Button>
-                </CardActions>
+                </CardFooter>
               </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </TabPanel>
+            ))}
+          </div>
+        </TabsContent>
 
-      <TabPanel value={tabValue} index={1}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Typography variant="h6">
-            Users in {currentOrganization?.name}
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setAddUserDialogOpen(true)}
-          >
-            Add User
-          </Button>
-        </Box>
+        <TabsContent value="users" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">
+              Users in {currentOrganization?.name}
+            </h2>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setAddUserDialogOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Add User
+            </Button>
+          </div>
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Username</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={user.role}
-                      color={user.role === "admin" ? "primary" : "default"}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton size="small">
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton size="small" color="error">
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </TabPanel>
+          <Card>
+            <CardContent className="p-0">
+              <DataTable data={users} columns={userColumns} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <TabPanel value={tabValue} index={2}>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            API Key Management
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Generate and manage API keys for programmatic access to your
-            organization.
-          </Typography>
-        </Box>
+        <TabsContent value="api-keys" className="space-y-4">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">API Key Management</h2>
+            <p className="text-gray-600">
+              Generate and manage API keys for programmatic access to your
+              organization.
+            </p>
+          </div>
 
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Current API Key
-            </Typography>
-            {currentOrganization?.apiKey ? (
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ fontFamily: "monospace", mb: 2 }}
-                >
-                  {currentOrganization.apiKey}
-                </Typography>
-                <Button variant="outlined" color="error" size="small">
-                  Revoke Key
-                </Button>
-              </Box>
-            ) : (
-              <Box>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  No API key generated yet.
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={handleGenerateApiKey}
-                  startIcon={<KeyIcon />}
-                >
-                  Generate API Key
-                </Button>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      </TabPanel>
+          <Card>
+            <CardHeader>
+              <CardTitle>Current API Key</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {currentOrganization?.apiKey ? (
+                <div>
+                  <p className="font-mono text-sm bg-gray-100 p-2 rounded mb-4">
+                    {currentOrganization.apiKey}
+                  </p>
+                  <Button variant="danger" size="sm">
+                    Revoke Key
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-600 mb-4">
+                    No API key generated yet.
+                  </p>
+                  <Button
+                    variant="primary"
+                    onClick={handleGenerateApiKey}
+                    leftIcon={<Key className="h-4 w-4" />}
+                  >
+                    Generate API Key
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <TabPanel value={tabValue} index={3}>
-        <Typography variant="h6" gutterBottom>
-          Organization Settings
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Configure organization-specific settings and preferences.
-        </Typography>
-        {/* Add settings form here */}
-      </TabPanel>
+        <TabsContent value="settings" className="space-y-4">
+          <h2 className="text-xl font-semibold mb-4">Organization Settings</h2>
+          <p className="text-gray-600">
+            Configure organization-specific settings and preferences.
+          </p>
+          <Card>
+            <CardContent>
+              <p className="text-gray-500">Settings coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Create Organization Dialog */}
-      <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-      >
-        <DialogTitle>Create New Organization</DialogTitle>
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Organization Name"
-            fullWidth
-            variant="outlined"
-            value={newOrgForm.name}
-            onChange={(e) =>
-              setNewOrgForm({ ...newOrgForm, name: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            variant="outlined"
-            value={newOrgForm.description}
-            onChange={(e) =>
-              setNewOrgForm({ ...newOrgForm, description: e.target.value })
-            }
-          />
+          <DialogHeader>
+            <DialogTitle>Create New Organization</DialogTitle>
+            <DialogDescription>
+              Create a new organization to manage debates and users
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <FormField label="Organization Name" required>
+              <Input
+                value={newOrgForm.name}
+                onChange={(e) =>
+                  setNewOrgForm({ ...newOrgForm, name: e.target.value })
+                }
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Description">
+              <Textarea
+                value={newOrgForm.description}
+                onChange={(e) =>
+                  setNewOrgForm({ ...newOrgForm, description: e.target.value })
+                }
+                rows={3}
+              />
+            </FormField>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateOrg} variant="primary">
+              Create
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreateOrg} variant="contained">
-            Create
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Add User Dialog */}
-      <Dialog
-        open={addUserDialogOpen}
-        onClose={() => setAddUserDialogOpen(false)}
-      >
-        <DialogTitle>Add User</DialogTitle>
+      <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Username"
-            fullWidth
-            variant="outlined"
-            value={newUserForm.username}
-            onChange={(e) =>
-              setNewUserForm({ ...newUserForm, username: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            label="Email"
-            type="email"
-            fullWidth
-            variant="outlined"
-            value={newUserForm.email}
-            onChange={(e) =>
-              setNewUserForm({ ...newUserForm, email: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            label="Password"
-            type="password"
-            fullWidth
-            variant="outlined"
-            value={newUserForm.password}
-            onChange={(e) =>
-              setNewUserForm({ ...newUserForm, password: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            label="Role"
-            select
-            fullWidth
-            variant="outlined"
-            value={newUserForm.role}
-            onChange={(e) =>
-              setNewUserForm({ ...newUserForm, role: e.target.value })
-            }
-          >
-            <MenuItem value="member">Member</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
-          </TextField>
+          <DialogHeader>
+            <DialogTitle>Add User</DialogTitle>
+            <DialogDescription>
+              Add a new user to your organization
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <FormField label="Username" required>
+              <Input
+                value={newUserForm.username}
+                onChange={(e) =>
+                  setNewUserForm({ ...newUserForm, username: e.target.value })
+                }
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Email" required>
+              <Input
+                type="email"
+                value={newUserForm.email}
+                onChange={(e) =>
+                  setNewUserForm({ ...newUserForm, email: e.target.value })
+                }
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Password" required>
+              <Input
+                type="password"
+                value={newUserForm.password}
+                onChange={(e) =>
+                  setNewUserForm({ ...newUserForm, password: e.target.value })
+                }
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Role">
+              <Select
+                value={newUserForm.role}
+                onValueChange={(value) =>
+                  setNewUserForm({ ...newUserForm, role: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddUser} variant="primary">
+              Add User
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddUserDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddUser} variant="contained">
-            Add User
-          </Button>
-        </DialogActions>
       </Dialog>
-
-      {/* Context Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleMenuClose}>
-          <EditIcon sx={{ mr: 1 }} />
-          Edit
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <DeleteIcon sx={{ mr: 1 }} />
-          Delete
-        </MenuItem>
-      </Menu>
-    </Box>
+    </div>
   );
 };
 

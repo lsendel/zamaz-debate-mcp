@@ -1,0 +1,198 @@
+{
+  "name": "Zamaz Design System",
+  "version": "1.0.0",
+  "description": "Enterprise-grade design tokens for Fortune 100 standard UI",
+  
+  "colors": {
+    "primary": {
+      "50": { "value": "#e6f0ff", "description": "Lightest primary" },
+      "100": { "value": "#cce1ff", "description": "Very light primary" },
+      "200": { "value": "#99c3ff", "description": "Light primary" },
+      "300": { "value": "#66a5ff", "description": "Light-medium primary" },
+      "400": { "value": "#3387ff", "description": "Medium primary" },
+      "500": { "value": "#0066ff", "description": "Main primary - Deep Intelligence Blue" },
+      "600": { "value": "#0052cc", "description": "Dark primary" },
+      "700": { "value": "#003d99", "description": "Darker primary" },
+      "800": { "value": "#002966", "description": "Very dark primary" },
+      "900": { "value": "#001433", "description": "Darkest primary" }
+    },
+    "secondary": {
+      "50": { "value": "#e8f5f0", "description": "Lightest secondary" },
+      "100": { "value": "#d1ebe1", "description": "Very light secondary" },
+      "200": { "value": "#a3d7c3", "description": "Light secondary" },
+      "300": { "value": "#75c3a5", "description": "Light-medium secondary" },
+      "400": { "value": "#47af87", "description": "Medium secondary" },
+      "500": { "value": "#1a9b69", "description": "Main secondary - Trust Green" },
+      "600": { "value": "#157c54", "description": "Dark secondary" },
+      "700": { "value": "#105d3f", "description": "Darker secondary" },
+      "800": { "value": "#0a3e2a", "description": "Very dark secondary" },
+      "900": { "value": "#051f15", "description": "Darkest secondary" }
+    },
+    "accent": {
+      "50": { "value": "#f3e8ff", "description": "Lightest accent" },
+      "100": { "value": "#e7d1ff", "description": "Very light accent" },
+      "200": { "value": "#cfa3ff", "description": "Light accent" },
+      "300": { "value": "#b775ff", "description": "Light-medium accent" },
+      "400": { "value": "#9f47ff", "description": "Medium accent" },
+      "500": { "value": "#8719ff", "description": "Main accent - Innovation Purple" },
+      "600": { "value": "#6c14cc", "description": "Dark accent" },
+      "700": { "value": "#510f99", "description": "Darker accent" },
+      "800": { "value": "#360a66", "description": "Very dark accent" },
+      "900": { "value": "#1b0533", "description": "Darkest accent" }
+    },
+    "gray": {
+      "50": { "value": "#f8f9fa", "description": "Lightest gray" },
+      "100": { "value": "#f1f3f5", "description": "Very light gray" },
+      "200": { "value": "#e9ecef", "description": "Light gray" },
+      "300": { "value": "#dee2e6", "description": "Light-medium gray" },
+      "400": { "value": "#ced4da", "description": "Medium gray" },
+      "500": { "value": "#adb5bd", "description": "Gray" },
+      "600": { "value": "#6c757d", "description": "Dark gray" },
+      "700": { "value": "#495057", "description": "Darker gray" },
+      "800": { "value": "#343a40", "description": "Very dark gray" },
+      "900": { "value": "#212529", "description": "Darkest gray" },
+      "950": { "value": "#0d0f12", "description": "Near black" }
+    },
+    "semantic": {
+      "success": {
+        "light": { "value": "#d1fae5", "description": "Light success" },
+        "default": { "value": "#10b981", "description": "Success" },
+        "dark": { "value": "#065f46", "description": "Dark success" }
+      },
+      "warning": {
+        "light": { "value": "#fef3c7", "description": "Light warning" },
+        "default": { "value": "#f59e0b", "description": "Warning" },
+        "dark": { "value": "#92400e", "description": "Dark warning" }
+      },
+      "error": {
+        "light": { "value": "#fee2e2", "description": "Light error" },
+        "default": { "value": "#ef4444", "description": "Error" },
+        "dark": { "value": "#991b1b", "description": "Dark error" }
+      },
+      "info": {
+        "light": { "value": "#dbeafe", "description": "Light info" },
+        "default": { "value": "#3b82f6", "description": "Info" },
+        "dark": { "value": "#1e40af", "description": "Dark info" }
+      }
+    }
+  },
+  
+  "typography": {
+    "fontFamily": {
+      "primary": { 
+        "value": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        "description": "Main font stack"
+      },
+      "display": { 
+        "value": "'Inter Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        "description": "Display font stack"
+      },
+      "mono": { 
+        "value": "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
+        "description": "Monospace font stack"
+      }
+    },
+    "fontSize": {
+      "xs": { "value": "0.64rem", "pixels": "10.24px" },
+      "sm": { "value": "0.8rem", "pixels": "12.8px" },
+      "base": { "value": "1rem", "pixels": "16px" },
+      "lg": { "value": "1.25rem", "pixels": "20px" },
+      "xl": { "value": "1.563rem", "pixels": "25px" },
+      "2xl": { "value": "1.953rem", "pixels": "31.25px" },
+      "3xl": { "value": "2.441rem", "pixels": "39px" },
+      "4xl": { "value": "3.052rem", "pixels": "48.8px" },
+      "5xl": { "value": "3.815rem", "pixels": "61px" }
+    },
+    "fontWeight": {
+      "light": { "value": 300 },
+      "regular": { "value": 400 },
+      "medium": { "value": 500 },
+      "semibold": { "value": 600 },
+      "bold": { "value": 700 }
+    },
+    "lineHeight": {
+      "none": { "value": 1 },
+      "tight": { "value": 1.25 },
+      "snug": { "value": 1.375 },
+      "normal": { "value": 1.5 },
+      "relaxed": { "value": 1.625 },
+      "loose": { "value": 2 }
+    }
+  },
+  
+  "spacing": {
+    "0": { "value": "0", "pixels": "0px" },
+    "1": { "value": "0.25rem", "pixels": "4px" },
+    "2": { "value": "0.5rem", "pixels": "8px" },
+    "3": { "value": "0.75rem", "pixels": "12px" },
+    "4": { "value": "1rem", "pixels": "16px" },
+    "5": { "value": "1.25rem", "pixels": "20px" },
+    "6": { "value": "1.5rem", "pixels": "24px" },
+    "8": { "value": "2rem", "pixels": "32px" },
+    "10": { "value": "2.5rem", "pixels": "40px" },
+    "12": { "value": "3rem", "pixels": "48px" },
+    "16": { "value": "4rem", "pixels": "64px" },
+    "20": { "value": "5rem", "pixels": "80px" },
+    "24": { "value": "6rem", "pixels": "96px" }
+  },
+  
+  "borderRadius": {
+    "none": { "value": "0", "pixels": "0px" },
+    "sm": { "value": "4px" },
+    "base": { "value": "6px" },
+    "md": { "value": "8px" },
+    "lg": { "value": "12px" },
+    "xl": { "value": "16px" },
+    "2xl": { "value": "24px" },
+    "full": { "value": "9999px" }
+  },
+  
+  "shadows": {
+    "xs": { "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)" },
+    "sm": { "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)" },
+    "md": { "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)" },
+    "lg": { "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)" },
+    "xl": { "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" },
+    "2xl": { "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)" },
+    "inner": { "value": "inset 0 2px 4px 0 rgb(0 0 0 / 0.05)" },
+    "none": { "value": "none" }
+  },
+  
+  "animation": {
+    "duration": {
+      "75": { "value": "75ms" },
+      "100": { "value": "100ms" },
+      "150": { "value": "150ms" },
+      "200": { "value": "200ms" },
+      "300": { "value": "300ms" },
+      "500": { "value": "500ms" },
+      "700": { "value": "700ms" },
+      "1000": { "value": "1000ms" }
+    },
+    "timing": {
+      "easeIn": { "value": "cubic-bezier(0.4, 0, 1, 1)" },
+      "easeOut": { "value": "cubic-bezier(0, 0, 0.2, 1)" },
+      "easeInOut": { "value": "cubic-bezier(0.4, 0, 0.2, 1)" },
+      "easeBounce": { "value": "cubic-bezier(0.68, -0.55, 0.265, 1.55)" }
+    }
+  },
+  
+  "breakpoints": {
+    "xs": { "value": "475px", "description": "Extra small devices" },
+    "sm": { "value": "640px", "description": "Small devices" },
+    "md": { "value": "768px", "description": "Medium devices" },
+    "lg": { "value": "1024px", "description": "Large devices" },
+    "xl": { "value": "1280px", "description": "Extra large devices" },
+    "2xl": { "value": "1536px", "description": "2X large devices" }
+  },
+  
+  "zIndex": {
+    "0": { "value": 0 },
+    "10": { "value": 10 },
+    "20": { "value": 20 },
+    "30": { "value": 30 },
+    "40": { "value": 40 },
+    "50": { "value": 50 },
+    "auto": { "value": "auto" }
+  }
+}

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zamaz Design System - Button Examples</title>
+    <link rel="stylesheet" href="../css/zamaz-design-system.css">
+    <style>
+        body {
+            padding: 2rem;
+            background-color: var(--bg-secondary);
+        }
+        .example-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .example-section h2 {
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .example-label {
+            font-size: var(--text-sm);
+            color: var(--text-tertiary);
+            margin-bottom: 0.5rem;
+            font-weight: var(--font-medium);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="h1" style="margin-bottom: 3rem;">Button Component Examples</h1>
+
+        <!-- Button Variants -->
+        <section class="example-section">
+            <h2 class="h3">Button Variants</h2>
+            <div class="button-grid">
+                <div>
+                    <p class="example-label">Primary Button</p>
+                    <button class="btn btn-primary">Save Changes</button>
+                </div>
+                <div>
+                    <p class="example-label">Secondary Button</p>
+                    <button class="btn btn-secondary">Cancel</button>
+                </div>
+                <div>
+                    <p class="example-label">Ghost Button</p>
+                    <button class="btn btn-ghost">Learn More</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Button Sizes -->
+        <section class="example-section">
+            <h2 class="h3">Button Sizes</h2>
+            <div class="button-grid">
+                <div>
+                    <p class="example-label">Small Button</p>
+                    <button class="btn btn-primary btn-sm">Small</button>
+                </div>
+                <div>
+                    <p class="example-label">Medium Button (Default)</p>
+                    <button class="btn btn-primary">Medium</button>
+                </div>
+                <div>
+                    <p class="example-label">Large Button</p>
+                    <button class="btn btn-primary btn-lg">Large</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Button States -->
+        <section class="example-section">
+            <h2 class="h3">Button States</h2>
+            <div class="button-grid">
+                <div>
+                    <p class="example-label">Normal State</p>
+                    <button class="btn btn-primary">Click Me</button>
+                </div>
+                <div>
+                    <p class="example-label">Hover State</p>
+                    <button class="btn btn-primary" style="background-color: var(--primary-600); transform: translateY(-1px);">Hovering</button>
+                </div>
+                <div>
+                    <p class="example-label">Active State</p>
+                    <button class="btn btn-primary" style="background-color: var(--primary-700);">Active</button>
+                </div>
+                <div>
+                    <p class="example-label">Disabled State</p>
+                    <button class="btn btn-primary" disabled>Disabled</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Button with Icons -->
+        <section class="example-section">
+            <h2 class="h3">Buttons with Icons</h2>
+            <div class="button-grid">
+                <div>
+                    <p class="example-label">Icon Left</p>
+                    <button class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 8l-7-7-7 7M17 12l-7 7-7-7"/>
+                        </svg>
+                        Upload File
+                    </button>
+                </div>
+                <div>
+                    <p class="example-label">Icon Right</p>
+                    <button class="btn btn-primary">
+                        Next Step
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 10h10M10 5l5 5-5 5"/>
+                        </svg>
+                    </button>
+                </div>
+                <div>
+                    <p class="example-label">Icon Only</p>
+                    <button class="btn btn-primary" aria-label="Settings" style="padding: var(--space-3);">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="10" cy="10" r="3"/>
+                            <path d="M10 1v6m0 6v6m9-9h-6m-6 0H1"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Full Width Buttons -->
+        <section class="example-section">
+            <h2 class="h3">Full Width Buttons</h2>
+            <div style="max-width: 400px;">
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+                    Continue to Checkout
+                </button>
+                <button class="btn btn-secondary" style="width: 100%;">
+                    Back to Shopping
+                </button>
+            </div>
+        </section>
+
+        <!-- Button Groups -->
+        <section class="example-section">
+            <h2 class="h3">Button Groups</h2>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary">Save</button>
+                    <button class="btn btn-secondary">Cancel</button>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-ghost">Previous</button>
+                    <button class="btn btn-ghost">Next</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading States -->
+        <section class="example-section">
+            <h2 class="h3">Loading States</h2>
+            <div class="button-grid">
+                <div>
+                    <p class="example-label">Loading Primary</p>
+                    <button class="btn btn-primary" disabled>
+                        <svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4"/>
+                        </svg>
+                        Processing...
+                    </button>
+                </div>
+                <div>
+                    <p class="example-label">Loading Secondary</p>
+                    <button class="btn btn-secondary" disabled>
+                        <svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4"/>
+                        </svg>
+                        Loading...
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contextual Examples -->
+        <section class="example-section">
+            <h2 class="h3">Contextual Usage Examples</h2>
+            
+            <!-- Form Actions -->
+            <div style="background: var(--bg-secondary); padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+                <h4 class="h5" style="margin-bottom: 1rem;">Form Actions</h4>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="btn btn-ghost">Cancel</button>
+                    <button class="btn btn-secondary">Save as Draft</button>
+                    <button class="btn btn-primary">Submit</button>
+                </div>
+            </div>
+
+            <!-- Dialog Actions -->
+            <div style="background: var(--bg-secondary); padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+                <h4 class="h5" style="margin-bottom: 1rem;">Dialog Actions</h4>
+                <p style="margin-bottom: 1.5rem;">Are you sure you want to delete this item?</p>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary" style="background-color: var(--error); border-color: var(--error);">
+                        Delete
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div style="background: var(--bg-secondary); padding: 2rem; border-radius: 8px;">
+                <h4 class="h5" style="margin-bottom: 1rem;">Card Actions</h4>
+                <div class="card" style="max-width: 400px;">
+                    <div class="card-body">
+                        <h3 class="h4">Premium Plan</h3>
+                        <p class="text-lead" style="margin: 1rem 0;">$29/month</p>
+                        <p style="margin-bottom: 1.5rem;">Get access to all premium features and priority support.</p>
+                        <button class="btn btn-primary" style="width: 100%;">
+                            Get Started
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

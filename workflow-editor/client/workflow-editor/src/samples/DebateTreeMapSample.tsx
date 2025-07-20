@@ -28,23 +28,216 @@ const DebateTreeMapSample: React.FC = () => {
   const [viewMode, setViewMode] = useState<'tree' | 'treemap' | 'hierarchy'>('tree');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved' | 'archived'>('all');
-  const { addTelemetryData } = useWorkflowStore();
+  const { createWorkflow, addTelemetryData } = useWorkflowStore();
 
-  // Fetch debate data from mcp-controller service
+  // Fetch debate data from SASS debate system
   const { data: debateData, isLoading, refetch } = useQuery({
     queryKey: ['debates'],
     queryFn: async () => {
       try {
-        const response = await fetch('http://localhost:5013/api/debates');
-        if (!response.ok) throw new Error('Failed to fetch debates');
-        return response.json();
+        // Try to fetch from the debate controller service first
+        const debateResponse = await fetch('http://localhost:5013/api/debates/active');
+        if (debateResponse.ok) {
+          const debates = await debateResponse.json();
+          // Convert SASS debate format to tree structure
+          return convertSASSDebatesToTree(debates);
+        }
       } catch (error) {
-        // Return mock data if service is not available
-        return generateMockDebateData();
+        console.log('Debate controller not available, trying organization service...');
       }
+      
+      try {
+        // Fallback to organization service which manages debates
+        const orgResponse = await fetch('http://localhost:5005/api/organizations/debates');
+        if (orgResponse.ok) {
+          const orgDebates = await orgResponse.json();
+          return convertOrganizationDebatesToTree(orgDebates);
+        }
+      } catch (error) {
+        console.log('Organization service not available, using enhanced mock data...');
+      }
+      
+      // Return realistic SASS debate mock data
+      return generateRealisticSASSDebateData();
     },
-    refetchInterval: 5000 // Real-time updates
+    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Cache for 10 minutes
+    retry: 1, // Only retry once
+    refetchOnWindowFocus: false // Don't refetch on window focus
   });
+
+  // Convert SASS debate format to tree structure
+  const convertSASSDebatesToTree = (debates: any[]): DebateNode[] => {
+    return debates.map(debate => ({
+      id: debate.debateId,
+      parentId: null,
+      title: debate.topic,
+      content: debate.description,
+      author: debate.moderator || 'System',
+      timestamp: new Date(debate.createdAt).getTime(),
+      votes: debate.participantCount || 0,
+      status: debate.status === 'ACTIVE' ? 'active' : debate.status === 'CLOSED' ? 'resolved' : 'archived',
+      children: debate.arguments?.map((arg: any) => ({
+        id: arg.argumentId,
+        parentId: debate.debateId,
+        title: arg.position,
+        content: arg.content,
+        author: arg.participant,
+        timestamp: new Date(arg.timestamp).getTime(),
+        votes: arg.votes || 0,
+        status: 'active',
+        children: arg.counterArguments || []
+      })) || []
+    }));
+  };
+
+  // Convert organization debates to tree structure
+  const convertOrganizationDebatesToTree = (orgDebates: any[]): DebateNode[] => {
+    return orgDebates.map(debate => ({
+      id: debate.id,
+      parentId: null,
+      title: debate.title,
+      content: debate.summary,
+      author: debate.organizationName,
+      timestamp: new Date(debate.startDate).getTime(),
+      votes: debate.totalParticipants || 0,
+      status: debate.isActive ? 'active' : 'resolved',
+      children: debate.positions?.map((pos: any) => ({
+        id: pos.id,
+        parentId: debate.id,
+        title: pos.stance,
+        content: pos.argument,
+        author: pos.advocateName,
+        timestamp: new Date(pos.createdAt).getTime(),
+        votes: pos.supportCount || 0,
+        status: 'active',
+        children: []
+      })) || []
+    }));
+  };
+
+  // Generate realistic SASS debate data
+  const generateRealisticSASSDebateData = (): DebateNode[] => {
+    // Real debate topics from a SASS debate system
+    const sassDebates = [
+      {
+        id: 'debate-001',
+        parentId: null,
+        title: 'Should our organization adopt a fully remote work policy?',
+        content: 'Given the success of remote work during the pandemic and employee preferences, should we transition to a permanent remote-first model?',
+        author: 'HR Leadership Team',
+        timestamp: Date.now() - 7 * 24 * 60 * 60 * 1000,
+        votes: 156,
+        status: 'active' as const,
+        children: [
+          {
+            id: 'arg-001-1',
+            parentId: 'debate-001',
+            title: 'Pro: Increased productivity and employee satisfaction',
+            content: 'Data shows 23% productivity increase and 89% employee satisfaction with remote work. Cost savings of $2.3M annually on office space.',
+            author: 'Sarah Chen, Operations',
+            timestamp: Date.now() - 6 * 24 * 60 * 60 * 1000,
+            votes: 87,
+            status: 'active' as const,
+            children: [
+              {
+                id: 'counter-001-1-1',
+                parentId: 'arg-001-1',
+                title: 'Counter: Collaboration challenges in remote settings',
+                content: 'While productivity metrics look good, innovation metrics show 15% decline. Spontaneous collaboration has decreased significantly.',
+                author: 'Mike Rodriguez, Engineering',
+                timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
+                votes: 34,
+                status: 'active' as const,
+                children: []
+              }
+            ]
+          },
+          {
+            id: 'arg-001-2',
+            parentId: 'debate-001',
+            title: 'Con: Loss of company culture and mentorship',
+            content: 'New employees report 40% less engagement. Junior staff missing crucial mentorship opportunities. Team cohesion metrics down 28%.',
+            author: 'Jennifer Park, People Ops',
+            timestamp: Date.now() - 6 * 24 * 60 * 60 * 1000,
+            votes: 69,
+            status: 'active' as const,
+            children: []
+          }
+        ]
+      },
+      {
+        id: 'debate-002',
+        parentId: null,
+        title: 'Implementation of AI-driven customer service: Benefits vs risks?',
+        content: 'Proposal to implement GPT-based customer service automation. Expected 60% reduction in response time but concerns about service quality.',
+        author: 'Customer Success Team',
+        timestamp: Date.now() - 14 * 24 * 60 * 60 * 1000,
+        votes: 203,
+        status: 'resolved' as const,
+        children: [
+          {
+            id: 'arg-002-1',
+            parentId: 'debate-002',
+            title: 'Pro: Scalability and 24/7 availability',
+            content: 'AI can handle 10,000+ concurrent conversations. Customers get instant responses. Frees human agents for complex issues.',
+            author: 'David Kim, CTO',
+            timestamp: Date.now() - 13 * 24 * 60 * 60 * 1000,
+            votes: 112,
+            status: 'active' as const,
+            children: []
+          },
+          {
+            id: 'arg-002-2',
+            parentId: 'debate-002',
+            title: 'Con: Risk of impersonal service and edge case failures',
+            content: 'AI struggles with emotional nuance. 12% of test cases resulted in customer frustration. Brand reputation risk.',
+            author: 'Lisa Thompson, Customer Success',
+            timestamp: Date.now() - 13 * 24 * 60 * 60 * 1000,
+            votes: 91,
+            status: 'active' as const,
+            children: []
+          }
+        ]
+      },
+      {
+        id: 'debate-003',
+        parentId: null,
+        title: 'Sustainability initiative: Carbon neutral by 2025?',
+        content: 'Ambitious goal to achieve carbon neutrality within 2 years. Requires $5M investment but aligns with corporate values.',
+        author: 'ESG Committee',
+        timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000,
+        votes: 298,
+        status: 'active' as const,
+        children: [
+          {
+            id: 'arg-003-1',
+            parentId: 'debate-003',
+            title: 'Pro: Competitive advantage and talent attraction',
+            content: '73% of top candidates consider sustainability. Green initiatives attract premium customers willing to pay 15% more.',
+            author: 'Rachel Green, Strategy',
+            timestamp: Date.now() - 28 * 24 * 60 * 60 * 1000,
+            votes: 167,
+            status: 'active' as const,
+            children: []
+          },
+          {
+            id: 'arg-003-2',
+            parentId: 'debate-003',
+            title: 'Alternative: Phased approach over 5 years',
+            content: 'Gradual implementation reduces financial risk. Can leverage emerging technologies. More realistic timeline.',
+            author: 'Carlos Mendez, Finance',
+            timestamp: Date.now() - 27 * 24 * 60 * 60 * 1000,
+            votes: 131,
+            status: 'active' as const,
+            children: []
+          }
+        ]
+      }
+    ];
+
+    return sassDebates;
+  };
 
   // Generate mock debate data for demo
   const generateMockDebateData = (): DebateNode[] => {
@@ -202,7 +395,6 @@ const DebateTreeMapSample: React.FC = () => {
 
   // Create workflow for debate moderation
   const createDebateWorkflow = () => {
-    const { createWorkflow } = useWorkflowStore();
     
     const workflow = {
       id: 'debate-moderation-workflow',
@@ -286,26 +478,27 @@ const DebateTreeMapSample: React.FC = () => {
     createWorkflow(workflow);
   };
 
-  // Simulate real-time updates
+  // Simulate real-time updates (disabled to prevent flashing)
   useEffect(() => {
     if (!debateData) return;
 
-    const interval = setInterval(() => {
-      // Simulate vote changes
-      if (Math.random() > 0.7) {
-        addTelemetryData('debate.activity', {
-          timestamp: Date.now(),
-          value: Math.random() * 10,
-          metadata: {
-            type: 'vote',
-            debateId: debateData[Math.floor(Math.random() * debateData.length)]?.id
-          }
-        });
-      }
-    }, 2000);
+    // Disabled real-time simulation to prevent UI flashing
+    // const interval = setInterval(() => {
+    //   // Simulate vote changes
+    //   if (Math.random() > 0.7) {
+    //     addTelemetryData('debate.activity', {
+    //       timestamp: Date.now(),
+    //       value: Math.random() * 10,
+    //       metadata: {
+    //         type: 'vote',
+    //         debateId: debateData[Math.floor(Math.random() * debateData.length)]?.id
+    //       }
+    //     });
+    //   }
+    // }, 2000);
 
-    return () => clearInterval(interval);
-  }, [debateData, addTelemetryData]);
+    // return () => clearInterval(interval);
+  }, [debateData]);
 
   const treeData = debateData ? buildDebateTree(
     Array.isArray(debateData) ? debateData : generateMockDebateData()

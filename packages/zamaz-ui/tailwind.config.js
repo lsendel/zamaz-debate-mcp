@@ -1,0 +1,151 @@
+const designTokens = require('../../ui-specs/design-tokens.json');
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./stories/**/*.{js,jsx,ts,tsx}",
+  ],
+  darkMode: ['class', '[data-theme="dark"]'],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#e6f0ff',
+          100: '#cce1ff',
+          200: '#99c3ff',
+          300: '#66a5ff',
+          400: '#3387ff',
+          500: '#0066ff',
+          600: '#0052cc',
+          700: '#003d99',
+          800: '#002966',
+          900: '#001433',
+        },
+        secondary: {
+          50: '#e8f5f0',
+          100: '#d1ebe1',
+          200: '#a3d7c3',
+          300: '#75c3a5',
+          400: '#47af87',
+          500: '#1a9b69',
+          600: '#157c54',
+          700: '#105d3f',
+          800: '#0a3e2a',
+          900: '#051f15',
+        },
+        accent: {
+          50: '#f3e8ff',
+          100: '#e7d1ff',
+          200: '#cfa3ff',
+          300: '#b775ff',
+          400: '#9f47ff',
+          500: '#8719ff',
+          600: '#6c14cc',
+          700: '#510f99',
+          800: '#360a66',
+          900: '#1b0533',
+        },
+        gray: {
+          50: '#f8f9fa',
+          100: '#f1f3f5',
+          200: '#e9ecef',
+          300: '#dee2e6',
+          400: '#ced4da',
+          500: '#adb5bd',
+          600: '#6c757d',
+          700: '#495057',
+          800: '#343a40',
+          900: '#212529',
+          950: '#0d0f12',
+        },
+        success: '#10b981',
+        warning: '#f59e0b',
+        error: '#ef4444',
+        info: '#3b82f6',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+      },
+      fontFamily: {
+        primary: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['Inter Display', 'Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+      },
+      fontSize: {
+        xs: ['0.64rem', { lineHeight: '1rem' }],
+        sm: ['0.8rem', { lineHeight: '1.25rem' }],
+        base: ['1rem', { lineHeight: '1.5rem' }],
+        lg: ['1.25rem', { lineHeight: '1.75rem' }],
+        xl: ['1.563rem', { lineHeight: '2rem' }],
+        '2xl': ['1.953rem', { lineHeight: '2.5rem' }],
+        '3xl': ['2.441rem', { lineHeight: '3rem' }],
+        '4xl': ['3.052rem', { lineHeight: '3.5rem' }],
+        '5xl': ['3.815rem', { lineHeight: '1' }],
+      },
+      borderRadius: {
+        none: '0',
+        sm: '4px',
+        DEFAULT: '6px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        '2xl': '24px',
+        full: '9999px',
+      },
+      boxShadow: {
+        xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        sm: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        DEFAULT: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+        inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 300ms ease-out',
+        'fade-out': 'fadeOut 300ms ease-out',
+        'slide-in-up': 'slideInUp 300ms ease-out',
+        'slide-in-down': 'slideInDown 300ms ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        fadeOut: {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
+        },
+        slideInUp: {
+          from: {
+            opacity: '0',
+            transform: 'translateY(10px)',
+          },
+          to: {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+        slideInDown: {
+          from: {
+            opacity: '0',
+            transform: 'translateY(-10px)',
+          },
+          to: {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+      },
+    },
+  },
+  plugins: [
+    require('@tailwindcss/forms')({
+      strategy: 'class',
+    }),
+  ],
+};

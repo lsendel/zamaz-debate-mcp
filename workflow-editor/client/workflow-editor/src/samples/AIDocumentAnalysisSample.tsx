@@ -101,19 +101,91 @@ const AIDocumentAnalysisSample: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Validate file type
+    const allowedTypes = ['text/plain', 'application/pdf', 'text/markdown', 'text/csv'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.txt')) {
+      alert('Please select a supported file type: PDF, TXT, MD, or CSV');
+      return;
+    }
+    
+    if (file.size > maxSize) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+    
     setSelectedFile(file);
     
-    // For demo, we'll simulate PDF content as text
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target?.result as string;
+      let content = '';
+      
+      if (file.type === 'application/pdf') {
+        // For PDF files, show a placeholder message
+        content = `PDF Document: ${file.name}
+        
+This is a demonstration of PDF document analysis. In a production environment, this would:
+
+1. Extract text content from the PDF using a PDF parsing library
+2. Preserve formatting and page structure
+3. Handle images and tables within the document
+4. Extract metadata such as creation date, author, etc.
+
+For this demo, we'll simulate PDF content analysis with the following sample content:
+
+Executive Summary
+This quarterly business report outlines our company's performance metrics, strategic initiatives, and financial highlights for Q4 2024. Our organization has demonstrated significant growth across multiple key performance indicators.
+
+Key Findings:
+• Revenue increased by 15% compared to the previous quarter
+• Customer satisfaction scores improved to 4.2/5.0
+• Market expansion into three new geographic regions
+• Implementation of advanced analytics platform
+
+Financial Performance
+Total revenue: $2.4M (+15% QoQ)
+Operating expenses: $1.8M (+8% QoQ)
+Net profit margin: 25%
+Cash flow: $600K positive
+
+Strategic Initiatives
+1. Digital transformation roadmap
+2. Sustainability program launch
+3. Employee development program
+4. Customer experience enhancement
+
+Market Analysis
+The market conditions have been favorable, with increased demand for our core services. Competitive analysis shows we maintain a strong position in our primary market segments.
+
+Recommendations
+• Continue investment in technology infrastructure
+• Expand customer support capabilities
+• Explore partnership opportunities
+• Enhance data analytics capabilities
+
+Risk Assessment
+Primary risks include market volatility, supply chain disruptions, and regulatory changes. Mitigation strategies are in place for each identified risk factor.
+
+Conclusion
+The quarter has been successful, positioning us well for continued growth. The strategic initiatives are on track and expected to drive further improvements in the coming quarters.`;
+      } else {
+        // Handle text files
+        content = e.target?.result as string;
+      }
+      
       setDocumentContent(content);
-      // Simulate multi-page by splitting content
-      const pages = content.match(/.{1,3000}/g) || [content];
+      // Simulate multi-page by splitting content into pages
+      const pages = content.match(/.{1,2000}/gs) || [content];
       setTotalPages(pages.length);
       setCurrentPage(1);
     };
-    reader.readAsText(file);
+    
+    if (file.type === 'application/pdf') {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   // Handle text selection
@@ -319,7 +391,7 @@ const AIDocumentAnalysisSample: React.FC = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.txt,.docx"
+          accept=".pdf,.txt,.md,.csv,text/plain,application/pdf,text/markdown,text/csv"
           onChange={handleFileUpload}
           style={{ display: 'none' }}
         />

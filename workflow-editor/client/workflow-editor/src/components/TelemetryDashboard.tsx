@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import TelemetryChart, { TelemetryDataPoint } from './TelemetryChart';
 import { motion } from 'framer-motion';
 import { useWorkflowStore } from '../store/workflowStore';
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Checkbox, Label } from '@zamaz/ui';
+import { Play, Pause } from 'lucide-react';
 
 interface TelemetryMetric {
   id: string;
@@ -124,51 +126,55 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
   };
 
   return (
-    <div className="telemetry-dashboard">
-      <div className="dashboard-header">
-        <h2>Telemetry Dashboard</h2>
-        <div className="dashboard-controls">
-          <button
-            className={`simulate-button ${isSimulating ? 'active' : ''}`}
+    <div className="p-5 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-8 flex-wrap gap-5">
+        <h2 className="text-2xl font-bold text-gray-900">Telemetry Dashboard</h2>
+        <div className="flex items-center gap-5 flex-wrap">
+          <Button
+            variant={isSimulating ? 'danger' : 'primary'}
             onClick={() => setIsSimulating(!isSimulating)}
+            leftIcon={isSimulating ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           >
-            {isSimulating ? '⏹ Stop Simulation' : '▶ Start Simulation'}
-          </button>
+            {isSimulating ? 'Stop Simulation' : 'Start Simulation'}
+          </Button>
           
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
-            className="time-range-select"
-          >
-            <option value="1m">Last 1 minute</option>
-            <option value="5m">Last 5 minutes</option>
-            <option value="15m">Last 15 minutes</option>
-            <option value="30m">Last 30 minutes</option>
-            <option value="1h">Last 1 hour</option>
-          </select>
+          <Select value={timeRange} onValueChange={(value) => setTimeRange(value as any)}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1m">Last 1 minute</SelectItem>
+              <SelectItem value="5m">Last 5 minutes</SelectItem>
+              <SelectItem value="15m">Last 15 minutes</SelectItem>
+              <SelectItem value="30m">Last 30 minutes</SelectItem>
+              <SelectItem value="1h">Last 1 hour</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <div className="metric-toggles">
+          <div className="flex gap-4 flex-wrap">
             {metrics.map(metric => (
-              <label key={metric.id} className="metric-toggle">
-                <input
-                  type="checkbox"
+              <div key={metric.id} className="flex items-center gap-2">
+                <Checkbox
+                  id={metric.id}
                   checked={selectedMetrics.includes(metric.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
+                  onCheckedChange={(checked) => {
+                    if (checked) {
                       setSelectedMetrics([...selectedMetrics, metric.id]);
                     } else {
                       setSelectedMetrics(selectedMetrics.filter(id => id !== metric.id));
                     }
                   }}
                 />
-                <span style={{ color: metric.color }}>{metric.name}</span>
-              </label>
+                <Label htmlFor={metric.id} style={{ color: metric.color }} className="cursor-pointer font-medium">
+                  {metric.name}
+                </Label>
+              </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className={`charts-container ${layout}`}>
+      <div className={`grid gap-5 ${layout === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
         {metrics
           .filter(metric => selectedMetrics.includes(metric.id))
           .map((metric, index) => (
@@ -177,7 +183,6 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="chart-wrapper"
             >
               <TelemetryChart
                 data={filterDataByTimeRange(telemetryData[metric.id] || [])}
@@ -197,134 +202,10 @@ const TelemetryDashboard: React.FC<TelemetryDashboardProps> = ({
       </div>
 
       {selectedMetrics.length === 0 && (
-        <div className="no-metrics-selected">
+        <div className="bg-white rounded-lg p-10 text-center text-gray-500">
           <p>No metrics selected. Please select at least one metric to display.</p>
         </div>
       )}
-
-      <style>{`
-        .telemetry-dashboard {
-          padding: 20px;
-          background: #f5f5f5;
-          min-height: 100vh;
-        }
-
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 30px;
-          flex-wrap: wrap;
-          gap: 20px;
-        }
-
-        .dashboard-header h2 {
-          margin: 0;
-          color: #333;
-        }
-
-        .dashboard-controls {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          flex-wrap: wrap;
-        }
-
-        .simulate-button {
-          padding: 10px 20px;
-          border: none;
-          border-radius: 4px;
-          background: #2196F3;
-          color: white;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background 0.2s;
-        }
-
-        .simulate-button:hover {
-          background: #1976D2;
-        }
-
-        .simulate-button.active {
-          background: #f44336;
-        }
-
-        .simulate-button.active:hover {
-          background: #d32f2f;
-        }
-
-        .time-range-select {
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          background: white;
-          font-size: 14px;
-          cursor: pointer;
-        }
-
-        .metric-toggles {
-          display: flex;
-          gap: 15px;
-          flex-wrap: wrap;
-        }
-
-        .metric-toggle {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .metric-toggle input[type="checkbox"] {
-          cursor: pointer;
-        }
-
-        .charts-container {
-          display: grid;
-          gap: 20px;
-        }
-
-        .charts-container.grid {
-          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        }
-
-        .charts-container.list {
-          grid-template-columns: 1fr;
-        }
-
-        .chart-wrapper {
-          min-width: 0;
-        }
-
-        .no-metrics-selected {
-          background: white;
-          border-radius: 8px;
-          padding: 40px;
-          text-align: center;
-          color: #666;
-        }
-
-        @media (max-width: 768px) {
-          .dashboard-header {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .dashboard-controls {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .metric-toggles {
-            justify-content: center;
-          }
-
-          .charts-container.grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 };

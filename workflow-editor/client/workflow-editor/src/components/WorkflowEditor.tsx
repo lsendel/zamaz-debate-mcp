@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   addEdge,
@@ -14,6 +15,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { motion } from 'framer-motion';
+import { Button } from '@zamaz/ui';
+import { Save } from 'lucide-react';
 
 import StartNode from './nodes/StartNode';
 import EndNode from './nodes/EndNode';
@@ -67,7 +70,7 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId, onSave }) =
       setEdges((eds) => addEdge({
         ...params,
         animated: true,
-        style: { stroke: '#4CAF50', strokeWidth: 2 }
+        style: { stroke: '#10b981', strokeWidth: 2 }
       }, eds));
     },
     [nodes, setEdges]
@@ -143,10 +146,10 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId, onSave }) =
   }, [nodes]);
 
   return (
-    <div className="workflow-editor-container" style={{ height: '100vh', display: 'flex' }}>
+    <div className="flex h-screen">
       <NodePalette />
       
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div className="flex-1 relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -159,44 +162,38 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId, onSave }) =
           nodeTypes={nodeTypes}
           fitView
         >
-          <Background variant="dots" gap={12} size={1} />
+          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           <Controls />
           <MiniMap
             nodeStrokeColor={(n) => {
-              if (n.type === 'start') return '#4CAF50';
-              if (n.type === 'end') return '#f44336';
-              if (n.type === 'decision') return '#FF9800';
-              return '#2196F3';
+              if (n.type === 'start') return '#10b981';
+              if (n.type === 'end') return '#ef4444';
+              if (n.type === 'decision') return '#f59e0b';
+              return '#3b82f6';
             }}
             nodeColor={(n) => {
-              if (n.type === 'start') return '#81C784';
-              if (n.type === 'end') return '#ef5350';
-              if (n.type === 'decision') return '#FFB74D';
-              return '#64B5F6';
+              if (n.type === 'start') return '#86efac';
+              if (n.type === 'end') return '#fca5a5';
+              if (n.type === 'decision') return '#fde047';
+              return '#93c5fd';
             }}
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            }}
+            className="bg-gray-100"
           />
           
           <Panel position="top-right">
-            <motion.button
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleSave}
-              disabled={!isValidWorkflow}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: isValidWorkflow ? '#4CAF50' : '#ccc',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: isValidWorkflow ? 'pointer' : 'not-allowed',
-                fontSize: '16px',
-              }}
             >
-              Save Workflow
-            </motion.button>
+              <Button
+                variant="primary"
+                onClick={handleSave}
+                disabled={!isValidWorkflow}
+                leftIcon={<Save className="h-4 w-4" />}
+              >
+                Save Workflow
+              </Button>
+            </motion.div>
           </Panel>
         </ReactFlow>
       </div>

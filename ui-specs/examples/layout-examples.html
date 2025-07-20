@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zamaz Design System - Layout Examples</title>
+    <link rel="stylesheet" href="../css/zamaz-design-system.css">
+    <style>
+        body {
+            background-color: var(--bg-secondary);
+            margin: 0;
+            padding: 0;
+        }
+        .demo-section {
+            margin-bottom: 4rem;
+        }
+        .demo-box {
+            background: var(--primary-100);
+            border: 1px solid var(--primary-300);
+            padding: 2rem;
+            text-align: center;
+            color: var(--primary-700);
+            font-weight: var(--font-medium);
+            border-radius: var(--radius-md);
+        }
+        .sidebar {
+            background: white;
+            border-right: 1px solid var(--border-secondary);
+            padding: var(--space-6);
+            min-height: 100vh;
+        }
+        .main-content {
+            padding: var(--space-8);
+        }
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border-secondary);
+            padding: var(--space-4) var(--space-6);
+        }
+    </style>
+</head>
+<body>
+    <!-- App Shell Layout -->
+    <section class="demo-section">
+        <div class="header">
+            <div class="container">
+                <div class="flex items-center justify-between">
+                    <h1 class="h3" style="margin: 0;">Zamaz Enterprise App</h1>
+                    <nav>
+                        <ul class="nav" style="margin: 0;">
+                            <li><a href="#" class="nav-link active">Dashboard</a></li>
+                            <li><a href="#" class="nav-link">Reports</a></li>
+                            <li><a href="#" class="nav-link">Analytics</a></li>
+                            <li><a href="#" class="nav-link">Settings</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="container" style="margin-top: 3rem;">
+            <h2 class="h2" style="margin-bottom: 2rem;">Container Layouts</h2>
+            
+            <!-- Standard Container -->
+            <div class="demo-section">
+                <h3 class="h4">Standard Container</h3>
+                <p class="text-secondary" style="margin-bottom: 1rem;">Responsive container with max-width constraints</p>
+                <div style="background: white; padding: 2rem; border-radius: var(--radius-lg);">
+                    <div class="container" style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius-md);">
+                        <p>Container content - max-width adapts to viewport</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Layouts -->
+            <div class="demo-section">
+                <h3 class="h4">Grid System</h3>
+                <p class="text-secondary" style="margin-bottom: 1rem;">Responsive grid with automatic columns</p>
+                
+                <!-- 12 Column Grid -->
+                <div style="margin-bottom: 2rem;">
+                    <h5 class="h5">12 Column Grid</h5>
+                    <div class="grid grid-cols-12" style="gap: 1rem;">
+                        <div class="demo-box" style="grid-column: span 3;">3 cols</div>
+                        <div class="demo-box" style="grid-column: span 3;">3 cols</div>
+                        <div class="demo-box" style="grid-column: span 3;">3 cols</div>
+                        <div class="demo-box" style="grid-column: span 3;">3 cols</div>
+                    </div>
+                </div>
+
+                <!-- Responsive Grid -->
+                <div style="margin-bottom: 2rem;">
+                    <h5 class="h5">Responsive Grid (resize window to see changes)</h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4" style="gap: 1rem;">
+                        <div class="demo-box">Item 1</div>
+                        <div class="demo-box">Item 2</div>
+                        <div class="demo-box">Item 3</div>
+                        <div class="demo-box">Item 4</div>
+                    </div>
+                </div>
+
+                <!-- Card Grid -->
+                <div style="margin-bottom: 2rem;">
+                    <h5 class="h5">Card Grid Layout</h5>
+                    <div class="grid grid-cols-1 md:grid-cols-3" style="gap: 1.5rem;">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="h4">Feature One</h4>
+                                <p>Enterprise-grade security with advanced encryption and compliance.</p>
+                                <button class="btn btn-primary btn-sm" style="margin-top: 1rem;">Learn More</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="h4">Feature Two</h4>
+                                <p>Real-time analytics and reporting with customizable dashboards.</p>
+                                <button class="btn btn-primary btn-sm" style="margin-top: 1rem;">Learn More</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="h4">Feature Three</h4>
+                                <p>Seamless integration with existing enterprise systems.</p>
+                                <button class="btn btn-primary btn-sm" style="margin-top: 1rem;">Learn More</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flexbox Layouts -->
+            <div class="demo-section">
+                <h3 class="h4">Flexbox Layouts</h3>
+                
+                <!-- Split Layout -->
+                <div style="margin-bottom: 2rem;">
+                    <h5 class="h5">Split Layout (50/50)</h5>
+                    <div class="flex" style="gap: 2rem;">
+                        <div class="flex-1">
+                            <div class="demo-box">Left Content</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="demo-box">Right Content</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Layout -->
+                <div style="margin-bottom: 2rem;">
+                    <h5 class="h5">Sidebar Layout</h5>
+                    <div class="flex" style="gap: 2rem; min-height: 300px;">
+                        <div style="width: 280px; flex-shrink: 0;">
+                            <div class="demo-box" style="height: 100%;">Sidebar</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="demo-box" style="height: 100%;">Main Content Area</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Centered Content -->
+                <div style="margin-bottom: 2rem;">
+                    <h5 class="h5">Centered Content</h5>
+                    <div class="flex items-center justify-center" style="min-height: 200px; background: white; border-radius: var(--radius-lg);">
+                        <div style="text-align: center;">
+                            <h3 class="h3">Welcome Back</h3>
+                            <p class="text-secondary">Your dashboard is ready</p>
+                            <button class="btn btn-primary" style="margin-top: 1rem;">Get Started</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Layout Example -->
+            <div class="demo-section">
+                <h3 class="h4">Dashboard Layout</h3>
+                <div style="background: white; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
+                    <!-- Dashboard Header -->
+                    <div style="padding: 2rem; border-bottom: 1px solid var(--border-secondary);">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="h3">Analytics Dashboard</h2>
+                                <p class="text-secondary">Last updated: 5 minutes ago</p>
+                            </div>
+                            <div class="flex" style="gap: 1rem;">
+                                <button class="btn btn-secondary btn-sm">Export</button>
+                                <button class="btn btn-primary btn-sm">Refresh</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div style="padding: 2rem;">
+                        <div class="grid grid-cols-1 md:grid-cols-4" style="gap: 1.5rem; margin-bottom: 2rem;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="text-sm text-secondary uppercase" style="letter-spacing: 0.5px;">Total Users</p>
+                                    <p class="text-3xl font-bold">12,543</p>
+                                    <p class="text-sm" style="color: var(--success);">↑ 12.5%</p>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="text-sm text-secondary uppercase" style="letter-spacing: 0.5px;">Revenue</p>
+                                    <p class="text-3xl font-bold">$84.2k</p>
+                                    <p class="text-sm" style="color: var(--success);">↑ 8.2%</p>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="text-sm text-secondary uppercase" style="letter-spacing: 0.5px;">Orders</p>
+                                    <p class="text-3xl font-bold">3,421</p>
+                                    <p class="text-sm" style="color: var(--error);">↓ 2.1%</p>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="text-sm text-secondary uppercase" style="letter-spacing: 0.5px;">Conversion</p>
+                                    <p class="text-3xl font-bold">24.3%</p>
+                                    <p class="text-sm" style="color: var(--success);">↑ 4.2%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart Area -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3" style="gap: 1.5rem;">
+                            <div class="card" style="grid-column: span 2;">
+                                <div class="card-header">
+                                    <h4 class="h5">Revenue Overview</h4>
+                                </div>
+                                <div class="card-body" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                                    <p class="text-secondary">[Chart Placeholder]</p>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="h5">Top Products</h4>
+                                </div>
+                                <div class="card-body">
+                                    <ul style="list-style: none; padding: 0;">
+                                        <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-secondary);">
+                                            <div class="flex justify-between">
+                                                <span>Product A</span>
+                                                <span class="font-medium">$12,543</span>
+                                            </div>
+                                        </li>
+                                        <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-secondary);">
+                                            <div class="flex justify-between">
+                                                <span>Product B</span>
+                                                <span class="font-medium">$8,421</span>
+                                            </div>
+                                        </li>
+                                        <li style="padding: 0.75rem 0;">
+                                            <div class="flex justify-between">
+                                                <span>Product C</span>
+                                                <span class="font-medium">$6,234</span>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Layout -->
+            <div class="demo-section">
+                <h3 class="h4">Form Layout</h3>
+                <div class="card" style="max-width: 600px;">
+                    <div class="card-header">
+                        <h4 class="h4">User Registration</h4>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="grid grid-cols-1 md:grid-cols-2" style="gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" class="form-input" placeholder="John">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" class="form-input" placeholder="Doe">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-input" placeholder="john.doe@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Department</label>
+                                <select class="form-select">
+                                    <option>Select Department</option>
+                                    <option>Engineering</option>
+                                    <option>Marketing</option>
+                                    <option>Sales</option>
+                                    <option>Support</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <input type="checkbox" style="margin-right: 0.5rem;">
+                                    I agree to the terms and conditions
+                                </label>
+                            </div>
+                            <div class="flex" style="gap: 1rem; justify-content: flex-end;">
+                                <button type="button" class="btn btn-ghost">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Create Account</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

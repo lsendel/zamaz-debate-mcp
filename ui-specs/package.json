@@ -1,0 +1,56 @@
+{
+  "name": "@zamaz/ui-specs",
+  "version": "1.0.0",
+  "description": "Enterprise-grade UI design system for Zamaz applications",
+  "main": "index.js",
+  "style": "css/zamaz-design-system.css",
+  "files": [
+    "css/",
+    "components/",
+    "docs/",
+    "examples/",
+    "design-tokens.json",
+    "README.md",
+    "LLM_USAGE_INSTRUCTIONS.md"
+  ],
+  "keywords": [
+    "design-system",
+    "ui",
+    "react",
+    "enterprise",
+    "components",
+    "css-framework"
+  ],
+  "author": "Zamaz Design Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zamaz/ui-specs.git"
+  },
+  "scripts": {
+    "build": "echo 'No build required for CSS'",
+    "serve-examples": "npx http-server ./examples -p 8080",
+    "lint:css": "stylelint 'css/*.css'",
+    "format": "prettier --write '**/*.{json,md,html,css}'"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.1",
+    "stylelint": "^16.1.0",
+    "stylelint-config-standard": "^36.0.0",
+    "http-server": "^14.1.1"
+  },
+  "exports": {
+    ".": {
+      "style": "./css/zamaz-design-system.css",
+      "default": "./index.js"
+    },
+    "./css": "./css/zamaz-design-system.css",
+    "./tokens": "./design-tokens.json",
+    "./components/*": "./components/*.json"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

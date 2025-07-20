@@ -1,0 +1,169 @@
+{
+  "component": "Button",
+  "description": "Interactive button component for user actions",
+  "accessibility": {
+    "role": "button",
+    "ariaLabel": "Required for icon-only buttons",
+    "focusable": true,
+    "keyboardSupport": ["Enter", "Space"]
+  },
+  "variants": {
+    "primary": {
+      "description": "Primary action button",
+      "usage": "Main CTAs, form submissions, primary navigation",
+      "styles": {
+        "background": "#0066ff",
+        "color": "#ffffff",
+        "border": "none",
+        "hover": {
+          "background": "#0052cc",
+          "transform": "translateY(-1px)"
+        },
+        "active": {
+          "background": "#003d99",
+          "transform": "translateY(0)"
+        }
+      }
+    },
+    "secondary": {
+      "description": "Secondary action button",
+      "usage": "Alternative actions, cancel buttons",
+      "styles": {
+        "background": "#ffffff",
+        "color": "#212529",
+        "border": "1px solid #dee2e6",
+        "hover": {
+          "background": "#f8f9fa",
+          "borderColor": "#ced4da"
+        }
+      }
+    },
+    "ghost": {
+      "description": "Minimal button style",
+      "usage": "Tertiary actions, toolbar buttons",
+      "styles": {
+        "background": "transparent",
+        "color": "#212529",
+        "border": "none",
+        "hover": {
+          "background": "#f8f9fa"
+        }
+      }
+    },
+    "danger": {
+      "description": "Destructive action button",
+      "usage": "Delete, remove, destructive operations",
+      "styles": {
+        "background": "#ef4444",
+        "color": "#ffffff",
+        "border": "none",
+        "hover": {
+          "background": "#dc2626"
+        }
+      }
+    }
+  },
+  "sizes": {
+    "small": {
+      "padding": "8px 16px",
+      "fontSize": "12.8px",
+      "minHeight": "36px"
+    },
+    "medium": {
+      "padding": "12px 24px",
+      "fontSize": "16px",
+      "minHeight": "44px"
+    },
+    "large": {
+      "padding": "16px 32px",
+      "fontSize": "20px",
+      "minHeight": "52px"
+    }
+  },
+  "states": {
+    "default": {
+      "cursor": "pointer",
+      "transition": "all 150ms cubic-bezier(0, 0, 0.2, 1)"
+    },
+    "hover": {
+      "opacity": 1,
+      "shadow": "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+    },
+    "active": {
+      "outline": "none"
+    },
+    "focus": {
+      "outline": "2px solid #0066ff",
+      "outlineOffset": "2px"
+    },
+    "disabled": {
+      "opacity": 0.6,
+      "cursor": "not-allowed",
+      "pointerEvents": "none"
+    },
+    "loading": {
+      "cursor": "wait",
+      "opacity": 0.8
+    }
+  },
+  "props": {
+    "variant": {
+      "type": "string",
+      "required": false,
+      "default": "primary",
+      "options": ["primary", "secondary", "ghost", "danger"]
+    },
+    "size": {
+      "type": "string",
+      "required": false,
+      "default": "medium",
+      "options": ["small", "medium", "large"]
+    },
+    "disabled": {
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    "loading": {
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    "fullWidth": {
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    "leftIcon": {
+      "type": "ReactNode",
+      "required": false
+    },
+    "rightIcon": {
+      "type": "ReactNode",
+      "required": false
+    }
+  },
+  "examples": {
+    "react": {
+      "primary": "<Button variant=\"primary\">Save Changes</Button>",
+      "withIcon": "<Button leftIcon={<SaveIcon />}>Save Document</Button>",
+      "loading": "<Button loading>Processing...</Button>",
+      "disabled": "<Button disabled>Not Available</Button>",
+      "fullWidth": "<Button fullWidth>Continue to Checkout</Button>"
+    },
+    "html": {
+      "primary": "<button class=\"btn btn-primary\">Save Changes</button>",
+      "withIcon": "<button class=\"btn btn-primary\"><svg>...</svg> Save Document</button>",
+      "loading": "<button class=\"btn btn-primary\" disabled><span class=\"spinner\"></span> Processing...</button>",
+      "disabled": "<button class=\"btn btn-primary\" disabled>Not Available</button>"
+    }
+  },
+  "guidelines": [
+    "Use primary buttons for the main action on a page or form",
+    "Limit to one primary button per section",
+    "Use descriptive, action-oriented labels (e.g., 'Save Changes' not 'Submit')",
+    "Ensure minimum touch target size of 44x44px for mobile",
+    "Include loading states for async operations",
+    "Always provide visual feedback for interactions"
+  ]
+}

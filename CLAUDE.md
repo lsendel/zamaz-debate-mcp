@@ -69,3 +69,11 @@
 - URI malformed errors due to %PUBLIC_URL% placeholders
 - Empty provider/model dropdowns need real backend data
 - Login credentials for development: demo/demo123
+
+## Implementation and Testing Considerations
+- Update Makefile to remove unused targets and simplify usage
+- Prepare comprehensive E2E scenarios for reports
+- Develop Playwright-based testing for UI navigation and report verification
+- Create step-by-step navigation plan for accessing and testing reports
+- Ensure regression test coverage for different report scenarios
+- Prioritize real data and service connectivity over mocking

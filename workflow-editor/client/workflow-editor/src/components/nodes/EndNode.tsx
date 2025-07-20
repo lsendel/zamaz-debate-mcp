@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { motion } from 'framer-motion';
+import { Check, X, Ban, Square, Bell } from 'lucide-react';
 
 export interface EndNodeData {
   label: string;
@@ -12,21 +13,22 @@ export interface EndNodeData {
 }
 
 const EndNode: React.FC<NodeProps<EndNodeData>> = ({ data, selected }) => {
-  const getStatusColor = () => {
+  const getStatusStyles = () => {
     switch (data.configuration?.status) {
-      case 'success': return '#4CAF50';
-      case 'failure': return '#f44336';
-      case 'cancelled': return '#FF9800';
-      default: return '#757575';
+      case 'success': return 'bg-green-500';
+      case 'failure': return 'bg-red-500';
+      case 'cancelled': return 'bg-orange-500';
+      default: return 'bg-gray-500';
     }
   };
 
   const getStatusIcon = () => {
+    const iconProps = { className: "h-4 w-4" };
     switch (data.configuration?.status) {
-      case 'success': return '✓';
-      case 'failure': return '✗';
-      case 'cancelled': return '⊘';
-      default: return '■';
+      case 'success': return <Check {...iconProps} />;
+      case 'failure': return <X {...iconProps} />;
+      case 'cancelled': return <Ban {...iconProps} />;
+      default: return <Square {...iconProps} />;
     }
   };
 
@@ -35,36 +37,26 @@ const EndNode: React.FC<NodeProps<EndNodeData>> = ({ data, selected }) => {
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       whileHover={{ scale: 1.05 }}
-      style={{
-        background: getStatusColor(),
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '50px',
-        border: selected ? '2px solid #424242' : '2px solid transparent',
-        minWidth: '120px',
-        textAlign: 'center',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        cursor: 'pointer',
-      }}
+      className={`
+        ${getStatusStyles()} text-white px-5 py-2.5 rounded-full min-w-[120px] text-center
+        shadow-md cursor-pointer transition-all
+        ${selected ? 'ring-2 ring-gray-700 ring-offset-2' : ''}
+      `}
     >
-      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
-        <span style={{ marginRight: '8px' }}>{getStatusIcon()}</span>
+      <div className="font-bold text-sm flex items-center justify-center gap-2">
+        {getStatusIcon()}
         {data.label || 'End'}
       </div>
       {data.configuration?.notification && (
-        <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.9 }}>
-          🔔 Notify: {data.configuration.notificationChannels?.join(', ') || 'Default'}
+        <div className="text-xs mt-1 opacity-90 flex items-center justify-center gap-1">
+          <Bell className="h-3 w-3" />
+          Notify: {data.configuration.notificationChannels?.join(', ') || 'Default'}
         </div>
       )}
       <Handle
         type="target"
         position={Position.Left}
-        style={{
-          background: '#424242',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-        }}
+        className="w-3 h-3 bg-gray-700 border-2 border-white"
       />
     </motion.div>
   );

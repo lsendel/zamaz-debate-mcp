@@ -1,19 +1,17 @@
 import React from "react";
 import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
   Card,
   CardContent,
-  LinearProgress,
-} from "@mui/material";
+  CardHeader,
+  CardTitle,
+  Progress,
+} from "@zamaz/ui";
 import {
-  TrendingUp as TrendingUpIcon,
-  Forum as ForumIcon,
-  Timer as TimerIcon,
-  Group as GroupIcon,
-} from "@mui/icons-material";
+  TrendingUp,
+  MessageSquare,
+  Clock,
+  Users,
+} from "lucide-react";
 import { useAppSelector } from "../store";
 
 interface StatCardProps {
@@ -23,31 +21,34 @@ interface StatCardProps {
   color: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
-  <Card>
-    <CardContent>
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        <Box
-          sx={{
-            p: 1,
-            borderRadius: 1,
-            bgcolor: `${color}.light`,
-            color: `${color}.main`,
-            mr: 2,
-          }}
-        >
-          {icon}
-        </Box>
-        <Typography variant="h6" component="div">
-          {value}
-        </Typography>
-      </Box>
-      <Typography variant="body2" color="text.secondary">
-        {title}
-      </Typography>
-    </CardContent>
-  </Card>
-);
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => {
+  const colorClasses = {
+    primary: "bg-primary-100 text-primary-700",
+    success: "bg-green-100 text-green-700",
+    warning: "bg-yellow-100 text-yellow-700",
+    info: "bg-blue-100 text-blue-700",
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <div className="flex items-center mb-3">
+          <div
+            className={`p-2 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} mr-3`}
+          >
+            {icon}
+          </div>
+          <div className="text-2xl font-semibold">
+            {value}
+          </div>
+        </div>
+        <p className="text-sm text-gray-600">
+          {title}
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
 
 const AnalyticsPage: React.FC = () => {
   const { debates } = useAppSelector((state) => state.debate);
@@ -75,56 +76,46 @@ const AnalyticsPage: React.FC = () => {
       : 0;
 
   return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Analytics
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+    <div>
+      <h1 className="text-3xl font-bold mb-2">Analytics</h1>
+      <p className="text-gray-600 mb-6">
         Organization: {currentOrganization?.name}
-      </Typography>
+      </p>
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Total Debates"
-            value={totalDebates}
-            icon={<ForumIcon />}
-            color="primary"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Completed"
-            value={completedDebates}
-            icon={<TrendingUpIcon />}
-            color="success"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="In Progress"
-            value={inProgressDebates}
-            icon={<TimerIcon />}
-            color="warning"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Avg. Participants"
-            value={avgParticipants}
-            icon={<GroupIcon />}
-            color="info"
-          />
-        </Grid>
-      </Grid>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Total Debates"
+          value={totalDebates}
+          icon={<MessageSquare className="h-5 w-5" />}
+          color="primary"
+        />
+        <StatCard
+          title="Completed"
+          value={completedDebates}
+          icon={<TrendingUp className="h-5 w-5" />}
+          color="success"
+        />
+        <StatCard
+          title="In Progress"
+          value={inProgressDebates}
+          icon={<Clock className="h-5 w-5" />}
+          color="warning"
+        />
+        <StatCard
+          title="Avg. Participants"
+          value={avgParticipants}
+          icon={<Users className="h-5 w-5" />}
+          color="info"
+        />
+      </div>
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Debate Status Distribution
-            </Typography>
-            <Box sx={{ mt: 3 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Debate Status Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
               {["created", "in_progress", "completed", "cancelled"].map(
                 (status) => {
                   const count = debates.filter(
@@ -132,93 +123,101 @@ const AnalyticsPage: React.FC = () => {
                   ).length;
                   const percentage =
                     totalDebates > 0 ? (count / totalDebates) * 100 : 0;
+                  
+                  const statusLabels = {
+                    created: "Created",
+                    in_progress: "In Progress",
+                    completed: "Completed",
+                    cancelled: "Cancelled"
+                  };
+                  
                   return (
-                    <Box key={status} sx={{ mb: 2 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          mb: 1,
-                        }}
-                      >
-                        <Typography variant="body2">
-                          {status.replace("_", " ").charAt(0).toUpperCase() +
-                            status.slice(1).replace("_", " ")}
-                        </Typography>
-                        <Typography variant="body2">{count}</Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
+                    <div key={status}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">
+                          {statusLabels[status as keyof typeof statusLabels]}
+                        </span>
+                        <span className="text-sm text-gray-600">{count}</span>
+                      </div>
+                      <Progress
                         value={percentage}
-                        sx={{ height: 8, borderRadius: 1 }}
+                        variant={
+                          status === "completed" ? "success" :
+                          status === "in_progress" ? "warning" :
+                          status === "cancelled" ? "error" :
+                          "default"
+                        }
+                        showLabel={false}
                       />
-                    </Box>
+                    </div>
                   );
                 },
               )}
-            </Box>
-          </Paper>
-        </Grid>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Recent Activity
-            </Typography>
-            <Box sx={{ mt: 3 }}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
               {debates.slice(0, 5).map((debate) => (
-                <Box key={debate.id} sx={{ mb: 2 }}>
-                  <Typography variant="body2" gutterBottom>
+                <div key={debate.id} className="border-b border-gray-100 pb-3 last:border-0">
+                  <p className="font-medium text-sm">
                     {debate.topic}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </p>
+                  <p className="text-xs text-gray-500">
                     {new Date(debate.createdAt).toLocaleDateString()} -{" "}
                     {debate.status.replace("_", " ")}
-                  </Typography>
-                </Box>
+                  </p>
+                </div>
               ))}
               {debates.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
+                <p className="text-sm text-gray-500">
                   No debates yet
-                </Typography>
+                </p>
               )}
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Performance Metrics
-        </Typography>
-        <Grid container spacing={3} sx={{ mt: 1 }}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Average Debate Duration
-            </Typography>
-            <Typography variant="h5">
-              {completedDebates > 0 ? "N/A" : "-"}
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Average Rounds per Debate
-            </Typography>
-            <Typography variant="h5">{avgRounds}</Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Success Rate
-            </Typography>
-            <Typography variant="h5">
-              {totalDebates > 0
-                ? `${((completedDebates / totalDebates) * 100).toFixed(1)}%`
-                : "-"}
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Box>
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance Metrics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">
+                Average Debate Duration
+              </p>
+              <p className="text-2xl font-semibold">
+                {completedDebates > 0 ? "N/A" : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-1">
+                Average Rounds per Debate
+              </p>
+              <p className="text-2xl font-semibold">{avgRounds}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-1">
+                Success Rate
+              </p>
+              <p className="text-2xl font-semibold">
+                {totalDebates > 0
+                  ? `${((completedDebates / totalDebates) * 100).toFixed(1)}%`
+                  : "-"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

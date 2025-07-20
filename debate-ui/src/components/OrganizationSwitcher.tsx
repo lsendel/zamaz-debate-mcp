@@ -1,26 +1,24 @@
-import React from "react";
+import React from 'react';
+import { useAppSelector, useAppDispatch } from '../store';
+import { switchOrganization } from '../store/slices/organizationSlice';
+import { fetchDebates } from '../store/slices/debateSlice';
 import {
-  FormControl,
   Select,
-  MenuItem,
-  SelectChangeEvent,
-  Box,
-  Typography,
-  Chip,
-} from "@mui/material";
-import { Business as BusinessIcon } from "@mui/icons-material";
-import { useAppSelector, useAppDispatch } from "../store";
-import { switchOrganization } from "../store/slices/organizationSlice";
-import { fetchDebates } from "../store/slices/debateSlice";
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Badge,
+} from '@zamaz/ui';
+import { Building2 } from 'lucide-react';
 
 const OrganizationSwitcher: React.FC = () => {
   const dispatch = useAppDispatch();
   const { organizations, currentOrganization } = useAppSelector(
-    (state) => state.organization,
+    (state) => state.organization
   );
 
-  const handleChange = async (event: SelectChangeEvent) => {
-    const orgId = event.target.value;
+  const handleChange = async (orgId: string) => {
     await dispatch(switchOrganization(orgId));
     // Refresh debates for the new organization
     dispatch(fetchDebates());
@@ -28,50 +26,43 @@ const OrganizationSwitcher: React.FC = () => {
 
   if (organizations.length === 0) {
     return (
-      <Box sx={{ p: 2, textAlign: "center" }}>
-        <Typography variant="body2" color="text.secondary">
-          No organizations available
-        </Typography>
-      </Box>
+      <div className="p-4 text-center">
+        <p className="text-sm text-gray-500">No organizations available</p>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+    <div className="space-y-2">
+      <label className="text-xs font-medium text-gray-600 uppercase tracking-wider">
         Organization
-      </Typography>
-      <FormControl fullWidth size="small">
-        <Select
-          value={currentOrganization?.id || ""}
-          onChange={handleChange}
-          displayEmpty
-          startAdornment={
-            <BusinessIcon sx={{ mr: 1, color: "action.active" }} />
-          }
-        >
+      </label>
+      <Select
+        value={currentOrganization?.id || ''}
+        onValueChange={handleChange}
+      >
+        <SelectTrigger className="w-full">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-gray-500" />
+            <SelectValue placeholder="Select organization" />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
           {organizations.map((org) => (
-            <MenuItem key={org.id} value={org.id}>
-              <Box
-                sx={{ display: "flex", alignItems: "center", width: "100%" }}
-              >
-                <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                  {org.name}
-                </Typography>
+            <SelectItem key={org.id} value={org.id}>
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="truncate">{org.name}</span>
                 {org.apiKey && (
-                  <Chip
-                    label="API"
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
+                  <Badge variant="outline" className="text-xs">
+                    API
+                  </Badge>
                 )}
-              </Box>
-            </MenuItem>
+              </div>
+            </SelectItem>
           ))}
-        </Select>
-      </FormControl>
-    </Box>
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
 

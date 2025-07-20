@@ -1,57 +1,35 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../store';
+import { login, register, clearError } from '../store/slices/authSlice';
 import {
-  Box,
-  Paper,
-  TextField,
   Button,
-  Typography,
-  Tab,
-  Tabs,
+  Input,
+  FormField,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   Alert,
-  Container,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../store";
-import { login, register, clearError } from "../store/slices/authSlice";
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`auth-tabpanel-${index}`}
-      aria-labelledby={`auth-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
+  AlertDescription,
+} from '@zamaz/ui';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.auth);
 
-  const [tab, setTab] = useState(0);
-  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [isLogin, setIsLogin] = useState(true);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [registerForm, setRegisterForm] = useState({
-    username: "",
-    email: "",
-    password: "",
-    organizationName: "",
+    username: '',
+    email: '',
+    password: '',
+    organizationName: '',
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTab(newValue);
+  const handleTabChange = (showLogin: boolean) => {
+    setIsLogin(showLogin);
     dispatch(clearError());
   };
 
@@ -59,7 +37,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     const result = await dispatch(login(loginForm));
     if (login.fulfilled.match(result)) {
-      navigate("/");
+      navigate('/');
     }
   };
 
@@ -67,149 +45,168 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     const result = await dispatch(register(registerForm));
     if (register.fulfilled.match(result)) {
-      navigate("/");
+      navigate('/');
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <Typography component="h1" variant="h4" sx={{ mb: 4 }}>
-          Zamaz Debate System
-        </Typography>
-        <Paper elevation={3} sx={{ width: "100%", overflow: "hidden" }}>
-          <Tabs value={tab} onChange={handleTabChange} variant="fullWidth">
-            <Tab label="Login" />
-            <Tab label="Register" />
-          </Tabs>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900">Zamaz Debate System</h1>
+          <p className="mt-2 text-gray-600">Welcome back</p>
+        </div>
 
-          {error && (
-            <Alert severity="error" sx={{ m: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <TabPanel value={tab} index={0}>
-            <Box component="form" onSubmit={handleLogin}>
-              {process.env.NODE_ENV === "development" && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  <Typography variant="body2">
-                    <strong>Development Mode</strong>
-                    <br />
-                    Username: <code>demo</code>
-                    <br />
-                    Password: <code>demo123</code>
-                  </Typography>
-                </Alert>
-              )}
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Username"
-                autoComplete="username"
-                autoFocus
-                value={loginForm.username}
-                onChange={(e) =>
-                  setLoginForm({ ...loginForm, username: e.target.value })
-                }
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Password"
-                type="password"
-                autoComplete="current-password"
-                value={loginForm.password}
-                onChange={(e) =>
-                  setLoginForm({ ...loginForm, password: e.target.value })
-                }
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={loading}
+        <Card className="mt-8">
+          <CardHeader>
+            <div className="flex border-b border-gray-200">
+              <button
+                className={`flex-1 py-3 text-center font-medium transition-colors ${
+                  isLogin
+                    ? 'text-primary-600 border-b-2 border-primary-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => handleTabChange(true)}
               >
-                {loading ? "Logging in..." : "Login"}
-              </Button>
-            </Box>
-          </TabPanel>
-
-          <TabPanel value={tab} index={1}>
-            <Box component="form" onSubmit={handleRegister}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Organization Name"
-                autoFocus
-                value={registerForm.organizationName}
-                onChange={(e) =>
-                  setRegisterForm({
-                    ...registerForm,
-                    organizationName: e.target.value,
-                  })
-                }
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Username"
-                autoComplete="username"
-                value={registerForm.username}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, username: e.target.value })
-                }
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Email"
-                type="email"
-                autoComplete="email"
-                value={registerForm.email}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, email: e.target.value })
-                }
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                label="Password"
-                type="password"
-                autoComplete="new-password"
-                value={registerForm.password}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, password: e.target.value })
-                }
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={loading}
+                Login
+              </button>
+              <button
+                className={`flex-1 py-3 text-center font-medium transition-colors ${
+                  !isLogin
+                    ? 'text-primary-600 border-b-2 border-primary-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => handleTabChange(false)}
               >
-                {loading ? "Creating account..." : "Register"}
-              </Button>
-            </Box>
-          </TabPanel>
-        </Paper>
-      </Box>
-    </Container>
+                Register
+              </button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-6">
+            {error && (
+              <Alert variant="error" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {isLogin ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                {process.env.NODE_ENV === 'development' && (
+                  <Alert variant="info" className="mb-4">
+                    <AlertDescription>
+                      <strong>Development Mode</strong>
+                      <br />
+                      Username: <code className="bg-gray-100 px-1 rounded">demo</code>
+                      <br />
+                      Password: <code className="bg-gray-100 px-1 rounded">demo123</code>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <FormField label="Username" required>
+                  <Input
+                    type="text"
+                    autoComplete="username"
+                    autoFocus
+                    value={loginForm.username}
+                    onChange={(e) =>
+                      setLoginForm({ ...loginForm, username: e.target.value })
+                    }
+                    fullWidth
+                  />
+                </FormField>
+
+                <FormField label="Password" required>
+                  <Input
+                    type="password"
+                    autoComplete="current-password"
+                    value={loginForm.password}
+                    onChange={(e) =>
+                      setLoginForm({ ...loginForm, password: e.target.value })
+                    }
+                    fullWidth
+                  />
+                </FormField>
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  loading={loading}
+                  disabled={loading}
+                  className="mt-6"
+                >
+                  {loading ? 'Logging in...' : 'Login'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-4">
+                <FormField label="Organization Name" required>
+                  <Input
+                    type="text"
+                    autoFocus
+                    value={registerForm.organizationName}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        organizationName: e.target.value,
+                      })
+                    }
+                    fullWidth
+                  />
+                </FormField>
+
+                <FormField label="Username" required>
+                  <Input
+                    type="text"
+                    autoComplete="username"
+                    value={registerForm.username}
+                    onChange={(e) =>
+                      setRegisterForm({ ...registerForm, username: e.target.value })
+                    }
+                    fullWidth
+                  />
+                </FormField>
+
+                <FormField label="Email" required>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    value={registerForm.email}
+                    onChange={(e) =>
+                      setRegisterForm({ ...registerForm, email: e.target.value })
+                    }
+                    fullWidth
+                  />
+                </FormField>
+
+                <FormField label="Password" required>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={registerForm.password}
+                    onChange={(e) =>
+                      setRegisterForm({ ...registerForm, password: e.target.value })
+                    }
+                    fullWidth
+                  />
+                </FormField>
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  loading={loading}
+                  disabled={loading}
+                  className="mt-6"
+                >
+                  {loading ? 'Creating account...' : 'Register'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 

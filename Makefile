@@ -24,13 +24,17 @@ NC := \033[0m
 
 # Default ports
 UI_PORT ?= 3001
+WORKFLOW_UI_PORT ?= 3002
 POSTGRES_PORT ?= 5432
 REDIS_PORT ?= 6379
+NEO4J_PORT ?= 7687
+INFLUXDB_PORT ?= 8086
 MCP_ORGANIZATION_PORT ?= 5005
 MCP_LLM_PORT ?= 5002
 MCP_DEBATE_PORT ?= 5013
 MCP_RAG_PORT ?= 5004
 MCP_TEMPLATE_PORT ?= 5006
+WORKFLOW_API_PORT ?= 8080
 QDRANT_PORT ?= 6333
 JAEGER_UI_PORT ?= 16686
 PROMETHEUS_PORT ?= 9090
@@ -51,15 +55,22 @@ help: ## 📚 Show this help message
 	@echo '$(CYAN)╚══════════════════════════════════════════════════════════════════╝$(NC)'
 	@echo ''
 	@echo '$(WHITE)🚀 QUICK START (First Time):$(NC)'
-	@echo '  $(GREEN)make setup$(NC)     - Set up environment and install dependencies'
-	@echo '  $(GREEN)make start$(NC)     - Start all backend services'
-	@echo '  $(GREEN)make ui$(NC)        - Start UI development server (run in new terminal)'
+	@echo '  $(GREEN)make setup$(NC)        - Set up environment and install dependencies'
+	@echo '  $(GREEN)make start$(NC)        - Start all backend services'
+	@echo '  $(GREEN)make ui$(NC)           - Start debate UI (run in new terminal)'
+	@echo '  $(GREEN)make workflow$(NC)     - Start workflow editor UI (port 3002)'
+	@echo ''
+	@echo '$(WHITE)⚡ WORKFLOW EDITOR DEVELOPMENT:$(NC)'
+	@echo '  $(GREEN)make workflow-dev$(NC) - Start complete workflow editor (backend + frontend)'
+	@echo '  $(GREEN)make workflow-api$(NC) - Start workflow API backend only'
+	@echo '  $(GREEN)make workflow-ui$(NC)  - Start workflow editor frontend only'
+	@echo '  $(GREEN)make workflow-test$(NC)- Run workflow editor E2E tests'
 	@echo ''
 	@echo '$(WHITE)⚡ DAILY DEVELOPMENT:$(NC)'
-	@echo '  $(GREEN)make dev$(NC)       - Start everything (services + UI) for development'
-	@echo '  $(GREEN)make restart$(NC)   - Restart all services'
-	@echo '  $(GREEN)make stop$(NC)      - Stop all services'
-	@echo '  $(GREEN)make logs$(NC)      - View all service logs'
+	@echo '  $(GREEN)make dev$(NC)          - Start everything (services + UI) for development'
+	@echo '  $(GREEN)make restart$(NC)      - Restart all services'
+	@echo '  $(GREEN)make stop$(NC)         - Stop all services'
+	@echo '  $(GREEN)make logs$(NC)         - View all service logs'
 	@echo ''
 	@echo '$(WHITE)🧪 TESTING & QUALITY:$(NC)'
 	@echo '  $(GREEN)make test$(NC)      - Run all tests (quick validation)'
@@ -134,6 +145,10 @@ install: ## 📦 Install all dependencies
 		echo "$(YELLOW)Installing UI dependencies...$(NC)"; \
 		cd debate-ui && npm install --silent; \
 	fi
+	@if [ -d "workflow-editor/client/workflow-editor" ]; then \
+		echo "$(YELLOW)Installing workflow editor dependencies...$(NC)"; \
+		cd workflow-editor/client/workflow-editor && npm install --silent; \
+	fi
 	@if [ -d "e2e-tests" ]; then \
 		echo "$(YELLOW)Installing E2E test dependencies...$(NC)"; \
 		cd e2e-tests && npm install --silent; \
@@ -181,6 +196,77 @@ ui: ## 🎨 Start UI development server
 		exit 1; \
 	fi
 	@cd debate-ui && npm run dev
+
+# =============================================================================
+# WORKFLOW EDITOR COMMANDS
+# =============================================================================
+
+workflow: workflow-ui ## 🔄 Start workflow editor UI (shortcut)
+
+workflow-dev: ## 🎯 Start complete workflow editor (backend + frontend)
+	@echo "$(GREEN)🚀 Starting complete workflow editor environment...$(NC)"
+	@echo "$(YELLOW)Starting workflow API backend...$(NC)"
+	@$(MAKE) workflow-api &
+	@sleep 5
+	@echo "$(YELLOW)Starting workflow editor frontend...$(NC)"
+	@$(MAKE) workflow-ui
+
+workflow-api: ## 🔌 Start workflow API backend only
+	@echo "$(BLUE)Starting workflow API backend...$(NC)"
+	@if [ ! -d "workflow-editor" ]; then \
+		echo "$(RED)❌ workflow-editor directory not found$(NC)"; \
+		exit 1; \
+	fi
+	@cd workflow-editor && mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=$(WORKFLOW_API_PORT)
+
+workflow-ui: ## 🎨 Start workflow editor frontend only
+	@echo "$(BLUE)Starting workflow editor frontend...$(NC)"
+	@if [ ! -d "workflow-editor/client/workflow-editor" ]; then \
+		echo "$(RED)❌ workflow-editor frontend not found$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(WHITE)💡 Workflow Editor will be available at http://localhost:$(WORKFLOW_UI_PORT)$(NC)"
+	@cd workflow-editor/client/workflow-editor && BROWSER=none PORT=$(WORKFLOW_UI_PORT) npm start
+
+workflow-build: ## 🏗️ Build workflow editor (frontend + backend)
+	@echo "$(BLUE)Building workflow editor...$(NC)"
+	@if [ -d "workflow-editor/client/workflow-editor" ]; then \
+		echo "$(YELLOW)Building frontend...$(NC)"; \
+		cd workflow-editor/client/workflow-editor && npm install && npm run build; \
+	fi
+	@if [ -d "workflow-editor" ]; then \
+		echo "$(YELLOW)Building backend...$(NC)"; \
+		cd workflow-editor && mvn clean package -DskipTests; \
+	fi
+	@echo "$(GREEN)✅ Workflow editor build complete$(NC)"
+
+workflow-install: ## 📦 Install workflow editor dependencies
+	@echo "$(BLUE)Installing workflow editor dependencies...$(NC)"
+	@if [ -d "workflow-editor/client/workflow-editor" ]; then \
+		echo "$(YELLOW)Installing frontend dependencies...$(NC)"; \
+		cd workflow-editor/client/workflow-editor && npm install; \
+	fi
+	@echo "$(GREEN)✅ Workflow editor dependencies installed$(NC)"
+
+workflow-test: ## 🧪 Run workflow editor E2E tests
+	@echo "$(BLUE)Running workflow editor E2E tests...$(NC)"
+	@if [ -d "workflow-editor/e2e-tests" ]; then \
+		cd workflow-editor/e2e-tests && npm test; \
+	else \
+		echo "$(YELLOW)⚠️ Setting up E2E tests for workflow editor...$(NC)"; \
+		$(MAKE) setup-workflow-e2e; \
+	fi
+
+setup-workflow-e2e: ## 🎭 Set up Playwright E2E testing for workflow editor
+	@echo "$(BLUE)Setting up Playwright E2E testing...$(NC)"
+	@mkdir -p workflow-editor/e2e-tests
+	@cd workflow-editor/e2e-tests && \
+		if [ ! -f "package.json" ]; then \
+			npm init -y; \
+			npm install --save-dev @playwright/test; \
+			npx playwright install; \
+		fi
+	@echo "$(GREEN)✅ Playwright E2E testing setup complete$(NC)"
 
 # =============================================================================
 # TESTING
@@ -341,6 +427,7 @@ show-urls: ## 🌐 Show all service URLs and access information
 	@echo ""
 	@echo "$(WHITE)🎨 FRONTEND & USER INTERFACES:$(NC)"
 	@echo "  $(GREEN)Main UI (React)$(NC)     http://localhost:$(UI_PORT)"
+	@echo "  $(GREEN)Workflow Editor$(NC)    http://localhost:$(WORKFLOW_UI_PORT)"
 	@echo "  $(GREEN)Grafana Dashboard$(NC)  http://localhost:$(GRAFANA_PORT) $(YELLOW)(admin/admin)$(NC)"
 	@echo "  $(GREEN)Jaeger Tracing$(NC)     http://localhost:$(JAEGER_UI_PORT)"
 	@echo ""
@@ -350,6 +437,7 @@ show-urls: ## 🌐 Show all service URLs and access information
 	@echo "  $(BLUE)Debate Controller$(NC)  http://localhost:$(MCP_DEBATE_PORT)/actuator/health"
 	@echo "  $(BLUE)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)/actuator/health"
 	@echo "  $(BLUE)Template API$(NC)       http://localhost:$(MCP_TEMPLATE_PORT)/actuator/health"
+	@echo "  $(BLUE)Workflow API$(NC)       http://localhost:$(WORKFLOW_API_PORT)/actuator/health"
 	@echo ""
 	@echo "$(WHITE)📊 MONITORING & OBSERVABILITY:$(NC)"
 	@echo "  $(PURPLE)Prometheus$(NC)        http://localhost:$(PROMETHEUS_PORT)"
@@ -359,6 +447,8 @@ show-urls: ## 🌐 Show all service URLs and access information
 	@echo "$(WHITE)🗄️ DATABASES & STORAGE:$(NC)"
 	@echo "  $(YELLOW)PostgreSQL$(NC)        localhost:$(POSTGRES_PORT) $(YELLOW)(postgres/postgres)$(NC)"
 	@echo "  $(YELLOW)Redis Cache$(NC)       localhost:$(REDIS_PORT)"
+	@echo "  $(YELLOW)Neo4j Graph DB$(NC)    localhost:$(NEO4J_PORT) $(YELLOW)(neo4j/password)$(NC)"
+	@echo "  $(YELLOW)InfluxDB Time-Series$(NC) localhost:$(INFLUXDB_PORT)"
 	@echo ""
 	@echo "$(WHITE)🤖 AI & ML SERVICES:$(NC)"
 	@echo "  $(GREEN)Ollama (Local LLMs)$(NC) http://localhost:$(OLLAMA_PORT) $(YELLOW)(start with --profile llama)$(NC)"
@@ -369,13 +459,16 @@ show-urls: ## 🌐 Show all service URLs and access information
 	@echo "  $(CYAN)Debate API$(NC)         http://localhost:$(MCP_DEBATE_PORT)/swagger-ui.html"
 	@echo "  $(CYAN)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)/swagger-ui.html"
 	@echo "  $(CYAN)Template API$(NC)       http://localhost:$(MCP_TEMPLATE_PORT)/swagger-ui.html"
+	@echo "  $(CYAN)Workflow API$(NC)       http://localhost:$(WORKFLOW_API_PORT)/graphql $(YELLOW)(GraphQL)$(NC)"
 	@echo ""
 	@echo "$(WHITE)🔧 QUICK HEALTH CHECKS:$(NC)"
 	@echo "  $(GREEN)make health$(NC)        - Check all service health"
 	@echo "  $(GREEN)make status$(NC)        - Show Docker container status"
 	@echo "  $(GREEN)make logs$(NC)          - View all service logs"
 	@echo ""
-	@echo "$(YELLOW)💡 TIP: Bookmark http://localhost:$(UI_PORT) for the main application!$(NC)"
+	@echo "$(YELLOW)💡 TIPS:$(NC)"
+	@echo "  📖 Debate System: http://localhost:$(UI_PORT)"
+	@echo "  🔄 Workflow Editor: http://localhost:$(WORKFLOW_UI_PORT)"
 	@echo ""
 
 # =============================================================================

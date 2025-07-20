@@ -1,52 +1,37 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
-} from "react-router-dom";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import { Provider } from "react-redux";
-import { store } from "./store";
-import { useAppSelector, useAppDispatch } from "./store";
+} from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { store } from './store';
+import { useAppSelector, useAppDispatch } from './store';
+import { ToastProvider } from '@zamaz/ui';
 
 // Components
-import Layout from "./components/Layout";
-import LoginPage from "./components/LoginPage";
-import DebatesPage from "./components/DebatesPage";
-import DebateDetailPage from "./components/DebateDetailPage";
-import WorkflowEditorPage from "./components/WorkflowEditorPage";
-import AnalyticsPage from "./components/AnalyticsPage";
-import SettingsPage from "./components/SettingsPage";
-import OrganizationManagementPage from "./components/OrganizationManagementPage";
-import NotificationSnackbar from "./components/NotificationSnackbar";
+import Layout from './components/Layout';
+import LoginPage from './components/LoginPage';
+import DebatesPage from './components/DebatesPage';
+import DebateDetailPage from './components/DebateDetailPage';
+import WorkflowEditorPage from './components/WorkflowEditorPage';
+import AnalyticsPage from './components/AnalyticsPage';
+import SettingsPage from './components/SettingsPage';
+import OrganizationManagementPage from './components/OrganizationManagementPage';
+import NotificationSnackbar from './components/NotificationSnackbar';
 
 // Actions
-import { fetchOrganizations } from "./store/slices/organizationSlice";
+import { fetchOrganizations } from './store/slices/organizationSlice';
 
-const theme = createTheme({
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#1976d2",
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
     },
-    secondary: {
-      main: "#dc004e",
-    },
-    background: {
-      default: "#f5f5f5",
-    },
-  },
-  typography: {
-    fontFamily: [
-      "Roboto",
-      "-apple-system",
-      "BlinkMacSystemFont",
-      '"Segoe UI"',
-      "Arial",
-      "sans-serif",
-    ].join(","),
   },
 });
 
@@ -88,12 +73,13 @@ function AppContent() {
 function App() {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
-          <AppContent />
-        </Router>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </ToastProvider>
+      </QueryClientProvider>
     </Provider>
   );
 }

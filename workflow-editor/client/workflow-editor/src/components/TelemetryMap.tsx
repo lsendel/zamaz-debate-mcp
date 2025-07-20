@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import MapViewer, { MapMarker } from './MapViewer';
+import MapStyleSelector from './MapStyleSelector';
 import { motion } from 'framer-motion';
 import { useWorkflowStore } from '../store/workflowStore';
 import { MAP_CONFIG, getMapStyle } from '../config/mapConfig';
 import { getTelemetryService } from '../services/telemetryWebSocket';
+import { Card, CardContent, CardHeader, CardTitle, Button, Checkbox, Label, Badge } from '@zamaz/ui';
+import { Play, Pause, X } from 'lucide-react';
 
 interface TelemetryDevice {
   id: string;
@@ -46,6 +49,8 @@ const TelemetryMap: React.FC<TelemetryMapProps> = ({
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [deviceData, setDeviceData] = useState<Map<string, TelemetryDevice>>(new Map());
+  const [showAlertsState, setShowAlerts] = useState(showAlerts);
+  const [mapStyle, setMapStyle] = useState('cartoLight');
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -132,7 +137,7 @@ const TelemetryMap: React.FC<TelemetryMapProps> = ({
   const markers: MapMarker[] = useMemo(() => {
     return allDevices
       .filter(device => {
-        if (!showAlerts && device.status === 'alert') return false;
+        if (!showAlertsState && device.status === 'alert') return false;
         return true;
       })
       .map(device => ({
@@ -160,7 +165,7 @@ const TelemetryMap: React.FC<TelemetryMapProps> = ({
           `
         }
       }));
-  }, [allDevices, showAlerts]);
+  }, [allDevices, showAlertsState]);
 
   const handleMarkerClick = useCallback((marker: MapMarker) => {
     const device = allDevices.find(d => d.id === marker.id);
@@ -184,294 +189,169 @@ const TelemetryMap: React.FC<TelemetryMapProps> = ({
   const stats = getDeviceStats();
 
   return (
-    <div className="telemetry-map-container">
-      <div className="map-header">
-        <h3>Spatial Telemetry Visualization</h3>
-        <div className="map-controls">
-          <button
-            className={`simulate-button ${isSimulating ? 'active' : ''}`}
-            onClick={() => setIsSimulating(!isSimulating)}
-          >
-            {isSimulating ? '⏹ Stop' : '▶ Simulate'}
-          </button>
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle>Spatial Telemetry Visualization</CardTitle>
+          <div className="flex items-center gap-5">
+            <Button
+              variant={isSimulating ? 'danger' : 'primary'}
+              size="sm"
+              onClick={() => setIsSimulating(!isSimulating)}
+              leftIcon={isSimulating ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            >
+              {isSimulating ? 'Stop' : 'Simulate'}
+            </Button>
           
-          <div className="view-options">
-            <label>
-              <input
-                type="checkbox"
-                checked={showClustering}
-                disabled
-              />
-              Clustering
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showHeatmap}
-                disabled
-              />
-              Heatmap
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showAlerts}
-                onChange={(e) => setShowAlerts(e.target.checked)}
-              />
-              Alerts
-            </label>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="clustering"
+                  checked={showClustering}
+                  disabled
+                />
+                <Label htmlFor="clustering" className="text-gray-500">
+                  Clustering
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="heatmap"
+                  checked={showHeatmap}
+                  disabled
+                />
+                <Label htmlFor="heatmap" className="text-gray-500">
+                  Heatmap
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="alerts"
+                  checked={showAlertsState}
+                  onCheckedChange={(checked) => setShowAlerts(!!checked)}
+                />
+                <Label htmlFor="alerts">
+                  Alerts
+                </Label>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="map-stats">
-        <motion.div
-          className="stat-card"
-          whileHover={{ scale: 1.05 }}
-        >
-          <span className="stat-value">{stats.total}</span>
-          <span className="stat-label">Total Devices</span>
-        </motion.div>
-        <motion.div
-          className="stat-card active"
-          whileHover={{ scale: 1.05 }}
-        >
-          <span className="stat-value">{stats.active}</span>
-          <span className="stat-label">Active</span>
-        </motion.div>
-        <motion.div
-          className="stat-card alert"
-          whileHover={{ scale: 1.05 }}
-        >
-          <span className="stat-value">{stats.alerts}</span>
-          <span className="stat-label">Alerts</span>
-        </motion.div>
-        <motion.div
-          className="stat-card inactive"
-          whileHover={{ scale: 1.05 }}
-        >
-          <span className="stat-value">{stats.inactive}</span>
-          <span className="stat-label">Inactive</span>
-        </motion.div>
-      </div>
-
-      <MapViewer
-        center={center || MAP_CONFIG.bounds.stamfordCT.center as [number, number]}
-        zoom={zoom || MAP_CONFIG.bounds.stamfordCT.zoom}
-        markers={markers}
-        height={height}
-        onMarkerClick={handleMarkerClick}
-        onBoundsChange={setMapBounds}
-        style={getMapStyle()}
-        minZoom={MAP_CONFIG.zoomLevels.min}
-        maxZoom={MAP_CONFIG.zoomLevels.max}
-      />
-
-      {selectedDevice && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="device-details"
-        >
-          <button
-            className="close-button"
-            onClick={() => setSelectedDevice(null)}
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+          <motion.div
+            className="bg-gray-50 p-4 rounded-lg text-center cursor-pointer hover:shadow-md transition-shadow"
+            whileHover={{ scale: 1.05 }}
           >
-            ✕
-          </button>
-          <h4>{selectedDevice.name}</h4>
-          <div className="device-info">
-            <p><strong>ID:</strong> {selectedDevice.id}</p>
-            <p><strong>Type:</strong> {selectedDevice.type}</p>
-            <p><strong>Status:</strong> 
-              <span className={`status ${selectedDevice.status}`}>
-                {selectedDevice.status}
-              </span>
-            </p>
-            <p><strong>Location:</strong> {selectedDevice.location.lat.toFixed(4)}, {selectedDevice.location.lng.toFixed(4)}</p>
-            {selectedDevice.lastValue !== undefined && (
-              <p><strong>Last Value:</strong> {selectedDevice.lastValue.toFixed(2)}</p>
-            )}
-            {selectedDevice.lastUpdate && (
-              <p><strong>Last Update:</strong> {new Date(selectedDevice.lastUpdate).toLocaleString()}</p>
-            )}
-          </div>
-        </motion.div>
-      )}
+            <span className="block text-3xl font-bold text-gray-900 mb-1">{stats.total}</span>
+            <span className="text-sm text-gray-600">Total Devices</span>
+          </motion.div>
+          <motion.div
+            className="bg-green-50 p-4 rounded-lg text-center cursor-pointer hover:shadow-md transition-shadow"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="block text-3xl font-bold text-green-700 mb-1">{stats.active}</span>
+            <span className="text-sm text-green-600">Active</span>
+          </motion.div>
+          <motion.div
+            className="bg-red-50 p-4 rounded-lg text-center cursor-pointer hover:shadow-md transition-shadow"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="block text-3xl font-bold text-red-700 mb-1">{stats.alerts}</span>
+            <span className="text-sm text-red-600">Alerts</span>
+          </motion.div>
+          <motion.div
+            className="bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:shadow-md transition-shadow"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="block text-3xl font-bold text-gray-600 mb-1">{stats.inactive}</span>
+            <span className="text-sm text-gray-500">Inactive</span>
+          </motion.div>
+        </div>
 
-      <style>{`
-        .telemetry-map-container {
-          background: white;
-          border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
+        <div className="relative">
+          <MapViewer
+            center={center || MAP_CONFIG.bounds.stamfordCT.center as [number, number]}
+            zoom={zoom || MAP_CONFIG.bounds.stamfordCT.zoom}
+            markers={markers}
+            height={height}
+            onMarkerClick={handleMarkerClick}
+            onBoundsChange={setMapBounds}
+            style={getMapStyle(mapStyle)}
+            minZoom={MAP_CONFIG.zoomLevels.min}
+            maxZoom={MAP_CONFIG.zoomLevels.max}
+          />
+          <MapStyleSelector
+            currentStyle={mapStyle}
+            onStyleChange={setMapStyle}
+            position="top-right"
+          />
+        </div>
 
-        .map-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
+        {selectedDevice && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute bottom-5 right-5 bg-white p-5 rounded-lg shadow-lg max-w-sm z-50"
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedDevice(null)}
+              className="absolute top-3 right-3 p-1"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <h4 className="text-lg font-semibold mb-3">{selectedDevice.name}</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">ID:</span>
+                <span className="font-medium">{selectedDevice.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium">{selectedDevice.type}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Status:</span>
+                <Badge
+                  variant={
+                    selectedDevice.status === 'active' ? 'success' :
+                    selectedDevice.status === 'alert' ? 'danger' :
+                    'secondary'
+                  }
+                >
+                  {selectedDevice.status}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Location:</span>
+                <span className="font-medium">
+                  {selectedDevice.location.lat.toFixed(4)}, {selectedDevice.location.lng.toFixed(4)}
+                </span>
+              </div>
+              {selectedDevice.lastValue !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Last Value:</span>
+                  <span className="font-medium">{selectedDevice.lastValue.toFixed(2)}</span>
+                </div>
+              )}
+              {selectedDevice.lastUpdate && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Last Update:</span>
+                  <span className="font-medium">
+                    {new Date(selectedDevice.lastUpdate).toLocaleTimeString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
-        .map-header h3 {
-          margin: 0;
-          color: #333;
-        }
-
-        .map-controls {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-        }
-
-        .simulate-button {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 4px;
-          background: #2196F3;
-          color: white;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background 0.2s;
-        }
-
-        .simulate-button:hover {
-          background: #1976D2;
-        }
-
-        .simulate-button.active {
-          background: #f44336;
-        }
-
-        .view-options {
-          display: flex;
-          gap: 15px;
-        }
-
-        .view-options label {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .map-stats {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 15px;
-          margin-bottom: 20px;
-        }
-
-        .stat-card {
-          background: #f5f5f5;
-          padding: 15px;
-          border-radius: 8px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .stat-card:hover {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card.active {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-
-        .stat-card.alert {
-          background: #ffebee;
-          color: #c62828;
-        }
-
-        .stat-card.inactive {
-          background: #fafafa;
-          color: #757575;
-        }
-
-        .stat-value {
-          display: block;
-          font-size: 28px;
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-
-        .stat-label {
-          display: block;
-          font-size: 14px;
-          opacity: 0.8;
-        }
-
-        .device-details {
-          position: absolute;
-          bottom: 20px;
-          right: 20px;
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-          max-width: 300px;
-          z-index: 1000;
-        }
-
-        .device-details h4 {
-          margin: 0 0 15px 0;
-          color: #333;
-        }
-
-        .device-info p {
-          margin: 8px 0;
-          font-size: 14px;
-          color: #666;
-        }
-
-        .device-info strong {
-          color: #333;
-        }
-
-        .status {
-          margin-left: 8px;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 500;
-        }
-
-        .status.active {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-
-        .status.alert {
-          background: #ffebee;
-          color: #c62828;
-        }
-
-        .status.inactive {
-          background: #fafafa;
-          color: #757575;
-        }
-
-        .close-button {
-          position: absolute;
-          top: 15px;
-          right: 15px;
-          background: none;
-          border: none;
-          font-size: 18px;
-          cursor: pointer;
-          color: #999;
-          padding: 0;
-        }
-
-        .close-button:hover {
-          color: #333;
-        }
-      `}</style>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

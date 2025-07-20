@@ -1,34 +1,34 @@
-import React, { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  Typography,
-  IconButton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Slider,
-  Paper,
-  Chip,
-} from "@mui/material";
-import {
-  Close as CloseIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-} from "@mui/icons-material";
-import { useAppSelector, useAppDispatch } from "../store";
+import React, { useState, useEffect } from 'react';
+import { useAppSelector, useAppDispatch } from '../store';
 import {
   closeCreateDebateDialog,
   addNotification,
-} from "../store/slices/uiSlice";
-import { createDebate } from "../store/slices/debateSlice";
-import llmClient, { LLMProvider, LLMModel } from "../api/llmClient";
+} from '../store/slices/uiSlice';
+import { createDebate } from '../store/slices/debateSlice';
+import llmClient, { LLMProvider, LLMModel } from '../api/llmClient';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Button,
+  Input,
+  Textarea,
+  FormField,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+} from '@zamaz/ui';
+import { X, Plus, Trash2, Sliders } from 'lucide-react';
 
 interface Participant {
   name: string;
@@ -45,26 +45,26 @@ const CreateDebateDialog: React.FC = () => {
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [topic, setTopic] = useState("");
-  const [description, setDescription] = useState("");
+  const [topic, setTopic] = useState('');
+  const [description, setDescription] = useState('');
   const [maxRounds, setMaxRounds] = useState(5);
   const [turnTimeLimit, setTurnTimeLimit] = useState(60);
   const [participants, setParticipants] = useState<Participant[]>([
     {
-      name: "Participant 1",
-      llmProvider: "",
-      model: "",
+      name: 'Participant 1',
+      llmProvider: '',
+      model: '',
       systemPrompt:
-        "You are a thoughtful debater who provides well-reasoned arguments.",
+        'You are a thoughtful debater who provides well-reasoned arguments.',
       temperature: 0.7,
       maxTokens: 1000,
     },
     {
-      name: "Participant 2",
-      llmProvider: "",
-      model: "",
+      name: 'Participant 2',
+      llmProvider: '',
+      model: '',
       systemPrompt:
-        "You are a critical thinker who challenges assumptions and provides counterarguments.",
+        'You are a critical thinker who challenges assumptions and provides counterarguments.',
       temperature: 0.7,
       maxTokens: 1000,
     },
@@ -75,7 +75,7 @@ const CreateDebateDialog: React.FC = () => {
       try {
         const providerList = await llmClient.listProviders();
         setProviders(providerList);
-        
+
         // Set default providers and models after loading
         if (providerList.length > 0) {
           const updatedParticipants = participants.map((participant, index) => {
@@ -85,7 +85,7 @@ const CreateDebateDialog: React.FC = () => {
               return {
                 ...participant,
                 llmProvider: defaultProvider.id,
-                model: defaultModel.id
+                model: defaultModel.id,
               };
             }
             return participant;
@@ -93,7 +93,7 @@ const CreateDebateDialog: React.FC = () => {
           setParticipants(updatedParticipants);
         }
       } catch (error) {
-        console.error("Failed to load providers:", error);
+        console.error('Failed to load providers:', error);
       }
     };
 
@@ -105,26 +105,26 @@ const CreateDebateDialog: React.FC = () => {
   const handleClose = () => {
     dispatch(closeCreateDebateDialog());
     // Reset form
-    setTopic("");
-    setDescription("");
+    setTopic('');
+    setDescription('');
     setMaxRounds(5);
     setTurnTimeLimit(60);
     setParticipants([
       {
-        name: "Participant 1",
-        llmProvider: "",
-        model: "",
+        name: 'Participant 1',
+        llmProvider: '',
+        model: '',
         systemPrompt:
-          "You are a thoughtful debater who provides well-reasoned arguments.",
+          'You are a thoughtful debater who provides well-reasoned arguments.',
         temperature: 0.7,
         maxTokens: 1000,
       },
       {
-        name: "Participant 2",
-        llmProvider: "",
-        model: "",
+        name: 'Participant 2',
+        llmProvider: '',
+        model: '',
         systemPrompt:
-          "You are a critical thinker who challenges assumptions and provides counterarguments.",
+          'You are a critical thinker who challenges assumptions and provides counterarguments.',
         temperature: 0.7,
         maxTokens: 1000,
       },
@@ -135,9 +135,9 @@ const CreateDebateDialog: React.FC = () => {
     if (!topic || participants.length < 2) {
       dispatch(
         addNotification({
-          type: "error",
-          message: "Please provide a topic and at least 2 participants",
-        }),
+          type: 'error',
+          message: 'Please provide a topic and at least 2 participants',
+        })
       );
       return;
     }
@@ -148,34 +148,36 @@ const CreateDebateDialog: React.FC = () => {
         createDebate({
           topic,
           description,
-          participants,
           maxRounds,
           turnTimeLimit,
-        }),
+          participants: participants.map((p) => ({
+            name: p.name,
+            llmConfig: {
+              provider: p.llmProvider,
+              model: p.model,
+              temperature: p.temperature,
+              maxTokens: p.maxTokens,
+              systemPrompt: p.systemPrompt,
+            },
+          })),
+        })
       );
 
-      // Check if the action was fulfilled successfully
       if (createDebate.fulfilled.match(resultAction)) {
+        handleClose();
         dispatch(
           addNotification({
-            type: "success",
-            message: "Debate created successfully",
-          }),
+            type: 'success',
+            message: 'Debate created successfully!',
+          })
         );
-        handleClose();
-      } else {
-        // Handle rejected case
-        const errorMessage =
-          resultAction.error?.message || "Failed to create debate";
-        throw new Error(errorMessage);
       }
     } catch (error) {
       dispatch(
         addNotification({
-          type: "error",
-          message:
-            error instanceof Error ? error.message : "Failed to create debate",
-        }),
+          type: 'error',
+          message: 'Failed to create debate',
+        })
       );
     } finally {
       setLoading(false);
@@ -183,13 +185,16 @@ const CreateDebateDialog: React.FC = () => {
   };
 
   const addParticipant = () => {
+    const defaultProvider = providers[0];
+    const defaultModel = defaultProvider?.models[0];
+    
     setParticipants([
       ...participants,
       {
         name: `Participant ${participants.length + 1}`,
-        llmProvider: providers.length > 0 ? providers[0].id : "",
-        model: providers.length > 0 && providers[0].models.length > 0 ? providers[0].models[0].id : "",
-        systemPrompt: "",
+        llmProvider: defaultProvider?.id || '',
+        model: defaultModel?.id || '',
+        systemPrompt: 'You are a debate participant with unique perspectives.',
         temperature: 0.7,
         maxTokens: 1000,
       },
@@ -200,247 +205,214 @@ const CreateDebateDialog: React.FC = () => {
     setParticipants(participants.filter((_, i) => i !== index));
   };
 
-  const updateParticipant = (
-    index: number,
-    field: keyof Participant,
-    value: any,
-  ) => {
-    const updated = [...participants];
-    updated[index] = { ...updated[index], [field]: value };
-    
-    // If changing provider, also update the model to first available model
-    if (field === 'llmProvider') {
-      const provider = providers.find(p => p.id === value);
-      if (provider && provider.models.length > 0) {
-        updated[index] = { ...updated[index], model: provider.models[0].id };
-      }
-    }
-    
-    setParticipants(updated);
+  const updateParticipant = (index: number, updates: Partial<Participant>) => {
+    setParticipants(
+      participants.map((p, i) => (i === index ? { ...p, ...updates } : p))
+    );
   };
 
-  const getAvailableModels = (providerId: string) => {
-    const providerInfo = providers.find((p) => p.id === providerId);
-    return providerInfo?.models || [];
+  const getModelsForProvider = (providerId: string) => {
+    const provider = providers.find((p) => p.id === providerId);
+    return provider?.models || [];
   };
 
   return (
-    <Dialog
-      open={createDebateDialogOpen}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-    >
-      <DialogTitle>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography variant="h6">Create New Debate</Typography>
-          <IconButton onClick={handleClose}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            margin="normal"
-            multiline
-            rows={3}
-          />
+    <Dialog open={createDebateDialogOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Debate</DialogTitle>
+          <DialogDescription>
+            Set up a new AI debate with multiple participants
+          </DialogDescription>
+        </DialogHeader>
 
-          <Box sx={{ mt: 3, mb: 2 }}>
-            <Typography gutterBottom>Max Rounds: {maxRounds}</Typography>
-            <Slider
-              value={maxRounds}
-              onChange={(_, value) => setMaxRounds(value as number)}
-              min={1}
-              max={20}
-              marks
-              step={1}
+        <div className="space-y-6 py-4">
+          <FormField label="Topic" required>
+            <Input
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Enter the debate topic"
+              fullWidth
             />
-          </Box>
+          </FormField>
 
-          <Box sx={{ mb: 3 }}>
-            <Typography gutterBottom>
-              Turn Time Limit: {turnTimeLimit} seconds
-            </Typography>
-            <Slider
-              value={turnTimeLimit}
-              onChange={(_, value) => setTurnTimeLimit(value as number)}
-              min={30}
-              max={300}
-              marks={[
-                { value: 30, label: "30s" },
-                { value: 60, label: "1m" },
-                { value: 120, label: "2m" },
-                { value: 300, label: "5m" },
-              ]}
-              step={30}
+          <FormField label="Description">
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Provide additional context for the debate"
+              rows={3}
             />
-          </Box>
+          </FormField>
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Participants
-            </Typography>
-            <Button
-              startIcon={<AddIcon />}
-              onClick={addParticipant}
-              size="small"
-            >
-              Add Participant
-            </Button>
-          </Box>
-
-          {participants.map((participant, index) => (
-            <Paper key={index} sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <TextField
-                  label="Name"
-                  value={participant.name}
-                  onChange={(e) =>
-                    updateParticipant(index, "name", e.target.value)
-                  }
-                  size="small"
-                  sx={{ flexGrow: 1, mr: 1 }}
-                />
-                {participants.length > 2 && (
-                  <IconButton
-                    onClick={() => removeParticipant(index)}
-                    color="error"
-                    size="small"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                )}
-              </Box>
-
-              <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Provider</InputLabel>
-                  <Select
-                    value={participant.llmProvider}
-                    onChange={(e) =>
-                      updateParticipant(index, "llmProvider", e.target.value)
-                    }
-                    label="Provider"
-                  >
-                    {providers.map((provider) => (
-                      <MenuItem key={provider.id} value={provider.id}>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          {provider.name}
-                          {provider.status !== "ACTIVE" && (
-                            <Chip
-                              label={provider.status}
-                              size="small"
-                              color="error"
-                              variant="outlined"
-                            />
-                          )}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <InputLabel>Model</InputLabel>
-                  <Select
-                    value={participant.model}
-                    onChange={(e) =>
-                      updateParticipant(index, "model", e.target.value)
-                    }
-                    label="Model"
-                  >
-                    {getAvailableModels(participant.llmProvider).map(
-                      (model) => (
-                        <MenuItem key={model.id} value={model.id}>
-                          {model.name}
-                        </MenuItem>
-                      ),
-                    )}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <TextField
-                fullWidth
-                label="System Prompt"
-                value={participant.systemPrompt}
-                onChange={(e) =>
-                  updateParticipant(index, "systemPrompt", e.target.value)
-                }
-                size="small"
-                multiline
-                rows={2}
-                sx={{ mb: 2 }}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Max Rounds">
+              <Input
+                type="number"
+                value={maxRounds}
+                onChange={(e) => setMaxRounds(parseInt(e.target.value) || 5)}
+                min={1}
+                max={20}
               />
+            </FormField>
 
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="caption">
-                    Temperature: {participant.temperature}
-                  </Typography>
-                  <Slider
-                    value={participant.temperature}
-                    onChange={(_, value) =>
-                      updateParticipant(index, "temperature", value)
-                    }
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="caption">
-                    Max Tokens: {participant.maxTokens}
-                  </Typography>
-                  <Slider
-                    value={participant.maxTokens}
-                    onChange={(_, value) =>
-                      updateParticipant(index, "maxTokens", value)
-                    }
-                    min={100}
-                    max={4000}
-                    step={100}
-                    size="small"
-                  />
-                </Box>
-              </Box>
-            </Paper>
-          ))}
-        </Box>
+            <FormField label="Turn Time Limit (seconds)">
+              <Input
+                type="number"
+                value={turnTimeLimit}
+                onChange={(e) => setTurnTimeLimit(parseInt(e.target.value) || 60)}
+                min={10}
+                max={300}
+              />
+            </FormField>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Participants</h3>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={addParticipant}
+                leftIcon={<Plus className="h-4 w-4" />}
+              >
+                Add Participant
+              </Button>
+            </div>
+
+            {participants.map((participant, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base">
+                      <Input
+                        value={participant.name}
+                        onChange={(e) =>
+                          updateParticipant(index, { name: e.target.value })
+                        }
+                        className="font-semibold"
+                      />
+                    </CardTitle>
+                    {participants.length > 2 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeParticipant(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Provider">
+                      <Select
+                        value={participant.llmProvider}
+                        onValueChange={(value) =>
+                          updateParticipant(index, { llmProvider: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {providers.map((provider) => (
+                            <SelectItem key={provider.id} value={provider.id}>
+                              {provider.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+
+                    <FormField label="Model">
+                      <Select
+                        value={participant.model}
+                        onValueChange={(value) =>
+                          updateParticipant(index, { model: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getModelsForProvider(participant.llmProvider).map(
+                            (model) => (
+                              <SelectItem key={model.id} value={model.id}>
+                                {model.name}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                  </div>
+
+                  <FormField label="System Prompt">
+                    <Textarea
+                      value={participant.systemPrompt}
+                      onChange={(e) =>
+                        updateParticipant(index, {
+                          systemPrompt: e.target.value,
+                        })
+                      }
+                      rows={3}
+                    />
+                  </FormField>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label={`Temperature: ${participant.temperature}`}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={participant.temperature}
+                        onChange={(e) =>
+                          updateParticipant(index, {
+                            temperature: parseFloat(e.target.value),
+                          })
+                        }
+                        className="w-full"
+                      />
+                    </FormField>
+
+                    <FormField label="Max Tokens">
+                      <Input
+                        type="number"
+                        value={participant.maxTokens}
+                        onChange={(e) =>
+                          updateParticipant(index, {
+                            maxTokens: parseInt(e.target.value) || 1000,
+                          })
+                        }
+                        min={100}
+                        max={4000}
+                      />
+                    </FormField>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            loading={loading}
+            disabled={loading || !topic || participants.length < 2}
+          >
+            Create Debate
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading || !topic || participants.length < 2}
-        >
-          {loading ? "Creating..." : "Create Debate"}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };

@@ -1,30 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Box,
-  Paper,
-  Typography,
-  Chip,
-  IconButton,
   Button,
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
   Avatar,
   Divider,
-  LinearProgress,
+  Progress,
   Tooltip,
-  Snackbar,
+  TooltipProvider,
+  Badge,
+  Toast,
+  ToastProvider,
+  ToastViewport,
+  ToastClose,
+  ToastDescription,
   Alert,
-} from "@mui/material";
-import Grid from "@mui/material/Grid2";
+} from "@zamaz/ui";
 import {
-  ArrowBack as ArrowBackIcon,
-  PlayArrow as PlayIcon,
-  Pause as PauseIcon,
-  Stop as StopIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-} from "@mui/icons-material";
+  ArrowLeft,
+  Play,
+  Pause,
+  StopCircle,
+  Download,
+  RefreshCw,
+} from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../store";
 import {
   fetchDebate,
@@ -114,7 +116,7 @@ const DebateDetailPage: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "primary" | "success" | "error" => {
     switch (status?.toUpperCase()) {
       case "CREATED":
         return "default";
@@ -135,287 +137,278 @@ const DebateDetailPage: React.FC = () => {
   };
 
   if (loading || !currentDebate) {
-    return <LinearProgress />;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+      </div>
+    );
   }
 
   return (
-    <Box>
-      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-        <IconButton onClick={() => navigate("/debates")} sx={{ mr: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-          {currentDebate.topic}
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Chip
-            label={currentDebate.status.replace("_", " ")}
-            color={getStatusColor(currentDebate.status) as any}
-          />
-          <Chip
-            label={`Format: ${currentDebate.format || 'OXFORD'}`}
-            variant="outlined"
-          />
-          {(isPolling || isConnected) && (
-            <Chip
-              label="Live"
-              color="success"
-              size="small"
-              sx={{
-                animation: "pulse 2s infinite",
-                "@keyframes pulse": {
-                  "0%": { opacity: 1 },
-                  "50%": { opacity: 0.5 },
-                  "100%": { opacity: 1 },
-                },
-              }}
-            />
-          )}
-        </Box>
-      </Box>
+    <TooltipProvider>
+      <ToastProvider>
+        <div className="space-y-6">
+          <div className="flex items-center mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/debates")}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold flex-1">
+              {currentDebate.topic}
+            </h1>
+            <div className="flex gap-2">
+              <Badge variant={getStatusVariant(currentDebate.status)}>
+                {currentDebate.status.replace("_", " ")}
+              </Badge>
+              <Badge variant="outline">
+                Format: {currentDebate.format || 'OXFORD'}
+              </Badge>
+              {(isPolling || isConnected) && (
+                <Badge variant="success" className="animate-pulse">
+                  Live
+                </Badge>
+              )}
+            </div>
+          </div>
 
       {currentDebate.description && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="body1">{currentDebate.description}</Typography>
-        </Paper>
-      )}
+            <Card className="mb-6">
+              <CardContent>
+                <p className="text-gray-700">{currentDebate.description}</p>
+              </CardContent>
+            </Card>
+          )}
 
       {/* Add Debate Progress Component */}
-      {currentDebate && (
-        <DebateProgress debate={currentDebate} isPolling={isPolling} />
-      )}
+          {currentDebate && (
+            <DebateProgress debate={currentDebate} isPolling={isPolling} />
+          )}
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                Debate Responses
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Debate Responses</CardTitle>
+                    <div className="flex gap-2">
                 {currentDebate.status === "CREATED" && (
-                  <Button
-                    startIcon={<PlayIcon />}
-                    variant="contained"
-                    color="primary"
-                    onClick={() => dispatch(startDebate(currentDebate.id))}
-                  >
-                    Start
-                  </Button>
-                )}
-                {currentDebate.status === "IN_PROGRESS" && (
-                  <Button
-                    startIcon={<PauseIcon />}
-                    variant="outlined"
-                    onClick={() => dispatch(pauseDebate(currentDebate.id))}
-                  >
-                    Pause
-                  </Button>
-                )}
-                {(currentDebate.status === "CREATED" ||
-                  currentDebate.status === "IN_PROGRESS") && (
-                  <Button
-                    startIcon={<StopIcon />}
-                    variant="outlined"
-                    color="error"
-                    onClick={() => dispatch(cancelDebate(currentDebate.id))}
-                  >
-                    Cancel
-                  </Button>
-                )}
-                <Tooltip title="Refresh">
-                  <IconButton
-                    onClick={() => dispatch(fetchDebate(currentDebate.id))}
-                  >
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Box>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => dispatch(startDebate(currentDebate.id))}
+                          leftIcon={<Play className="h-4 w-4" />}
+                        >
+                          Start
+                        </Button>
+                      )}
+                      {currentDebate.status === "IN_PROGRESS" && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => dispatch(pauseDebate(currentDebate.id))}
+                          leftIcon={<Pause className="h-4 w-4" />}
+                        >
+                          Pause
+                        </Button>
+                      )}
+                      {(currentDebate.status === "CREATED" ||
+                        currentDebate.status === "IN_PROGRESS") && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => dispatch(cancelDebate(currentDebate.id))}
+                          leftIcon={<StopCircle className="h-4 w-4" />}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Tooltip content="Refresh">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => dispatch(fetchDebate(currentDebate.id))}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </Tooltip>
+              </div>
+                  </div>
+                </CardHeader>
 
-            <Box sx={{ maxHeight: 600, overflowY: "auto" }}>
-              {currentDebate.rounds && currentDebate.rounds.length > 0 ? (
+            <CardContent className="max-h-[600px] overflow-y-auto">
+                  {currentDebate.rounds && currentDebate.rounds.length > 0 ? (
                 currentDebate.rounds.map((round) => (
-                  <Box key={round.roundNumber} sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                      Round {round.roundNumber}
-                    </Typography>
+                      <div key={round.roundNumber} className="mb-6">
+                        <h3 className="text-lg font-semibold mb-3">
+                          Round {round.roundNumber}
+                        </h3>
                     {round.responses.map((response) => {
-                      const participant = currentDebate.participants.find(
-                        (p) => p.id === response.participantId,
-                      );
-                      const participantIndex =
-                        currentDebate.participants.findIndex(
-                          (p) => p.id === response.participantId,
-                        );
-                      return (
-                        <Card key={response.id} sx={{ mb: 2 }}>
-                          <CardContent>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                mb: 1,
-                              }}
-                            >
-                              <Avatar
-                                sx={{
-                                  bgcolor: getParticipantColor(participantIndex),
-                                  width: 32,
-                                  height: 32,
-                                  mr: 1,
-                                }}
-                              >
-                                {participant?.name.charAt(0)}
-                              </Avatar>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{ flexGrow: 1 }}
-                              >
-                                {participant?.name}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {new Date(
-                                  response.timestamp,
-                                ).toLocaleTimeString()}
-                              </Typography>
-                            </Box>
-                            <Typography variant="body2">
-                              {response.content}
-                            </Typography>
-                            {response.tokenCount && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {response.tokenCount} tokens
-                              </Typography>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </Box>
-                ))
+                          const participant = currentDebate.participants.find(
+                            (p) => p.id === response.participantId,
+                          );
+                          const participantIndex =
+                            currentDebate.participants.findIndex(
+                              (p) => p.id === response.participantId,
+                            );
+                          return (
+                            <Card key={response.id} className="mb-3">
+                              <CardContent>
+                                <div className="flex items-center mb-2">
+                                  <Avatar
+                                    size="sm"
+                                    style={{
+                                      backgroundColor: getParticipantColor(participantIndex),
+                                    }}
+                                    className="mr-2"
+                                  >
+                                    {participant?.name.charAt(0)}
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <p className="font-medium">
+                                      {participant?.name}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm text-gray-500">
+                                    {new Date(
+                                      response.timestamp,
+                                    ).toLocaleTimeString()}
+                                  </p>
+                                </div>
+                                <p className="text-gray-700">
+                                  {response.content}
+                                </p>
+                                {response.tokenCount && (
+                                  <p className="text-sm text-gray-500 mt-2">
+                                    {response.tokenCount} tokens
+                                  </p>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                  </div>
+                    ))
               ) : (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="h6" color="text.secondary">
-                    No debate rounds yet
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {currentDebate.status === 'CREATED' ? 'Start the debate to see rounds' : 'This debate has no recorded rounds'}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          </Paper>
-        </Grid>
+                    <div className="text-center py-8">
+                      <h3 className="text-lg font-medium text-gray-500 mb-2">
+                        No debate rounds yet
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {currentDebate.status === 'CREATED' ? 'Start the debate to see rounds' : 'This debate has no recorded rounds'}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Participants
-            </Typography>
+        <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Participants</CardTitle>
+                </CardHeader>
+                <CardContent>
             {currentDebate.participants && Array.isArray(currentDebate.participants) ? (
-              currentDebate.participants.map((participant, index) => {
-                // Handle both string and object participants
-                const isString = typeof participant === 'string';
-                const name = isString ? participant : participant.name;
-                const llmProvider = isString ? 'Unknown' : participant.llmProvider;
-                const model = isString ? participant : participant.model;
-                
-                return (
-                  <Box key={isString ? participant : participant.id} sx={{ mb: 2 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <Avatar
-                        sx={{
-                          bgcolor: getParticipantColor(index),
-                          width: 40,
-                          height: 40,
-                          mr: 2,
-                        }}
-                      >
-                        {name.charAt(0)}
-                      </Avatar>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="subtitle1">
-                          {name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {isString ? `Model: ${participant}` : `${llmProvider} - ${model}`}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    {!isString && participant.systemPrompt && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ ml: 7 }}
-                      >
-                        {participant.systemPrompt}
-                      </Typography>
-                    )}
-                    <Divider sx={{ mt: 2 }} />
-                  </Box>
-                );
-              })
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No participants found
-              </Typography>
-            )}
-          </Paper>
+                    currentDebate.participants.map((participant, index) => {
+                      // Handle both string and object participants
+                      const isString = typeof participant === 'string';
+                      const name = isString ? participant : participant.name;
+                      const llmProvider = isString ? 'Unknown' : participant.llmProvider;
+                      const model = isString ? participant : participant.model;
+                      
+                      return (
+                        <div key={isString ? participant : participant.id} className="mb-4">
+                          <div className="flex items-center mb-2">
+                            <Avatar
+                              size="md"
+                              style={{
+                                backgroundColor: getParticipantColor(index),
+                              }}
+                              className="mr-3"
+                            >
+                              {name.charAt(0)}
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {name}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {isString ? `Model: ${participant}` : `${llmProvider} - ${model}`}
+                              </p>
+                            </div>
+                          </div>
+                          {!isString && participant.systemPrompt && (
+                            <p className="text-sm text-gray-600 ml-12">
+                              {participant.systemPrompt}
+                            </p>
+                          )}
+                          {index < currentDebate.participants.length - 1 && (
+                            <Divider className="mt-4" />
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No participants found
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Export
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <Button
-                startIcon={<DownloadIcon />}
-                onClick={() => handleExport("json")}
-                fullWidth
-              >
-                Export as JSON
-              </Button>
-              <Button
-                startIcon={<DownloadIcon />}
-                onClick={() => handleExport("markdown")}
-                fullWidth
-              >
-                Export as Markdown
-              </Button>
-              <Button
-                startIcon={<DownloadIcon />}
-                onClick={() => handleExport("pdf")}
-                fullWidth
-              >
-                Export as PDF
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+          <Card>
+                <CardHeader>
+                  <CardTitle>Export</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleExport("json")}
+                    leftIcon={<Download className="h-4 w-4" />}
+                    className="w-full"
+                  >
+                    Export as JSON
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleExport("markdown")}
+                    leftIcon={<Download className="h-4 w-4" />}
+                    className="w-full"
+                  >
+                    Export as Markdown
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleExport("pdf")}
+                    leftIcon={<Download className="h-4 w-4" />}
+                    className="w-full"
+                  >
+                    Export as PDF
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
       
       {/* Update Notification */}
-      <Snackbar
-        open={showUpdateNotification}
-        autoHideDuration={3000}
-        onClose={() => setShowUpdateNotification(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setShowUpdateNotification(false)}
-          severity="info"
-          sx={{ width: '100%' }}
-        >
-          New round added to the debate!
-        </Alert>
-      </Snackbar>
-    </Box>
+          {showUpdateNotification && (
+            <Toast
+              open={showUpdateNotification}
+              onOpenChange={setShowUpdateNotification}
+              variant="default"
+            >
+              <ToastDescription>New round added to the debate!</ToastDescription>
+              <ToastClose />
+            </Toast>
+          )}
+          <ToastViewport />
+        </div>
+      </ToastProvider>
+    </TooltipProvider>
   );
 };
 

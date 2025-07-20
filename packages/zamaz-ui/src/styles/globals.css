@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 224 5% 15%;
+    
+    --primary: 221 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 160 44% 36%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 210 17% 96%;
+    --muted-foreground: 215 9% 46%;
+    
+    --accent: 270 91% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 210 14% 91%;
+    --input: 210 14% 91%;
+    --ring: 221 100% 50%;
+    
+    --radius: 0.5rem;
+  }
+  
+  [data-theme="dark"] {
+    --background: 224 47% 5%;
+    --foreground: 210 17% 96%;
+    
+    --primary: 221 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 160 44% 36%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 215 9% 20%;
+    --muted-foreground: 217 10% 64%;
+    
+    --accent: 270 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 215 9% 20%;
+    --input: 215 9% 20%;
+    --ring: 221 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+  }
+  
+  [data-theme="dark"] body {
+    @apply bg-gray-950 text-gray-50;
+  }
+}

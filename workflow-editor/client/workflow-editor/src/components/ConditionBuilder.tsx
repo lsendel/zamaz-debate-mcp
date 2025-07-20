@@ -20,19 +20,19 @@ interface ConditionBuilderProps {
 }
 
 const defaultFields: Field[] = [
-  { name: 'temperature', label: 'Temperature', valueEditorType: 'number' },
-  { name: 'pressure', label: 'Pressure', valueEditorType: 'number' },
-  { name: 'humidity', label: 'Humidity', valueEditorType: 'number' },
-  { name: 'speed', label: 'Speed', valueEditorType: 'number' },
-  { name: 'location.lat', label: 'Latitude', valueEditorType: 'number' },
-  { name: 'location.lng', label: 'Longitude', valueEditorType: 'number' },
+  { name: 'temperature', label: 'Temperature', inputType: 'number' },
+  { name: 'pressure', label: 'Pressure', inputType: 'number' },
+  { name: 'humidity', label: 'Humidity', inputType: 'number' },
+  { name: 'speed', label: 'Speed', inputType: 'number' },
+  { name: 'location.lat', label: 'Latitude', inputType: 'number' },
+  { name: 'location.lng', label: 'Longitude', inputType: 'number' },
   { name: 'status', label: 'Status', valueEditorType: 'select', values: [
     { name: 'active', label: 'Active' },
     { name: 'inactive', label: 'Inactive' },
     { name: 'error', label: 'Error' }
   ]},
-  { name: 'deviceId', label: 'Device ID', valueEditorType: 'text' },
-  { name: 'timestamp', label: 'Timestamp', valueEditorType: 'datetime-local' },
+  { name: 'deviceId', label: 'Device ID', inputType: 'text' },
+  { name: 'timestamp', label: 'Timestamp', inputType: 'datetime-local' },
 ];
 
 const customOperators = [

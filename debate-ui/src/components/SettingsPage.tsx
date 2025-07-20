@@ -1,30 +1,35 @@
 import React, { useState } from "react";
 import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
   Button,
   Divider,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
+  Badge,
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  Chip,
-} from "@mui/material";
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  FormField,
+  Textarea,
+} from "@zamaz/ui";
 import {
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  ContentCopy as ContentCopyIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-} from "@mui/icons-material";
+  Trash2,
+  Plus,
+  Copy,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../store";
 import { generateApiKey } from "../store/slices/organizationSlice";
 import { addNotification } from "../store/slices/uiSlice";
@@ -162,197 +167,205 @@ const SettingsPage: React.FC = () => {
 
   if (!currentOrganization) {
     return (
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Settings
-        </Typography>
-        <Alert severity="warning">No organization selected</Alert>
-      </Box>
+      <div>
+        <h1 className="text-3xl font-bold mb-4">Settings</h1>
+        <Alert variant="warning">No organization selected</Alert>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Settings
-      </Typography>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Settings</h1>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Organization Settings
-        </Typography>
-        <TextField
-          fullWidth
-          label="Organization Name"
-          value={orgSettings.name}
-          onChange={(e) =>
-            setOrgSettings({ ...orgSettings, name: e.target.value })
-          }
-          margin="normal"
-        />
-        <TextField
-          fullWidth
-          label="Description"
-          value={orgSettings.description}
-          onChange={(e) =>
-            setOrgSettings({ ...orgSettings, description: e.target.value })
-          }
-          margin="normal"
-          multiline
-          rows={3}
-        />
-        <Button
-          variant="contained"
-          onClick={handleUpdateOrganization}
-          sx={{ mt: 2 }}
-        >
-          Update Settings
-        </Button>
-      </Paper>
-
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          API Configuration
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <TextField
-            fullWidth
-            label="API Key"
-            value={currentOrganization.apiKey || "No API key generated"}
-            type={showApiKey ? "text" : "password"}
-            InputProps={{
-              readOnly: true,
-              endAdornment: (
-                <>
-                  <IconButton
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    edge="end"
-                  >
-                    {showApiKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                  {currentOrganization.apiKey && (
-                    <IconButton onClick={handleCopyApiKey} edge="end">
-                      <ContentCopyIcon />
-                    </IconButton>
-                  )}
-                </>
-              ),
-            }}
-          />
-          <Button variant="outlined" onClick={handleGenerateApiKey}>
-            {currentOrganization.apiKey ? "Regenerate" : "Generate"}
-          </Button>
-        </Box>
-        {currentOrganization.apiKey && (
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            Keep your API key secure. It provides full access to your
-            organization's resources.
-          </Alert>
-        )}
-      </Paper>
-
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Users
-          </Typography>
+      <Card>
+        <CardHeader>
+          <CardTitle>Organization Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <FormField label="Organization Name">
+            <Input
+              value={orgSettings.name}
+              onChange={(e) =>
+                setOrgSettings({ ...orgSettings, name: e.target.value })
+              }
+              fullWidth
+            />
+          </FormField>
+          <FormField label="Description">
+            <Textarea
+              value={orgSettings.description}
+              onChange={(e) =>
+                setOrgSettings({ ...orgSettings, description: e.target.value })
+              }
+              rows={3}
+            />
+          </FormField>
           <Button
-            startIcon={<AddIcon />}
-            variant="outlined"
-            onClick={() => setAddUserDialogOpen(true)}
+            variant="primary"
+            onClick={handleUpdateOrganization}
           >
-            Add User
+            Update Settings
           </Button>
-        </Box>
-        <Divider sx={{ mb: 2 }} />
-        <List>
-          {users.map((u) => (
-            <ListItem key={u.id}>
-              <ListItemText primary={u.username} secondary={u.email} />
-              <Chip
-                label={u.role}
-                size="small"
-                color={u.role === "admin" ? "primary" : "default"}
-                sx={{ mr: 2 }}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>API Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Input
+                value={currentOrganization.apiKey || "No API key generated"}
+                type={showApiKey ? "text" : "password"}
+                readOnly
+                fullWidth
+                className="pr-20"
               />
-              <ListItemSecondaryAction>
-                {u.id !== user?.id && (
-                  <IconButton
-                    edge="end"
-                    onClick={() => handleRemoveUser(u.id)}
-                    color="error"
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                {currentOrganization.apiKey && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyApiKey}
                   >
-                    <DeleteIcon />
-                  </IconButton>
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 )}
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
+              </div>
+            </div>
+            <Button variant="secondary" onClick={handleGenerateApiKey}>
+              {currentOrganization.apiKey ? "Regenerate" : "Generate"}
+            </Button>
+          </div>
+          {currentOrganization.apiKey && (
+            <Alert variant="warning" className="mt-4">
+              Keep your API key secure. It provides full access to your
+              organization's resources.
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
-      <Dialog
-        open={addUserDialogOpen}
-        onClose={() => setAddUserDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add User</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Username"
-            value={newUser.username}
-            onChange={(e) =>
-              setNewUser({ ...newUser, username: e.target.value })
-            }
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Email"
-            type="email"
-            value={newUser.email}
-            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Password"
-            type="password"
-            value={newUser.password}
-            onChange={(e) =>
-              setNewUser({ ...newUser, password: e.target.value })
-            }
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            select
-            label="Role"
-            value={newUser.role}
-            onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-            margin="normal"
-            SelectProps={{
-              native: true,
-            }}
-          >
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-          </TextField>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Users</CardTitle>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setAddUserDialogOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Add User
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Divider className="mb-4" />
+          <div className="space-y-3">
+            {users.map((u) => (
+              <div key={u.id} className="flex items-center justify-between py-2">
+                <div className="flex-1">
+                  <p className="font-medium">{u.username}</p>
+                  <p className="text-sm text-gray-500">{u.email}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={u.role === "admin" ? "primary" : "default"}>
+                    {u.role}
+                  </Badge>
+                  {u.id !== user?.id && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveUser(u.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add User</DialogTitle>
+            <DialogDescription>
+              Add a new user to your organization
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <FormField label="Username" required>
+              <Input
+                value={newUser.username}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, username: e.target.value })
+                }
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Email" required>
+              <Input
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Password" required>
+              <Input
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                fullWidth
+              />
+            </FormField>
+            <FormField label="Role">
+              <Select
+                value={newUser.role}
+                onValueChange={(value) => setNewUser({ ...newUser, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleAddUser}
+              disabled={!newUser.username || !newUser.email || !newUser.password}
+            >
+              Add User
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddUserDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleAddUser}
-            variant="contained"
-            disabled={!newUser.username || !newUser.email || !newUser.password}
-          >
-            Add User
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

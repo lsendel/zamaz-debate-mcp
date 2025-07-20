@@ -26,7 +26,7 @@ const StamfordGeospatialSample: React.FC = () => {
   const [addresses, setAddresses] = useState<StamfordAddress[]>([]);
   const [selectedView, setSelectedView] = useState<'map' | 'dashboard' | 'analysis'>('map');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { addTelemetryData } = useWorkflowStore();
+  const { createWorkflow, addTelemetryData } = useWorkflowStore();
 
   // Generate random addresses within Stamford boundaries
   const generateStamfordAddresses = () => {
@@ -130,7 +130,6 @@ const StamfordGeospatialSample: React.FC = () => {
 
   // Create sample workflow for proximity alerts
   const createProximityWorkflow = () => {
-    const { createWorkflow } = useWorkflowStore();
     
     const workflow = {
       id: 'stamford-proximity-workflow',

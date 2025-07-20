@@ -1,7 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import MapViewer, { MapMarker } from './MapViewer';
+import MapStyleSelector from './MapStyleSelector';
 import { MAP_CONFIG, getMapStyle } from '../config/mapConfig';
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@zamaz/ui';
+import { Circle, Square, Pentagon, Route, Check, X, Trash2 } from 'lucide-react';
 
 export interface SpatialQuery {
   id: string;
@@ -36,6 +39,7 @@ const SpatialQueryBuilder: React.FC<SpatialQueryBuilderProps> = ({
   const [drawMode, setDrawMode] = useState<'radius' | 'polygon' | 'rectangle' | 'corridor' | null>(null);
   const [queries, setQueries] = useState<SpatialQuery[]>(existingQueries);
   const [selectedQueryId, setSelectedQueryId] = useState<string | null>(null);
+  const [mapStyle, setMapStyle] = useState('cartoLight');
   
   // Drawing state
   const [drawingPoints, setDrawingPoints] = useState<[number, number][]>([]);
@@ -190,429 +194,220 @@ const SpatialQueryBuilder: React.FC<SpatialQueryBuilderProps> = ({
   };
 
   return (
-    <div className="spatial-query-builder">
-      <div className="query-controls">
-        <h3>Spatial Query Builder</h3>
-        
-        <div className="drawing-tools">
-          <button
-            className={`tool-button ${drawMode === 'radius' ? 'active' : ''}`}
-            onClick={() => startDrawing('radius')}
-            disabled={drawMode !== null}
-          >
-            <span>⭕</span> Radius
-          </button>
-          <button
-            className={`tool-button ${drawMode === 'rectangle' ? 'active' : ''}`}
-            onClick={() => startDrawing('rectangle')}
-            disabled={drawMode !== null}
-          >
-            <span>▭</span> Rectangle
-          </button>
-          <button
-            className={`tool-button ${drawMode === 'polygon' ? 'active' : ''}`}
-            onClick={() => startDrawing('polygon')}
-            disabled={drawMode !== null}
-          >
-            <span>⬟</span> Polygon
-          </button>
-          <button
-            className={`tool-button ${drawMode === 'corridor' ? 'active' : ''}`}
-            onClick={() => startDrawing('corridor')}
-            disabled={drawMode !== null}
-          >
-            <span>〰️</span> Corridor
-          </button>
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Spatial Query Builder</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-5">
+          <div className="flex gap-3">
+            <Button
+              variant={drawMode === 'radius' ? 'primary' : 'secondary'}
+              onClick={() => startDrawing('radius')}
+              disabled={drawMode !== null && drawMode !== 'radius'}
+              leftIcon={<Circle className="h-4 w-4" />}
+            >
+              Radius
+            </Button>
+            <Button
+              variant={drawMode === 'rectangle' ? 'primary' : 'secondary'}
+              onClick={() => startDrawing('rectangle')}
+              disabled={drawMode !== null && drawMode !== 'rectangle'}
+              leftIcon={<Square className="h-4 w-4" />}
+            >
+              Rectangle
+            </Button>
+            <Button
+              variant={drawMode === 'polygon' ? 'primary' : 'secondary'}
+              onClick={() => startDrawing('polygon')}
+              disabled={drawMode !== null && drawMode !== 'polygon'}
+              leftIcon={<Pentagon className="h-4 w-4" />}
+            >
+              Polygon
+            </Button>
+            <Button
+              variant={drawMode === 'corridor' ? 'primary' : 'secondary'}
+              onClick={() => startDrawing('corridor')}
+              disabled={drawMode !== null && drawMode !== 'corridor'}
+              leftIcon={<Route className="h-4 w-4" />}
+            >
+              Corridor
+            </Button>
+          </div>
 
-        {drawMode && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="drawing-controls"
-          >
-            <div className="drawing-info">
-              <p>Drawing: {drawMode}</p>
-              {drawMode === 'radius' && (
-                <div className="parameter-control">
-                  <label>Radius (m):</label>
-                  <input
-                    type="number"
-                    value={radius}
-                    onChange={(e) => setRadius(Number(e.target.value))}
-                    min="100"
-                    max="10000"
-                    step="100"
-                  />
-                </div>
-              )}
-              {drawMode === 'corridor' && (
-                <div className="parameter-control">
-                  <label>Width (m):</label>
-                  <input
-                    type="number"
-                    value={corridorWidth}
-                    onChange={(e) => setCorridorWidth(Number(e.target.value))}
-                    min="100"
-                    max="5000"
-                    step="100"
-                  />
-                </div>
-              )}
-              {(drawMode === 'polygon' || drawMode === 'corridor') && drawingPoints.length > 0 && (
-                <p>Points: {drawingPoints.length}</p>
-              )}
-            </div>
-            <div className="drawing-actions">
-              {(drawMode === 'polygon' || drawMode === 'corridor') && drawingPoints.length >= 2 && (
-                <button className="finish-button" onClick={finishDrawing}>
-                  ✓ Finish
-                </button>
-              )}
-              <button className="cancel-button" onClick={cancelDrawing}>
-                ✕ Cancel
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </div>
+          {drawMode && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-50 p-4 rounded-lg flex justify-between items-center"
+            >
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">Drawing: <span className="font-medium text-gray-900">{drawMode}</span></p>
+                {drawMode === 'radius' && (
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="radius">Radius (m):</Label>
+                    <Input
+                      id="radius"
+                      type="number"
+                      value={radius}
+                      onChange={(e) => setRadius(Number(e.target.value))}
+                      min="100"
+                      max="10000"
+                      step="100"
+                      className="w-32"
+                    />
+                  </div>
+                )}
+                {drawMode === 'corridor' && (
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="width">Width (m):</Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      value={corridorWidth}
+                      onChange={(e) => setCorridorWidth(Number(e.target.value))}
+                      min="100"
+                      max="5000"
+                      step="100"
+                      className="w-32"
+                    />
+                  </div>
+                )}
+                {(drawMode === 'polygon' || drawMode === 'corridor') && drawingPoints.length > 0 && (
+                  <p className="text-sm text-gray-600">Points: <span className="font-medium">{drawingPoints.length}</span></p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {(drawMode === 'polygon' || drawMode === 'corridor') && drawingPoints.length >= 2 && (
+                  <Button variant="success" size="sm" onClick={finishDrawing} leftIcon={<Check className="h-4 w-4" />}>
+                    Finish
+                  </Button>
+                )}
+                <Button variant="danger" size="sm" onClick={cancelDrawing} leftIcon={<X className="h-4 w-4" />}>
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          )}
 
-      <div className="query-map-container">
-        <MapViewer
-          center={center || MAP_CONFIG.bounds.stamfordCT.center as [number, number]}
-          zoom={zoom || 12}
-          markers={getQueryMarkers()}
-          height="400px"
-          onMapClick={handleMapClick}
-          style={getMapStyle()}
-        />
-      </div>
+          <div className="relative">
+            <MapViewer
+              center={center || MAP_CONFIG.bounds.stamfordCT.center as [number, number]}
+              zoom={zoom || 12}
+              markers={getQueryMarkers()}
+              height="400px"
+              onMapClick={handleMapClick}
+              style={getMapStyle(mapStyle)}
+            />
+            <MapStyleSelector
+              currentStyle={mapStyle}
+              onStyleChange={setMapStyle}
+              position="top-right"
+            />
+          </div>
 
-      <div className="query-list">
-        <h4>Active Queries ({queries.length})</h4>
-        {queries.map(query => (
-          <motion.div
-            key={query.id}
-            className={`query-item ${selectedQueryId === query.id ? 'selected' : ''}`}
-            onClick={() => setSelectedQueryId(query.id)}
-            whileHover={{ scale: 1.02 }}
-          >
-            <div className="query-header">
-              <span className="query-type-icon">
-                {query.type === 'radius' && '⭕'}
-                {query.type === 'rectangle' && '▭'}
-                {query.type === 'polygon' && '⬟'}
-                {query.type === 'corridor' && '〰️'}
-              </span>
-              <span className="query-name">{query.name}</span>
-              <button
-                className="delete-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteQuery(query.id);
-                }}
-              >
-                🗑️
-              </button>
-            </div>
-            
-            {selectedQueryId === query.id && (
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: 'auto' }}
-                className="query-details"
-              >
-                <div className="filter-section">
-                  <h5>Filters</h5>
-                  <div className="filter-control">
-                    <label>Device Types:</label>
-                    <select
-                      multiple
-                      value={query.filters?.deviceTypes || []}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value);
-                        updateQueryFilters(query.id, {
-                          ...query.filters,
-                          deviceTypes: selected
-                        });
+          <div className="border-t pt-5">
+            <h4 className="text-lg font-semibold mb-4">Active Queries ({queries.length})</h4>
+            <div className="space-y-3">
+              {queries.map(query => (
+                <motion.div
+                  key={query.id}
+                  className={`bg-gray-50 border rounded-lg p-3 cursor-pointer transition-colors hover:border-primary-500 ${selectedQueryId === query.id ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}
+                  onClick={() => setSelectedQueryId(query.id)}
+                  whileHover={{ scale: 1.02 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">
+                      {query.type === 'radius' && <Circle className="h-5 w-5 text-gray-600" />}
+                      {query.type === 'rectangle' && <Square className="h-5 w-5 text-gray-600" />}
+                      {query.type === 'polygon' && <Pentagon className="h-5 w-5 text-gray-600" />}
+                      {query.type === 'corridor' && <Route className="h-5 w-5 text-gray-600" />}
+                    </span>
+                    <span className="flex-1 font-medium">{query.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteQuery(query.id);
                       }}
                     >
-                      <option value="temperature">Temperature</option>
-                      <option value="pressure">Pressure</option>
-                      <option value="humidity">Humidity</option>
-                      <option value="speed">Speed</option>
-                    </select>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                   
-                  <div className="filter-control">
-                    <label>Value Range:</label>
-                    <div className="range-inputs">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={query.filters?.valueRange?.min || ''}
-                        onChange={(e) => updateQueryFilters(query.id, {
-                          ...query.filters,
-                          valueRange: {
-                            min: Number(e.target.value),
-                            max: query.filters?.valueRange?.max || 100
-                          }
-                        })}
-                      />
-                      <span>-</span>
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={query.filters?.valueRange?.max || ''}
-                        onChange={(e) => updateQueryFilters(query.id, {
-                          ...query.filters,
-                          valueRange: {
-                            min: query.filters?.valueRange?.min || 0,
-                            max: Number(e.target.value)
-                          }
-                        })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-        ))}
-      </div>
-
-      <style>{`
-        .spatial-query-builder {
-          background: white;
-          border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .query-controls {
-          margin-bottom: 20px;
-        }
-
-        .query-controls h3 {
-          margin: 0 0 15px 0;
-          color: #333;
-        }
-
-        .drawing-tools {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 15px;
-        }
-
-        .tool-button {
-          padding: 10px 15px;
-          border: 2px solid #ddd;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          transition: all 0.2s;
-        }
-
-        .tool-button:hover:not(:disabled) {
-          border-color: #2196F3;
-          background: #f5f5f5;
-        }
-
-        .tool-button.active {
-          border-color: #2196F3;
-          background: #e3f2fd;
-          color: #1976D2;
-        }
-
-        .tool-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .tool-button span {
-          font-size: 18px;
-        }
-
-        .drawing-controls {
-          background: #f5f5f5;
-          padding: 15px;
-          border-radius: 4px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .drawing-info p {
-          margin: 0 0 10px 0;
-          font-size: 14px;
-          color: #666;
-        }
-
-        .parameter-control {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-top: 10px;
-        }
-
-        .parameter-control label {
-          font-size: 14px;
-          color: #333;
-        }
-
-        .parameter-control input {
-          width: 100px;
-          padding: 5px 10px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-
-        .drawing-actions {
-          display: flex;
-          gap: 10px;
-        }
-
-        .finish-button, .cancel-button {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background 0.2s;
-        }
-
-        .finish-button {
-          background: #4CAF50;
-          color: white;
-        }
-
-        .finish-button:hover {
-          background: #45a049;
-        }
-
-        .cancel-button {
-          background: #f44336;
-          color: white;
-        }
-
-        .cancel-button:hover {
-          background: #da190b;
-        }
-
-        .query-map-container {
-          margin-bottom: 20px;
-        }
-
-        .query-list {
-          border-top: 1px solid #e0e0e0;
-          padding-top: 20px;
-        }
-
-        .query-list h4 {
-          margin: 0 0 15px 0;
-          color: #333;
-        }
-
-        .query-item {
-          background: #f9f9f9;
-          border: 1px solid #e0e0e0;
-          border-radius: 4px;
-          padding: 12px;
-          margin-bottom: 10px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .query-item:hover {
-          border-color: #2196F3;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .query-item.selected {
-          border-color: #2196F3;
-          background: #e3f2fd;
-        }
-
-        .query-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .query-type-icon {
-          font-size: 20px;
-        }
-
-        .query-name {
-          flex: 1;
-          font-weight: 500;
-          color: #333;
-        }
-
-        .delete-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 16px;
-          opacity: 0.6;
-          transition: opacity 0.2s;
-        }
-
-        .delete-button:hover {
-          opacity: 1;
-        }
-
-        .query-details {
-          margin-top: 15px;
-          padding-top: 15px;
-          border-top: 1px solid #ddd;
-          overflow: hidden;
-        }
-
-        .filter-section h5 {
-          margin: 0 0 10px 0;
-          font-size: 14px;
-          color: #666;
-        }
-
-        .filter-control {
-          margin-bottom: 15px;
-        }
-
-        .filter-control label {
-          display: block;
-          margin-bottom: 5px;
-          font-size: 13px;
-          color: #333;
-        }
-
-        .filter-control select {
-          width: 100%;
-          padding: 5px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 13px;
-        }
-
-        .range-inputs {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .range-inputs input {
-          flex: 1;
-          padding: 5px 10px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 13px;
-        }
-      `}</style>
-    </div>
+                  {selectedQueryId === query.id && (
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: 'auto' }}
+                      className="mt-3 pt-3 border-t border-gray-200 overflow-hidden"
+                    >
+                      <div className="space-y-3">
+                        <h5 className="text-sm font-medium text-gray-700">Filters</h5>
+                        <div>
+                          <Label htmlFor={`device-types-${query.id}`}>Device Types:</Label>
+                          <select
+                            id={`device-types-${query.id}`}
+                            multiple
+                            value={query.filters?.deviceTypes || []}
+                            onChange={(e) => {
+                              const selected = Array.from(e.target.selectedOptions, option => option.value);
+                              updateQueryFilters(query.id, {
+                                ...query.filters,
+                                deviceTypes: selected
+                              });
+                            }}
+                            className="mt-1 w-full p-2 border border-gray-300 rounded-md text-sm"
+                          >
+                            <option value="temperature">Temperature</option>
+                            <option value="pressure">Pressure</option>
+                            <option value="humidity">Humidity</option>
+                            <option value="speed">Speed</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <Label>Value Range:</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Input
+                              type="number"
+                              placeholder="Min"
+                              value={query.filters?.valueRange?.min || ''}
+                              onChange={(e) => updateQueryFilters(query.id, {
+                                ...query.filters,
+                                valueRange: {
+                                  min: Number(e.target.value),
+                                  max: query.filters?.valueRange?.max || 100
+                                }
+                              })}
+                              className="flex-1"
+                            />
+                            <span className="text-gray-500">-</span>
+                            <Input
+                              type="number"
+                              placeholder="Max"
+                              value={query.filters?.valueRange?.max || ''}
+                              onChange={(e) => updateQueryFilters(query.id, {
+                                ...query.filters,
+                                valueRange: {
+                                  min: query.filters?.valueRange?.min || 0,
+                                  max: Number(e.target.value)
+                                }
+                              })}
+                              className="flex-1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { motion } from 'framer-motion';
+import { getMapStyle } from '../config/mapConfig';
 
 export interface MapMarker {
   id: string;
@@ -30,7 +31,7 @@ interface MapViewerProps {
   onMarkerClick?: (marker: MapMarker) => void;
   onMapClick?: (lng: number, lat: number) => void;
   onBoundsChange?: (bounds: maplibregl.LngLatBounds) => void;
-  style?: string;
+  style?: string | any;
   minZoom?: number;
   maxZoom?: number;
 }
@@ -44,9 +45,9 @@ const MapViewer: React.FC<MapViewerProps> = ({
   onMarkerClick,
   onMapClick,
   onBoundsChange,
-  style = 'https://api.maptiler.com/maps/streets/style.json?key=YOUR_MAPTILER_KEY',
+  style,
   minZoom = 0,
-  maxZoom = 14
+  maxZoom = 18
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -60,9 +61,12 @@ const MapViewer: React.FC<MapViewerProps> = ({
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
+    // Use provided style or default to free OpenStreetMap style
+    const mapStyle = style || getMapStyle();
+
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: style,
+      style: mapStyle,
       center: center,
       zoom: zoom,
       minZoom: minZoom,

@@ -1,36 +1,21 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from '../store';
+import { toggleSidebar } from '../store/slices/uiSlice';
+import { logout } from '../store/slices/authSlice';
+import OrganizationSwitcher from './OrganizationSwitcher';
+import { Navigation, NavigationHeader, NavigationSection, Badge } from '@zamaz/ui';
 import {
-  Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
-  Divider,
-} from "@mui/material";
-import {
-  Menu as MenuIcon,
-  Forum as ForumIcon,
-  AccountTree as AccountTreeIcon,
-  Analytics as AnalyticsIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  Business as BusinessIcon,
-  AdminPanelSettings as AdminIcon,
-} from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import { useAppSelector, useAppDispatch } from "../store";
-import { toggleSidebar } from "../store/slices/uiSlice";
-import { logout } from "../store/slices/authSlice";
-import OrganizationSwitcher from "./OrganizationSwitcher";
-
-const drawerWidth = 240;
+  Menu,
+  MessageSquare,
+  GitBranch,
+  BarChart3,
+  Settings,
+  LogOut,
+  Building2,
+  ShieldCheck,
+} from 'lucide-react';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -40,160 +25,144 @@ const Layout: React.FC = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate("/login");
+    navigate('/login');
   };
 
   // Check if user is admin
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const menuItems = [
-    { text: "Debates", icon: <ForumIcon />, path: "/debates" },
-    { text: "Workflow Editor", icon: <AccountTreeIcon />, path: "/workflow-editor" },
-    { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
+    { text: 'Debates', icon: MessageSquare, path: '/debates' },
+    { text: 'Workflow Editor', icon: GitBranch, path: '/workflow-editor' },
+    { text: 'Analytics', icon: BarChart3, path: '/analytics' },
+    { text: 'Settings', icon: Settings, path: '/settings' },
   ];
 
   const adminMenuItems = [
-    { text: "Organization Management", icon: <BusinessIcon />, path: "/organization-management" },
+    { text: 'Organization Management', icon: Building2, path: '/organization-management' },
   ];
 
+  const navItems = menuItems.map(item => ({
+    label: item.text,
+    href: item.path,
+    icon: item.icon,
+    onClick: () => navigate(item.path),
+  }));
+
+  const adminNavItems = adminMenuItems.map(item => ({
+    label: item.text,
+    href: item.path,
+    icon: item.icon,
+    onClick: () => navigate(item.path),
+  }));
+
   return (
-    <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: `calc(100% - ${sidebarOpen ? drawerWidth : 0}px)`,
-          ml: `${sidebarOpen ? drawerWidth : 0}px`,
-          transition: "width 0.3s, margin 0.3s",
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={() => dispatch(toggleSidebar())}
-            edge="start"
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Zamaz Debate System
-          </Typography>
-          {user && (
-            <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
-              {isAdmin && (
-                <AdminIcon sx={{ mr: 1, color: "gold" }} />
-              )}
-              <Typography variant="body2">
-                {user.username}
-                {isAdmin && (
-                  <Typography 
-                    component="span" 
-                    variant="caption" 
-                    sx={{ 
-                      ml: 1, 
-                      px: 1, 
-                      py: 0.5, 
-                      bgcolor: "rgba(255,215,0,0.2)", 
-                      borderRadius: 1,
-                      color: "gold"
-                    }}
-                  >
-                    ADMIN
-                  </Typography>
-                )}
-              </Typography>
-            </Box>
-          )}
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-          },
-        }}
-        variant="persistent"
-        anchor="left"
-        open={sidebarOpen}
-      >
-        <Toolbar />
-        <Box sx={{ overflow: "auto" }}>
-          <Box sx={{ p: 2 }}>
-            <OrganizationSwitcher />
-          </Box>
-          <Divider />
-          <List>
-            {menuItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton onClick={() => navigate(item.path)}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
+    <div className="flex h-screen bg-gray-50">
+      {/* Header */}
+      <header className={`fixed top-0 right-0 left-0 z-30 bg-white border-b border-gray-200 transition-all duration-300 ${
+        sidebarOpen ? 'md:left-64' : ''
+      }`}>
+        <div className="flex items-center justify-between h-16 px-4">
+          <div className="flex items-center">
+            <button
+              onClick={() => dispatch(toggleSidebar())}
+              className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Toggle sidebar"
+            >
+              <Menu className="h-5 w-5 text-gray-600" />
+            </button>
+            <h1 className="ml-4 text-xl font-semibold text-gray-900">
+              Zamaz Debate System
+            </h1>
+          </div>
           
-          {isAdmin && (
-            <>
-              <Divider />
-              <List>
-                <ListItem>
-                  <ListItemIcon>
-                    <AdminIcon />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Administration" 
-                    primaryTypographyProps={{ 
-                      variant: "subtitle2", 
-                      color: "primary",
-                      fontWeight: "bold"
-                    }} 
-                  />
-                </ListItem>
-                {adminMenuItems.map((item) => (
-                  <ListItem key={item.text} disablePadding>
-                    <ListItemButton onClick={() => navigate(item.path)}>
-                      <ListItemIcon>{item.icon}</ListItemIcon>
-                      <ListItemText primary={item.text} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </>
+          {user && (
+            <div className="flex items-center space-x-3">
+              {isAdmin && (
+                <ShieldCheck className="h-5 w-5 text-yellow-500" />
+              )}
+              <span className="text-sm text-gray-700">
+                {user.username}
+              </span>
+              {isAdmin && (
+                <Badge variant="warning" className="text-xs">
+                  ADMIN
+                </Badge>
+              )}
+            </div>
           )}
-          <Divider />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={handleLogout}>
-                <ListItemIcon>
-                  <LogoutIcon />
-                </ListItemIcon>
-                <ListItemText primary="Logout" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          bgcolor: "background.default",
-          p: 3,
-          transition: "margin 0.3s",
-          marginLeft: sidebarOpen ? `${drawerWidth}px` : 0,
-          minHeight: "100vh",
-        }}
-      >
-        <Toolbar />
-        <Outlet />
-      </Box>
-    </Box>
+        </div>
+      </header>
+
+      {/* Sidebar */}
+      <aside className={`fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 z-20 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="h-16 border-b border-gray-200" /> {/* Spacer for header */}
+        
+        <div className="flex flex-col h-full">
+          <NavigationHeader>
+            <OrganizationSwitcher />
+          </NavigationHeader>
+
+          <nav className="flex-1 overflow-y-auto">
+            <NavigationSection>
+              <ul className="space-y-1 px-2">
+                {navItems.map((item) => (
+                  <li key={item.href}>
+                    <button
+                      onClick={item.onClick}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+                    >
+                      {item.icon && <item.icon className="h-5 w-5" />}
+                      <span>{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </NavigationSection>
+
+            {isAdmin && (
+              <NavigationSection title="Administration">
+                <ul className="space-y-1 px-2">
+                  {adminNavItems.map((item) => (
+                    <li key={item.href}>
+                      <button
+                        onClick={item.onClick}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+                      >
+                        {item.icon && <item.icon className="h-5 w-5" />}
+                        <span>{item.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </NavigationSection>
+            )}
+          </nav>
+
+          <div className="border-t border-gray-200 p-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className={`flex-1 transition-all duration-300 ${
+        sidebarOpen ? 'md:ml-64' : ''
+      }`}>
+        <div className="h-16" /> {/* Spacer for fixed header */}
+        <div className="p-6">
+          <Outlet />
+        </div>
+      </main>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Snackbar, Alert } from "@mui/material";
+import { Toast, ToastClose, ToastDescription, ToastProvider, ToastViewport } from "@zamaz/ui";
 import { useAppSelector, useAppDispatch } from "../store";
 import { removeNotification } from "../store/slices/uiSlice";
 
@@ -17,24 +17,38 @@ const NotificationSnackbar: React.FC = () => {
     }
   }, [currentNotification, dispatch]);
 
-  if (!currentNotification) {
-    return null;
-  }
+  const getToastVariant = (type: string) => {
+    switch (type) {
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      case 'warning':
+        return 'warning';
+      case 'info':
+      default:
+        return 'default';
+    }
+  };
 
   return (
-    <Snackbar
-      open={true}
-      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      onClose={() => dispatch(removeNotification(currentNotification.id))}
-    >
-      <Alert
-        onClose={() => dispatch(removeNotification(currentNotification.id))}
-        severity={currentNotification.type}
-        sx={{ width: "100%" }}
-      >
-        {currentNotification.message}
-      </Alert>
-    </Snackbar>
+    <ToastProvider>
+      {currentNotification && (
+        <Toast
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) {
+              dispatch(removeNotification(currentNotification.id));
+            }
+          }}
+          variant={getToastVariant(currentNotification.type)}
+        >
+          <ToastDescription>{currentNotification.message}</ToastDescription>
+          <ToastClose />
+        </Toast>
+      )}
+      <ToastViewport />
+    </ToastProvider>
   );
 };
 

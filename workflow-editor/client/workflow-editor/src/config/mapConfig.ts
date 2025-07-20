@@ -1,3 +1,6 @@
+
+import { PROFESSIONAL_MAP_STYLES, getProfessionalMapStyle } from './professionalMapStyles';
+
 // Map configuration for OpenMapTiles and other providers
 export const MAP_CONFIG = {
   // Default map style URLs
@@ -182,11 +185,54 @@ export const isSelfHosted = (): boolean => {
   return process.env.REACT_APP_USE_SELF_HOSTED_TILES === 'true';
 };
 
+
 // Get appropriate style URL based on configuration
-export const getMapStyle = (styleName?: string): string => {
+export const getMapStyle = (styleName?: string): any => {
   if (isSelfHosted()) {
     return styleName ? MAP_CONFIG.styles.selfHosted[styleName as keyof typeof MAP_CONFIG.styles.selfHosted] 
                      : MAP_CONFIG.styles.selfHosted.default;
   }
-  return getStyleUrl('streets');
+  
+  // Use professional CARTO Light style by default (free, no API key required)
+  const defaultStyle = styleName || 'cartoLight';
+  
+  // Check if we have API keys for premium providers
+  const mapboxKey = process.env.REACT_APP_MAPBOX_KEY;
+  const maptilerKey = process.env.REACT_APP_MAPTILER_KEY;
+  
+  // If we have premium keys, use them for better quality
+  if (mapboxKey && styleName?.startsWith('mapbox-')) {
+    return getProfessionalMapStyle('mapbox', styleName.replace('mapbox-', ''), mapboxKey);
+  }
+  
+  if (maptilerKey && styleName?.startsWith('maptiler-')) {
+    return getProfessionalMapStyle('maptiler', styleName.replace('maptiler-', ''), maptilerKey);
+  }
+  
+  // Otherwise use free professional styles
+  return getProfessionalMapStyle('free', defaultStyle);
+};
+
+// Export professional styles for use in components
+export const AVAILABLE_MAP_STYLES = {
+  light: {
+    name: 'Professional Light',
+    style: 'cartoLight',
+    preview: '🌅'
+  },
+  dark: {
+    name: 'Professional Dark',
+    style: 'cartoDark',
+    preview: '🌃'
+  },
+  technical: {
+    name: 'Technical/Blueprint',
+    style: 'toner',
+    preview: '📐'
+  },
+  artistic: {
+    name: 'Watercolor',
+    style: 'watercolor',
+    preview: '🎨'
+  }
 };

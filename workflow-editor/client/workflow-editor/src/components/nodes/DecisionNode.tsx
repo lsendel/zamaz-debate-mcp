@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { motion } from 'framer-motion';
+import { HelpCircle, BarChart } from 'lucide-react';
 
 export interface DecisionNodeData {
   label: string;
@@ -19,13 +20,13 @@ export interface DecisionNodeData {
 }
 
 const DecisionNode: React.FC<NodeProps<DecisionNodeData>> = ({ data, selected }) => {
-  const getEvaluationStyle = () => {
+  const getEvaluationBorder = () => {
     if (data.evaluationResult === true) {
-      return { borderColor: '#4CAF50', borderWidth: '3px' };
+      return 'border-green-500 border-4';
     } else if (data.evaluationResult === false) {
-      return { borderColor: '#f44336', borderWidth: '3px' };
+      return 'border-red-500 border-4';
     }
-    return {};
+    return 'border-transparent border-2';
   };
 
   const formatCondition = () => {
@@ -39,44 +40,32 @@ const DecisionNode: React.FC<NodeProps<DecisionNodeData>> = ({ data, selected })
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       whileHover={{ scale: 1.02 }}
-      style={{
-        background: '#FF9800',
-        color: 'white',
-        padding: '15px',
-        borderRadius: '8px',
-        border: selected ? '2px solid #F57C00' : '2px solid transparent',
-        minWidth: '200px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        cursor: 'pointer',
-        position: 'relative',
-        transform: 'rotate(45deg)',
-        ...getEvaluationStyle(),
-      }}
+      className={`
+        bg-orange-500 text-white p-4 rounded-lg min-w-[200px] shadow-md cursor-pointer relative
+        transform rotate-45 ${getEvaluationBorder()}
+        ${selected ? 'ring-2 ring-orange-700 ring-offset-2' : ''}
+      `}
     >
-      <div
-        style={{
-          transform: 'rotate(-45deg)',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
-          <span style={{ marginRight: '8px' }}>❓</span>
+      <div className="transform -rotate-45 text-center">
+        <div className="font-bold text-sm mb-2 flex items-center justify-center gap-2">
+          <HelpCircle className="h-4 w-4" />
           {data.label || 'Decision'}
         </div>
         
         {data.configuration?.decisionType && (
-          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>
+          <div className="text-xs opacity-90 mb-1">
             Type: {data.configuration.decisionType}
           </div>
         )}
         
-        <div style={{ fontSize: '10px', opacity: 0.8 }}>
+        <div className="text-xs opacity-80">
           {formatCondition()}
         </div>
         
         {data.configuration?.telemetrySource && (
-          <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '4px' }}>
-            📊 {data.configuration.telemetrySource}
+          <div className="text-xs opacity-80 mt-1 flex items-center justify-center gap-1">
+            <BarChart className="h-3 w-3" />
+            {data.configuration.telemetrySource}
           </div>
         )}
       </div>
@@ -84,80 +73,38 @@ const DecisionNode: React.FC<NodeProps<DecisionNodeData>> = ({ data, selected })
       <Handle
         type="target"
         position={Position.Left}
-        style={{
-          background: '#F57C00',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          left: '50%',
-          top: '-6px',
-          transform: 'translateX(-50%) rotate(-45deg)',
-        }}
+        className="w-3 h-3 bg-orange-700 border-2 border-white left-1/2 -top-1.5 transform -translate-x-1/2 -rotate-45"
       />
       
       <Handle
         type="source"
         position={Position.Right}
         id="true"
-        style={{
-          background: '#4CAF50',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          right: '-6px',
-          top: '50%',
-          transform: 'translateY(-50%) rotate(-45deg)',
-        }}
+        className="w-3 h-3 bg-green-600 border-2 border-white -right-1.5 top-1/2 transform -translate-y-1/2 -rotate-45"
       />
       
       <Handle
         type="source"
         position={Position.Bottom}
         id="false"
-        style={{
-          background: '#f44336',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-          bottom: '-6px',
-          left: '50%',
-          transform: 'translateX(-50%) rotate(-45deg)',
-        }}
+        className="w-3 h-3 bg-red-600 border-2 border-white -bottom-1.5 left-1/2 transform -translate-x-1/2 -rotate-45"
       />
       
-      <motion.div
-        style={{
-          position: 'absolute',
-          top: '-20px',
-          right: '-20px',
-          background: '#4CAF50',
-          color: 'white',
-          borderRadius: '4px',
-          padding: '2px 6px',
-          fontSize: '10px',
-          transform: 'rotate(-45deg)',
-          display: data.evaluationResult === true ? 'block' : 'none',
-        }}
-      >
-        TRUE
-      </motion.div>
+      {data.evaluationResult === true && (
+        <motion.div
+          className="absolute -top-5 -right-5 bg-green-600 text-white rounded px-1.5 py-0.5 text-xs transform -rotate-45"
+        >
+          TRUE
+        </motion.div>
+      )}
       
-      <motion.div
-        style={{
-          position: 'absolute',
-          bottom: '-20px',
-          left: '-20px',
-          background: '#f44336',
-          color: 'white',
-          borderRadius: '4px',
-          padding: '2px 6px',
-          fontSize: '10px',
-          transform: 'rotate(-45deg)',
-          display: data.evaluationResult === false ? 'block' : 'none',
-        }}
-      >
-        FALSE
-      </motion.div>
+      {data.evaluationResult === false && (
+        <motion.div
+          className="absolute -bottom-5 -left-5 bg-red-600 text-white rounded px-1.5 py-0.5 text-xs transform -rotate-45"
+        >
+          FALSE
+        </motion.div>
+      )}
     </motion.div>
   );
 };

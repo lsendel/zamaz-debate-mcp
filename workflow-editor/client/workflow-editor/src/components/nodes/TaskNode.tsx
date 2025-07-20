@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { motion } from 'framer-motion';
+import { Zap, Clock, RotateCw, Settings } from 'lucide-react';
 
 export interface TaskNodeData {
   label: string;
@@ -17,19 +18,16 @@ export interface TaskNodeData {
 }
 
 const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data, selected }) => {
-  const getStatusStyle = () => {
+  const getStatusStyles = () => {
     switch (data.status) {
       case 'running':
-        return {
-          background: '#2196F3',
-          animation: 'pulse 2s infinite',
-        };
+        return 'bg-blue-500 animate-pulse';
       case 'completed':
-        return { background: '#4CAF50' };
+        return 'bg-green-500';
       case 'failed':
-        return { background: '#f44336' };
+        return 'bg-red-500';
       default:
-        return { background: '#2196F3' };
+        return 'bg-blue-500';
     }
   };
 
@@ -38,49 +36,46 @@ const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data, selected }) => {
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       whileHover={{ scale: 1.02 }}
-      style={{
-        ...getStatusStyle(),
-        color: 'white',
-        padding: '15px',
-        borderRadius: '8px',
-        border: selected ? '2px solid #1976D2' : '2px solid transparent',
-        minWidth: '180px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        cursor: 'pointer',
-        position: 'relative',
-      }}
+      className={`
+        ${getStatusStyles()} text-white p-4 rounded-lg min-w-[180px] shadow-md cursor-pointer relative
+        ${selected ? 'ring-2 ring-blue-700 ring-offset-2' : ''}
+      `}
     >
       <Handle
         type="target"
         position={Position.Left}
-        style={{
-          background: '#1976D2',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-        }}
+        className="w-3 h-3 bg-blue-700 border-2 border-white"
       />
       
-      <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
-        <span style={{ marginRight: '8px' }}>⚡</span>
+      <div className="font-bold text-sm mb-2 flex items-center gap-2">
+        <Zap className="h-4 w-4" />
         {data.label || 'Task'}
       </div>
       
       {data.configuration?.taskType && (
-        <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>
+        <div className="text-xs opacity-90 mb-1">
           Type: {data.configuration.taskType}
         </div>
       )}
       
-      <div style={{ fontSize: '11px', opacity: 0.8 }}>
+      <div className="text-xs opacity-80 space-y-0.5">
         {data.configuration?.timeout && (
-          <div>⏱ Timeout: {data.configuration.timeout}s</div>
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Timeout: {data.configuration.timeout}s
+          </div>
         )}
         {data.configuration?.retryCount && (
-          <div>🔄 Retries: {data.configuration.retryCount}</div>
+          <div className="flex items-center gap-1">
+            <RotateCw className="h-3 w-3" />
+            Retries: {data.configuration.retryCount}
+          </div>
         )}
         {data.configuration?.parallel && (
-          <div>⚡ Parallel execution</div>
+          <div className="flex items-center gap-1">
+            <Zap className="h-3 w-3" />
+            Parallel execution
+          </div>
         )}
       </div>
       
@@ -88,36 +83,17 @@ const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data, selected }) => {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          style={{
-            position: 'absolute',
-            top: '5px',
-            right: '5px',
-            width: '16px',
-            height: '16px',
-          }}
+          className="absolute top-2 right-2"
         >
-          ⚙️
+          <Settings className="h-4 w-4" />
         </motion.div>
       )}
       
       <Handle
         type="source"
         position={Position.Right}
-        style={{
-          background: '#1976D2',
-          width: '12px',
-          height: '12px',
-          border: '2px solid white',
-        }}
+        className="w-3 h-3 bg-blue-700 border-2 border-white"
       />
-      
-      <style>{`
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.7; }
-          100% { opacity: 1; }
-        }
-      `}</style>
     </motion.div>
   );
 };
