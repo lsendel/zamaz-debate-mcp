@@ -96,7 +96,7 @@
   - Add flow execution result integration with debate responses
   - _Requirements: 11.2, 11.3, 11.4, 11.5, 11.6, 11.7_
 
-- [ ] 4.3 Implement database adapters for agentic flows
+- [x] 4.3 Implement database adapters for agentic flows
   - Create PostgresAgenticFlowRepository implementation
   - Implement database schema with proper indexes
   - Add efficient query methods for flow configurations
@@ -132,7 +132,7 @@
   - Create API versioning strategy
   - _Requirements: 12.1, 12.2, 12.3, 12.4_
 
-- [ ] 5.3 Add API security and authorization
+- [x] 5.3 Add API security and authorization
   - Implement JWT authentication for all API endpoints
   - Create role-based access control for agentic flow operations
   - Add organization-level data isolation

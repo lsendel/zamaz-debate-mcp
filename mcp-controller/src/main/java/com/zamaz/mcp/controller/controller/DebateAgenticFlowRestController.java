@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -48,6 +49,7 @@ public class DebateAgenticFlowRestController {
             @ApiResponse(responseCode = "201", description = "Flow configured successfully"),
             @ApiResponse(responseCode = "404", description = "Debate not found")
     })
+    @PreAuthorize("hasPermission(null, 'CONFIGURE_DEBATE_FLOW')")
     public ResponseEntity<AgenticFlow> configureDebateFlow(
             @Parameter(description = "Debate ID", required = true) @PathVariable UUID debateId,
             @Valid @RequestBody ConfigureFlowRequest request) {
@@ -67,6 +69,7 @@ public class DebateAgenticFlowRestController {
             @ApiResponse(responseCode = "200", description = "Flow found"),
             @ApiResponse(responseCode = "404", description = "Flow not found")
     })
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlow> getDebateFlow(
             @Parameter(description = "Debate ID", required = true) @PathVariable UUID debateId) {
         log.debug("Getting agentic flow for debate: {}", debateId);
@@ -78,6 +81,7 @@ public class DebateAgenticFlowRestController {
 
     @GetMapping("/{debateId}/agentic-flow/recommend")
     @Operation(summary = "Get flow recommendation for debate", description = "Recommends an agentic flow type for the debate")
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlowType> recommendDebateFlow(
             @Parameter(description = "Debate ID", required = true) @PathVariable UUID debateId) {
         log.debug("Getting flow recommendation for debate: {}", debateId);
@@ -95,6 +99,7 @@ public class DebateAgenticFlowRestController {
             @ApiResponse(responseCode = "404", description = "Participant not found"),
             @ApiResponse(responseCode = "400", description = "Participant is not AI type")
     })
+    @PreAuthorize("hasPermission(null, 'CONFIGURE_DEBATE_FLOW')")
     public ResponseEntity<AgenticFlow> configureParticipantFlow(
             @Parameter(description = "Debate ID", required = true) @PathVariable UUID debateId,
             @Parameter(description = "Participant ID", required = true) @PathVariable UUID participantId,
@@ -116,6 +121,7 @@ public class DebateAgenticFlowRestController {
             @ApiResponse(responseCode = "200", description = "Flow found"),
             @ApiResponse(responseCode = "404", description = "Flow not found")
     })
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlow> getParticipantFlow(
             @Parameter(description = "Debate ID", required = true) @PathVariable UUID debateId,
             @Parameter(description = "Participant ID", required = true) @PathVariable UUID participantId) {
@@ -135,6 +141,7 @@ public class DebateAgenticFlowRestController {
             @ApiResponse(responseCode = "404", description = "Participant not found"),
             @ApiResponse(responseCode = "400", description = "No agentic flow configured")
     })
+    @PreAuthorize("hasPermission(null, 'EXECUTE_AGENTIC_FLOW')")
     public CompletableFuture<ResponseEntity<ResponseDto>> processResponseWithFlow(
             @Parameter(description = "Debate ID", required = true) @PathVariable UUID debateId,
             @Parameter(description = "Participant ID", required = true) @PathVariable UUID participantId,

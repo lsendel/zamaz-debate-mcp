@@ -54,6 +54,7 @@ public class AgenticFlowRestController {
             @ApiResponse(responseCode = "200", description = "Flow found"),
             @ApiResponse(responseCode = "404", description = "Flow not found")
     })
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlow> getFlow(
             @Parameter(description = "Flow ID", required = true) @PathVariable String flowId) {
         log.debug("Getting agentic flow: {}", flowId);
@@ -65,6 +66,7 @@ public class AgenticFlowRestController {
 
     @GetMapping("/organization/{organizationId}")
     @Operation(summary = "Get flows by organization", description = "Retrieves all agentic flows for an organization")
+    @PreAuthorize("hasPermission(#organizationId, 'ORGANIZATION', 'READ_AGENTIC_FLOW')")
     public ResponseEntity<List<AgenticFlow>> getFlowsByOrganization(
             @Parameter(description = "Organization ID", required = true) @PathVariable String organizationId) {
         log.debug("Getting flows for organization: {}", organizationId);
@@ -75,6 +77,7 @@ public class AgenticFlowRestController {
 
     @GetMapping("/organization/{organizationId}/type/{flowType}")
     @Operation(summary = "Get flows by organization and type", description = "Retrieves agentic flows filtered by type")
+    @PreAuthorize("hasPermission(#organizationId, 'ORGANIZATION', 'READ_AGENTIC_FLOW')")
     public ResponseEntity<List<AgenticFlow>> getFlowsByTypeAndOrganization(
             @Parameter(description = "Organization ID", required = true) @PathVariable String organizationId,
             @Parameter(description = "Flow type", required = true) @PathVariable AgenticFlowType flowType) {
@@ -86,6 +89,7 @@ public class AgenticFlowRestController {
 
     @GetMapping("/organization/{organizationId}/active")
     @Operation(summary = "Get active flows", description = "Retrieves all active agentic flows for an organization")
+    @PreAuthorize("hasPermission(#organizationId, 'ORGANIZATION', 'READ_AGENTIC_FLOW')")
     public ResponseEntity<List<AgenticFlow>> getActiveFlows(
             @Parameter(description = "Organization ID", required = true) @PathVariable String organizationId) {
         log.debug("Getting active flows for organization: {}", organizationId);
@@ -96,6 +100,7 @@ public class AgenticFlowRestController {
 
     @GetMapping("/types")
     @Operation(summary = "Get available flow types", description = "Returns all supported agentic flow types")
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<Set<AgenticFlowType>> getAvailableFlowTypes() {
         log.debug("Getting available flow types");
 
@@ -105,6 +110,7 @@ public class AgenticFlowRestController {
 
     @GetMapping("/templates")
     @Operation(summary = "Get flow templates", description = "Returns all available flow templates")
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<Map<String, AgenticFlowApplicationService.AgenticFlowTemplate>> getTemplates() {
         log.debug("Getting flow templates");
 
@@ -115,6 +121,7 @@ public class AgenticFlowRestController {
 
     @GetMapping("/recommend")
     @Operation(summary = "Get flow recommendation", description = "Recommends a flow type based on context")
+    @PreAuthorize("hasPermission(null, 'READ_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlowType> recommendFlowType(
             @Parameter(description = "Prompt text", required = true) @RequestParam @NotBlank String prompt,
             @Parameter(description = "Debate type") @RequestParam(required = false) String debateType,
@@ -130,6 +137,7 @@ public class AgenticFlowRestController {
     @PostMapping
     @Operation(summary = "Create agentic flow", description = "Creates a new agentic flow configuration")
     @ApiResponse(responseCode = "201", description = "Flow created successfully")
+    @PreAuthorize("hasPermission(null, 'CREATE_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlow> createFlow(
             @Valid @RequestBody CreateFlowRequest request) {
         log.info("Creating agentic flow: {}", request.getName());
@@ -148,6 +156,7 @@ public class AgenticFlowRestController {
     @PostMapping("/from-template")
     @Operation(summary = "Create flow from template", description = "Creates a new agentic flow from a predefined template")
     @ApiResponse(responseCode = "201", description = "Flow created successfully")
+    @PreAuthorize("hasPermission(null, 'CREATE_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlow> createFlowFromTemplate(
             @Valid @RequestBody CreateFlowFromTemplateRequest request) {
         log.info("Creating flow {} from template {}", request.getName(), request.getTemplateName());
@@ -165,6 +174,7 @@ public class AgenticFlowRestController {
 
     @PutMapping("/{flowId}")
     @Operation(summary = "Update agentic flow", description = "Updates an existing agentic flow configuration")
+    @PreAuthorize("hasPermission(null, 'UPDATE_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlow> updateFlow(
             @Parameter(description = "Flow ID", required = true) @PathVariable String flowId,
             @Valid @RequestBody UpdateFlowRequest request) {
@@ -181,6 +191,7 @@ public class AgenticFlowRestController {
     @DeleteMapping("/{flowId}")
     @Operation(summary = "Delete agentic flow", description = "Deletes an agentic flow configuration")
     @ApiResponse(responseCode = "204", description = "Flow deleted successfully")
+    @PreAuthorize("hasPermission(null, 'DELETE_AGENTIC_FLOW')")
     public ResponseEntity<Void> deleteFlow(
             @Parameter(description = "Flow ID", required = true) @PathVariable String flowId) {
         log.info("Deleting agentic flow: {}", flowId);
@@ -193,6 +204,7 @@ public class AgenticFlowRestController {
 
     @PostMapping("/{flowId}/execute")
     @Operation(summary = "Execute agentic flow", description = "Executes an agentic flow with the given prompt")
+    @PreAuthorize("hasPermission(null, 'EXECUTE_AGENTIC_FLOW')")
     public CompletableFuture<ResponseEntity<AgenticFlowResult>> executeFlow(
             @Parameter(description = "Flow ID", required = true) @PathVariable String flowId,
             @Valid @RequestBody ExecuteFlowRequest request) {
@@ -210,6 +222,7 @@ public class AgenticFlowRestController {
 
     @PostMapping("/execute-by-type")
     @Operation(summary = "Execute flow by type", description = "Executes an agentic flow by type without saved configuration")
+    @PreAuthorize("hasPermission(null, 'EXECUTE_AGENTIC_FLOW')")
     public ResponseEntity<AgenticFlowResult> executeFlowByType(
             @Valid @RequestBody ExecuteFlowByTypeRequest request) {
         log.info("Executing agentic flow by type: {}", request.getFlowType());

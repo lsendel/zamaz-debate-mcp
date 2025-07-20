@@ -1,0 +1,36 @@
+# Agentic Flow Configuration
+agentic-flow:
+  # Rate limiting configuration
+  rate-limit:
+    default-requests-per-minute: 60
+    execution-requests-per-minute: 20
+    creation-requests-per-minute: 10
+    
+  # Security configuration
+  security:
+    # JWT token expiration for agentic flow operations
+    token-expiration-minutes: 60
+    # Maximum number of flows per organization
+    max-flows-per-organization: 100
+    # Enable audit logging for all agentic flow operations
+    audit-logging-enabled: true
+    
+  # Performance configuration
+  performance:
+    # Maximum execution time for agentic flows (seconds)
+    max-execution-time: 300
+    # Enable caching for flow configurations
+    cache-enabled: true
+    # Cache TTL in minutes
+    cache-ttl-minutes: 30
+    # Thread pool size for async executions
+    async-executor-pool-size: 10
+    
+  # Analytics configuration
+  analytics:
+    # Enable analytics collection
+    enabled: true
+    # Analytics data retention period (days)
+    retention-days: 90
+    # Batch size for analytics processing
+    batch-size: 100

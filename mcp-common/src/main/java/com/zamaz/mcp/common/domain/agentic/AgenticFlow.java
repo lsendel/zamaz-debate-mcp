@@ -12,11 +12,14 @@ import java.util.Objects;
 public class AgenticFlow {
     private final AgenticFlowId id;
     private final AgenticFlowType type;
+    private String name;
+    private String description;
     private final AgenticFlowConfiguration configuration;
     private AgenticFlowStatus status;
     private final OrganizationId organizationId;
     private final Instant createdAt;
     private Instant updatedAt;
+    private Long version;
 
     /**
      * Creates a new AgenticFlow with the specified parameters.
@@ -167,13 +170,159 @@ public class AgenticFlow {
         return Objects.hash(id);
     }
 
+    /**
+     * Returns the name of this flow.
+     *
+     * @return The name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets the name of this flow.
+     *
+     * @param name The new name
+     */
+    public void setName(String name) {
+        this.name = name;
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Returns the description of this flow.
+     *
+     * @return The description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Sets the description of this flow.
+     *
+     * @param description The new description
+     */
+    public void setDescription(String description) {
+        this.description = description;
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Returns the version of this flow.
+     *
+     * @return The version
+     */
+    public Long getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets the version of this flow.
+     *
+     * @param version The new version
+     */
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
     @Override
     public String toString() {
         return "AgenticFlow{" +
                 "id=" + id +
                 ", type=" + type +
+                ", name='" + name + '\'' +
                 ", status=" + status +
                 ", organizationId=" + organizationId +
                 '}';
+    }
+
+    /**
+     * Builder for creating AgenticFlow instances.
+     */
+    public static AgenticFlowBuilder builder() {
+        return new AgenticFlowBuilder();
+    }
+
+    public static class AgenticFlowBuilder {
+        private AgenticFlowId id;
+        private AgenticFlowType type;
+        private String name;
+        private String description;
+        private AgenticFlowConfiguration configuration;
+        private AgenticFlowStatus status;
+        private OrganizationId organizationId;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private Long version;
+
+        AgenticFlowBuilder() {
+        }
+
+        public AgenticFlowBuilder id(AgenticFlowId id) {
+            this.id = id;
+            return this;
+        }
+
+        public AgenticFlowBuilder type(AgenticFlowType type) {
+            this.type = type;
+            return this;
+        }
+
+        public AgenticFlowBuilder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public AgenticFlowBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public AgenticFlowBuilder configuration(AgenticFlowConfiguration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        public AgenticFlowBuilder status(AgenticFlowStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public AgenticFlowBuilder organizationId(OrganizationId organizationId) {
+            this.organizationId = organizationId;
+            return this;
+        }
+
+        public AgenticFlowBuilder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public AgenticFlowBuilder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public AgenticFlowBuilder version(Long version) {
+            this.version = version;
+            return this;
+        }
+
+        public AgenticFlow build() {
+            AgenticFlow flow = new AgenticFlow(
+                    id != null ? id : new AgenticFlowId(),
+                    type,
+                    configuration,
+                    status != null ? status : AgenticFlowStatus.ACTIVE,
+                    organizationId,
+                    createdAt != null ? createdAt : Instant.now(),
+                    updatedAt != null ? updatedAt : Instant.now()
+            );
+            flow.setName(name);
+            flow.setDescription(description);
+            flow.setVersion(version != null ? version : 0L);
+            return flow;
+        }
     }
 }
