@@ -6,29 +6,26 @@ import {
 } from '../store/slices/uiSlice';
 import { createDebate } from '../store/slices/debateSlice';
 import llmClient, { LLMProvider, LLMModel } from '../api/llmClient';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Button,
-  Input,
-  Textarea,
-  FormField,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Badge,
-} from '@zamaz/ui';
-import { X, Plus, Trash2, Sliders } from 'lucide-react';
+import { Modal, Button, Input, Select, Card, Form, Slider, InputNumber, Typography, Space, Row, Col } from 'antd';
+import { CloseOutlined, PlusOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+
+const { TextArea } = Input;
+const { Title, Text } = Typography;
+
+// Custom FormField component
+const FormField: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ 
+  label, 
+  required, 
+  children 
+}) => (
+  <Form.Item 
+    label={label} 
+    required={required}
+    style={{ marginBottom: '16px' }}
+  >
+    {children}
+  </Form.Item>
+);
 
 interface Participant {
   name: string;
@@ -217,203 +214,206 @@ const CreateDebateDialog: React.FC = () => {
   };
 
   return (
-    <Dialog open={createDebateDialogOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New Debate</DialogTitle>
-          <DialogDescription>
-            Set up a new AI debate with multiple participants
-          </DialogDescription>
-        </DialogHeader>
+    <Modal
+      open={createDebateDialogOpen}
+      onCancel={handleClose}
+      width={900}
+      title={(
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Create New Debate</Title>
+          <Text type="secondary">Set up a new AI debate with multiple participants</Text>
+        </div>
+      )}
+      footer={[
+        <Button key="cancel" onClick={handleClose}>
+          Cancel
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          onClick={handleSubmit}
+          loading={loading}
+          disabled={loading || !topic || participants.length < 2}
+        >
+          Create Debate
+        </Button>,
+      ]}
+      style={{ top: 20 }}
+      bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+    >
 
-        <div className="space-y-6 py-4">
-          <FormField label="Topic" required>
-            <Input
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="Enter the debate topic"
-              fullWidth
-            />
-          </FormField>
+      <Form layout="vertical">
+        <FormField label="Topic" required>
+          <Input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Enter the debate topic"
+          />
+        </FormField>
 
-          <FormField label="Description">
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide additional context for the debate"
-              rows={3}
-            />
-          </FormField>
+        <FormField label="Description">
+          <TextArea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Provide additional context for the debate"
+            rows={3}
+          />
+        </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+        <Row gutter={16}>
+          <Col span={12}>
             <FormField label="Max Rounds">
-              <Input
-                type="number"
+              <InputNumber
                 value={maxRounds}
-                onChange={(e) => setMaxRounds(parseInt(e.target.value) || 5)}
+                onChange={(value) => setMaxRounds(value || 5)}
                 min={1}
                 max={20}
+                style={{ width: '100%' }}
               />
             </FormField>
-
+          </Col>
+          <Col span={12}>
             <FormField label="Turn Time Limit (seconds)">
-              <Input
-                type="number"
+              <InputNumber
                 value={turnTimeLimit}
-                onChange={(e) => setTurnTimeLimit(parseInt(e.target.value) || 60)}
+                onChange={(value) => setTurnTimeLimit(value || 60)}
                 min={10}
                 max={300}
+                style={{ width: '100%' }}
               />
             </FormField>
+          </Col>
+        </Row>
+
+        <div style={{ marginTop: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <Title level={5} style={{ margin: 0 }}>Participants</Title>
+            <Button
+              onClick={addParticipant}
+              icon={<PlusOutlined />}
+              size="small"
+            >
+              Add Participant
+            </Button>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Participants</h3>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={addParticipant}
-                leftIcon={<Plus className="h-4 w-4" />}
-              >
-                Add Participant
-              </Button>
-            </div>
-
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
             {participants.map((participant, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">
-                      <Input
-                        value={participant.name}
-                        onChange={(e) =>
-                          updateParticipant(index, { name: e.target.value })
-                        }
-                        className="font-semibold"
-                      />
-                    </CardTitle>
+              <Card 
+                key={index}
+                title={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Input
+                      value={participant.name}
+                      onChange={(e) =>
+                        updateParticipant(index, { name: e.target.value })
+                      }
+                      style={{ fontWeight: 600, border: 'none', paddingLeft: 0 }}
+                    />
                     {participants.length > 2 && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        danger
+                        type="text"
+                        icon={<DeleteOutlined />}
                         onClick={() => removeParticipant(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        size="small"
+                      />
                     )}
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                }
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
                     <FormField label="Provider">
                       <Select
                         value={participant.llmProvider}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           updateParticipant(index, { llmProvider: value })
                         }
+                        placeholder="Select provider"
+                        style={{ width: '100%' }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select provider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {providers.map((provider) => (
-                            <SelectItem key={provider.id} value={provider.id}>
-                              {provider.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+                        {providers.map((provider) => (
+                          <Select.Option key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </Select.Option>
+                        ))}
                       </Select>
                     </FormField>
-
+                  </Col>
+                  <Col span={12}>
                     <FormField label="Model">
                       <Select
                         value={participant.model}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           updateParticipant(index, { model: value })
                         }
+                        placeholder="Select model"
+                        style={{ width: '100%' }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getModelsForProvider(participant.llmProvider).map(
-                            (model) => (
-                              <SelectItem key={model.id} value={model.id}>
-                                {model.name}
-                              </SelectItem>
-                            )
-                          )}
-                        </SelectContent>
+                        {getModelsForProvider(participant.llmProvider).map(
+                          (model) => (
+                            <Select.Option key={model.id} value={model.id}>
+                              {model.name}
+                            </Select.Option>
+                          )
+                        )}
                       </Select>
                     </FormField>
-                  </div>
+                  </Col>
+                </Row>
 
-                  <FormField label="System Prompt">
-                    <Textarea
-                      value={participant.systemPrompt}
-                      onChange={(e) =>
-                        updateParticipant(index, {
-                          systemPrompt: e.target.value,
-                        })
-                      }
-                      rows={3}
-                    />
-                  </FormField>
+                <FormField label="System Prompt">
+                  <TextArea
+                    value={participant.systemPrompt}
+                    onChange={(e) =>
+                      updateParticipant(index, {
+                        systemPrompt: e.target.value,
+                      })
+                    }
+                    rows={3}
+                  />
+                </FormField>
 
-                  <div className="grid grid-cols-2 gap-4">
+                <Row gutter={16}>
+                  <Col span={12}>
                     <FormField label={`Temperature: ${participant.temperature}`}>
-                      <input
-                        type="range"
-                        min="0"
-                        max="2"
-                        step="0.1"
+                      <Slider
+                        min={0}
+                        max={2}
+                        step={0.1}
                         value={participant.temperature}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           updateParticipant(index, {
-                            temperature: parseFloat(e.target.value),
+                            temperature: value,
                           })
                         }
-                        className="w-full"
                       />
                     </FormField>
-
+                  </Col>
+                  <Col span={12}>
                     <FormField label="Max Tokens">
-                      <Input
-                        type="number"
+                      <InputNumber
                         value={participant.maxTokens}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           updateParticipant(index, {
-                            maxTokens: parseInt(e.target.value) || 1000,
+                            maxTokens: value || 1000,
                           })
                         }
                         min={100}
                         max={4000}
+                        style={{ width: '100%' }}
                       />
                     </FormField>
-                  </div>
-                </CardContent>
+                  </Col>
+                </Row>
               </Card>
             ))}
-          </div>
+          </Space>
         </div>
+      </Form>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            loading={loading}
-            disabled={loading || !topic || participants.length < 2}
-          >
-            Create Debate
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 };
 

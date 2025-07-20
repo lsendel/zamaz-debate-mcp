@@ -9,7 +9,8 @@ import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { store } from './store';
 import { useAppSelector, useAppDispatch } from './store';
-import { ToastProvider } from '@zamaz/ui';
+import { ConfigProvider, message } from 'antd';
+import 'antd/dist/reset.css';
 
 // Components
 import Layout from './components/Layout';
@@ -74,11 +75,11 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <ToastProvider>
+        <ConfigProvider>
           <Router>
             <AppContent />
           </Router>
-        </ToastProvider>
+        </ConfigProvider>
       </QueryClientProvider>
     </Provider>
   );

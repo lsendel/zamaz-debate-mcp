@@ -3,30 +3,22 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   Button,
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Avatar,
   Divider,
   Progress,
   Tooltip,
-  TooltipProvider,
   Badge,
-  Toast,
-  ToastProvider,
-  ToastViewport,
-  ToastClose,
-  ToastDescription,
   Alert,
-} from "@zamaz/ui";
+  notification,
+} from "antd";
 import {
-  ArrowLeft,
-  Play,
-  Pause,
-  StopCircle,
-  Download,
-  RefreshCw,
-} from "lucide-react";
+  ArrowLeftOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  StopOutlined,
+  DownloadOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import { useAppSelector, useAppDispatch } from "../store";
 import {
   fetchDebate,
@@ -116,16 +108,16 @@ const DebateDetailPage: React.FC = () => {
     }
   };
 
-  const getStatusVariant = (status: string): "default" | "primary" | "success" | "error" => {
+  const getStatusColor = (status: string): string => {
     switch (status?.toUpperCase()) {
       case "CREATED":
         return "default";
       case "IN_PROGRESS":
-        return "primary";
+        return "blue";
       case "COMPLETED":
-        return "success";
+        return "green";
       case "CANCELLED":
-        return "error";
+        return "red";
       default:
         return "default";
     }
@@ -138,112 +130,109 @@ const DebateDetailPage: React.FC = () => {
 
   if (loading || !currentDebate) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+        <div style={{ width: '32px', height: '32px', border: '3px solid #f3f3f3', borderTop: '3px solid #1677ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
       </div>
     );
   }
 
+  React.useEffect(() => {
+    if (showUpdateNotification) {
+      notification.info({
+        message: 'New round added to the debate!',
+        duration: 3,
+      });
+      setShowUpdateNotification(false);
+    }
+  }, [showUpdateNotification]);
+
   return (
-    <TooltipProvider>
-      <ToastProvider>
-        <div className="space-y-6">
-          <div className="flex items-center mb-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/debates")}
-              className="mr-4"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-3xl font-bold flex-1">
-              {currentDebate.topic}
-            </h1>
-            <div className="flex gap-2">
-              <Badge variant={getStatusVariant(currentDebate.status)}>
-                {currentDebate.status.replace("_", " ")}
-              </Badge>
-              <Badge variant="outline">
-                Format: {currentDebate.format || 'OXFORD'}
-              </Badge>
-              {(isPolling || isConnected) && (
-                <Badge variant="success" className="animate-pulse">
-                  Live
-                </Badge>
-              )}
-            </div>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
+        <Button
+          type="text"
+          size="small"
+          onClick={() => navigate("/debates")}
+          icon={<ArrowLeftOutlined />}
+          style={{ marginRight: '16px' }}
+        />
+        <h1 style={{ fontSize: '30px', fontWeight: 'bold', flex: 1, margin: 0 }}>
+          {currentDebate.topic}
+        </h1>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Badge color={getStatusColor(currentDebate.status)} text={currentDebate.status.replace("_", " ")} />
+          <Badge color="default" text={`Format: ${currentDebate.format || 'OXFORD'}`} />
+          {(isPolling || isConnected) && (
+            <Badge color="green" text="Live" />
+          )}
+        </div>
+      </div>
 
       {currentDebate.description && (
-            <Card className="mb-6">
-              <CardContent>
-                <p className="text-gray-700">{currentDebate.description}</p>
-              </CardContent>
-            </Card>
-          )}
+        <Card style={{ marginBottom: '24px' }}>
+          <p style={{ color: '#595959', margin: 0 }}>{currentDebate.description}</p>
+        </Card>
+      )}
 
       {/* Add Debate Progress Component */}
           {currentDebate && (
             <DebateProgress debate={currentDebate} isPolling={isPolling} />
           )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Debate Responses</CardTitle>
-                    <div className="flex gap-2">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
+        <div>
+          <Card
+            title="Debate Responses"
+            extra={
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {currentDebate.status === "CREATED" && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => dispatch(startDebate(currentDebate.id))}
-                          leftIcon={<Play className="h-4 w-4" />}
-                        >
-                          Start
-                        </Button>
-                      )}
-                      {currentDebate.status === "IN_PROGRESS" && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => dispatch(pauseDebate(currentDebate.id))}
-                          leftIcon={<Pause className="h-4 w-4" />}
-                        >
-                          Pause
-                        </Button>
-                      )}
-                      {(currentDebate.status === "CREATED" ||
-                        currentDebate.status === "IN_PROGRESS") && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => dispatch(cancelDebate(currentDebate.id))}
-                          leftIcon={<StopCircle className="h-4 w-4" />}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                      <Tooltip content="Refresh">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => dispatch(fetchDebate(currentDebate.id))}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </Tooltip>
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => dispatch(startDebate(currentDebate.id))}
+                    icon={<PlayCircleOutlined />}
+                  >
+                    Start
+                  </Button>
+                )}
+                {currentDebate.status === "IN_PROGRESS" && (
+                  <Button
+                    type="default"
+                    size="small"
+                    onClick={() => dispatch(pauseDebate(currentDebate.id))}
+                    icon={<PauseCircleOutlined />}
+                  >
+                    Pause
+                  </Button>
+                )}
+                {(currentDebate.status === "CREATED" ||
+                  currentDebate.status === "IN_PROGRESS") && (
+                  <Button
+                    danger
+                    size="small"
+                    onClick={() => dispatch(cancelDebate(currentDebate.id))}
+                    icon={<StopOutlined />}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Tooltip title="Refresh">
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={() => dispatch(fetchDebate(currentDebate.id))}
+                    icon={<ReloadOutlined />}
+                  />
+                </Tooltip>
               </div>
-                  </div>
-                </CardHeader>
+            }
+          >
 
-            <CardContent className="max-h-[600px] overflow-y-auto">
+            <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
                   {currentDebate.rounds && currentDebate.rounds.length > 0 ? (
                 currentDebate.rounds.map((round) => (
-                      <div key={round.roundNumber} className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3">
+                      <div key={round.roundNumber} style={{ marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>
                           Round {round.roundNumber}
                         </h3>
                     {round.responses.map((response) => {
@@ -255,63 +244,57 @@ const DebateDetailPage: React.FC = () => {
                               (p) => p.id === response.participantId,
                             );
                           return (
-                            <Card key={response.id} className="mb-3">
-                              <CardContent>
-                                <div className="flex items-center mb-2">
-                                  <Avatar
-                                    size="sm"
-                                    style={{
-                                      backgroundColor: getParticipantColor(participantIndex),
-                                    }}
-                                    className="mr-2"
-                                  >
-                                    {participant?.name.charAt(0)}
-                                  </Avatar>
-                                  <div className="flex-1">
-                                    <p className="font-medium">
-                                      {participant?.name}
-                                    </p>
-                                  </div>
-                                  <p className="text-sm text-gray-500">
-                                    {new Date(
-                                      response.timestamp,
-                                    ).toLocaleTimeString()}
+                            <Card key={response.id} style={{ marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                <Avatar
+                                  size="small"
+                                  style={{
+                                    backgroundColor: getParticipantColor(participantIndex),
+                                    marginRight: '8px'
+                                  }}
+                                >
+                                  {participant?.name.charAt(0)}
+                                </Avatar>
+                                <div style={{ flex: 1 }}>
+                                  <p style={{ fontWeight: '500', margin: 0 }}>
+                                    {participant?.name}
                                   </p>
                                 </div>
-                                <p className="text-gray-700">
-                                  {response.content}
+                                <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
+                                  {new Date(
+                                    response.timestamp,
+                                  ).toLocaleTimeString()}
                                 </p>
-                                {response.tokenCount && (
-                                  <p className="text-sm text-gray-500 mt-2">
-                                    {response.tokenCount} tokens
-                                  </p>
-                                )}
-                              </CardContent>
+                              </div>
+                              <p style={{ color: '#595959', margin: '0 0 8px 0' }}>
+                                {response.content}
+                              </p>
+                              {response.tokenCount && (
+                                <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
+                                  {response.tokenCount} tokens
+                                </p>
+                              )}
                             </Card>
                           );
                         })}
                   </div>
                     ))
               ) : (
-                    <div className="text-center py-8">
-                      <h3 className="text-lg font-medium text-gray-500 mb-2">
+                    <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: '500', color: '#999', marginBottom: '8px' }}>
                         No debate rounds yet
                       </h3>
-                      <p className="text-sm text-gray-400">
+                      <p style={{ fontSize: '14px', color: '#bfbfbf' }}>
                         {currentDebate.status === 'CREATED' ? 'Start the debate to see rounds' : 'This debate has no recorded rounds'}
                       </p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
             </div>
+          </Card>
+        </div>
 
-        <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Participants</CardTitle>
-                </CardHeader>
-                <CardContent>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <Card title="Participants">
             {currentDebate.participants && Array.isArray(currentDebate.participants) ? (
                     currentDebate.participants.map((participant, index) => {
                       // Handle both string and object participants
@@ -321,94 +304,74 @@ const DebateDetailPage: React.FC = () => {
                       const model = isString ? participant : participant.model;
                       
                       return (
-                        <div key={isString ? participant : participant.id} className="mb-4">
-                          <div className="flex items-center mb-2">
+                        <div key={isString ? participant : participant.id} style={{ marginBottom: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                             <Avatar
-                              size="md"
                               style={{
                                 backgroundColor: getParticipantColor(index),
+                                marginRight: '12px'
                               }}
-                              className="mr-3"
                             >
                               {name.charAt(0)}
                             </Avatar>
-                            <div className="flex-1">
-                              <p className="font-medium">
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontWeight: '500', margin: 0 }}>
                                 {name}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
                                 {isString ? `Model: ${participant}` : `${llmProvider} - ${model}`}
                               </p>
                             </div>
                           </div>
                           {!isString && participant.systemPrompt && (
-                            <p className="text-sm text-gray-600 ml-12">
+                            <p style={{ fontSize: '14px', color: '#666', marginLeft: '48px' }}>
                               {participant.systemPrompt}
                             </p>
                           )}
                           {index < currentDebate.participants.length - 1 && (
-                            <Divider className="mt-4" />
+                            <Divider style={{ marginTop: '16px' }} />
                           )}
                         </div>
                       );
                     })
                   ) : (
-                    <p className="text-sm text-gray-500">
+                    <p style={{ fontSize: '14px', color: '#999' }}>
                       No participants found
                     </p>
                   )}
-                </CardContent>
-              </Card>
+          </Card>
 
-          <Card>
-                <CardHeader>
-                  <CardTitle>Export</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleExport("json")}
-                    leftIcon={<Download className="h-4 w-4" />}
-                    className="w-full"
-                  >
-                    Export as JSON
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleExport("markdown")}
-                    leftIcon={<Download className="h-4 w-4" />}
-                    className="w-full"
-                  >
-                    Export as Markdown
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleExport("pdf")}
-                    leftIcon={<Download className="h-4 w-4" />}
-                    className="w-full"
-                  >
-                    Export as PDF
-                  </Button>
-                </CardContent>
-              </Card>
+          <Card title="Export">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Button
+                type="default"
+                onClick={() => handleExport("json")}
+                icon={<DownloadOutlined />}
+                block
+              >
+                Export as JSON
+              </Button>
+              <Button
+                type="default"
+                onClick={() => handleExport("markdown")}
+                icon={<DownloadOutlined />}
+                block
+              >
+                Export as Markdown
+              </Button>
+              <Button
+                type="default"
+                onClick={() => handleExport("pdf")}
+                icon={<DownloadOutlined />}
+                block
+              >
+                Export as PDF
+              </Button>
             </div>
-          </div>
-      
-      {/* Update Notification */}
-          {showUpdateNotification && (
-            <Toast
-              open={showUpdateNotification}
-              onOpenChange={setShowUpdateNotification}
-              variant="default"
-            >
-              <ToastDescription>New round added to the debate!</ToastDescription>
-              <ToastClose />
-            </Toast>
-          )}
-          <ToastViewport />
+          </Card>
         </div>
-      </ToastProvider>
-    </TooltipProvider>
+      </div>
+    </div>
   );
 };
 

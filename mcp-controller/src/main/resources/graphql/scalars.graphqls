@@ -1,0 +1,10 @@
+# Common scalar types used across the schema
+
+# JSON scalar for arbitrary data
+scalar JSON
+
+# DateTime scalar for timestamp values
+scalar DateTime
+
+# Duration scalar for time durations
+scalar Duration

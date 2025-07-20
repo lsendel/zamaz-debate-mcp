@@ -2,15 +2,10 @@ import React from 'react';
 import { useAppSelector, useAppDispatch } from '../store';
 import { switchOrganization } from '../store/slices/organizationSlice';
 import { fetchDebates } from '../store/slices/debateSlice';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Badge,
-} from '@zamaz/ui';
-import { Building2 } from 'lucide-react';
+import { Select, Badge, Typography } from 'antd';
+import { BankOutlined } from '@ant-design/icons';
+
+const { Text } = Typography;
 
 const OrganizationSwitcher: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -26,41 +21,52 @@ const OrganizationSwitcher: React.FC = () => {
 
   if (organizations.length === 0) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-sm text-gray-500">No organizations available</p>
+      <div style={{ padding: '16px', textAlign: 'center' }}>
+        <Text type="secondary">No organizations available</Text>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <label className="text-xs font-medium text-gray-600 uppercase tracking-wider">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Text 
+        strong 
+        style={{ 
+          fontSize: '12px', 
+          textTransform: 'uppercase', 
+          color: '#666',
+          letterSpacing: '0.05em' 
+        }}
+      >
         Organization
-      </label>
+      </Text>
       <Select
         value={currentOrganization?.id || ''}
-        onValueChange={handleChange}
+        onChange={handleChange}
+        placeholder="Select organization"
+        style={{ width: '100%' }}
+        suffixIcon={<BankOutlined />}
       >
-        <SelectTrigger className="w-full">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-gray-500" />
-            <SelectValue placeholder="Select organization" />
-          </div>
-        </SelectTrigger>
-        <SelectContent>
-          {organizations.map((org) => (
-            <SelectItem key={org.id} value={org.id}>
-              <div className="flex items-center justify-between w-full gap-2">
-                <span className="truncate">{org.name}</span>
-                {org.apiKey && (
-                  <Badge variant="outline" className="text-xs">
-                    API
-                  </Badge>
-                )}
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
+        {organizations.map((org) => (
+          <Select.Option key={org.id} value={org.id}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {org.name}
+              </span>
+              {org.apiKey && (
+                <Badge 
+                  count="API" 
+                  style={{ 
+                    backgroundColor: '#f0f0f0', 
+                    color: '#666',
+                    fontSize: '10px',
+                    marginLeft: '8px'
+                  }} 
+                />
+              )}
+            </div>
+          </Select.Option>
+        ))}
       </Select>
     </div>
   );

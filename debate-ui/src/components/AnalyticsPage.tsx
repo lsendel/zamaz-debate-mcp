@@ -1,17 +1,14 @@
 import React from "react";
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Progress,
-} from "@zamaz/ui";
+} from "antd";
 import {
-  TrendingUp,
-  MessageSquare,
-  Clock,
-  Users,
-} from "lucide-react";
+  RiseOutlined,
+  MessageOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { useAppSelector } from "../store";
 
 interface StatCardProps {
@@ -22,30 +19,33 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => {
-  const colorClasses = {
-    primary: "bg-primary-100 text-primary-700",
-    success: "bg-green-100 text-green-700",
-    warning: "bg-yellow-100 text-yellow-700",
-    info: "bg-blue-100 text-blue-700",
+  const colorStyles = {
+    primary: { background: '#e6f4ff', color: '#1677ff' },
+    success: { background: '#f6ffed', color: '#52c41a' },
+    warning: { background: '#fffbe6', color: '#faad14' },
+    info: { background: '#e6f7ff', color: '#1890ff' },
   };
 
   return (
     <Card>
-      <CardContent>
-        <div className="flex items-center mb-3">
-          <div
-            className={`p-2 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} mr-3`}
-          >
-            {icon}
-          </div>
-          <div className="text-2xl font-semibold">
-            {value}
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+        <div
+          style={{
+            padding: '8px',
+            borderRadius: '8px',
+            marginRight: '12px',
+            ...colorStyles[color as keyof typeof colorStyles]
+          }}
+        >
+          {icon}
         </div>
-        <p className="text-sm text-gray-600">
-          {title}
-        </p>
-      </CardContent>
+        <div style={{ fontSize: '24px', fontWeight: '600' }}>
+          {value}
+        </div>
+      </div>
+      <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
+        {title}
+      </p>
     </Card>
   );
 };
@@ -77,45 +77,41 @@ const AnalyticsPage: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Analytics</h1>
-      <p className="text-gray-600 mb-6">
+      <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Analytics</h1>
+      <p style={{ color: '#666', marginBottom: '24px' }}>
         Organization: {currentOrganization?.name}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         <StatCard
           title="Total Debates"
           value={totalDebates}
-          icon={<MessageSquare className="h-5 w-5" />}
+          icon={<MessageOutlined style={{ fontSize: '20px' }} />}
           color="primary"
         />
         <StatCard
           title="Completed"
           value={completedDebates}
-          icon={<TrendingUp className="h-5 w-5" />}
+          icon={<RiseOutlined style={{ fontSize: '20px' }} />}
           color="success"
         />
         <StatCard
           title="In Progress"
           value={inProgressDebates}
-          icon={<Clock className="h-5 w-5" />}
+          icon={<ClockCircleOutlined style={{ fontSize: '20px' }} />}
           color="warning"
         />
         <StatCard
           title="Avg. Participants"
           value={avgParticipants}
-          icon={<Users className="h-5 w-5" />}
+          icon={<UserOutlined style={{ fontSize: '20px' }} />}
           color="info"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Debate Status Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+        <Card title="Debate Status Distribution">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {["created", "in_progress", "completed", "cancelled"].map(
                 (status) => {
                   const count = debates.filter(
@@ -133,89 +129,78 @@ const AnalyticsPage: React.FC = () => {
                   
                   return (
                     <div key={status}>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
                           {statusLabels[status as keyof typeof statusLabels]}
                         </span>
-                        <span className="text-sm text-gray-600">{count}</span>
+                        <span style={{ fontSize: '14px', color: '#666' }}>{count}</span>
                       </div>
                       <Progress
-                        value={percentage}
-                        variant={
-                          status === "completed" ? "success" :
-                          status === "in_progress" ? "warning" :
-                          status === "cancelled" ? "error" :
-                          "default"
+                        percent={percentage}
+                        strokeColor={
+                          status === "completed" ? '#52c41a' :
+                          status === "in_progress" ? '#faad14' :
+                          status === "cancelled" ? '#ff4d4f' :
+                          '#1677ff'
                         }
-                        showLabel={false}
+                        showInfo={false}
                       />
                     </div>
                   );
                 },
               )}
-            </div>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+        <Card title="Recent Activity">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {debates.slice(0, 5).map((debate) => (
-                <div key={debate.id} className="border-b border-gray-100 pb-3 last:border-0">
-                  <p className="font-medium text-sm">
+                <div key={debate.id} style={{ paddingBottom: '12px', borderBottom: '1px solid #f0f0f0' }}>
+                  <p style={{ fontWeight: '500', fontSize: '14px', margin: '0 0 4px 0' }}>
                     {debate.topic}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
                     {new Date(debate.createdAt).toLocaleDateString()} -{" "}
                     {debate.status.replace("_", " ")}
                   </p>
                 </div>
               ))}
               {debates.length === 0 && (
-                <p className="text-sm text-gray-500">
+                <p style={{ fontSize: '14px', color: '#999' }}>
                   No debates yet
                 </p>
               )}
-            </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance Metrics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">
-                Average Debate Duration
-              </p>
-              <p className="text-2xl font-semibold">
-                {completedDebates > 0 ? "N/A" : "-"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-1">
-                Average Rounds per Debate
-              </p>
-              <p className="text-2xl font-semibold">{avgRounds}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-1">
-                Success Rate
-              </p>
-              <p className="text-2xl font-semibold">
-                {totalDebates > 0
-                  ? `${((completedDebates / totalDebates) * 100).toFixed(1)}%`
-                  : "-"}
-              </p>
-            </div>
+      <Card title="Performance Metrics">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+          <div>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+              Average Debate Duration
+            </p>
+            <p style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>
+              {completedDebates > 0 ? "N/A" : "-"}
+            </p>
           </div>
-        </CardContent>
+          <div>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+              Average Rounds per Debate
+            </p>
+            <p style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>{avgRounds}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+              Success Rate
+            </p>
+            <p style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>
+              {totalDebates > 0
+                ? `${((completedDebates / totalDebates) * 100).toFixed(1)}%`
+                : "-"}
+            </p>
+          </div>
+        </div>
       </Card>
     </div>
   );

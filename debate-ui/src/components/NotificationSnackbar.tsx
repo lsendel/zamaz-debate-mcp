@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Toast, ToastClose, ToastDescription, ToastProvider, ToastViewport } from "@zamaz/ui";
+import { notification } from "antd";
 import { useAppSelector, useAppDispatch } from "../store";
 import { removeNotification } from "../store/slices/uiSlice";
 
@@ -10,46 +10,31 @@ const NotificationSnackbar: React.FC = () => {
 
   useEffect(() => {
     if (currentNotification) {
+      const { type, message, id } = currentNotification;
+      
+      // Show notification using Ant Design
+      notification[type as keyof typeof notification]({
+        message: type.charAt(0).toUpperCase() + type.slice(1),
+        description: message,
+        placement: 'topRight',
+        duration: 5,
+        onClose: () => {
+          dispatch(removeNotification(id));
+        },
+      });
+
+      // Also remove from Redux store after 5 seconds
       const timer = setTimeout(() => {
-        dispatch(removeNotification(currentNotification.id));
+        dispatch(removeNotification(id));
       }, 5000);
+      
       return () => clearTimeout(timer);
     }
   }, [currentNotification, dispatch]);
 
-  const getToastVariant = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'error';
-      case 'warning':
-        return 'warning';
-      case 'info':
-      default:
-        return 'default';
-    }
-  };
-
-  return (
-    <ToastProvider>
-      {currentNotification && (
-        <Toast
-          open={true}
-          onOpenChange={(open) => {
-            if (!open) {
-              dispatch(removeNotification(currentNotification.id));
-            }
-          }}
-          variant={getToastVariant(currentNotification.type)}
-        >
-          <ToastDescription>{currentNotification.message}</ToastDescription>
-          <ToastClose />
-        </Toast>
-      )}
-      <ToastViewport />
-    </ToastProvider>
-  );
+  // This component doesn't render anything visible itself
+  // It just manages showing Ant Design notifications based on Redux state
+  return null;
 };
 
 export default NotificationSnackbar;

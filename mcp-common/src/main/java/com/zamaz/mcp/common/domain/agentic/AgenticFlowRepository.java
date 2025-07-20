@@ -14,8 +14,9 @@ public interface AgenticFlowRepository {
      * Saves an agentic flow.
      *
      * @param flow The flow to save
+     * @return The saved flow
      */
-    void save(AgenticFlow flow);
+    AgenticFlow save(AgenticFlow flow);
 
     /**
      * Finds an agentic flow by its ID.

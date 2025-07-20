@@ -1,35 +1,25 @@
 import React, { useState } from "react";
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Button,
   Divider,
   Alert,
   Badge,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Modal,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  FormField,
-  Textarea,
-} from "@zamaz/ui";
+  Form,
+} from "antd";
 import {
-  Trash2,
-  Plus,
-  Copy,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+  DeleteOutlined,
+  PlusOutlined,
+  CopyOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+} from "@ant-design/icons";
+
+const { TextArea } = Input;
+const { Option } = Select;
 import { useAppSelector, useAppDispatch } from "../store";
 import { generateApiKey } from "../store/slices/organizationSlice";
 import { addNotification } from "../store/slices/uiSlice";
@@ -42,7 +32,7 @@ const SettingsPage: React.FC = () => {
 
   const [showApiKey, setShowApiKey] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
-  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     username: "",
     email: "",
@@ -103,7 +93,7 @@ const SettingsPage: React.FC = () => {
     try {
       const user = await organizationClient.addUser(newUser);
       setUsers([...users, user]);
-      setAddUserDialogOpen(false);
+      setAddUserModalOpen(false);
       setNewUser({ username: "", email: "", password: "", role: "member" });
       dispatch(
         addNotification({
@@ -168,203 +158,156 @@ const SettingsPage: React.FC = () => {
   if (!currentOrganization) {
     return (
       <div>
-        <h1 className="text-3xl font-bold mb-4">Settings</h1>
-        <Alert variant="warning">No organization selected</Alert>
+        <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '16px' }}>Settings</h1>
+        <Alert message="No organization selected" type="warning" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Settings</h1>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <h1 style={{ fontSize: '30px', fontWeight: 'bold', margin: 0 }}>Settings</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <FormField label="Organization Name">
+      <Card title="Organization Settings">
+        <Form layout="vertical">
+          <Form.Item label="Organization Name">
             <Input
               value={orgSettings.name}
               onChange={(e) =>
                 setOrgSettings({ ...orgSettings, name: e.target.value })
               }
-              fullWidth
             />
-          </FormField>
-          <FormField label="Description">
-            <Textarea
+          </Form.Item>
+          <Form.Item label="Description">
+            <TextArea
               value={orgSettings.description}
               onChange={(e) =>
                 setOrgSettings({ ...orgSettings, description: e.target.value })
               }
               rows={3}
             />
-          </FormField>
+          </Form.Item>
           <Button
-            variant="primary"
+            type="primary"
             onClick={handleUpdateOrganization}
           >
             Update Settings
           </Button>
-        </CardContent>
+        </Form>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>API Configuration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Input
-                value={currentOrganization.apiKey || "No API key generated"}
-                type={showApiKey ? "text" : "password"}
-                readOnly
-                fullWidth
-                className="pr-20"
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-                {currentOrganization.apiKey && (
+      <Card title="API Configuration">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Input.Password
+            value={currentOrganization.apiKey || "No API key generated"}
+            readOnly
+            style={{ flex: 1 }}
+            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+          />
+          {currentOrganization.apiKey && (
+            <Button
+              icon={<CopyOutlined />}
+              onClick={handleCopyApiKey}
+            />
+          )}
+          <Button type="default" onClick={handleGenerateApiKey}>
+            {currentOrganization.apiKey ? "Regenerate" : "Generate"}
+          </Button>
+        </div>
+        {currentOrganization.apiKey && (
+          <Alert
+            message="Keep your API key secure. It provides full access to your organization's resources."
+            type="warning"
+            style={{ marginTop: '16px' }}
+          />
+        )}
+      </Card>
+
+      <Card
+        title="Users"
+        extra={
+          <Button
+            type="default"
+            size="small"
+            onClick={() => setAddUserModalOpen(true)}
+            icon={<PlusOutlined />}
+          >
+            Add User
+          </Button>
+        }
+      >
+        <Divider style={{ margin: '0 0 16px 0' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {users.map((u) => (
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 500, margin: 0 }}>{u.username}</p>
+                <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>{u.email}</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Badge color={u.role === "admin" ? "blue" : "default"} text={u.role} />
+                {u.id !== user?.id && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyApiKey}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                    type="text"
+                    size="small"
+                    danger
+                    onClick={() => handleRemoveUser(u.id)}
+                    icon={<DeleteOutlined />}
+                  />
                 )}
               </div>
             </div>
-            <Button variant="secondary" onClick={handleGenerateApiKey}>
-              {currentOrganization.apiKey ? "Regenerate" : "Generate"}
-            </Button>
-          </div>
-          {currentOrganization.apiKey && (
-            <Alert variant="warning" className="mt-4">
-              Keep your API key secure. It provides full access to your
-              organization's resources.
-            </Alert>
-          )}
-        </CardContent>
+          ))}
+        </div>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Users</CardTitle>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setAddUserDialogOpen(true)}
-              leftIcon={<Plus className="h-4 w-4" />}
+      <Modal
+        title="Add User"
+        open={addUserModalOpen}
+        onCancel={() => setAddUserModalOpen(false)}
+        onOk={handleAddUser}
+        okText="Add User"
+        okButtonProps={{ disabled: !newUser.username || !newUser.email || !newUser.password }}
+      >
+        <p style={{ marginBottom: '16px' }}>
+          Add a new user to your organization
+        </p>
+        <Form layout="vertical">
+          <Form.Item label="Username" required>
+            <Input
+              value={newUser.username}
+              onChange={(e) =>
+                setNewUser({ ...newUser, username: e.target.value })
+              }
+            />
+          </Form.Item>
+          <Form.Item label="Email" required>
+            <Input
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            />
+          </Form.Item>
+          <Form.Item label="Password" required>
+            <Input.Password
+              value={newUser.password}
+              onChange={(e) =>
+                setNewUser({ ...newUser, password: e.target.value })
+              }
+            />
+          </Form.Item>
+          <Form.Item label="Role">
+            <Select
+              value={newUser.role}
+              onChange={(value) => setNewUser({ ...newUser, role: value })}
+              style={{ width: '100%' }}
             >
-              Add User
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Divider className="mb-4" />
-          <div className="space-y-3">
-            {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between py-2">
-                <div className="flex-1">
-                  <p className="font-medium">{u.username}</p>
-                  <p className="text-sm text-gray-500">{u.email}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={u.role === "admin" ? "primary" : "default"}>
-                    {u.role}
-                  </Badge>
-                  {u.id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveUser(u.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add User</DialogTitle>
-            <DialogDescription>
-              Add a new user to your organization
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <FormField label="Username" required>
-              <Input
-                value={newUser.username}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, username: e.target.value })
-                }
-                fullWidth
-              />
-            </FormField>
-            <FormField label="Email" required>
-              <Input
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                fullWidth
-              />
-            </FormField>
-            <FormField label="Password" required>
-              <Input
-                type="password"
-                value={newUser.password}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, password: e.target.value })
-                }
-                fullWidth
-              />
-            </FormField>
-            <FormField label="Role">
-              <Select
-                value={newUser.role}
-                onValueChange={(value) => setNewUser({ ...newUser, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddUserDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleAddUser}
-              disabled={!newUser.username || !newUser.email || !newUser.password}
-            >
-              Add User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <Option value="member">Member</Option>
+              <Option value="admin">Admin</Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

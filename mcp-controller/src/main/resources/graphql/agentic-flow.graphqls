@@ -1,0 +1,213 @@
+# Agentic Flow GraphQL Schema
+
+# Enums
+
+enum AgenticFlowType {
+    INTERNAL_MONOLOGUE
+    SELF_CRITIQUE_LOOP
+    MULTI_AGENT_RED_TEAM
+    TOOL_CALLING_VERIFICATION
+    RAG_WITH_RERANKING
+    CONFIDENCE_SCORING
+    CONSTITUTIONAL_PROMPTING
+    ENSEMBLE_VOTING
+    POST_PROCESSING_RULES
+    TREE_OF_THOUGHTS
+    STEP_BACK_PROMPTING
+    PROMPT_CHAINING
+}
+
+enum AgenticFlowStatus {
+    CREATED
+    ACTIVE
+    INACTIVE
+    ERROR
+    ARCHIVED
+}
+
+# Types
+
+type AgenticFlow {
+    id: ID!
+    flowType: AgenticFlowType!
+    name: String!
+    description: String
+    configuration: JSON!
+    organizationId: ID!
+    status: AgenticFlowStatus!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    version: Int!
+    
+    # Nested fields
+    executionHistory(limit: Int = 10): [AgenticFlowExecution!]!
+    statistics: AgenticFlowStatistics
+}
+
+type AgenticFlowConfiguration {
+    parameters: JSON!
+}
+
+type AgenticFlowResult {
+    originalPrompt: String!
+    enhancedPrompt: String!
+    fullResponse: String!
+    finalResponse: String!
+    reasoning: String!
+    processingSteps: [ProcessingStep!]!
+    processingTime: Duration!
+    responseChanged: Boolean!
+    metrics: JSON!
+}
+
+type ProcessingStep {
+    stepType: String!
+    input: String!
+    output: String!
+    metadata: JSON
+}
+
+type AgenticFlowExecution {
+    id: ID!
+    flowId: ID!
+    debateId: ID
+    participantId: ID
+    prompt: String!
+    result: AgenticFlowResult!
+    processingTimeMs: Int!
+    responseChanged: Boolean!
+    errorMessage: String
+    createdAt: DateTime!
+}
+
+type AgenticFlowStatistics {
+    executionCount: Int!
+    averageProcessingTime: Float!
+    responseChangeRate: Float!
+    errorCount: Int!
+    lastExecutionTime: DateTime
+}
+
+type AgenticFlowTemplate {
+    name: String!
+    displayName: String!
+    description: String!
+    flowType: AgenticFlowType!
+    defaultParameters: JSON!
+}
+
+type AgenticFlowExecutionEvent {
+    flowId: ID!
+    flowType: AgenticFlowType!
+    prompt: String!
+    result: AgenticFlowResult!
+    timestamp: DateTime!
+}
+
+# Queries
+
+extend type Query {
+    # Get a specific agentic flow by ID
+    agenticFlow(id: ID!): AgenticFlow!
+    
+    # Get all agentic flows for an organization
+    agenticFlowsByOrganization(organizationId: ID!): [AgenticFlow!]!
+    
+    # Get agentic flows by type for an organization
+    agenticFlowsByType(
+        organizationId: ID!
+        flowType: AgenticFlowType!
+    ): [AgenticFlow!]!
+    
+    # Get active agentic flows for an organization
+    activeAgenticFlows(organizationId: ID!): [AgenticFlow!]!
+    
+    # Get available flow types
+    availableFlowTypes: [AgenticFlowType!]!
+    
+    # Get available flow templates
+    availableFlowTemplates: [AgenticFlowTemplate!]!
+    
+    # Get recommended flow type for a context
+    recommendFlowType(
+        prompt: String!
+        debateType: String
+        participantRole: String
+    ): AgenticFlowType!
+}
+
+# Mutations
+
+extend type Mutation {
+    # Create a new agentic flow
+    createAgenticFlow(
+        flowType: AgenticFlowType!
+        name: String!
+        description: String
+        parameters: JSON!
+        organizationId: ID!
+    ): AgenticFlow!
+    
+    # Create agentic flow from template
+    createAgenticFlowFromTemplate(
+        templateName: String!
+        name: String!
+        organizationId: ID!
+        parameters: JSON
+    ): AgenticFlow!
+    
+    # Update agentic flow configuration
+    updateAgenticFlow(
+        flowId: ID!
+        parameters: JSON!
+    ): AgenticFlow!
+    
+    # Delete agentic flow
+    deleteAgenticFlow(flowId: ID!): Boolean!
+    
+    # Execute agentic flow
+    executeAgenticFlow(
+        flowId: ID!
+        prompt: String!
+        debateId: ID!
+        participantId: ID!
+    ): AgenticFlowResult!
+    
+    # Execute agentic flow by type (without saved configuration)
+    executeAgenticFlowByType(
+        flowType: AgenticFlowType!
+        prompt: String!
+        parameters: JSON!
+        debateId: ID!
+        participantId: ID!
+    ): AgenticFlowResult!
+    
+    # Configure agentic flow for a debate
+    configureDebateAgenticFlow(
+        debateId: ID!
+        flowType: AgenticFlowType!
+        parameters: JSON!
+    ): AgenticFlow!
+    
+    # Configure agentic flow for a participant
+    configureParticipantAgenticFlow(
+        participantId: ID!
+        flowType: AgenticFlowType!
+        parameters: JSON!
+    ): AgenticFlow!
+}
+
+# Subscriptions
+
+extend type Subscription {
+    # Subscribe to agentic flow executions
+    agenticFlowExecutions(organizationId: ID!): AgenticFlowExecutionEvent!
+}
+
+# Input types
+
+input AgenticFlowFilter {
+    flowType: AgenticFlowType
+    status: AgenticFlowStatus
+    nameContains: String
+}

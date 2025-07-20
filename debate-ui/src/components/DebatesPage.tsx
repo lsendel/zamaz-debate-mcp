@@ -9,17 +9,16 @@ import {
 } from '../store/slices/debateSlice';
 import { openCreateDebateDialog } from '../store/slices/uiSlice';
 import CreateDebateDialog from './CreateDebateDialog';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  Badge,
-} from '@zamaz/ui';
-import { Plus, Play, Pause, StopCircle, RefreshCw } from 'lucide-react';
+import { Button, Card, Badge, Typography, Row, Col, Spin, Empty, Space } from 'antd';
+import { 
+  PlusOutlined, 
+  PlayCircleOutlined, 
+  PauseCircleOutlined, 
+  StopOutlined, 
+  ReloadOutlined 
+} from '@ant-design/icons';
+
+const { Title, Text, Paragraph } = Typography;
 
 const DebatesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,12 +36,12 @@ const DebatesPage: React.FC = () => {
     dispatch(fetchDebates());
   };
 
-  const getStatusVariant = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'created':
         return 'default';
       case 'in_progress':
-        return 'primary';
+        return 'processing';
       case 'completed':
         return 'success';
       case 'cancelled':
@@ -73,120 +72,131 @@ const DebatesPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Debates</h1>
-        <div className="flex gap-2">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <Title level={2} style={{ margin: 0 }}>Debates</Title>
+        <Space>
           <Button
-            variant="ghost"
-            size="sm"
             onClick={handleRefresh}
-            leftIcon={<RefreshCw className="h-4 w-4" />}
+            icon={<ReloadOutlined />}
           >
             Refresh
           </Button>
           <Button
-            variant="primary"
+            type="primary"
             onClick={() => dispatch(openCreateDebateDialog())}
-            leftIcon={<Plus className="h-4 w-4" />}
+            icon={<PlusOutlined />}
           >
             Create Debate
           </Button>
-        </div>
+        </Space>
       </div>
 
       {debates.length === 0 ? (
-        <Card className="text-center p-12">
-          <CardContent>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              No debates yet
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Create your first debate to get started
-            </p>
-            <Button
-              variant="primary"
-              onClick={() => dispatch(openCreateDebateDialog())}
-              leftIcon={<Plus className="h-4 w-4" />}
-            >
-              Create Debate
-            </Button>
-          </CardContent>
+        <Card style={{ textAlign: 'center', padding: '48px' }}>
+          <Empty
+            description={
+              <Space direction="vertical" size="large">
+                <Title level={4} style={{ margin: 0 }}>No debates yet</Title>
+                <Text type="secondary">Create your first debate to get started</Text>
+                <Button
+                  type="primary"
+                  onClick={() => dispatch(openCreateDebateDialog())}
+                  icon={<PlusOutlined />}
+                >
+                  Create Debate
+                </Button>
+              </Space>
+            }
+          />
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Row gutter={[16, 16]}>
           {debates.map((debate) => (
-            <Card
-              key={debate.id}
-              variant="interactive"
-              onClick={() => navigate(`/debates/${debate.id}`)}
-              className="overflow-hidden"
-            >
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{debate.topic}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {debate.description || 'No description'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant={getStatusVariant(debate.status)}>
-                    {debate.status.replace('_', ' ')}
-                  </Badge>
-                  <Badge variant="outline">
-                    Round {debate.currentRound}/{debate.maxRounds}
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-600">
-                  {debate.participants.length} participants
-                </p>
-              </CardContent>
-              <CardFooter className="bg-gray-50 border-t">
-                <div className="flex gap-2">
-                  {debate.status === 'created' && (
+            <Col key={debate.id} xs={24} md={12} lg={8}>
+              <Card
+                hoverable
+                onClick={() => navigate(`/debates/${debate.id}`)}
+                style={{ cursor: 'pointer', height: '100%' }}
+                actions={[
+                  debate.status === 'created' && (
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      size="small"
+                      type="text"
                       onClick={(e) => handleDebateAction(e, debate.id, 'start')}
-                      leftIcon={<Play className="h-4 w-4" />}
+                      icon={<PlayCircleOutlined />}
                     >
                       Start
                     </Button>
-                  )}
-                  {debate.status === 'in_progress' && (
+                  ),
+                  debate.status === 'in_progress' && (
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      size="small"
+                      type="text"
                       onClick={(e) => handleDebateAction(e, debate.id, 'pause')}
-                      leftIcon={<Pause className="h-4 w-4" />}
+                      icon={<PauseCircleOutlined />}
                     >
                       Pause
                     </Button>
-                  )}
-                  {(debate.status === 'created' ||
+                  ),
+                  (debate.status === 'created' ||
                     debate.status === 'in_progress') && (
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      size="small"
+                      type="text"
+                      danger
                       onClick={(e) => handleDebateAction(e, debate.id, 'cancel')}
-                      leftIcon={<StopCircle className="h-4 w-4" />}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      icon={<StopOutlined />}
                     >
                       Cancel
                     </Button>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
+                  ),
+                ].filter(Boolean)}
+              >
+                <Card.Meta
+                  title={
+                    <Text 
+                      ellipsis={{ tooltip: debate.topic }} 
+                      style={{ marginBottom: '8px' }}
+                    >
+                      {debate.topic}
+                    </Text>
+                  }
+                  description={
+                    <Paragraph 
+                      ellipsis={{ rows: 2, tooltip: debate.description || 'No description' }}
+                      style={{ marginBottom: '16px' }}
+                    >
+                      {debate.description || 'No description'}
+                    </Paragraph>
+                  }
+                />
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Space wrap>
+                    <Badge 
+                      status={getStatusColor(debate.status)}
+                      text={debate.status.replace('_', ' ')}
+                    />
+                    <Badge 
+                      count={`Round ${debate.currentRound}/${debate.maxRounds}`}
+                      style={{ backgroundColor: '#f0f0f0', color: '#666' }}
+                    />
+                  </Space>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>
+                    {debate.participants.length} participants
+                  </Text>
+                </Space>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
       )}
 
       <CreateDebateDialog />
