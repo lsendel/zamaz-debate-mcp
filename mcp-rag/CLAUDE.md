@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with the mcp-rag service
 
 ## Service Overview
 
-The `mcp-rag` service is a Spring Boot-based Java implementation scaffold for Retrieval Augmented Generation functionality. Currently in early development stage with only basic Spring Boot setup.
+The `mcp-rag` service is a Spring Boot-based Java implementation for Retrieval Augmented Generation functionality. Currently undergoing refactoring to implement hexagonal architecture (Ports and Adapters pattern) for better separation of concerns and testability.
 
 ## Purpose
 
@@ -15,12 +15,37 @@ The `mcp-rag` service is a Spring Boot-based Java implementation scaffold for Re
 
 ## Technology Stack
 
-- **Language**: Java 8
+- **Language**: Java 8 (should be upgraded to Java 11+)
 - **Framework**: Spring Boot 2.5.4
+- **Architecture**: Hexagonal Architecture (Ports and Adapters)
 - **Build Tool**: Maven
-- **Future**: Vector databases, embedding libraries
+- **Vector Database**: Qdrant (planned)
+- **Embedding Service**: OpenAI API (planned)
 
 ## Current Implementation
+
+### Hexagonal Architecture Implementation
+
+The service is being refactored to follow hexagonal architecture principles:
+
+#### Domain Layer (Core)
+- **Location**: `domain/model/`, `domain/service/`, `domain/event/`, `domain/exception/`
+- **Rich Domain Models**: Document, Embedding, SearchQuery, SearchResult
+- **Value Objects**: DocumentId, ChunkId, EmbeddingVector, etc.
+- **Domain Services**: ChunkingStrategy
+- **Domain Events**: DocumentCreatedEvent, DocumentProcessedEvent, etc.
+- **No Framework Dependencies**: Pure Java/business logic
+
+#### Application Layer
+- **Location**: `application/port/in/`, `application/port/out/`, `application/service/`
+- **Inbound Ports**: Use case interfaces (CreateDocumentUseCase, SearchDocumentsUseCase, etc.)
+- **Outbound Ports**: Infrastructure interfaces (DocumentRepository, VectorStore, etc.)
+- **Application Services**: Orchestrate use cases, handle transactions
+
+#### Infrastructure Layer (Adapters)
+- **Location**: `infrastructure/adapter/in/`, `infrastructure/adapter/out/`
+- **Inbound Adapters**: REST controllers, message listeners
+- **Outbound Adapters**: Database repositories, external service clients
 
 ### Main Application
 ```java
@@ -31,8 +56,6 @@ public class McpRagJApplication {
     }
 }
 ```
-
-Currently only contains Spring Boot application entry point.
 
 ## Planned Architecture
 
@@ -241,12 +264,46 @@ rag:
 - Multi-language support
 - Custom embedding models
 
+## Hexagonal Architecture Learnings
+
+### Key Benefits Observed
+1. **Clear Boundaries**: Domain logic is completely isolated from infrastructure concerns
+2. **Testability**: Domain and application layers can be tested without any framework dependencies
+3. **Flexibility**: Easy to swap implementations (e.g., different vector stores, embedding services)
+4. **Maintainability**: Changes in external systems don't affect core business logic
+
+### Implementation Patterns
+1. **Rich Domain Models**: Entities contain business logic, not just data
+2. **Value Objects**: Immutable objects for IDs, configurations, results
+3. **Domain Events**: Capture important business occurrences
+4. **Command/Query Objects**: Validate input at the boundary
+5. **DTOs for Output**: Keep domain objects internal, expose DTOs
+
+### Challenges and Solutions
+1. **Legacy Code**: Existing code mixed concerns - solution: gradual refactoring
+2. **Event Structure**: Domain events had package dependencies - solution: fix imports
+3. **Validation**: Where to validate? - solution: value objects validate themselves
+4. **Async Operations**: How to handle? - solution: CompletableFuture in ports
+
+### Best Practices Applied
+1. **No Null Values**: Use Optional or provide sensible defaults
+2. **Immutability**: Value objects and DTOs are immutable
+3. **Defensive Copying**: Collections in constructors are copied
+4. **Factory Methods**: Static factory methods for object creation
+5. **Builder Pattern**: For complex objects like DocumentMetadata
+
 ## Getting Started
 
-To begin implementation:
-1. Update Java version to 11+
-2. Add Spring Web Starter
-3. Create basic controller
-4. Define domain models
-5. Implement file upload
-6. Add document processing
+To continue the hexagonal architecture implementation:
+1. Complete Phase 3: Implement application services
+2. Complete Phase 4: Create infrastructure adapters
+3. Complete Phase 5: Remove legacy code
+4. Complete Phase 6: Add comprehensive tests
+5. Complete Phase 7: Add architectural fitness functions
+
+For new features:
+1. Start with the domain model
+2. Define use case interfaces (inbound ports)
+3. Define infrastructure interfaces (outbound ports)
+4. Implement application services
+5. Create adapters last

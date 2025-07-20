@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-config
+  namespace: workflow-editor
+data:
+  neo4j.uri: "bolt://neo4j.workflow-editor.svc.cluster.local:7687"
+  influxdb.url: "http://influxdb.workflow-editor.svc.cluster.local:8086"
+  influxdb.org: "workflow-editor"
+  influxdb.bucket: "telemetry"
+  postgres.url: "jdbc:postgresql://postgres.workflow-editor.svc.cluster.local:5432/workflow_spatial"
+  telemetry.frequency: "10Hz"
+  telemetry.batch.size: "100"
+  workflow.max.nodes: "10000"
+  map.tiles.url: "https://api.maptiler.com/maps/streets/style.json"

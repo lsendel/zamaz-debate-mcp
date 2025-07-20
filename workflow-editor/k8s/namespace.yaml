@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workflow-editor
+  labels:
+    app: workflow-editor
+    istio-injection: enabled

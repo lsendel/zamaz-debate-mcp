@@ -1,5 +1,22 @@
 # CLAUDE.md - Important Instructions and Context
 
+## Recent Implementation Learnings
+
+### Hexagonal Architecture Refactoring (mcp-rag service)
+- **Pattern Applied**: Domain core → Application ports → Infrastructure adapters
+- **Key Benefits**: Better testability, clear boundaries, flexible implementations
+- **Domain Purity**: Domain objects should have no framework dependencies
+- **Event Handling**: Domain events are pure POJOs, published through EventPublisher port
+- **Validation Strategy**: Value objects self-validate in constructors
+- **Async Handling**: Use CompletableFuture in port definitions for async operations
+- **Best Practice**: Start with domain model, then ports, then application services, adapters last
+
+### Spring Cloud Config Implementation
+- **Centralized Configuration**: All services now use Spring Cloud Config Server
+- **Encryption**: Sensitive values encrypted with {cipher} prefix
+- **Dynamic Refresh**: Configuration changes propagated via Spring Cloud Bus
+- **Migration Pattern**: Use automated scripts to migrate existing configurations
+
 ## Critical User Requirements
 
 ### UI Development Rules

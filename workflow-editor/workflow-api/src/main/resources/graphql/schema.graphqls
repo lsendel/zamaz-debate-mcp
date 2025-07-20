@@ -1,0 +1,226 @@
+type Query {
+    workflows(organizationId: String!): [Workflow!]!
+    workflow(id: ID!): Workflow
+    nodes(workflowId: ID!, viewport: Viewport): [WorkflowNode!]!
+    telemetryData(query: TelemetryQuery!): [TelemetryData!]!
+    mapTiles(region: GeoRegion!): MapTiles!
+}
+
+type Mutation {
+    createWorkflow(input: CreateWorkflowInput!): Workflow!
+    updateWorkflow(id: ID!, input: UpdateWorkflowInput!): Workflow!
+    deleteWorkflow(id: ID!): Boolean!
+    addNode(workflowId: ID!, input: AddNodeInput!): WorkflowNode!
+    updateNode(workflowId: ID!, nodeId: ID!, input: UpdateNodeInput!): WorkflowNode!
+    deleteNode(workflowId: ID!, nodeId: ID!): Boolean!
+    connectNodes(workflowId: ID!, input: ConnectNodesInput!): WorkflowConnection!
+    disconnectNodes(workflowId: ID!, connectionId: ID!): Boolean!
+    triggerAction(nodeId: ID!, action: String!): ActionResult!
+}
+
+type Subscription {
+    workflowExecution(workflowId: ID!): WorkflowExecutionEvent!
+    telemetryStream(deviceIds: [String!]): TelemetryData!
+    nodeStatusChanged(workflowId: ID!): NodeStatusEvent!
+}
+
+type Workflow {
+    id: ID!
+    name: String!
+    description: String
+    status: WorkflowStatus!
+    organizationId: String!
+    nodes: [WorkflowNode!]!
+    connections: [WorkflowConnection!]!
+    createdAt: String!
+    updatedAt: String
+}
+
+type WorkflowNode {
+    id: ID!
+    type: NodeType!
+    name: String!
+    description: String
+    configuration: JSON
+    position: NodePosition!
+    status: NodeStatus
+}
+
+type WorkflowConnection {
+    id: ID!
+    sourceNodeId: String!
+    targetNodeId: String!
+    label: String
+    order: Int!
+}
+
+type NodePosition {
+    x: Float!
+    y: Float!
+}
+
+type TelemetryData {
+    id: ID!
+    deviceId: String!
+    timestamp: String!
+    metrics: JSON!
+    location: GeoLocation
+    qualityScore: Int!
+}
+
+type GeoLocation {
+    latitude: Float!
+    longitude: Float!
+    altitude: Float
+}
+
+type MapTiles {
+    tiles: [MapTile!]!
+    bounds: GeoBounds!
+    zoomLevel: Int!
+}
+
+type MapTile {
+    url: String!
+    x: Int!
+    y: Int!
+    z: Int!
+}
+
+type GeoBounds {
+    north: Float!
+    south: Float!
+    east: Float!
+    west: Float!
+}
+
+type WorkflowExecutionEvent {
+    workflowId: String!
+    nodeId: String!
+    status: ExecutionStatus!
+    timestamp: String!
+    data: JSON
+}
+
+type NodeStatusEvent {
+    nodeId: String!
+    status: NodeStatus!
+    timestamp: String!
+}
+
+type ActionResult {
+    success: Boolean!
+    message: String
+    data: JSON
+}
+
+enum WorkflowStatus {
+    DRAFT
+    ACTIVE
+    INACTIVE
+    ARCHIVED
+    ERROR
+}
+
+enum NodeType {
+    START
+    END
+    TASK
+    DECISION
+    PARALLEL_GATEWAY
+    EXCLUSIVE_GATEWAY
+    TIMER
+    ERROR_HANDLER
+}
+
+enum NodeStatus {
+    IDLE
+    RUNNING
+    SUCCESS
+    FAILED
+    SKIPPED
+}
+
+enum ExecutionStatus {
+    STARTED
+    COMPLETED
+    FAILED
+    TIMEOUT
+}
+
+input CreateWorkflowInput {
+    name: String!
+    description: String
+    organizationId: String!
+}
+
+input UpdateWorkflowInput {
+    name: String
+    description: String
+    status: WorkflowStatus
+}
+
+input AddNodeInput {
+    type: NodeType!
+    name: String!
+    description: String
+    position: NodePositionInput!
+    configuration: JSON
+}
+
+input UpdateNodeInput {
+    name: String
+    description: String
+    position: NodePositionInput
+    configuration: JSON
+}
+
+input NodePositionInput {
+    x: Float!
+    y: Float!
+}
+
+input ConnectNodesInput {
+    sourceNodeId: String!
+    targetNodeId: String!
+    label: String
+}
+
+input TelemetryQuery {
+    deviceIds: [String!]
+    startTime: String!
+    endTime: String!
+    location: GeoQueryInput
+}
+
+input GeoQueryInput {
+    center: GeoLocationInput!
+    radiusKm: Float!
+}
+
+input GeoLocationInput {
+    latitude: Float!
+    longitude: Float!
+}
+
+input Viewport {
+    x: Float!
+    y: Float!
+    width: Float!
+    height: Float!
+    zoom: Float!
+}
+
+input GeoRegion {
+    bounds: GeoBoundsInput!
+    zoomLevel: Int!
+}
+
+input GeoBoundsInput {
+    north: Float!
+    south: Float!
+    east: Float!
+    west: Float!
+}
+
+scalar JSON

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.zamaz.mcp</groupId>
+        <artifactId>mcp-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>workflow-editor</artifactId>
+    <packaging>pom</packaging>
+    <name>Workflow Editor Parent</name>
+    <description>Parent POM for Workflow Editor modules following hexagonal architecture</description>
+
+    <properties>
+        <!-- GraphQL -->
+        <spring-graphql.version>1.3.3</spring-graphql.version>
+        <graphql-java.version>22.3</graphql-java.version>
+        
+        <!-- Databases -->
+        <neo4j-java-driver.version>5.25.0</neo4j-java-driver.version>
+        <spring-data-neo4j.version>7.3.6</spring-data-neo4j.version>
+        <influxdb-client.version>7.2.0</influxdb-client.version>
+        
+        <!-- Spatial -->
+        <postgis.version>2023.1.0</postgis.version>
+        <hibernate-spatial.version>6.6.3.Final</hibernate-spatial.version>
+        
+        <!-- Reactive -->
+        <reactor.version>3.7.0</reactor.version>
+        
+        <!-- Mapping -->
+        <mapbox-java.version>7.4.0</mapbox-java.version>
+    </properties>
+
+    <modules>
+        <module>workflow-domain</module>
+        <module>workflow-application</module>
+        <module>workflow-infrastructure</module>
+        <module>workflow-api</module>
+        <module>telemetry-domain</module>
+        <module>telemetry-application</module>
+        <module>telemetry-infrastructure</module>
+        <module>spatial-infrastructure</module>
+        <module>geospatial-domain</module>
+        <module>debate-tree-domain</module>
+        <module>decision-tree-domain</module>
+        <module>document-analysis-domain</module>
+        <module>sample-applications</module>
+        <module>workflow-web</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring GraphQL -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-graphql</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java</artifactId>
+                <version>${graphql-java.version}</version>
+            </dependency>
+
+            <!-- Neo4j -->
+            <dependency>
+                <groupId>org.neo4j.driver</groupId>
+                <artifactId>neo4j-java-driver</artifactId>
+                <version>${neo4j-java-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-neo4j</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+
+            <!-- InfluxDB -->
+            <dependency>
+                <groupId>com.influxdb</groupId>
+                <artifactId>influxdb-client-java</artifactId>
+                <version>${influxdb-client.version}</version>
+            </dependency>
+
+            <!-- PostGIS -->
+            <dependency>
+                <groupId>net.postgis</groupId>
+                <artifactId>postgis-jdbc</artifactId>
+                <version>${postgis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-spatial</artifactId>
+                <version>${hibernate-spatial.version}</version>
+            </dependency>
+
+            <!-- Reactive -->
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>${reactor.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.github.eirslett</groupId>
+                    <artifactId>frontend-maven-plugin</artifactId>
+                    <version>1.15.1</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

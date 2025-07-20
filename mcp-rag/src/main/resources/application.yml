@@ -98,6 +98,11 @@ mcp:
       polling:
         poll-timeout: PT0.1S
   
+# OpenAI Configuration
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
+
 rag:
   embedding:
     api-key: ${OPENAI_API_KEY:}
