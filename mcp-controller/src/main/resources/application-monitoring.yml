@@ -1,0 +1,55 @@
+# Monitoring and alerting configuration for agentic flows
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active}
+    distribution:
+      percentiles-histogram:
+        agentic.flow.duration: true
+        agentic.flow.confidence: true
+
+# Alerting configuration
+agentic-flow:
+  alerts:
+    enabled: true
+    error-threshold: 10
+    latency-threshold-ms: 5000
+    queue-size-threshold: 1000
+    resource-cpu-threshold: 80
+    resource-memory-threshold: 85
+    
+  monitoring:
+    # Metrics collection intervals
+    metrics-collection-interval-ms: 10000
+    health-check-interval-ms: 30000
+    
+    # Logging configuration
+    detailed-logging-enabled: true
+    log-slow-executions: true
+    slow-execution-threshold-ms: 3000
+    
+    # Dashboard configuration
+    dashboard-enabled: true
+    dashboard-refresh-interval-ms: 5000
+
+# Logging configuration
+logging:
+  level:
+    com.zamaz.mcp.controller.monitoring: DEBUG
+    com.zamaz.mcp.controller.application: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [%X{flowId}] [%X{organizationId}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [%X{flowId}] [%X{organizationId}] - %msg%n"

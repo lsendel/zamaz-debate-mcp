@@ -1,0 +1,257 @@
+# Default values for agentic-flows
+replicaCount: 3
+
+image:
+  repository: zamaz/agentic-flows-processor
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/actuator/prometheus"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  managementPort: 9090
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.zamaz-debate.com
+      paths:
+        - path: /api/v1/agentic-flows
+          pathType: Prefix
+  tls:
+    - secretName: agentic-flows-tls
+      hosts:
+        - api.zamaz-debate.com
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - agentic-flows
+        topologyKey: kubernetes.io/hostname
+
+# Application configuration
+config:
+  spring:
+    profiles:
+      active: production,kubernetes
+  server:
+    port: 8080
+  management:
+    port: 9090
+  
+  cache:
+    enabled: true
+    ttl: 900
+  
+  execution:
+    threadPoolSize: 20
+    queueCapacity: 500
+    timeout: 60000
+  
+  rateLimiting:
+    enabled: true
+    defaultLimit: 100
+    windowSize: 3600
+  
+  monitoring:
+    metricsEnabled: true
+    tracingEnabled: true
+
+# External services configuration
+externalServices:
+  postgres:
+    host: postgres-service
+    port: 5432
+    database: debate_db
+    username: postgres
+    # password stored in secret
+  
+  redis:
+    host: redis-service
+    port: 6379
+    # password stored in secret
+  
+  rabbitmq:
+    host: rabbitmq-service
+    port: 5672
+    username: guest
+    # password stored in secret
+
+# Secrets - these should be provided via external secret management
+secrets:
+  create: true
+  # If false, must manually create secret with these keys:
+  # DB_PASSWORD, RABBITMQ_PASSWORD, JWT_SECRET, REDIS_PASSWORD
+  # OPENAI_API_KEY, ANTHROPIC_API_KEY, WEB_SEARCH_API_KEY
+  
+  # Values below are for development only
+  # Use external secret management in production
+  dbPassword: "changeme"
+  rabbitmqPassword: "guest"
+  jwtSecret: "your-256-bit-secret-key"
+  redisPassword: ""
+
+# PostgreSQL subchart configuration
+postgresql:
+  enabled: false # Set to true to deploy PostgreSQL
+  auth:
+    postgresPassword: "changeme"
+    database: debate_db
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Redis subchart configuration  
+redis:
+  enabled: false # Set to true to deploy Redis
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+
+# RabbitMQ subchart configuration
+rabbitmq:
+  enabled: false # Set to true to deploy RabbitMQ
+  auth:
+    username: guest
+    password: guest
+  persistence:
+    enabled: true
+    size: 5Gi
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+
+# Service Monitor for Prometheus
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  
+# Liveness and Readiness Probes
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: management
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: management
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Environment-specific overrides
+environments:
+  development:
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    ingress:
+      enabled: false
+  
+  staging:
+    replicaCount: 2
+    ingress:
+      hosts:
+        - host: api-staging.zamaz-debate.com
+          paths:
+            - path: /api/v1/agentic-flows
+              pathType: Prefix
+  
+  production:
+    replicaCount: 3
+    resources:
+      limits:
+        cpu: 4000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi

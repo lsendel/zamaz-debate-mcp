@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agentic-flows-pdb
+  namespace: agentic-flows
+  labels:
+    app.kubernetes.io/name: agentic-flows
+    app.kubernetes.io/component: pod-disruption-budget
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentic-flows
+      app.kubernetes.io/component: processor
+  maxUnavailable: 1

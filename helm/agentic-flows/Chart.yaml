@@ -1,0 +1,30 @@
+apiVersion: v2
+name: agentic-flows
+description: Helm chart for Zamaz Debate MCP Agentic Flows service
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - agentic-flows
+  - ai
+  - debate
+  - reasoning
+home: https://github.com/zamaz/debate-mcp
+sources:
+  - https://github.com/zamaz/debate-mcp
+maintainers:
+  - name: Zamaz Team
+    email: devops@zamaz-debate.com
+dependencies:
+  - name: postgresql
+    version: 12.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: 17.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: rabbitmq
+    version: 11.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: rabbitmq.enabled

@@ -267,6 +267,86 @@ class DebateClient extends BaseApiClient {
     });
     return response.data;
   }
+
+  // Agentic Flow Configuration
+  async configureDebateAgenticFlow(debateId: string, configuration: any): Promise<any> {
+    const response = await this.client.post(`/debates/${debateId}/agentic-flow`, configuration);
+    return response.data;
+  }
+
+  async configureParticipantAgenticFlow(
+    debateId: string,
+    participantId: string,
+    configuration: any
+  ): Promise<any> {
+    const response = await this.client.post(
+      `/debates/${debateId}/participants/${participantId}/agentic-flow`,
+      configuration
+    );
+    return response.data;
+  }
+
+  async getDebateAgenticFlow(debateId: string): Promise<any> {
+    const response = await this.client.get(`/debates/${debateId}/agentic-flow`);
+    return response.data;
+  }
+
+  async getParticipantAgenticFlow(debateId: string, participantId: string): Promise<any> {
+    const response = await this.client.get(
+      `/debates/${debateId}/participants/${participantId}/agentic-flow`
+    );
+    return response.data;
+  }
+
+  // Agentic Flow Analytics
+  async getDebateAnalytics(debateId: string): Promise<any> {
+    const response = await this.client.get(`/analytics/debates/${debateId}/agentic-flows`);
+    return response.data;
+  }
+
+  async getFlowTypeStatistics(
+    organizationId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<any[]> {
+    const response = await this.client.get('/analytics/agentic-flows/statistics', {
+      params: { organizationId, startDate, endDate }
+    });
+    return response.data;
+  }
+
+  async getFlowExecutionTimeSeries(
+    organizationId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<any[]> {
+    const response = await this.client.get('/analytics/agentic-flows/time-series', {
+      params: { organizationId, startDate, endDate }
+    });
+    return response.data;
+  }
+
+  async getTrendingFlowTypes(organizationId: string, limit: number = 10): Promise<any[]> {
+    const response = await this.client.get('/analytics/agentic-flows/trending', {
+      params: { organizationId, limit }
+    });
+    return response.data;
+  }
+
+  async compareFlowTypes(
+    organizationId: string,
+    flowTypes: string[],
+    startDate: string,
+    endDate: string
+  ): Promise<any> {
+    const response = await this.client.post('/analytics/agentic-flows/compare', {
+      organizationId,
+      flowTypes,
+      startDate,
+      endDate
+    });
+    return response.data;
+  }
 }
 
 export default new DebateClient();

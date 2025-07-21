@@ -10,6 +10,8 @@ import {
   Badge,
   Alert,
   notification,
+  Modal,
+  Tabs,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -18,6 +20,8 @@ import {
   StopOutlined,
   DownloadOutlined,
   ReloadOutlined,
+  SettingOutlined,
+  BranchesOutlined,
 } from "@ant-design/icons";
 import { useAppSelector, useAppDispatch } from "../store";
 import {
@@ -33,6 +37,11 @@ import { addNotification } from "../store/slices/uiSlice";
 import debateClient from "../api/debateClient";
 import { useDebatePolling } from "../hooks/useDebatePolling";
 import DebateProgress from "./DebateProgress";
+import AgenticFlowConfig from "./AgenticFlowConfig";
+import LLMPresetConfig from "./LLMPresetConfig";
+import DebateVisualizations from "./DebateVisualizations";
+
+const { TabPane } = Tabs;
 
 const DebateDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +51,8 @@ const DebateDetailPage: React.FC = () => {
     (state) => state.debate,
   );
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [showAgenticFlowConfig, setShowAgenticFlowConfig] = useState(false);
+  const [selectedParticipantForFlow, setSelectedParticipantForFlow] = useState<string | null>(null);
   const lastRoundCountRef = useRef(0);
 
   useEffect(() => {
@@ -254,6 +265,11 @@ const DebateDetailPage: React.FC = () => {
             <DebateProgress debate={currentDebate} isPolling={isPolling} />
           )}
 
+      {/* Add Debate Visualizations */}
+      {currentDebate && (
+        <DebateVisualizations debateId={currentDebate.id} debate={currentDebate} />
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
         <div>
           <Card
@@ -419,6 +435,20 @@ const DebateDetailPage: React.FC = () => {
                               {participant.systemPrompt}
                             </p>
                           )}
+                          {!isString && participant.llmProvider && (
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => {
+                                setSelectedParticipantForFlow(participant.id);
+                                setShowAgenticFlowConfig(true);
+                              }}
+                              icon={<SettingOutlined />}
+                              style={{ marginLeft: '48px', padding: '0 4px' }}
+                            >
+                              Configure Agentic Flow
+                            </Button>
+                          )}
                           {index < currentDebate.participants.length - 1 && (
                             <Divider style={{ marginTop: '16px' }} />
                           )}
@@ -462,6 +492,92 @@ const DebateDetailPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Agentic Flow Configuration Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BranchesOutlined />
+            {selectedParticipantForFlow
+              ? `Configure Agentic Flow for ${currentDebate.participants.find(p => typeof p !== 'string' && p.id === selectedParticipantForFlow)?.name || 'Participant'}`
+              : 'Configure Debate-Level Agentic Flow'}
+          </div>
+        }
+        open={showAgenticFlowConfig}
+        onCancel={() => {
+          setShowAgenticFlowConfig(false);
+          setSelectedParticipantForFlow(null);
+        }}
+        footer={null}
+        width={800}
+      >
+        <Tabs defaultActiveKey={selectedParticipantForFlow ? "participant" : "debate"}>
+          <TabPane tab="Agentic Flow Config" key="debate">
+            <AgenticFlowConfig
+              debateId={currentDebate.id}
+              onSave={() => {
+                dispatch(fetchDebate(currentDebate.id));
+                notification.success({
+                  message: 'Agentic flow configuration saved',
+                  duration: 3,
+                });
+              }}
+            />
+          </TabPane>
+          <TabPane tab="LLM Preset Config" key="llm-preset">
+            <LLMPresetConfig
+              debateId={currentDebate.id}
+              onSave={(preset) => {
+                dispatch(fetchDebate(currentDebate.id));
+                notification.success({
+                  message: `LLM preset '${preset.name}' saved successfully`,
+                  duration: 3,
+                });
+              }}
+            />
+          </TabPane>
+          {currentDebate.participants
+            .filter((p) => typeof p !== 'string' && p.llmProvider)
+            .map((participant: any) => (
+              <TabPane
+                tab={`${participant.name} - Agentic`}
+                key={`participant-agentic-${participant.id}`}
+              >
+                <AgenticFlowConfig
+                  debateId={currentDebate.id}
+                  participantId={participant.id}
+                  onSave={() => {
+                    dispatch(fetchDebate(currentDebate.id));
+                    notification.success({
+                      message: `Agentic flow configuration saved for ${participant.name}`,
+                      duration: 3,
+                    });
+                  }}
+                />
+              </TabPane>
+            ))}
+          {currentDebate.participants
+            .filter((p) => typeof p !== 'string' && p.llmProvider)
+            .map((participant: any) => (
+              <TabPane
+                tab={`${participant.name} - LLM`}
+                key={`participant-llm-${participant.id}`}
+              >
+                <LLMPresetConfig
+                  debateId={currentDebate.id}
+                  participantId={participant.id}
+                  onSave={(preset) => {
+                    dispatch(fetchDebate(currentDebate.id));
+                    notification.success({
+                      message: `LLM preset saved for ${participant.name}`,
+                      duration: 3,
+                    });
+                  }}
+                />
+              </TabPane>
+            ))}
+        </Tabs>
+      </Modal>
     </div>
   );
 };

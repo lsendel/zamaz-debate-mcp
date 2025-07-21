@@ -80,23 +80,44 @@ const DebatesPage: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0 }}>Debates</Title>
-        <Space>
-          <Button
-            onClick={handleRefresh}
-            icon={<ReloadOutlined />}
-          >
-            Refresh
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => dispatch(openCreateDebateDialog())}
-            icon={<PlusOutlined />}
-          >
-            Create Debate
-          </Button>
-        </Space>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <Title level={2} style={{ margin: 0 }}>Debates</Title>
+          <Space>
+            <Button
+              onClick={handleRefresh}
+              icon={<ReloadOutlined />}
+            >
+              Refresh
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => dispatch(openCreateDebateDialog())}
+              icon={<PlusOutlined />}
+            >
+              Create Debate
+            </Button>
+          </Space>
+        </div>
+        
+        {currentOrganization && (
+          <Card size="small" style={{ backgroundColor: '#f6f8fa' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div>
+                <Text strong>Organization Scope: </Text>
+                <Badge color="blue" text={currentOrganization.name} />
+              </div>
+              <div>
+                <Text strong>Active LLM Presets: </Text>
+                <Badge color="green" text="3 presets available" />
+              </div>
+              <div>
+                <Text strong>Debate Access: </Text>
+                <Badge color="purple" text="Organization members" />
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
 
       {debates.length === 0 ? (

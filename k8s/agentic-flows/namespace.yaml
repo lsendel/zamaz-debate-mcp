@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agentic-flows
+  labels:
+    name: agentic-flows
+    app.kubernetes.io/name: agentic-flows
+    app.kubernetes.io/part-of: zamaz-debate-mcp

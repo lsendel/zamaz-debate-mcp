@@ -21,6 +21,8 @@ import {
   UsergroupAddOutlined,
   KeyOutlined,
   SettingOutlined,
+  ThunderboltOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 
 const { TextArea } = Input;
@@ -37,6 +39,7 @@ import organizationClient, {
   Organization,
   User,
 } from "../api/organizationClient";
+import LLMPresetConfig from "./LLMPresetConfig";
 
 const OrganizationManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -334,6 +337,36 @@ const OrganizationManagementPage: React.FC = () => {
         <TabPane
           tab={
             <span>
+              <ThunderboltOutlined />
+              LLM Presets
+            </span>
+          }
+          key="llm-presets"
+        >
+          <div style={{ marginBottom: '24px', marginTop: '16px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
+              LLM Preset Management
+            </h2>
+            <p style={{ color: '#666' }}>
+              Create and manage LLM presets for your organization's debates. These presets define
+              the AI models, parameters, and prompts used by debate participants.
+            </p>
+          </div>
+
+          <LLMPresetConfig
+            organizationId={currentOrganization?.id}
+            onSave={(preset) => {
+              dispatch(addNotification({
+                type: 'success',
+                message: `LLM preset '${preset.name}' saved successfully`,
+              }));
+            }}
+          />
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
               <SettingOutlined />
               Settings
             </span>
@@ -344,8 +377,21 @@ const OrganizationManagementPage: React.FC = () => {
           <p style={{ color: '#666', marginBottom: '16px' }}>
             Configure organization-specific settings and preferences.
           </p>
-          <Card>
-            <p style={{ color: '#999' }}>Settings coming soon...</p>
+          <Card title="General Settings">
+            <Form layout="vertical">
+              <Form.Item label="Organization Name">
+                <Input value={currentOrganization?.name} disabled />
+              </Form.Item>
+              <Form.Item label="Description">
+                <TextArea value={currentOrganization?.description} disabled rows={3} />
+              </Form.Item>
+              <Form.Item label="Created">
+                <Input value={currentOrganization?.createdAt ? new Date(currentOrganization.createdAt).toLocaleString() : ''} disabled />
+              </Form.Item>
+              <Form.Item label="Organization Scope">
+                <Badge color="blue" text="Organization-wide debates and presets" />
+              </Form.Item>
+            </Form>
           </Card>
         </TabPane>
       </Tabs>

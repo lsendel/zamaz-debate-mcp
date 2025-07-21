@@ -54,7 +54,7 @@ const Layout: React.FC = () => {
       label: 'Admin',
       children: [
         {
-          key: '/organizations',
+          key: '/organization-management',
           icon: <BankOutlined />,
           label: 'Organizations',
           disabled: user?.role !== 'ADMIN',
