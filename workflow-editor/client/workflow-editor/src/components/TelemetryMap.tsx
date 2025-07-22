@@ -94,6 +94,7 @@ const TelemetryMap: React.FC<TelemetryMapProps> = ({
           },
           lastValue: Math.random() * 100,
           lastUpdate: Date.now(),
+          // TODO: Refactor nested ternary for better readability
           status: Math.random() > 0.9 ? 'alert' : Math.random() > 0.1 ? 'active' : 'inactive'
         };
       });

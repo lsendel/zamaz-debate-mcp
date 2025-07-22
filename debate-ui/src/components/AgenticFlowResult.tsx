@@ -153,6 +153,7 @@ const AgenticFlowResultComponent: React.FC<AgenticFlowResultProps> = ({
         <Title level={4} style={{ margin: 0 }}>
           {getFlowLabel(result.flowType)}
         </Title>
+        // TODO: Refactor nested ternary for better readability
         <Tag color={result.status === 'success' ? 'success' : result.status === 'failed' ? 'error' : 'warning'}>
           {result.status.toUpperCase()}
         </Tag>

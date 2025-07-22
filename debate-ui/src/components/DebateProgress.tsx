@@ -126,8 +126,11 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
                         justifyContent: 'center',
                         fontWeight: 500,
                         transition: 'all 0.3s',
+                        // TODO: Refactor nested ternary for better readability
                         backgroundColor: status === 'completed' ? '#1890ff' : isActive ? '#e6f7ff' : '#fafafa',
+                        // TODO: Refactor nested ternary for better readability
                         color: status === 'completed' ? '#fff' : isActive ? '#096dd9' : '#bfbfbf',
+                        // TODO: Refactor nested ternary for better readability
                         border: `2px solid ${status === 'completed' ? '#1890ff' : isActive ? '#1890ff' : '#f0f0f0'}`
                       }}
                     >

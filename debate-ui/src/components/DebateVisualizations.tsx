@@ -140,6 +140,7 @@ const DebateVisualizations: React.FC<DebateVisualizationsProps> = ({
                   title={participant.participant}
                   value={participant.responseCount}
                   suffix="responses"
+                  // TODO: Refactor nested ternary for better readability
                   valueStyle={{ color: index === 0 ? '#3f8600' : index === 1 ? '#cf1322' : '#1890ff' }}
                 />
                 <div style={{ marginTop: '8px' }}>
@@ -147,7 +148,9 @@ const DebateVisualizations: React.FC<DebateVisualizationsProps> = ({
                   <br />
                   <Text type="secondary">
                     Sentiment: 
+                    // TODO: Refactor nested ternary for better readability
                     <Tag color={participant.sentiment > 0 ? 'green' : participant.sentiment < 0 ? 'red' : 'blue'}>
+                      // TODO: Refactor nested ternary for better readability
                       {participant.sentiment > 0 ? 'Positive' : participant.sentiment < 0 ? 'Negative' : 'Neutral'}
                     </Tag>
                   </Text>
