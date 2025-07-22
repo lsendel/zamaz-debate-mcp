@@ -1,7 +1,7 @@
 import { Page, expect, Locator } from '@playwright/test';
 
 export class WorkflowEditorTestHelpers {
-  constructor(private page: Page) {}
+  constructor(private readonly page: Page) {}
 
   /**
    * Navigate to a specific section in the workflow editor
@@ -188,7 +188,7 @@ export class WorkflowEditorTestHelpers {
  * Custom assertions for workflow editor
  */
 export class WorkflowEditorAssertions {
-  constructor(private page: Page) {}
+  constructor(private readonly page: Page) {}
 
   async assertDashboardDataLoaded(): Promise<void> {
     // Check for data in telemetry dashboard

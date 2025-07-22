@@ -42,7 +42,7 @@ class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  private logErrorToService = (error: Error, errorInfo: ErrorInfo) => {
+  private readonly logErrorToService = (error: Error, errorInfo: ErrorInfo) => {
     // Implementation would depend on your monitoring service
     console.log('Logging error to monitoring service:', {
       error: error.message,
@@ -52,7 +52,7 @@ class ErrorBoundary extends Component<Props, State> {
     });
   };
 
-  private handleRetry = () => {
+  private readonly handleRetry = () => {
     this.setState({
       hasError: false,
       error: null,
@@ -60,7 +60,7 @@ class ErrorBoundary extends Component<Props, State> {
     });
   };
 
-  private handleReload = () => {
+  private readonly handleReload = () => {
     window.location.reload();
   };
 

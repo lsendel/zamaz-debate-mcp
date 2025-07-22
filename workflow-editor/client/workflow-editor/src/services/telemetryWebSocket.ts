@@ -12,11 +12,11 @@ export class TelemetryWebSocketService {
   private ws: WebSocket | null = null;
   private reconnectInterval: NodeJS.Timeout | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private baseReconnectDelay = 1000;
-  private subscribers: Map<string, Set<(data: any) => void>> = new Map();
+  private readonly maxReconnectAttempts = 5;
+  private readonly baseReconnectDelay = 1000;
+  private readonly subscribers: Map<string, Set<(data: any) => void>> = new Map();
 
-  constructor(private wsUrl: string) {}
+  constructor(private readonly wsUrl: string) {}
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {

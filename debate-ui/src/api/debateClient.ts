@@ -75,7 +75,7 @@ export interface DebateEvent {
 
 class DebateClient extends BaseApiClient {
   private ws: WebSocket | null = null;
-  private eventHandlers: Map<string, Set<(event: DebateEvent) => void>> =
+  private readonly eventHandlers: Map<string, Set<(event: DebateEvent) => void>> =
     new Map();
 
   constructor() {
