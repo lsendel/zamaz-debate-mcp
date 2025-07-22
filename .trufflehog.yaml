@@ -1,0 +1,17 @@
+# TruffleHog configuration
+detectors:
+  - name: generic
+only_verified: true
+exclude_paths:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/__tests__/**"
+  - "*.test.*"
+  - "*.spec.*"
+  - "**/node_modules/**"
+  - "**/target/**"
+  - "**/build/**"
+  - "**/dist/**"
+  - "**/.git/**"
+  - "*.md"
+  - "docs/**"

@@ -1,0 +1,46 @@
+# Semgrep ignore file
+
+# Test files
+**/test/**
+**/tests/**
+**/__tests__/**
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+*.md
+docs/
+
+# CI/CD files (we'll fix critical issues separately)
+.github/k8s/
+
+# Generated files
+**/target/**
+**/build/**
+**/dist/**
+**/node_modules/**
+**/vendor/**
+*.min.js
+*.min.css
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs and temp files
+*.log
+*.tmp
+**/temp/**
+**/tmp/**
+
+# Configuration samples
+**/*.example
+**/*.sample
+
+# Data files
+*.json
+*.xml
+*.csv
+*.sql
+data/

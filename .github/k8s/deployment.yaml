@@ -33,6 +33,14 @@ spec:
       - name: webhook-handler
         image: kiro/github-webhook-handler:latest
         imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+              - ALL
         ports:
         - containerPort: 8080
           name: http
@@ -91,6 +99,14 @@ spec:
       - name: pr-processor
         image: kiro/pr-processor:latest
         imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: GITHUB_TOKEN
           valueFrom:
