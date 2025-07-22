@@ -1,15 +1,15 @@
 /**
- * Component testing utilities for React Testing Library.
- * Provides helpers for common testing patterns and component interactions.
+ * Component testing utilities for React Testing Library.;
+ * Provides helpers for common testing patterns and component interactions.;
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { Provider } from "react-redux";
-import { BrowserRouter } from "react-router-dom";
-import { configureStore } from "@reduxjs/toolkit";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { Provider } from "react-redux"
+import { BrowserRouter } from "react-router-dom"
+import { configureStore } from "@reduxjs/toolkit"
+import { ThemeProvider, createTheme } from "@mui/material/styles"
+import CssBaseline from "@mui/material/CssBaseline"
 
 // Default test theme
 const testTheme = createTheme({
@@ -19,15 +19,15 @@ const testTheme = createTheme({
 });
 
 /**
- * Custom render function that includes providers
+ * Custom render function that includes providers;
  */
-export function renderWithProviders(
+export function renderWithProviders(;
   ui,
   {
     preloadedState = {},
     store = configureStore({
       reducer: {
-        // Add your reducers here for testing
+        // Add your reducers here for testing;
         auth: (state = { user: null, token: null }) => state,
         debates: (state = { debates: [], loading: false }) => state,
         organizations: (state = { current: null, list: [] }) => state,
@@ -36,27 +36,27 @@ export function renderWithProviders(
     }),
     theme = testTheme,
     routerProps = {},
-    ...renderOptions
+    ...renderOptions;
   } = {},
 ) {
   function Wrapper({ children }) {
-    return (
-      <Provider store={store}>
-        <BrowserRouter {...routerProps}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
+    return (;
+      <Provider store={store}>;
+        <BrowserRouter {...routerProps}>;
+          <ThemeProvider theme={theme}>;
+            <CssBaseline />;
             {children}
-          </ThemeProvider>
-        </BrowserRouter>
-      </Provider>
+          </ThemeProvider>;
+        </BrowserRouter>;
+      </Provider>;
     );
   }
 
-  return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
+  return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) }
 }
 
 /**
- * Creates a mock user for testing
+ * Creates a mock user for testing;
  */
 export function createMockUser(overrides = {}) {
   return {
@@ -67,11 +67,11 @@ export function createMockUser(overrides = {}) {
     roles: ["USER"],
     permissions: ["DEBATE_VIEW", "DEBATE_CREATE"],
     ...overrides,
-  };
+  }
 }
 
 /**
- * Creates a mock organization for testing
+ * Creates a mock organization for testing;
  */
 export function createMockOrganization(overrides = {}) {
   return {
@@ -85,11 +85,11 @@ export function createMockOrganization(overrides = {}) {
       features: ["advanced_debates", "analytics"],
     },
     ...overrides,
-  };
+  }
 }
 
 /**
- * Creates a mock debate for testing
+ * Creates a mock debate for testing;
  */
 export function createMockDebate(overrides = {}) {
   return {
@@ -120,11 +120,11 @@ export function createMockDebate(overrides = {}) {
     turns: [],
     createdAt: new Date().toISOString(),
     ...overrides,
-  };
+  }
 }
 
 /**
- * Helper to fill form fields
+ * Helper to fill form fields;
  */
 export async function fillForm(fields) {
   const user = userEvent.setup();
@@ -137,16 +137,16 @@ export async function fillForm(fields) {
 }
 
 /**
- * Helper to select from Material-UI Select components
+ * Helper to select from Material-UI Select components;
  */
 export async function selectFromMuiSelect(selectLabel, optionText) {
   const user = userEvent.setup();
 
-  // Find and click the select
+  // Find and click the select;
   const select = screen.getByLabelText(selectLabel);
   await user.click(select);
 
-  // Wait for the options to appear and select the desired option
+  // Wait for the options to appear and select the desired option;
   await waitFor(() => {
     const option = screen.getByRole("option", { name: optionText });
     return user.click(option);
@@ -154,7 +154,7 @@ export async function selectFromMuiSelect(selectLabel, optionText) {
 }
 
 /**
- * Helper to interact with Material-UI Autocomplete components
+ * Helper to interact with Material-UI Autocomplete components;
  */
 export async function selectFromAutocomplete(label, optionText) {
   const user = userEvent.setup();
@@ -170,7 +170,7 @@ export async function selectFromAutocomplete(label, optionText) {
 }
 
 /**
- * Helper to wait for loading states to complete
+ * Helper to wait for loading states to complete;
  */
 export async function waitForLoadingToFinish() {
   await waitFor(() => {
@@ -180,19 +180,19 @@ export async function waitForLoadingToFinish() {
 }
 
 /**
- * Helper to simulate API responses
+ * Helper to simulate API responses;
  */
 export function mockApiResponse(url, response, options = {}) {
   const { method = "GET", status = 200, delay = 0 } = options;
 
   const createDelayedResponse = () => {
     if (delay > 0) {
-      return new Promise((resolve) =>
+      return new Promise((resolve) =>;
         setTimeout(() => resolve(response), delay),
       );
     }
     return Promise.resolve(response);
-  };
+  }
 
   const createTextResponse = () => Promise.resolve(JSON.stringify(response));
 
@@ -203,12 +203,12 @@ export function mockApiResponse(url, response, options = {}) {
     text: createTextResponse,
   });
 
-  global.fetch = jest
-    .fn()
+  global.fetch = jest;
+    .fn();
     .mockImplementation((requestUrl, requestOptions = {}) => {
-      if (
-        requestUrl.includes(url) &&
-        (requestOptions.method || "GET") === method
+      if (;
+        requestUrl.includes(url) &&;
+        (requestOptions.method || "GET") === method;
       ) {
         return Promise.resolve(createMockResponse());
       }
@@ -217,17 +217,17 @@ export function mockApiResponse(url, response, options = {}) {
 }
 
 /**
- * Helper to mock multiple API endpoints
+ * Helper to mock multiple API endpoints;
  */
 export function mockApiEndpoints(endpoints) {
   global.fetch = jest.fn().mockImplementation((url, options = {}) => {
-    const method = options.method || "GET";
+    const method = options.method || "GET"
 
     for (const endpoint of endpoints) {
       if (url.includes(endpoint.url) && method === endpoint.method) {
-        const response =
+        const response =;
           typeof endpoint.response === "function"
-            ? endpoint.response(url, options)
+            ? endpoint.response(url, options);
             : endpoint.response;
 
         return Promise.resolve({
@@ -244,15 +244,15 @@ export function mockApiEndpoints(endpoints) {
 }
 
 /**
- * Helper to test form validation
+ * Helper to test form validation;
  */
 export async function testFormValidation(formSubmitButton, expectedErrors) {
   const user = userEvent.setup();
 
-  // Try to submit the form without filling required fields
+  // Try to submit the form without filling required fields;
   await user.click(formSubmitButton);
 
-  // Check for validation errors
+  // Check for validation errors;
   for (const error of expectedErrors) {
     await waitFor(() => {
       expect(screen.getByText(error)).toBeInTheDocument();
@@ -261,7 +261,7 @@ export async function testFormValidation(formSubmitButton, expectedErrors) {
 }
 
 /**
- * Helper to test keyboard navigation
+ * Helper to test keyboard navigation;
  */
 export async function testKeyboardNavigation(element, key, expectedResult) {
   const user = userEvent.setup();
@@ -277,31 +277,31 @@ export async function testKeyboardNavigation(element, key, expectedResult) {
 }
 
 /**
- * Helper to test accessibility
+ * Helper to test accessibility;
  */
 export function testAccessibility(component) {
-  // Check for proper ARIA labels
+  // Check for proper ARIA labels;
   expect(component).toHaveAttribute("aria-label");
 
-  // Check for keyboard accessibility
+  // Check for keyboard accessibility;
   expect(component).toHaveAttribute("tabIndex");
 
-  // Check for semantic HTML
+  // Check for semantic HTML;
   const role = component.getAttribute("role");
   if (role) {
-    expect(["button", "link", "textbox", "combobox", "listbox"]).toContain(
+    expect(["button", "link", "textbox", "combobox", "listbox"]).toContain(;
       role,
     );
   }
 }
 
 /**
- * Helper to simulate drag and drop
+ * Helper to simulate drag and drop;
  */
 export async function simulateDragAndDrop(sourceElement, targetElement) {
-  // Note: userEvent not needed for this drag/drop implementation
+  // Note: userEvent not needed for this drag/drop implementation;
 
-  // Start drag
+  // Start drag;
   fireEvent.dragStart(sourceElement, {
     dataTransfer: {
       effectAllowed: "move",
@@ -310,10 +310,10 @@ export async function simulateDragAndDrop(sourceElement, targetElement) {
     },
   });
 
-  // Drag over target
+  // Drag over target;
   fireEvent.dragOver(targetElement);
 
-  // Drop on target
+  // Drop on target;
   fireEvent.drop(targetElement, {
     dataTransfer: {
       getData: jest.fn(),
@@ -322,7 +322,7 @@ export async function simulateDragAndDrop(sourceElement, targetElement) {
 }
 
 /**
- * Helper to test component rendering with different props
+ * Helper to test component rendering with different props;
  */
 export function testComponentWithProps(Component, propsVariations) {
   return propsVariations.map((props, index) => {
@@ -334,25 +334,25 @@ export function testComponentWithProps(Component, propsVariations) {
         const { container } = renderWithProviders(<Component {...props} />);
         return container;
       },
-    };
+    }
   });
 }
 
 /**
- * Helper to wait for animations to complete
+ * Helper to wait for animations to complete;
  */
 export async function waitForAnimation(duration = 300) {
   await new Promise((resolve) => setTimeout(resolve, duration));
 }
 
 /**
- * Helper to test responsive behavior
+ * Helper to test responsive behavior;
  */
 export function testResponsiveBehavior(Component, breakpoints) {
   return breakpoints.map(({ width, height, name }) => ({
     name: `renders correctly at ${name}`,
     test: () => {
-      // Mock window dimensions
+      // Mock window dimensions;
       Object.defineProperty(window, "innerWidth", {
         writable: true,
         configurable: true,
@@ -364,7 +364,7 @@ export function testResponsiveBehavior(Component, breakpoints) {
         value: height,
       });
 
-      // Trigger resize event
+      // Trigger resize event;
       fireEvent(window, new Event("resize"));
 
       const { container } = renderWithProviders(<Component />);
@@ -374,15 +374,15 @@ export function testResponsiveBehavior(Component, breakpoints) {
 }
 
 /**
- * Helper to test error boundaries
+ * Helper to test error boundaries;
  */
 export function testErrorBoundary(ErrorBoundary, ComponentThatThrows) {
-  // Suppress console.error for this test
+  // Suppress console.error for this test;
   const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 
-  const { getByText } = renderWithProviders(
-    <ErrorBoundary>
-      <ComponentThatThrows />
+  const { getByText } = renderWithProviders(;
+    <ErrorBoundary>;
+      <ComponentThatThrows />;
     </ErrorBoundary>,
   );
 
@@ -392,14 +392,14 @@ export function testErrorBoundary(ErrorBoundary, ComponentThatThrows) {
 }
 
 /**
- * Helper to create mock Redux store with specific state
+ * Helper to create mock Redux store with specific state;
  */
 export function createMockStore(initialState = {}) {
   return configureStore({
     reducer: {
       auth: (state = { user: null, token: null, loading: false }) => state,
       debates: (state = { debates: [], loading: false, error: null }) => state,
-      organizations: (state = { current: null, list: [], loading: false }) =>
+      organizations: (state = { current: null, list: [], loading: false }) =>;
         state,
       ui: (state = { theme: "light", sidebarOpen: false }) => state,
       ...initialState.reducers,
@@ -409,26 +409,26 @@ export function createMockStore(initialState = {}) {
 }
 
 /**
- * Helper to test async operations
+ * Helper to test async operations;
  */
 export async function testAsyncOperation(triggerAction, expectedResult) {
   const user = userEvent.setup();
 
-  // Trigger the async operation
+  // Trigger the async operation;
   if (typeof triggerAction === "function") {
     await triggerAction(user);
   } else {
     await user.click(triggerAction);
   }
 
-  // Wait for the expected result
+  // Wait for the expected result;
   await waitFor(() => expectedResult());
 }
 
 /**
- * Helper for testing debounced inputs
+ * Helper for testing debounced inputs;
  */
-export async function testDebouncedInput(
+export async function testDebouncedInput(;
   input,
   value,
   expectedAction,
@@ -438,31 +438,31 @@ export async function testDebouncedInput(
 
   await user.type(input, value);
 
-  // Wait for debounce delay
+  // Wait for debounce delay;
   await waitFor(() => expectedAction(), { timeout: delay + 100 });
 }
 
 /**
- * Helper to test component cleanup
+ * Helper to test component cleanup;
  */
 export function testComponentCleanup(Component, setupProps = {}) {
   const { unmount } = renderWithProviders(<Component {...setupProps} />);
 
-  // Add any setup that creates side effects (timers, subscriptions, etc.)
+  // Add any setup that creates side effects (timers, subscriptions, etc.);
 
-  // Unmount the component
+  // Unmount the component;
   unmount();
 
-  // Verify cleanup (no memory leaks, cleared timers, etc.)
-  // This is framework-specific and should be implemented based on your needs
+  // Verify cleanup (no memory leaks, cleared timers, etc.);
+  // This is framework-specific and should be implemented based on your needs;
 }
 
 /**
- * Common test data generators
+ * Common test data generators;
  */
 export const testData = {
-  users: (count = 5) =>
-    Array.from({ length: count }, (_, i) =>
+  users: (count = 5) =>;
+    Array.from({ length: count }, (_, i) =>;
       createMockUser({
         id: `user-${i + 1}`,
         email: `user${i + 1}@example.com`,
@@ -470,8 +470,8 @@ export const testData = {
       }),
     ),
 
-  organizations: (count = 3) =>
-    Array.from({ length: count }, (_, i) =>
+  organizations: (count = 3) =>;
+    Array.from({ length: count }, (_, i) =>;
       createMockOrganization({
         id: `org-${i + 1}`,
         name: `Organization ${i + 1}`,
@@ -479,20 +479,20 @@ export const testData = {
       }),
     ),
 
-  debates: (count = 10) =>
-    Array.from({ length: count }, (_, i) =>
+  debates: (count = 10) =>;
+    Array.from({ length: count }, (_, i) =>;
       createMockDebate({
         id: `debate-${i + 1}`,
         title: `Debate ${i + 1}`,
         description: `Description for debate ${i + 1}`,
-        status:
+        status:;
           i % 3 === 0 ? "IN_PROGRESS" : i % 3 === 1 ? "COMPLETED" : "CREATED",
       }),
     ),
-};
+}
 
 /**
- * Performance testing helper
+ * Performance testing helper;
  */
 export function measureRenderTime(Component, props = {}) {
   const start = performance.now();
@@ -502,7 +502,7 @@ export function measureRenderTime(Component, props = {}) {
 }
 
 /**
- * Helper to test component with different user permissions
+ * Helper to test component with different user permissions;
  */
 export function testWithPermissions(Component, permissionSets) {
   return permissionSets.map(({ permissions, expectedBehavior, testName }) => ({

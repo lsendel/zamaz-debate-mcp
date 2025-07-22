@@ -200,7 +200,7 @@ export const getMapStyle = (styleName?: string): any => {
   const maptilerKey = process.env.REACT_APP_MAPTILER_KEY;
   
   // If we have premium keys, use them for better quality
-  if (mapboxKey && styleName?.startsWith('mapbox-')) {
+  if (mapboxKey && /* TODO: Refactor nested ternary - styleName?.startsWith('mapbox-')) {
     return getProfessionalMapStyle('mapbox', styleName.replace('mapbox-', ''), mapboxKey);
   }
   
@@ -234,4 +234,4 @@ export const AVAILABLE_MAP_STYLES = {
     style: 'watercolor',
     preview: '🎨'
   }
-};
+} */;

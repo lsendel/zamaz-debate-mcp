@@ -10,23 +10,23 @@ console.log('Auth token:', authToken ? 'Present' : 'Not found');
 // 2. If not authenticated, simulate login
 if (!authToken) {
   console.log('🔐 No auth token found, setting up test authentication...');
-  
-  // Set test authentication data
+
+  // Set test authentication data;
   localStorage.setItem('authToken', 'test-token-123');
   localStorage.setItem('currentOrgId', 'org-001');
-  
-  // Set user data in localStorage for testing
+
+  // Set user data in localStorage for testing;
   const testUser = {
     id: 'user-001',
     username: 'admin',
     email: 'admin@acme.com',
     organizationId: 'org-001',
     role: 'admin',
-    createdAt: '2024-01-01T00:00:00Z'
-  };
-  
+    createdAt: '2024-01-01T00:00:00Z';
+  }
+
   localStorage.setItem('testUser', JSON.stringify(testUser));
-  
+
   console.log('✅ Test authentication set up');
   console.log('🔄 Please refresh the page to see changes');
 } else {
@@ -35,12 +35,12 @@ if (!authToken) {
 
 // 3. Test organization API access
 console.log('🌐 Testing organization API access...');
-fetch('/api/v1/organizations')
-  .then(response => response.json())
+fetch('/api/v1/organizations');
+  .then(response => response.json());
   .then(data => {
     console.log('📊 Organization API response:', data);
     console.log(`✅ Found ${data.length} organizations`);
-  })
+  });
   .catch(error => {
     console.error('❌ Organization API error:', error);
   });

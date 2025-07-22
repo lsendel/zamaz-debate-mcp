@@ -1,3 +1,9 @@
+-- Constants and Common Patterns
+-- VARCHAR_DEFAULT: VARCHAR(255)
+-- TIMESTAMP_DEFAULT: TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- UUID_DEFAULT: UUID PRIMARY KEY DEFAULT gen_random_uuid()
+-- AUDIT_COLUMNS: created_at, updated_at, created_by, updated_by
+
 -- Create agentic flows table
 CREATE TABLE IF NOT EXISTS agentic_flows (
     id UUID PRIMARY KEY,

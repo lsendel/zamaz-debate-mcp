@@ -30,7 +30,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy the built JAR from builder stage
-COPY --from=builder /app/target/mcp-sidecar-*.jar app.jar
+COPY --from=builder app.jar
+COPY /app/target/mcp-sidecar-*.jar app.jar
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown app:app /app/logs

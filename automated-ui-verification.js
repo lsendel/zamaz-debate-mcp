@@ -1,4 +1,7 @@
-#!/usr/bin/env node
+// TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
+// Consider breaking down complex functions into smaller, more focused functions
+
+#!/usr/bin/env node;
 
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -15,15 +18,15 @@ class UIVerificationTool {
             summary: {
                 total: 0,
                 passed: 0,
-                failed: 0
+                failed: 0;
             }
-        };
+        }
     }
 
     async init() {
         console.log('🤖 Starting automated UI verification with Puppeteer...');
-        
-        // Create screenshots directory
+
+        // Create screenshots directory;
         if (!fs.existsSync(this.screenshotDir)) {
             fs.mkdirSync(this.screenshotDir, { recursive: true });
         }
@@ -33,24 +36,24 @@ class UIVerificationTool {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         this.page = await this.browser.newPage();
-        
-        // Set viewport for consistent screenshots
+
+        // Set viewport for consistent screenshots;
         await this.page.setViewport({ width: 1200, height: 800 });
-        
+
         console.log('✅ Puppeteer browser initialized');
     }
 
     async runTest(testName, testFn) {
         console.log(`🧪 Running test: ${testName}`);
         this.results.summary.total++;
-        
+
         const test = {
             name: testName,
             timestamp: new Date().toISOString(),
             status: 'running',
             screenshots: [],
             errors: []
-        };
+        }
 
         try {
             await testFn(test);
@@ -70,12 +73,11 @@ class UIVerificationTool {
     async takeScreenshot(test, name) {
         const filename = `${test.name.toLowerCase().replace(/\s+/g, '-')}-${name}.png`;
         const filepath = path.join(this.screenshotDir, filename);
-        
-        await this.page.screenshot({ 
-            path: filepath, 
-            fullPage: true 
+
+        await this.page.screenshot({ ;
+            path: filepath,            fullPage: true ;
         });
-        
+
         test.screenshots.push(filename);
         console.log(`📸 Screenshot saved: ${filename}`);
         return filename;
@@ -86,19 +88,19 @@ class UIVerificationTool {
             await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
             await this.takeScreenshot(test, 'homepage-loaded');
 
-            // Check if page loads successfully
+            // Check if page loads successfully;
             const title = await this.page.title();
             if (!title) {
                 throw new Error('Page title is empty');
             }
 
-            // Look for common React app elements
+            // Look for common React app elements;
             const reactRoot = await this.page.$('#root');
             if (!reactRoot) {
                 throw new Error('React root element not found');
             }
 
-            // Check for navigation or main content
+            // Check for navigation or main content;
             const mainContent = await this.page.$('main, .App, [data-testid="main"], nav');
             if (!mainContent) {
                 throw new Error('Main content area not found');
@@ -110,18 +112,18 @@ class UIVerificationTool {
         await this.runTest('Navigation Test', async (test) => {
             await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
 
-            // Look for navigation elements
+            // Look for navigation elements;
             const navLinks = await this.page.$$('nav a, [role="navigation"] a, .nav a');
             console.log(`Found ${navLinks.length} navigation links`);
 
             if (navLinks.length > 0) {
-                // Take screenshot of navigation
+                // Take screenshot of navigation;
                 await this.takeScreenshot(test, 'navigation-visible');
 
-                // Try clicking on the first navigation link
+                // Try clicking on the first navigation link;
                 try {
                     await navLinks[0].click();
-                    await this.page.waitForTimeout(1000); // Wait for potential route change
+                    await this.page.waitForTimeout(1000); // Wait for potential route change;
                     await this.takeScreenshot(test, 'navigation-clicked');
                 } catch (clickError) {
                     console.log(`Navigation click test skipped: ${clickError.message}`);
@@ -134,16 +136,16 @@ class UIVerificationTool {
         await this.runTest('Forms Test', async (test) => {
             await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
 
-            // Look for forms or input elements
+            // Look for forms or input elements;
             const forms = await this.page.$$('form');
             const inputs = await this.page.$$('input, textarea, select');
-            
+
             console.log(`Found ${forms.length} forms and ${inputs.length} input elements`);
 
             if (forms.length > 0 || inputs.length > 0) {
                 await this.takeScreenshot(test, 'forms-detected');
 
-                // Try interacting with the first input if available
+                // Try interacting with the first input if available;
                 if (inputs.length > 0) {
                     try {
                         await inputs[0].focus();
@@ -161,28 +163,28 @@ class UIVerificationTool {
         await this.runTest('Responsive Design Test', async (test) => {
             await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
 
-            // Test different viewport sizes
+            // Test different viewport sizes;
             const viewports = [
                 { width: 1200, height: 800, name: 'desktop' },
                 { width: 768, height: 1024, name: 'tablet' },
                 { width: 375, height: 667, name: 'mobile' }
-            ];
+            ]
 
             for (const viewport of viewports) {
                 await this.page.setViewport(viewport);
-                await this.page.waitForTimeout(500); // Allow layout to adjust
+                await this.page.waitForTimeout(500); // Allow layout to adjust;
                 await this.takeScreenshot(test, `responsive-${viewport.name}`);
             }
 
-            // Reset to desktop
+            // Reset to desktop;
             await this.page.setViewport({ width: 1200, height: 800 });
         });
     }
 
     async verifyConsoleErrors() {
         await this.runTest('Console Errors Test', async (test) => {
-            const errors = [];
-            
+            const errors = []
+
             this.page.on('console', msg => {
                 if (msg.type() === 'error') {
                     errors.push(msg.text());
@@ -192,13 +194,13 @@ class UIVerificationTool {
             await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
             await this.takeScreenshot(test, 'page-loaded');
 
-            // Wait a bit to catch any async errors
+            // Wait a bit to catch any async errors;
             await this.page.waitForTimeout(2000);
 
             if (errors.length > 0) {
                 console.log(`⚠️ Console errors detected: ${errors.length}`);
                 test.errors.push(`Console errors: ${errors.join(', ')}`);
-                // Don't fail the test, just log warnings
+                // Don't fail the test, just log warnings;
             }
         });
     }
@@ -207,18 +209,18 @@ class UIVerificationTool {
         await this.runTest('Service Connectivity Test', async (test) => {
             await this.page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
 
-            // Check for API calls in network tab
-            const responses = [];
+            // Check for API calls in network tab;
+            const responses = []
             this.page.on('response', response => {
                 if (response.url().includes('/api/') || response.url().includes(':500')) {
                     responses.push({
                         url: response.url(),
-                        status: response.status()
+                        status: response.status();
                     });
                 }
             });
 
-            // Wait for potential API calls
+            // Wait for potential API calls;
             await this.page.waitForTimeout(3000);
             await this.takeScreenshot(test, 'connectivity-checked');
 
@@ -255,8 +257,8 @@ class UIVerificationTool {
     async run() {
         try {
             await this.init();
-            
-            // Run all verification tests
+
+            // Run all verification tests;
             await this.verifyHomepage();
             await this.verifyNavigation();
             await this.verifyForms();
@@ -278,11 +280,11 @@ class UIVerificationTool {
 // Run if called directly
 if (require.main === module) {
     const verifier = new UIVerificationTool();
-    verifier.run()
+    verifier.run();
         .then(results => {
             console.log('\n🎉 UI verification completed successfully!');
             process.exit(results.summary.failed > 0 ? 1 : 0);
-        })
+        });
         .catch(error => {
             console.error('💥 UI verification failed:', error);
             process.exit(1);

@@ -4,16 +4,16 @@
  */
 
 function fn() {
-    var config = karate.callSingle('classpath:karate-config.js');
-    var authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
-    
-    var ragFixtures = {
+    const config = karate.callSingle('classpath:karate-config.js');
+    const authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
+
+    const ragFixtures = {
         // Document cache
         documentCache: {},
-        
+
         // Generate document upload request
         generatedocumentrequest: function(overrides) {
-            var defaultRequest = {
+            let defaultRequest = {
                 title: "Test Document",
                 content: "This is a test document for RAG processing. It contains information about artificial intelligence and machine learning concepts.",
                 type: "text/plain",
@@ -30,14 +30,14 @@ function fn() {
                     extractEntities: true,
                     generateSummary: true
                 }
-            };
-            
+            }
+
             return Object.assign({}, defaultRequest, overrides || {});
         },
-        
+
         // Generate search request
         generatesearchrequest: function(query, overrides) {
-            var defaultRequest = {
+            let defaultRequest = {
                 query: query || "artificial intelligence",
                 maxResults: 10,
                 minScore: 0.5,
@@ -45,14 +45,14 @@ function fn() {
                 includeContent: true,
                 filters: {},
                 searchType: "semantic"
-            };
-            
+            }
+
             return Object.assign({}, defaultRequest, overrides || {});
         },
-        
+
         // Generate knowledge base request
         generateknowledgebaserequest: function(overrides) {
-            var defaultRequest = {
+            const defaultRequest = {
                 name: "Test Knowledge Base",
                 description: "A test knowledge base for RAG operations",
                 settings: {
@@ -63,258 +63,258 @@ function fn() {
                     retentionDays: 30
                 },
                 isPublic: false
-            };
-            
+            }
+
             return Object.assign({}, defaultRequest, overrides || {});
         },
-        
+
         // Upload document
         uploaddocument: function(documentData, knowledgeBaseId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var documentRequest = ragFixtures.generateDocumentRequest(documentData);
-            
-            var response = karate.call('classpath:rag/upload-document.feature', {
+
+            const documentRequest = ragFixtures.generateDocumentRequest(documentData);
+
+            let response = karate.call('classpath:rag/upload-document.feature', {
                 knowledgeBaseId: knowledgeBaseId || 'default',
                 documentRequest: documentRequest,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response && response.response.id) {
-                var document = response.response;
+                let document = response.response;
                 ragFixtures.documentCache[document.id] = document;
                 return document;
             }
-            
+
             throw new Error('Failed to upload document');
         },
-        
+
         // Get document
         getdocument: function(documentId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:rag/get-document.feature', {
+
+            let response = karate.call('classpath:rag/get-document.feature', {
                 documentId: documentId,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response && response.response.id) {
                 return response.response;
             }
-            
+
             throw new Error('Failed to get document: ' + documentId);
         },
-        
+
         // Search documents
         searchdocuments: function(searchData, knowledgeBaseId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var searchRequest = ragFixtures.generateSearchRequest(searchData.query, searchData);
-            
-            var response = karate.call('classpath:rag/search-documents.feature', {
+
+            const searchRequest = ragFixtures.generateSearchRequest(searchData.query, searchData);
+
+            let response = karate.call('classpath:rag/search-documents.feature', {
                 knowledgeBaseId: knowledgeBaseId || 'default',
                 searchRequest: searchRequest,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response && response.response.results) {
                 return response.response.results;
             }
-            
-            return [];
+
+            return []
         },
-        
+
         // Delete document
         deletedocument: function(documentId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:rag/delete-document.feature', {
+
+            let response = karate.call('classpath:rag/delete-document.feature', {
                 documentId: documentId,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             // Remove from cache
             if (ragFixtures.documentCache[documentId]) {
-                delete ragFixtures.documentCache[documentId];
+                delete ragFixtures.documentCache[documentId]
             }
-            
+
             return response.response;
         },
-        
+
         // Create knowledge base
         createknowledgebase: function(kbData, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var kbRequest = ragFixtures.generateKnowledgeBaseRequest(kbData);
-            
-            var response = karate.call('classpath:rag/create-knowledge-base.feature', {
+
+            const kbRequest = ragFixtures.generateKnowledgeBaseRequest(kbData);
+
+            let response = karate.call('classpath:rag/create-knowledge-base.feature', {
                 knowledgeBaseRequest: kbRequest,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response && response.response.id) {
                 return response.response;
             }
-            
+
             throw new Error('Failed to create knowledge base');
         },
-        
+
         // Process document
         processdocument: function(documentId, processingOptions, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:rag/process-document.feature', {
+
+            let response = karate.call('classpath:rag/process-document.feature', {
                 documentId: documentId,
                 processingOptions: processingOptions || {},
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response) {
                 return response.response;
             }
-            
+
             throw new Error('Failed to process document: ' + documentId);
         },
-        
+
         // Generate embeddings
         generateembeddings: function(text, model, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:rag/generate-embeddings.feature', {
+
+            let response = karate.call('classpath:rag/generate-embeddings.feature', {
                 text: text,
                 model: model || 'text-embedding-ada-002',
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response && response.response.embeddings) {
                 return response.response.embeddings;
             }
-            
+
             throw new Error('Failed to generate embeddings');
         },
-        
+
         // Upload multiple documents
         uploadmultipledocuments: function(documents, knowledgeBaseId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var uploadedDocs = [];
-            for (var item of documents)
-                var doc = ragFixtures.uploadDocument(item, knowledgeBaseId, authToken);
+
+            const uploadedDocs = []
+            for (var item of documents) {
+                const doc = ragFixtures.uploadDocument(item, knowledgeBaseId, authToken);
                 uploadedDocs.push(doc);
             }
-            
+
             return uploadedDocs;
         },
-        
+
         // Create knowledge base with documents
         createknowledgebasewithdocuments: function(kbData, documents, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
+
             // Create knowledge base
-            var knowledgeBase = ragFixtures.createKnowledgeBase(kbData, authToken);
-            
+            const knowledgeBase = ragFixtures.createKnowledgeBase(kbData, authToken);
+
             // Upload documents
-            var uploadedDocuments = ragFixtures.uploadMultipleDocuments(documents, knowledgeBase.id, authToken);
-            
+            const uploadedDocuments = ragFixtures.uploadMultipleDocuments(documents, knowledgeBase.id, authToken);
+
             return {
                 knowledgeBase: knowledgeBase,
                 documents: uploadedDocuments
-            };
+            }
         },
-        
+
         // Get document chunks
         getdocumentchunks: function(documentId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                const auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:rag/get-document-chunks.feature', {
+
+            const response = karate.call('classpath:rag/get-document-chunks.feature', {
                 documentId: documentId,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.rag
             });
-            
+
             if (response.response && response.response.chunks) {
                 return response.response.chunks;
             }
-            
-            return [];
+
+            return []
         },
-        
+
         // Validate document response
         validatedocumentresponse: function(response) {
-            var validationErrors = [];
-            
+            const validationErrors = []
+
             if (!response.id || typeof response.id !== 'string') {
                 validationErrors.push('Missing or invalid document ID');
             }
-            
+
             if (!response.title || typeof response.title !== 'string') {
                 validationErrors.push('Missing or invalid document title');
             }
-            
+
             if (!response.content || typeof response.content !== 'string') {
                 validationErrors.push('Missing or invalid document content');
             }
-            
+
             if (!response.type || typeof response.type !== 'string') {
                 validationErrors.push('Missing or invalid document type');
             }
-            
+
             if (!response.status || typeof response.status !== 'string') {
                 validationErrors.push('Missing or invalid document status');
             }
-            
+
             if (!response.uploadedAt || typeof response.uploadedAt !== 'string') {
                 validationErrors.push('Missing or invalid upload timestamp');
             }
-            
+
             if (response.metadata && typeof response.metadata !== 'object') {
                 validationErrors.push('Invalid metadata object');
             }
-            
+
             if (response.processingStatus && typeof response.processingStatus !== 'object') {
                 validationErrors.push('Invalid processing status object');
             }
-            
+
             return validationErrors;
         },
-        
+
         // Generate test documents
         generatetestdocuments: function() {
             return [
@@ -373,9 +373,9 @@ function fn() {
                         tags: ["computer vision", "image processing", "object detection"]
                     }
                 }
-            ];
+            ]
         },
-        
+
         // Generate test search queries
         generatetestsearchqueries: function() {
             return [
@@ -389,9 +389,9 @@ function fn() {
                 "Deep learning vs machine learning",
                 "NLP text analysis techniques",
                 "Computer vision object detection"
-            ];
+            ]
         },
-        
+
         // Generate performance test scenarios
         generateperformancescenarios: function() {
             return {
@@ -415,28 +415,28 @@ function fn() {
                     textCount: 100,
                     expectedMaxTime: 45000
                 }
-            };
+            }
         },
-        
+
         // Clear document cache
         cleardocumentcache: function() {
-            ragFixtures.documentCache = {};
+            ragFixtures.documentCache = {}
         },
-        
+
         // Generate file content for different types
         generatefilecontent: function(type, size) {
             size = size || 1000;
-            
-            var content = "";
-            var baseContent = "This is test content for RAG processing. It contains information about various topics including artificial intelligence, machine learning, deep learning, natural language processing, and computer vision. ";
-            
+
+            let content = ""
+            const baseContent = "This is test content for RAG processing. It contains information about various topics including artificial intelligence, machine learning, deep learning, natural language processing, and computer vision. "
+
             switch (type) {
-                case 'text':
+                case 'text':;
                     while (content.length < size) {
                         content += baseContent;
                     }
-                    break;
-                case 'json':
+                    break
+                case 'json':;
                     content = JSON.stringify({
                         title: "Test JSON Document",
                         content: baseContent,
@@ -446,37 +446,37 @@ function fn() {
                             generated: new Date().toISOString()
                         }
                     });
-                    break;
-                case 'markdown':
+                    break
+                case 'markdown':;
                     content = "# Test Markdown Document\n\n" + baseContent + "\n\n## Section 1\n\n" + baseContent + "\n\n## Section 2\n\n" + baseContent;
-                    break;
-                default:
+                    break
+                default:;
                     content = baseContent.repeat(Math.ceil(size / baseContent.length));
             }
-            
+
             return content.substring(0, size);
         },
-        
+
         // Wait for document processing
         waitfordocumentprocessing: function(documentId, timeout, authToken) {
             timeout = timeout || 30000;
-            var startTime = Date.now();
-            
+            const startTime = Date.now();
+
             while ((Date.now() - startTime) < timeout) {
-                var document = ragFixtures.getDocument(documentId, authToken);
-                
+                const document = ragFixtures.getDocument(documentId, authToken);
+
                 if (document.processingStatus && document.processingStatus.status === 'completed') {
                     return document;
                 } else if (document.processingStatus && document.processingStatus.status === 'failed') {
                     throw new Error('Document processing failed: ' + document.processingStatus.error);
                 }
-                
+
                 java.lang.Thread.sleep(1000);
             }
-            
+
             throw new Error('Document processing timeout');
         }
-    };
-    
+    }
+
     return ragFixtures;
 }

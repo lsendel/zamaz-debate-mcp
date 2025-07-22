@@ -12,15 +12,15 @@ function makeRequest(options) {
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
-          body: data
+          body: data;
         });
       });
     });
-    
+
     req.on('error', (err) => {
       reject(err);
     });
-    
+
     req.end();
   });
 }
@@ -28,8 +28,8 @@ function makeRequest(options) {
 async function testAPIIntegration() {
   console.log('🔍 Testing API Integration...');
   console.log('==============================');
-  
-  // Test Organization API
+
+  // Test Organization API;
   console.log('\n📋 Testing Organization API...');
   try {
     const orgResponse = await makeRequest({
@@ -38,10 +38,10 @@ async function testAPIIntegration() {
       path: '/api/v1/organizations',
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json';
       }
     });
-    
+
     console.log(`✅ Organization API: ${orgResponse.statusCode}`);
     const orgData = JSON.parse(orgResponse.body);
     console.log(`📊 Organizations found: ${orgData.length}`);
@@ -51,8 +51,8 @@ async function testAPIIntegration() {
   } catch (error) {
     console.error('❌ Organization API failed:', error.message);
   }
-  
-  // Test LLM API
+
+  // Test LLM API;
   console.log('\n🧠 Testing LLM API...');
   try {
     const llmResponse = await makeRequest({
@@ -61,10 +61,10 @@ async function testAPIIntegration() {
       path: '/api/v1/providers',
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json';
       }
     });
-    
+
     console.log(`✅ LLM API: ${llmResponse.statusCode}`);
     const llmData = JSON.parse(llmResponse.body);
     console.log(`📊 Providers found: ${llmData.length}`);
@@ -74,8 +74,8 @@ async function testAPIIntegration() {
   } catch (error) {
     console.error('❌ LLM API failed:', error.message);
   }
-  
-  // Test Debate API
+
+  // Test Debate API;
   console.log('\n💬 Testing Debate API...');
   try {
     const debateResponse = await makeRequest({
@@ -84,10 +84,10 @@ async function testAPIIntegration() {
       path: '/api/v1/debates',
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json';
       }
     });
-    
+
     console.log(`✅ Debate API: ${debateResponse.statusCode}`);
     const debateData = JSON.parse(debateResponse.body);
     console.log(`📊 Debates found: ${debateData.length}`);
@@ -97,32 +97,32 @@ async function testAPIIntegration() {
   } catch (error) {
     console.error('❌ Debate API failed:', error.message);
   }
-  
-  // Test UI application
+
+  // Test UI application;
   console.log('\n🌐 Testing UI Application...');
   try {
     const uiResponse = await makeRequest({
       hostname: 'localhost',
       port: 3002,
       path: '/',
-      method: 'GET'
+      method: 'GET';
     });
-    
+
     console.log(`✅ UI Application: ${uiResponse.statusCode}`);
     console.log(`📄 Content-Type: ${uiResponse.headers['content-type']}`);
-    
-    // Check for HTML content
+
+    // Check for HTML content;
     const isHTML = uiResponse.body.includes('<html') || uiResponse.body.includes('<!DOCTYPE html');
     console.log(`📝 HTML Content: ${isHTML ? 'Yes' : 'No'}`);
-    
-    // Check for React app indicators
+
+    // Check for React app indicators;
     const hasReactApp = uiResponse.body.includes('root') || uiResponse.body.includes('app');
     console.log(`⚛️  React App: ${hasReactApp ? 'Yes' : 'No'}`);
-    
+
   } catch (error) {
     console.error('❌ UI Application failed:', error.message);
   }
-  
+
   console.log('\n🎯 API Integration Test Complete!');
   console.log('==================================');
   console.log('✅ Backend services are running and responding');

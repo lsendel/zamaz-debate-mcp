@@ -29,7 +29,8 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 # Copy the built JAR
-COPY --from=builder /app/github-integration/target/github-integration-*.jar app.jar
+COPY --from=builder app.jar
+COPY /app/github-integration/target/github-integration-*.jar app.jar
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R kiro:kiro /app

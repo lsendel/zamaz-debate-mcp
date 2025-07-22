@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node;
 
 const express = require('express');
 const cors = require('cors');
@@ -19,8 +19,7 @@ let organizations = [
     updatedAt: "2024-01-01T00:00:00Z"
   },
   {
-    id: "org-002", 
-    name: "Tech Solutions Inc",
+    id: "org-002",    name: "Tech Solutions Inc",
     description: "Software development and consulting",
     apiKey: "ak_test_def456",
     createdAt: "2024-01-02T00:00:00Z",
@@ -34,7 +33,7 @@ let organizations = [
     createdAt: "2024-01-03T00:00:00Z",
     updatedAt: "2024-01-03T00:00:00Z"
   }
-];
+]
 
 let users = [
   {
@@ -48,8 +47,7 @@ let users = [
   {
     id: "user-002",
     username: "john.doe",
-    email: "john@acme.com", 
-    organizationId: "org-001",
+    email: "john@acme.com",    organizationId: "org-001",
     role: "member",
     createdAt: "2024-01-02T00:00:00Z"
   },
@@ -57,11 +55,10 @@ let users = [
     id: "user-003",
     username: "jane.smith",
     email: "jane@techsolutions.com",
-    organizationId: "org-002", 
-    role: "admin",
+    organizationId: "org-002",    role: "admin",
     createdAt: "2024-01-03T00:00:00Z"
   }
-];
+]
 
 // Organization endpoints
 app.get('/api/v1/organizations', (req, res) => {
@@ -78,20 +75,20 @@ app.get('/api/v1/organizations/:id', (req, res) => {
 
 app.post('/api/v1/organizations', (req, res) => {
   const { name, description } = req.body;
-  
+
   if (!name) {
     return res.status(400).json({ error: 'Organization name is required' });
   }
-  
+
   const newOrg = {
     id: `org-${Date.now()}`,
     name,
     description: description || '',
     apiKey: null,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
+    updatedAt: new Date().toISOString();
+  }
+
   organizations.push(newOrg);
   res.status(201).json(newOrg);
 });
@@ -101,12 +98,12 @@ app.put('/api/v1/organizations/:id', (req, res) => {
   if (!org) {
     return res.status(404).json({ error: 'Organization not found' });
   }
-  
+
   const { name, description } = req.body;
   if (name) org.name = name;
   if (description !== undefined) org.description = description;
   org.updatedAt = new Date().toISOString();
-  
+
   res.json(org);
 });
 
@@ -115,7 +112,7 @@ app.delete('/api/v1/organizations/:id', (req, res) => {
   if (index === -1) {
     return res.status(404).json({ error: 'Organization not found' });
   }
-  
+
   organizations.splice(index, 1);
   res.status(204).send();
 });
@@ -126,11 +123,11 @@ app.post('/api/v1/organizations/:id/api-keys', (req, res) => {
   if (!org) {
     return res.status(404).json({ error: 'Organization not found' });
   }
-  
+
   const apiKey = `ak_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   org.apiKey = apiKey;
   org.updatedAt = new Date().toISOString();
-  
+
   res.json({ apiKey });
 });
 
@@ -139,10 +136,10 @@ app.delete('/api/v1/organizations/:id/api-keys', (req, res) => {
   if (!org) {
     return res.status(404).json({ error: 'Organization not found' });
   }
-  
+
   org.apiKey = null;
   org.updatedAt = new Date().toISOString();
-  
+
   res.status(204).send();
 });
 
@@ -150,36 +147,36 @@ app.delete('/api/v1/organizations/:id/api-keys', (req, res) => {
 app.get('/api/v1/users', (req, res) => {
   const { organizationId } = req.query;
   let filteredUsers = users;
-  
+
   if (organizationId) {
     filteredUsers = users.filter(u => u.organizationId === organizationId);
   }
-  
+
   res.json(filteredUsers);
 });
 
 app.post('/api/v1/users', (req, res) => {
   const { username, email, password, role = 'member', organizationId } = req.body;
-  
+
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email, and password are required' });
   }
-  
-  // Check if user already exists
+
+  // Check if user already exists;
   const existingUser = users.find(u => u.username === username || u.email === email);
   if (existingUser) {
     return res.status(409).json({ error: 'User already exists' });
   }
-  
+
   const newUser = {
     id: `user-${Date.now()}`,
     username,
     email,
     organizationId: organizationId || organizations[0]?.id,
     role,
-    createdAt: new Date().toISOString()
-  };
-  
+    createdAt: new Date().toISOString();
+  }
+
   users.push(newUser);
   res.status(201).json(newUser);
 });

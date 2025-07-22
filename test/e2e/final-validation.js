@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node;
 
 console.log('=== Agentic Flows Implementation Validation ===\n');
 
@@ -50,8 +50,8 @@ const filesToCheck = [
   '/debate-ui/src/components/AgenticFlowAnalytics.tsx',
   '/test/e2e/agentic-flows-e2e.spec.js',
   '/docs/agentic-flows-implementation-summary.md',
-  '/k8s/agentic-flows-deployment.yaml'
-];
+  '/k8s/agentic-flows-deployment.yaml';
+]
 
 const projectRoot = path.resolve(__dirname, '../..');
 filesToCheck.forEach(file => {

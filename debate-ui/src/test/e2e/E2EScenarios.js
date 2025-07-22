@@ -1,19 +1,19 @@
 /**
- * End-to-End test scenarios for user journey testing.
- * Provides comprehensive user flow testing with Playwright.
+ * End-to-End test scenarios for user journey testing.;
+ * Provides comprehensive user flow testing with Playwright.;
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 /**
- * User Authentication Flow
+ * User Authentication Flow;
  */
 export class AuthenticationScenarios {
   constructor(page) {
     this.page = page;
   }
 
-  async loginSuccessfully(
+  async loginSuccessfully(;
     email = "test@example.com",
     password = "password123",
   ) {
@@ -30,7 +30,7 @@ export class AuthenticationScenarios {
     await test.step("Submit login form", async () => {
       await this.page.click('button[type="submit"]');
       await this.page.waitForURL("/dashboard");
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="user-menu"]'),
       ).toBeVisible();
     });
@@ -48,7 +48,7 @@ export class AuthenticationScenarios {
     });
 
     await test.step("Verify error message", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="error-message"]'),
       ).toContainText("Invalid credentials");
     });
@@ -77,7 +77,7 @@ export class AuthenticationScenarios {
     });
 
     await test.step("Verify success message", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Password reset email sent");
     });
@@ -85,7 +85,7 @@ export class AuthenticationScenarios {
 }
 
 /**
- * Debate Management Flow
+ * Debate Management Flow;
  */
 export class DebateScenarios {
   constructor(page) {
@@ -114,11 +114,11 @@ export class DebateScenarios {
     await test.step("Add participants", async () => {
       for (const participant of participants) {
         await this.page.click('[data-testid="add-participant-button"]');
-        await this.page.fill(
+        await this.page.fill(;
           '[data-testid="participant-name"]:last-child',
           participant,
         );
-        await this.page.selectOption(
+        await this.page.selectOption(;
           '[data-testid="participant-provider"]:last-child',
           "anthropic",
         );
@@ -134,13 +134,13 @@ export class DebateScenarios {
     return {
       title,
       url: this.page.url(),
-    };
+    }
   }
 
   async startDebate() {
     await test.step("Start the debate", async () => {
       await this.page.click('[data-testid="start-debate-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="debate-status"]'),
       ).toContainText("In Progress");
     });
@@ -153,7 +153,7 @@ export class DebateScenarios {
     });
 
     await test.step("Verify debates are displayed", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="debate-card"]'),
       ).toHaveCount({ min: 1 });
     });
@@ -197,7 +197,7 @@ export class DebateScenarios {
 
     await test.step("Confirm deletion", async () => {
       await this.page.click('[data-testid="confirm-delete-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Debate deleted");
     });
@@ -220,7 +220,7 @@ export class DebateScenarios {
 }
 
 /**
- * Organization Management Flow
+ * Organization Management Flow;
  */
 export class OrganizationScenarios {
   constructor(page) {
@@ -237,14 +237,14 @@ export class OrganizationScenarios {
     });
 
     await test.step("Verify organization switch", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="current-organization"]'),
       ).toContainText(organizationName);
     });
   }
 
   async createOrganization(orgData = {}) {
-    const { name = "Test Organization", description = "A test organization" } =
+    const { name = "Test Organization", description = "A test organization" } =;
       orgData;
 
     await test.step("Navigate to create organization", async () => {
@@ -258,7 +258,7 @@ export class OrganizationScenarios {
 
     await test.step("Submit organization creation", async () => {
       await this.page.click('button[type="submit"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Organization created");
     });
@@ -280,7 +280,7 @@ export class OrganizationScenarios {
 
     await test.step("Send invitation", async () => {
       await this.page.click('[data-testid="send-invite-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Invitation sent");
     });
@@ -288,7 +288,7 @@ export class OrganizationScenarios {
 
   async manageUserPermissions(userEmail, permissions) {
     await test.step("Find user in team list", async () => {
-      const userRow = this.page.locator(
+      const userRow = this.page.locator(;
         `[data-testid="user-row"][data-email="${userEmail}"]`,
       );
       await userRow.click('[data-testid="manage-permissions-button"]');
@@ -302,7 +302,7 @@ export class OrganizationScenarios {
 
     await test.step("Save permissions", async () => {
       await this.page.click('[data-testid="save-permissions-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Permissions updated");
     });
@@ -310,7 +310,7 @@ export class OrganizationScenarios {
 }
 
 /**
- * Settings and Configuration Flow
+ * Settings and Configuration Flow;
  */
 export class SettingsScenarios {
   constructor(page) {
@@ -337,7 +337,7 @@ export class SettingsScenarios {
 
     await test.step("Save profile changes", async () => {
       await this.page.click('[data-testid="save-profile-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Profile updated");
     });
@@ -356,7 +356,7 @@ export class SettingsScenarios {
 
     await test.step("Submit password change", async () => {
       await this.page.click('[data-testid="change-password-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Password updated");
     });
@@ -369,7 +369,7 @@ export class SettingsScenarios {
 
     await test.step("Update notification preferences", async () => {
       for (const [type, enabled] of Object.entries(preferences)) {
-        const checkbox = this.page.locator(
+        const checkbox = this.page.locator(;
           `input[name="notification-${type}"]`,
         );
         if (enabled) {
@@ -382,7 +382,7 @@ export class SettingsScenarios {
 
     await test.step("Save notification settings", async () => {
       await this.page.click('[data-testid="save-notifications-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("Notifications updated");
     });
@@ -396,13 +396,13 @@ export class SettingsScenarios {
     await test.step("Configure LLM providers", async () => {
       for (const [provider, config] of Object.entries(providers)) {
         if (config.apiKey) {
-          await this.page.fill(
+          await this.page.fill(;
             `input[name="${provider}-api-key"]`,
             config.apiKey,
           );
         }
         if (config.enabled !== undefined) {
-          const toggle = this.page.locator(
+          const toggle = this.page.locator(;
             `[data-testid="${provider}-toggle"]`,
           );
           if (config.enabled) {
@@ -416,7 +416,7 @@ export class SettingsScenarios {
 
     await test.step("Save LLM settings", async () => {
       await this.page.click('[data-testid="save-llm-settings-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="success-message"]'),
       ).toContainText("LLM settings updated");
     });
@@ -424,7 +424,7 @@ export class SettingsScenarios {
 }
 
 /**
- * Real-time Features Flow
+ * Real-time Features Flow;
  */
 export class RealTimeScenarios {
   constructor(page) {
@@ -434,25 +434,25 @@ export class RealTimeScenarios {
   async testLiveDebateUpdates() {
     await test.step("Join a live debate", async () => {
       await this.page.goto("/debates/live-debate-1");
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="debate-status"]'),
       ).toContainText("In Progress");
     });
 
     await test.step("Verify real-time turn updates", async () => {
-      // Wait for a new turn to appear
+      // Wait for a new turn to appear;
       await expect(this.page.locator('[data-testid="turn-item"]')).toHaveCount({
         min: 1,
       });
 
-      // Verify the turn content updates in real-time
-      await expect(
+      // Verify the turn content updates in real-time;
+      await expect(;
         this.page.locator('[data-testid="turn-content"]').first(),
       ).not.toBeEmpty();
     });
 
     await test.step("Test participant status updates", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="participant-status"]'),
       ).toContainText("Active");
     });
@@ -465,13 +465,13 @@ export class RealTimeScenarios {
     });
 
     await test.step("Make changes and verify real-time sync", async () => {
-      await this.page.fill(
+      await this.page.fill(;
         '[data-testid="template-content"]',
         "Updated template content",
       );
 
-      // Verify changes are saved automatically
-      await expect(
+      // Verify changes are saved automatically;
+      await expect(;
         this.page.locator('[data-testid="save-status"]'),
       ).toContainText("Saved");
     });
@@ -479,9 +479,9 @@ export class RealTimeScenarios {
 
   async testNotificationSystem() {
     await test.step("Trigger a notification event", async () => {
-      // This would typically be triggered by another user's action
+      // This would typically be triggered by another user's action;
       await this.page.evaluate(() => {
-        window.dispatchEvent(
+        window.dispatchEvent(;
           new CustomEvent("notification", {
             detail: { message: "New debate invitation received", type: "info" },
           }),
@@ -490,14 +490,14 @@ export class RealTimeScenarios {
     });
 
     await test.step("Verify notification appears", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="notification-toast"]'),
       ).toContainText("New debate invitation");
     });
 
     await test.step("Dismiss notification", async () => {
       await this.page.click('[data-testid="dismiss-notification"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="notification-toast"]'),
       ).not.toBeVisible();
     });
@@ -505,7 +505,7 @@ export class RealTimeScenarios {
 }
 
 /**
- * Error Handling and Edge Cases
+ * Error Handling and Edge Cases;
  */
 export class ErrorScenarios {
   constructor(page) {
@@ -522,17 +522,17 @@ export class ErrorScenarios {
     });
 
     await test.step("Verify error message is displayed", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="error-message"]'),
       ).toContainText("Network error");
     });
 
     await test.step("Test retry functionality", async () => {
-      // Restore network
+      // Restore network;
       await this.page.unroute("**/api/**");
 
       await this.page.click('[data-testid="retry-button"]');
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="debate-card"]'),
       ).toHaveCount({ min: 1 });
     });
@@ -541,12 +541,12 @@ export class ErrorScenarios {
   async testInvalidDataHandling() {
     await test.step("Submit form with invalid data", async () => {
       await this.page.goto("/debates/new");
-      await this.page.fill('input[name="title"]', ""); // Empty title
+      await this.page.fill('input[name="title"]', ""); // Empty title;
       await this.page.click('button[type="submit"]');
     });
 
     await test.step("Verify validation errors", async () => {
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="validation-error"]'),
       ).toContainText("Title is required");
     });
@@ -573,7 +573,7 @@ export class ErrorScenarios {
 
     await test.step("Verify 404 page is displayed", async () => {
       await expect(this.page.locator("h1")).toContainText("404");
-      await expect(
+      await expect(;
         this.page.locator('[data-testid="not-found-message"]'),
       ).toContainText("Debate not found");
     });
@@ -581,7 +581,7 @@ export class ErrorScenarios {
 }
 
 /**
- * Performance and Accessibility Scenarios
+ * Performance and Accessibility Scenarios;
  */
 export class PerformanceScenarios {
   constructor(page) {
@@ -595,7 +595,7 @@ export class PerformanceScenarios {
       await this.page.waitForLoadState("networkidle");
       const loadTime = Date.now() - startTime;
 
-      expect(loadTime).toBeLessThan(3000); // Should load within 3 seconds
+      expect(loadTime).toBeLessThan(3000); // Should load within 3 seconds;
     });
   }
 
@@ -603,7 +603,7 @@ export class PerformanceScenarios {
     await test.step("Check keyboard navigation", async () => {
       await this.page.goto("/debates");
 
-      // Test tab navigation
+      // Test tab navigation;
       await this.page.keyboard.press("Tab");
       await expect(this.page.locator(":focus")).toBeVisible();
     });
@@ -622,7 +622,7 @@ export class PerformanceScenarios {
     });
 
     await test.step("Test screen reader compatibility", async () => {
-      // Check for proper heading hierarchy
+      // Check for proper heading hierarchy;
       const headings = this.page.locator("h1, h2, h3, h4, h5, h6");
       const count = await headings.count();
       expect(count).toBeGreaterThan(0);
@@ -631,7 +631,7 @@ export class PerformanceScenarios {
 
   async testLargeDataSetHandling() {
     await test.step("Load page with many debates", async () => {
-      // Mock API to return large dataset
+      // Mock API to return large dataset;
       await this.page.route("**/api/debates", (route) => {
         const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
           id: `debate-${i}`,
@@ -651,16 +651,16 @@ export class PerformanceScenarios {
     });
 
     await test.step("Verify virtualization works properly", async () => {
-      // Should not render all 1000 items at once
+      // Should not render all 1000 items at once;
       const visibleItems = this.page.locator('[data-testid="debate-card"]');
       const count = await visibleItems.count();
-      expect(count).toBeLessThan(100); // Virtualized list should render only visible items
+      expect(count).toBeLessThan(100); // Virtualized list should render only visible items;
     });
   }
 }
 
 /**
- * Integration Test Suite
+ * Integration Test Suite;
  */
 export class IntegrationTestSuite {
   constructor(page) {
@@ -676,32 +676,32 @@ export class IntegrationTestSuite {
 
   async runCompleteUserJourney() {
     await test.step("Complete user journey test", async () => {
-      // 1. Authentication
+      // 1. Authentication;
       await this.auth.loginSuccessfully();
 
-      // 2. Create a debate
+      // 2. Create a debate;
       await this.debates.createDebate({
         title: "Integration Test Debate",
         description: "Testing the complete user journey",
       });
 
-      // 3. Start the debate
+      // 3. Start the debate;
       await this.debates.startDebate();
 
-      // 4. Switch organizations
+      // 4. Switch organizations;
       await this.organizations.switchOrganization("Test Organization");
 
-      // 5. Update profile
+      // 5. Update profile;
       await this.settings.updateProfile({
         firstName: "Integration",
         lastName: "Test",
       });
 
-      // 6. View debates and verify our created debate
+      // 6. View debates and verify our created debate;
       await this.debates.viewDebateList();
       await this.debates.searchDebates("Integration Test");
 
-      // 7. Logout
+      // 7. Logout;
       await this.auth.logout();
     });
   }

@@ -1,3 +1,9 @@
+-- Constants and Common Patterns
+-- VARCHAR_DEFAULT: VARCHAR(255)
+-- TIMESTAMP_DEFAULT: TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- UUID_DEFAULT: UUID PRIMARY KEY DEFAULT gen_random_uuid()
+-- AUDIT_COLUMNS: created_at, updated_at, created_by, updated_by
+
 -- Unified Debate Engine Database Schema
 -- Consolidates schemas from controller, debate, and context services
 -- Optimized for reduced inter-service communication and improved performance

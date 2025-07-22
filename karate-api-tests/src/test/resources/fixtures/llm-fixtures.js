@@ -4,10 +4,10 @@
  */
 
 function fn() {
-    var config = karate.callSingle('classpath:karate-config.js');
-    var authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
-    
-    var llmFixtures = {
+    const config = karate.callSingle('classpath:karate-config.js');
+    const authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
+
+    const llmFixtures = {
         // LLM providers configuration
         providers: {
             claude: {
@@ -32,10 +32,10 @@ function fn() {
                 streaming: true
             }
         },
-        
+
         // Generate completion request
         generatecompletionrequest: function(overrides) {
-            var defaultRequest = {
+            const defaultRequest = {
                 prompt: "What is the capital of France?",
                 maxTokens: 100,
                 temperature: 0.7,
@@ -43,198 +43,198 @@ function fn() {
                 provider: "claude",
                 enableCaching: true,
                 streaming: false
-            };
-            
+            }
+
             return Object.assign(defaultRequest, overrides || {});
         },
-        
+
         // Generate streaming completion request
         generatestreamingrequest: function(overrides) {
-            var baseRequest = llmFixtures.generateCompletionRequest(overrides);
+            const baseRequest = llmFixtures.generateCompletionRequest(overrides);
             baseRequest.streaming = true;
             return baseRequest;
         },
-        
+
         // Generate complex prompt for testing
         generatecomplexprompt: function(type) {
-            var prompts = {
+            const prompts = {
                 debate: "You are participating in a debate about artificial intelligence regulation. Present three strong arguments for why AI should be regulated by government agencies, including specific examples and potential risks.",
                 analysis: "Analyze the following debate transcript and provide a summary of the main arguments from each side, identifying the strongest points and any logical fallacies present.",
                 creative: "Write a creative story about a future society where AI and humans collaborate to solve climate change. The story should be engaging and thought-provoking.",
                 technical: "Explain the concept of machine learning in simple terms, then provide a more detailed technical explanation including key algorithms and their applications.",
                 long: "Write a comprehensive essay about the history of artificial intelligence, covering major milestones, key figures, breakthrough technologies, current applications, and future possibilities. Include at least 1000 words with proper structure and citations."
-            };
-            
+            }
+
             return prompts[type] || prompts.debate;
         },
-        
+
         // Create completion
         createcompletion: function(requestData, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var completionRequest = llmFixtures.generateCompletionRequest(requestData);
-            
-            var response = karate.call('classpath:llm/create-completion.feature', {
+
+            const completionRequest = llmFixtures.generateCompletionRequest(requestData);
+
+            let response = karate.call('classpath:llm/create-completion.feature', {
                 completionRequest: completionRequest,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.llm
             });
-            
+
             if (response.response) {
                 return response.response;
             }
-            
+
             throw new Error('Failed to create completion');
         },
-        
+
         // Create streaming completion
         createstreamingcompletion: function(requestData, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var streamingRequest = llmFixtures.generateStreamingRequest(requestData);
-            
-            var response = karate.call('classpath:llm/create-streaming-completion.feature', {
+
+            const streamingRequest = llmFixtures.generateStreamingRequest(requestData);
+
+            let response = karate.call('classpath:llm/create-streaming-completion.feature', {
                 streamingRequest: streamingRequest,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.llm
             });
-            
+
             if (response.response) {
                 return response.response;
             }
-            
+
             throw new Error('Failed to create streaming completion');
         },
-        
+
         // List available providers
         listproviders: function(authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:llm/list-providers.feature', {
+
+            let response = karate.call('classpath:llm/list-providers.feature', {
                 authToken: authToken,
                 baseUrl: config.serviceUrls.llm
             });
-            
+
             if (response.response && response.response.providers) {
                 return response.response.providers;
             }
-            
-            return [];
+
+            return []
         },
-        
+
         // Check provider health
         checkproviderhealth: function(providerId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:llm/check-provider-health.feature', {
+
+            let response = karate.call('classpath:llm/check-provider-health.feature', {
                 providerId: providerId,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.llm
             });
-            
+
             if (response.response) {
                 return response.response;
             }
-            
+
             throw new Error('Failed to check provider health: ' + providerId);
         },
-        
+
         // Get provider models
         getprovidermodels: function(providerId, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                let auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:llm/get-provider-models.feature', {
+
+            let response = karate.call('classpath:llm/get-provider-models.feature', {
                 providerId: providerId,
                 authToken: authToken,
                 baseUrl: config.serviceUrls.llm
             });
-            
+
             if (response.response && response.response.models) {
                 return response.response.models;
             }
-            
-            return [];
+
+            return []
         },
-        
+
         // Estimate tokens
         estimatetokens: function(text, model, authToken) {
             if (!authToken) {
-                var auth = authFixtures.login();
+                const auth = authFixtures.login();
                 authToken = auth.token;
             }
-            
-            var response = karate.call('classpath:llm/estimate-tokens.feature', {
+
+            const response = karate.call('classpath:llm/estimate-tokens.feature', {
                 text: text,
                 model: model || 'claude-3-sonnet',
                 authToken: authToken,
                 baseUrl: config.serviceUrls.llm
             });
-            
+
             if (response.response && response.response.tokenCount) {
                 return response.response.tokenCount;
             }
-            
+
             return 0;
         },
-        
+
         // Validate completion response
         validatecompletionresponse: function(response, expectedProvider, expectedModel) {
-            var validationErrors = [];
-            
+            const validationErrors = []
+
             if (!response.id || typeof response.id !== 'string') {
                 validationErrors.push('Missing or invalid completion ID');
             }
-            
+
             if (!response.content || typeof response.content !== 'string') {
                 validationErrors.push('Missing or invalid completion content');
             }
-            
+
             if (!response.provider || typeof response.provider !== 'string') {
                 validationErrors.push('Missing or invalid provider');
             }
-            
+
             if (!response.model || typeof response.model !== 'string') {
                 validationErrors.push('Missing or invalid model');
             }
-            
+
             if (expectedProvider && response.provider !== expectedProvider) {
                 validationErrors.push('Provider mismatch: expected ' + expectedProvider + ', got ' + response.provider);
             }
-            
+
             if (expectedModel && response.model !== expectedModel) {
                 validationErrors.push('Model mismatch: expected ' + expectedModel + ', got ' + response.model);
             }
-            
+
             if (typeof response.usage !== 'object' || !response.usage.inputTokens || !response.usage.outputTokens) {
                 validationErrors.push('Missing or invalid usage information');
             }
-            
+
             if (typeof response.finishReason !== 'string') {
                 validationErrors.push('Missing or invalid finish reason');
             }
-            
+
             if (!response.createdAt || typeof response.createdAt !== 'string') {
                 validationErrors.push('Missing or invalid creation timestamp');
             }
-            
+
             return validationErrors;
         },
-        
+
         // Generate test prompts for different scenarios
         generatetestprompts: function() {
             return {
@@ -255,9 +255,9 @@ function fn() {
                 json: "Test with JSON: {\"key\": \"value\", \"number\": 42, \"array\": [1, 2, 3]}",
                 sql: "Test with SQL: SELECT * FROM users WHERE id = 1; DROP TABLE users;",
                 very_long: "This is a very long prompt that exceeds normal length limits. ".repeat(100)
-            };
+            }
         },
-        
+
         // Generate performance test scenarios
         generateperformancescenarios: function() {
             return {
@@ -286,9 +286,9 @@ function fn() {
                     prompt: "Hello",
                     expected_rate_limit: true
                 }
-            };
+            }
         },
-        
+
         // Mock provider responses for testing
         mockproviderresponse: function(provider, model, success) {
             if (success !== false) {
@@ -304,7 +304,7 @@ function fn() {
                     },
                     finishReason: "stop",
                     createdAt: new Date().toISOString()
-                };
+                }
             } else {
                 return {
                     error: {
@@ -313,83 +313,83 @@ function fn() {
                         provider: provider,
                         model: model
                     }
-                };
+                }
             }
         },
-        
+
         // Wait for streaming completion
         waitforstreamingcompletion: function(streamId, timeout) {
             timeout = timeout || 30000;
-            var startTime = Date.now();
-            var chunks = [];
-            var completed = false;
-            
+            const startTime = Date.now();
+            const chunks = []
+            let completed = false;
+
             while (!completed && (Date.now() - startTime) < timeout) {
                 // This would be replaced with actual streaming logic
                 // For now, we simulate streaming completion
                 java.lang.Thread.sleep(100);
-                
+
                 if (Date.now() - startTime > 1000) {
                     chunks.push({
                         id: streamId,
                         content: "Streaming chunk " + chunks.length,
                         finished: chunks.length >= 5
                     });
-                    
+
                     if (chunks.length >= 5) {
                         completed = true;
                     }
                 }
             }
-            
+
             return {
                 streamId: streamId,
                 chunks: chunks,
                 completed: completed,
                 totalChunks: chunks.length,
                 duration: Date.now() - startTime
-            };
+            }
         },
-        
+
         // Calculate response quality metrics
         calculatequalitymetrics: function(prompt, response) {
-            var metrics = {
+            const metrics = {
                 length: response.length,
                 wordCount: response.split(/\s+/).length,
                 relevance: 0.0,
                 coherence: 0.0,
                 completeness: 0.0,
                 accuracy: 0.0
-            };
-            
+            }
+
             // Simple heuristic-based quality assessment
             if (response.length > 10) {
                 metrics.relevance += 0.3;
             }
-            
+
             if (response.split('.').length > 1) {
                 metrics.coherence += 0.3;
             }
-            
+
             if (response.length > prompt.length * 0.5) {
                 metrics.completeness += 0.4;
             }
-            
+
             // Check for common quality indicators
             if (response.includes('because') || response.includes('therefore') || response.includes('however')) {
                 metrics.coherence += 0.2;
             }
-            
+
             if (response.toLowerCase().includes(prompt.toLowerCase().split(' ')[0])) {
                 metrics.relevance += 0.2;
             }
-            
+
             // Overall quality score
             metrics.overallScore = (metrics.relevance + metrics.coherence + metrics.completeness + metrics.accuracy) / 4;
-            
+
             return metrics;
         }
-    };
-    
+    }
+
     return llmFixtures;
 }

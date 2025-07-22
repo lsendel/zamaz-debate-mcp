@@ -1,3 +1,9 @@
+-- Constants and Common Patterns
+-- VARCHAR_DEFAULT: VARCHAR(255)
+-- TIMESTAMP_DEFAULT: TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- UUID_DEFAULT: UUID PRIMARY KEY DEFAULT gen_random_uuid()
+-- AUDIT_COLUMNS: created_at, updated_at, created_by, updated_by
+
 -- Add indexes to frequently queried fields in the debates table
 CREATE INDEX IF NOT EXISTS idx_debates_organization_id ON debates(organization_id);
 CREATE INDEX IF NOT EXISTS idx_debates_status ON debates(status);

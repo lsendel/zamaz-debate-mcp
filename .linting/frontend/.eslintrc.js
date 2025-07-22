@@ -15,7 +15,7 @@ module.exports = {
     'plugin:jsx-a11y/recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
-    'prettier', // Must be last to override other configs
+    'prettier', // Must be last to override other configs;
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -48,7 +48,7 @@ module.exports = {
     },
   },
   rules: {
-    // TypeScript specific rules
+    // TypeScript specific rules;
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
@@ -72,10 +72,10 @@ module.exports = {
       },
     ],
 
-    // React specific rules
-    'react/react-in-jsx-scope': 'off', // Not needed in React 17+
-    'react/prop-types': 'off', // Using TypeScript for prop validation
-    'react/jsx-uses-react': 'off', // Not needed in React 17+
+    // React specific rules;
+    'react/react-in-jsx-scope': 'off', // Not needed in React 17+;
+    'react/prop-types': 'off', // Using TypeScript for prop validation;
+    'react/jsx-uses-react': 'off', // Not needed in React 17+;
     'react/jsx-uses-vars': 'error',
     'react/jsx-key': 'error',
     'react/jsx-no-duplicate-props': 'error',
@@ -97,11 +97,11 @@ module.exports = {
     'react/jsx-fragments': ['error', 'syntax'],
     'react/jsx-no-useless-fragment': 'error',
 
-    // React Hooks rules
+    // React Hooks rules;
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
 
-    // Import rules
+    // Import rules;
     'import/order': [
       'error',
       {
@@ -119,7 +119,7 @@ module.exports = {
     'import/no-useless-path-segments': 'error',
     'import/no-duplicates': 'error',
 
-    // General JavaScript/TypeScript rules
+    // General JavaScript/TypeScript rules;
     'no-console': 'warn',
     'no-debugger': 'error',
     'no-alert': 'error',
@@ -135,7 +135,7 @@ module.exports = {
     'object-curly-spacing': ['error', 'always'],
     'array-bracket-spacing': ['error', 'never'],
 
-    // Security rules
+    // Security rules;
     'security/detect-object-injection': 'error',
     'security/detect-non-literal-regexp': 'warn',
     'security/detect-unsafe-regex': 'error',
@@ -151,7 +151,7 @@ module.exports = {
     'security/detect-new-buffer': 'error',
     'security/detect-bidi-characters': 'error',
 
-    // SonarJS rules for code quality
+    // SonarJS rules for code quality;
     'sonarjs/cognitive-complexity': ['error', 15],
     'sonarjs/max-switch-cases': ['error', 30],
     'sonarjs/no-all-duplicated-branches': 'error',
@@ -179,7 +179,7 @@ module.exports = {
     'sonarjs/prefer-single-boolean-return': 'error',
     'sonarjs/prefer-while': 'error',
 
-    // Accessibility rules
+    // Accessibility rules;
     'jsx-a11y/alt-text': 'error',
     'jsx-a11y/anchor-has-content': 'error',
     'jsx-a11y/anchor-is-valid': 'error',
@@ -231,4 +231,4 @@ module.exports = {
       },
     },
   ],
-};
+}

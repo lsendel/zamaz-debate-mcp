@@ -37,7 +37,8 @@ RUN addgroup -g 1000 -S mcp && \
 WORKDIR /app
 
 # Copy JAR from builder
-COPY --from=builder /app/mcp-config-server/target/mcp-config-server-*.jar app.jar
+COPY --from=builder app.jar
+COPY /app/mcp-config-server/target/mcp-config-server-*.jar app.jar
 
 # Create directories for Git config and SSH keys
 RUN mkdir -p /app/config-repo /app/.ssh && \

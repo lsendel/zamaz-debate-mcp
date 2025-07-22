@@ -23,7 +23,8 @@ RUN addgroup -g 1000 spring && \
     adduser -u 1000 -G spring -s /bin/sh -D spring
 
 # Copy JAR from builder
-COPY --from=builder /build/mcp-rag/target/mcp-rag-*.jar app.jar
+COPY --from=builder app.jar
+COPY /build/mcp-rag/target/mcp-rag-*.jar app.jar
 
 # Change ownership
 RUN chown -R spring:spring /app

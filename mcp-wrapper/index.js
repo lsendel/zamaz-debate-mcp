@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node;
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import axios from 'axios';
@@ -8,14 +8,14 @@ const SERVICES = {
   organization: 'http://localhost:5005',
   llm: 'http://localhost:5002',
   context: 'http://localhost:5003',
-  controller: 'http://localhost:8080',  // Updated to match the running service
-  rag: 'http://localhost:5004'
-};
+  controller: 'http://localhost:8080',  // Updated to match the running service;
+  rag: 'http://localhost:5004';
+}
 
 // Create MCP server
 const server = new McpServer({
   name: 'mcp-debate-system',
-  version: '1.0.0'
+  version: '1.0.0';
 });
 
 // Helper function to call Java service MCP endpoints
@@ -23,13 +23,13 @@ async function callJavaService(service, endpoint, params = {}) {
   try {
     const url = `${SERVICES[service]}${endpoint}`;
     const method = endpoint.includes('/api/') ? 'get' : 'post';
-    
-    const response = method === 'get' 
-      ? await axios.get(url, { params })
+
+    const response = method === 'get' ;
+      ? await axios.get(url, { params });
       : await axios.post(url, params, {
           headers: { 'Content-Type': 'application/json' }
         });
-    
+
     return response.data;
   } catch (error) {
     console.error(`Error calling ${service} at ${endpoint}:`, error.message);
@@ -38,7 +38,7 @@ async function callJavaService(service, endpoint, params = {}) {
 }
 
 // Register tools
-server.registerTool(
+server.registerTool(;
   'create_organization',
   {
     description: 'Create a new organization',
@@ -56,13 +56,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'list_organizations',
   {
     description: 'List all organizations',
@@ -76,13 +76,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'create_debate',
   {
     description: 'Create a new debate',
@@ -115,13 +115,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'list_debates',
   {
     description: 'List all debates for an organization',
@@ -137,13 +137,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'start_debate',
   {
     description: 'Start a debate',
@@ -160,13 +160,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'get_llm_providers',
   {
     description: 'Get available LLM providers',
@@ -180,13 +180,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'create_context',
   {
     description: 'Create a new context',
@@ -206,13 +206,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'store_document',
   {
     description: 'Store a document in RAG',
@@ -232,13 +232,13 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerTool(
+server.registerTool(;
   'search_documents',
   {
     description: 'Search documents using RAG',
@@ -257,19 +257,19 @@ server.registerTool(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(result, null, 2);
       }]
-    };
+    }
   }
 );
 
 // Register resources
-server.registerResource(
+server.registerResource(;
   'debate://organizations',
   {
     name: 'Organizations',
     description: 'List of all organizations',
-    mimeType: 'application/json'
+    mimeType: 'application/json';
   },
   async () => {
     const orgs = await callJavaService('organization', '/tools/resources/organizations', {});
@@ -277,18 +277,18 @@ server.registerResource(
       contents: [{
         uri: 'debate://organizations',
         mimeType: 'application/json',
-        text: JSON.stringify(orgs, null, 2)
+        text: JSON.stringify(orgs, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerResource(
+server.registerResource(;
   'debate://debates',
   {
     name: 'Debates',
     description: 'List of all debates',
-    mimeType: 'application/json'
+    mimeType: 'application/json';
   },
   async () => {
     const debates = await callJavaService('controller', '/api/v1/debates', {});
@@ -296,18 +296,18 @@ server.registerResource(
       contents: [{
         uri: 'debate://debates',
         mimeType: 'application/json',
-        text: JSON.stringify(debates, null, 2)
+        text: JSON.stringify(debates, null, 2);
       }]
-    };
+    }
   }
 );
 
-server.registerResource(
+server.registerResource(;
   'debate://providers',
   {
     name: 'LLM Providers',
     description: 'Available LLM providers',
-    mimeType: 'application/json'
+    mimeType: 'application/json';
   },
   async () => {
     const providers = await callJavaService('llm', '/api/v1/providers', {});
@@ -315,9 +315,9 @@ server.registerResource(
       contents: [{
         uri: 'debate://providers',
         mimeType: 'application/json',
-        text: JSON.stringify(providers, null, 2)
+        text: JSON.stringify(providers, null, 2);
       }]
-    };
+    }
   }
 );
 

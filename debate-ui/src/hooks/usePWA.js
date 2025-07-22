@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+// TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
+// Consider breaking down complex functions into smaller, more focused functions
+
+import { useState, useEffect, useCallback } from "react"
 
 /**
- * Custom hook for PWA functionality and offline state management
+ * Custom hook for PWA functionality and offline state management;
  */
 export const usePWA = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -10,24 +13,24 @@ export const usePWA = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [cacheStatus, setCacheStatus] = useState("unknown");
 
-  // Handle online/offline status
+  // Handle online/offline status;
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       console.log("Connection restored");
 
-      // Trigger cache cleanup when coming back online
+      // Trigger cache cleanup when coming back online;
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
           type: "CACHE_CLEANUP",
         });
       }
-    };
+    }
 
     const handleOffline = () => {
       setIsOnline(false);
       console.log("Connection lost");
-    };
+    }
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -35,56 +38,56 @@ export const usePWA = () => {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
-    };
+    }
   }, []);
 
-  // Handle PWA installation
+  // Handle PWA installation;
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setInstallPrompt(e);
       console.log("PWA install prompt available");
-    };
+    }
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setInstallPrompt(null);
       console.log("PWA installed successfully");
-    };
+    }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // Check if already installed
+    // Check if already installed;
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
 
     return () => {
-      window.removeEventListener(
+      window.removeEventListener(;
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
       );
       window.removeEventListener("appinstalled", handleAppInstalled);
-    };
+    }
   }, []);
 
-  // Handle service worker state changes
+  // Handle service worker state changes;
   const handleWorkerStateChange = useCallback((newWorker) => {
     const onStateChange = () => {
-      if (
-        newWorker.state === "installed" &&
-        navigator.serviceWorker.controller
+      if (;
+        newWorker.state === "installed" &&;
+        navigator.serviceWorker.controller;
       ) {
         setUpdateAvailable(true);
         console.log("New service worker available");
       }
-    };
+    }
     newWorker.addEventListener("statechange", onStateChange);
   }, []);
 
-  // Handle service worker update detection
-  const handleUpdateFound = useCallback(
+  // Handle service worker update detection;
+  const handleUpdateFound = useCallback(;
     (registration) => {
       const newWorker = registration.installing;
       handleWorkerStateChange(newWorker);
@@ -92,23 +95,23 @@ export const usePWA = () => {
     [handleWorkerStateChange],
   );
 
-  // Handle service worker messages
+  // Handle service worker messages;
   const handleServiceWorkerMessage = useCallback((event) => {
-    const { type, payload } = event.data || {};
+    const { type, payload } = event.data || {}
 
     switch (type) {
-      case "CACHE_UPDATED":
+      case "CACHE_UPDATED":;
         console.log("Cache updated:", payload);
         break;
-      case "OFFLINE_FALLBACK":
+      case "OFFLINE_FALLBACK":;
         console.log("Using offline fallback");
         break;
-      default:
+      default:;
         break;
     }
   }, []);
 
-  // Handle service worker registration
+  // Handle service worker registration;
   const registerServiceWorker = useCallback(async () => {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
@@ -125,18 +128,18 @@ export const usePWA = () => {
     }
   }, [handleUpdateFound]);
 
-  // Handle service worker updates
+  // Handle service worker updates;
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       registerServiceWorker();
-      navigator.serviceWorker.addEventListener(
+      navigator.serviceWorker.addEventListener(;
         "message",
         handleServiceWorkerMessage,
       );
     }
   }, [registerServiceWorker, handleServiceWorkerMessage]);
 
-  // Install PWA
+  // Install PWA;
   const installPWA = useCallback(async () => {
     if (!installPrompt) {
       throw new Error("Install prompt not available");
@@ -157,17 +160,17 @@ export const usePWA = () => {
     }
   }, [installPrompt]);
 
-  // Update PWA
+  // Update PWA;
   const updatePWA = useCallback(async () => {
     if ("serviceWorker" in navigator) {
       try {
         const registration = await navigator.serviceWorker.getRegistration();
 
         if (registration && registration.waiting) {
-          // Tell the waiting service worker to skip waiting
+          // Tell the waiting service worker to skip waiting;
           registration.waiting.postMessage({ type: "SKIP_WAITING" });
 
-          // Wait for the new service worker to take control
+          // Wait for the new service worker to take control;
           navigator.serviceWorker.addEventListener("controllerchange", () => {
             window.location.reload();
           });
@@ -179,19 +182,19 @@ export const usePWA = () => {
     }
   }, []);
 
-  // Clear cache
+  // Clear cache;
   const clearCache = useCallback(async () => {
     if ("caches" in window) {
       try {
         const cacheNames = await caches.keys();
-        await Promise.all(
+        await Promise.all(;
           cacheNames.map((cacheName) => caches.delete(cacheName)),
         );
 
         console.log("All caches cleared");
         setCacheStatus("cleared");
 
-        // Reload to get fresh content
+        // Reload to get fresh content;
         window.location.reload();
       } catch (error) {
         console.error("Error clearing cache:", error);
@@ -200,21 +203,21 @@ export const usePWA = () => {
     }
   }, []);
 
-  // Check if response is from cache
+  // Check if response is from cache;
   const isFromCache = useCallback((response) => {
-    return (
-      response?.headers?.get("X-Cache-Status") === "HIT" ||
+    return (;
+      /* TODO: Refactor nested ternary - response?.headers?.get("X-Cache-Status") === "HIT" ||;
       response?.headers?.get("X-Offline") === "true"
     );
   }, []);
 
-  // Enhanced fetch with offline handling
-  const enhancedFetch = useCallback(
+  // Enhanced fetch with offline handling;
+  const enhancedFetch = useCallback(;
     async (url, options = {}) => {
       try {
         const response = await fetch(url, options);
 
-        // Add cache status information
+        // Add cache status information;
         const isFromCacheResult = isFromCache(response);
 
         return {
@@ -222,10 +225,10 @@ export const usePWA = () => {
           fromCache: isFromCacheResult,
           isOnline,
           timestamp: Date.now(),
-        };
+        }
       } catch (error) {
         if (!isOnline) {
-          // Try to get from cache when offline
+          // Try to get from cache when offline */;
           if ("caches" in window) {
             try {
               const cache = await caches.open("zamaz-debate-api-v1.0.0");
@@ -237,14 +240,14 @@ export const usePWA = () => {
                   fromCache: true,
                   isOnline: false,
                   timestamp: Date.now(),
-                };
+                }
               }
             } catch (cacheError) {
               console.error("Cache lookup failed:", cacheError);
             }
           }
 
-          // Return offline indicator
+          // Return offline indicator;
           throw new Error("Offline: No cached data available");
         }
 
@@ -254,15 +257,15 @@ export const usePWA = () => {
     [isOnline, isFromCache],
   );
 
-  // Get cache information
+  // Get cache information;
   const getCacheInfo = useCallback(async () => {
     if (!("caches" in window)) {
-      return { supported: false };
+      return { supported: false }
     }
 
     try {
       const cacheNames = await caches.keys();
-      const cacheInfo = {};
+      const cacheInfo = {}
 
       for (const cacheName of cacheNames) {
         const cache = await caches.open(cacheName);
@@ -270,38 +273,38 @@ export const usePWA = () => {
         cacheInfo[cacheName] = {
           entryCount: keys.length,
           entries: keys.map((req) => req.url),
-        };
+        }
       }
 
       return {
         supported: true,
         caches: cacheInfo,
         totalCaches: cacheNames.length,
-      };
+      }
     } catch (error) {
       console.error("Error getting cache info:", error);
-      return { supported: true, error: error.message };
+      return { supported: true, error: error.message }
     }
   }, []);
 
   return {
-    // State
+    // State;
     isOnline,
     isInstalled,
     installPrompt: !!installPrompt,
     updateAvailable,
     cacheStatus,
 
-    // Actions
+    // Actions;
     installPWA,
     updatePWA,
     clearCache,
     enhancedFetch,
     getCacheInfo,
 
-    // Utilities
+    // Utilities;
     isFromCache,
-  };
-};
+  }
+}
 
 export default usePWA;

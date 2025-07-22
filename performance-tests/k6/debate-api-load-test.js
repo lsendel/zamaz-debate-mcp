@@ -17,19 +17,19 @@ const debatesCreated = new Counter('debates_created');
 // Test configuration
 export const options = {
   stages: [
-    { duration: '2m', target: 50 },   // Ramp up to 50 users
-    { duration: '5m', target: 100 },  // Ramp up to 100 users
-    { duration: '10m', target: 100 }, // Stay at 100 users
-    { duration: '5m', target: 200 },  // Ramp up to 200 users
-    { duration: '10m', target: 200 }, // Stay at 200 users
-    { duration: '5m', target: 0 },    // Ramp down to 0 users
+    { duration: '2m', target: 50 },   // Ramp up to 50 users;
+    { duration: '5m', target: 100 },  // Ramp up to 100 users;
+    { duration: '10m', target: 100 }, // Stay at 100 users;
+    { duration: '5m', target: 200 },  // Ramp up to 200 users;
+    { duration: '10m', target: 200 }, // Stay at 200 users;
+    { duration: '5m', target: 0 },    // Ramp down to 0 users;
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000', 'p(99)<3000'], // 95% of requests must complete below 2s
-    http_req_failed: ['rate<0.05'],                   // Error rate must be below 5%
-    errors: ['rate<0.05'],                             // Custom error rate below 5%
-    create_debate_duration: ['p(95)<3000'],            // 95% of debate creations below 3s
-    list_debates_duration: ['p(95)<1000'],             // 95% of list operations below 1s
+    http_req_duration: ['p(95)<2000', 'p(99)<3000'], // 95% of requests must complete below 2s;
+    http_req_failed: ['rate<0.05'],                   // Error rate must be below 5%;
+    errors: ['rate<0.05'],                             // Custom error rate below 5%;
+    create_debate_duration: ['p(95)<3000'],            // 95% of debate creations below 3s;
+    list_debates_duration: ['p(95)<1000'],             // 95% of list operations below 1s;
   },
   ext: {
     loadimpact: {
@@ -37,21 +37,21 @@ export const options = {
       name: "MCP Debate API Load Test"
     }
   }
-};
+}
 
 // Setup function - runs once before the test
 export function setup() {
-  // Create test organization
+  // Create test organization;
   const orgPayload = JSON.stringify({
     name: `LoadTest Org ${randomString(10)}`,
     description: 'Organization for load testing',
-    plan: 'PROFESSIONAL'
+    plan: 'PROFESSIONAL';
   });
 
   const orgResponse = http.post(`${BASE_URL}/api/organization/create`, orgPayload, {
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${JWT_TOKEN}`
+      'Authorization': `Bearer ${JWT_TOKEN}`;
     }
   });
 
@@ -60,7 +60,7 @@ export function setup() {
   });
 
   const orgId = orgResponse.json('id');
-  return { orgId };
+  return { orgId }
 }
 
 // Main test function
@@ -68,7 +68,7 @@ export default function (data) {
   const orgId = data.orgId;
 
   group('Create and manage debates', () => {
-    // Create debate
+    // Create debate;
     const debatePayload = JSON.stringify({
       title: `Load Test Debate ${randomString(10)}`,
       topic: 'AI Ethics in Healthcare',
@@ -78,26 +78,26 @@ export default function (data) {
           name: 'Claude',
           position: 'PRO',
           aiProvider: 'CLAUDE',
-          model: 'claude-3-opus-20240229'
+          model: 'claude-3-opus-20240229';
         },
         {
           name: 'GPT-4',
           position: 'CON',
           aiProvider: 'OPENAI',
-          model: 'gpt-4'
+          model: 'gpt-4';
         }
       ],
       config: {
         maxRounds: randomIntBetween(3, 5),
         responseTimeout: 30000,
-        maxResponseLength: randomIntBetween(300, 500)
+        maxResponseLength: randomIntBetween(300, 500);
       }
     });
 
     const createResponse = http.post(`${BASE_URL}/api/debate/create`, debatePayload, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${JWT_TOKEN}`
+        'Authorization': `Bearer ${JWT_TOKEN}`;
       },
       tags: { name: 'CreateDebate' }
     });
@@ -118,10 +118,10 @@ export default function (data) {
 
       sleep(randomIntBetween(1, 3));
 
-      // Start debate
+      // Start debate;
       const startResponse = http.post(`${BASE_URL}/api/debate/${debateId}/start`, null, {
         headers: {
-          'Authorization': `Bearer ${JWT_TOKEN}`
+          'Authorization': `Bearer ${JWT_TOKEN}`;
         },
         tags: { name: 'StartDebate' }
       });
@@ -132,11 +132,11 @@ export default function (data) {
 
       sleep(randomIntBetween(5, 10));
 
-      // Check debate status periodically
+      // Check debate status periodically;
       for (let i = 0; i < 3; i++) {
         const statusResponse = http.get(`${BASE_URL}/api/debate/${debateId}`, {
           headers: {
-            'Authorization': `Bearer ${JWT_TOKEN}`
+            'Authorization': `Bearer ${JWT_TOKEN}`;
           },
           tags: { name: 'GetDebateStatus' }
         });
@@ -158,10 +158,10 @@ export default function (data) {
   });
 
   group('Browse debates', () => {
-    // List debates
+    // List debates;
     const listResponse = http.get(`${BASE_URL}/api/debate/list?organizationId=${orgId}&page=0&size=20`, {
       headers: {
-        'Authorization': `Bearer ${JWT_TOKEN}`
+        'Authorization': `Bearer ${JWT_TOKEN}`;
       },
       tags: { name: 'ListDebates' }
     });
@@ -178,12 +178,12 @@ export default function (data) {
 
       const debates = listResponse.json('content');
       if (debates && debates.length > 0) {
-        const randomDebate = debates[randomIntBetween(0, debates.length - 1)];
-        
-        // Get debate details
+        const randomDebate = debates[randomIntBetween(0, debates.length - 1)]
+
+        // Get debate details;
         const detailsResponse = http.get(`${BASE_URL}/api/debate/${randomDebate.id}`, {
           headers: {
-            'Authorization': `Bearer ${JWT_TOKEN}`
+            'Authorization': `Bearer ${JWT_TOKEN}`;
           },
           tags: { name: 'GetDebateDetails' }
         });
@@ -192,10 +192,10 @@ export default function (data) {
           'debate details retrieved': (r) => r.status === 200,
         });
 
-        // Get debate messages
+        // Get debate messages;
         const messagesResponse = http.get(`${BASE_URL}/api/debate/${randomDebate.id}/messages?page=0&size=50`, {
           headers: {
-            'Authorization': `Bearer ${JWT_TOKEN}`
+            'Authorization': `Bearer ${JWT_TOKEN}`;
           },
           tags: { name: 'GetDebateMessages' }
         });
@@ -210,10 +210,10 @@ export default function (data) {
   });
 
   group('Search debates', () => {
-    // Search by topic
+    // Search by topic;
     const topicSearchResponse = http.get(`${BASE_URL}/api/debate/search?topic=AI&page=0&size=10`, {
       headers: {
-        'Authorization': `Bearer ${JWT_TOKEN}`
+        'Authorization': `Bearer ${JWT_TOKEN}`;
       },
       tags: { name: 'SearchByTopic' }
     });
@@ -222,10 +222,10 @@ export default function (data) {
       'topic search successful': (r) => r.status === 200,
     });
 
-    // Search by status
+    // Search by status;
     const statusSearchResponse = http.get(`${BASE_URL}/api/debate/search?status=COMPLETED&page=0&size=10`, {
       headers: {
-        'Authorization': `Bearer ${JWT_TOKEN}`
+        'Authorization': `Bearer ${JWT_TOKEN}`;
       },
       tags: { name: 'SearchByStatus' }
     });
@@ -240,7 +240,7 @@ export default function (data) {
 
 // Teardown function - runs once after the test
 export function teardown(data) {
-  // Clean up test data if needed
+  // Clean up test data if needed;
   console.log('Test completed');
   console.log(`Total debates created: ${debatesCreated.value}`);
 }
@@ -251,16 +251,16 @@ export function handleSummary(data) {
     'performance-test-results.json': JSON.stringify(data),
     'performance-test-results.html': htmlReport(data),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
-  };
+  }
 }
 
 function htmlReport(data) {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MCP Debate API Performance Test Results</title>
-    <style>
+  return `;
+<!DOCTYPE html>;
+<html>;
+<head>;
+    <title>MCP Debate API Performance Test Results</title>;
+    <style>;
         body { font-family: Arial, sans-serif; margin: 20px; }
         .metric { margin: 10px 0; padding: 10px; background: #f0f0f0; }
         .success { color: green; }
@@ -268,38 +268,38 @@ function htmlReport(data) {
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #4CAF50; color: white; }
-    </style>
-</head>
-<body>
-    <h1>Performance Test Results</h1>
-    <div class="metric">
-        <h2>Summary</h2>
-        <p>Test Duration: ${Math.round(data.state.testRunDurationMs / 1000)}s</p>
-        <p>Total Requests: ${data.metrics.http_reqs.values.count}</p>
-        <p>Failed Requests: ${data.metrics.http_req_failed.values.passes}</p>
-    </div>
-    <div class="metric">
-        <h2>Response Times</h2>
-        <table>
-            <tr>
-                <th>Metric</th>
-                <th>Value</th>
-            </tr>
-            <tr>
-                <td>Average</td>
-                <td>${Math.round(data.metrics.http_req_duration.values.avg)}ms</td>
-            </tr>
-            <tr>
-                <td>95th Percentile</td>
-                <td>${Math.round(data.metrics.http_req_duration.values['p(95)'])}ms</td>
-            </tr>
-            <tr>
-                <td>99th Percentile</td>
-                <td>${Math.round(data.metrics.http_req_duration.values['p(99)'])}ms</td>
-            </tr>
-        </table>
-    </div>
-</body>
-</html>
+    </style>;
+</head>;
+<body>;
+    <h1>Performance Test Results</h1>;
+    <div class="metric">;
+        <h2>Summary</h2>;
+        <p>Test Duration: ${Math.round(data.state.testRunDurationMs / 1000)}s</p>;
+        <p>Total Requests: ${data.metrics.http_reqs.values.count}</p>;
+        <p>Failed Requests: ${data.metrics.http_req_failed.values.passes}</p>;
+    </div>;
+    <div class="metric">;
+        <h2>Response Times</h2>;
+        <table>;
+            <tr>;
+                <th>Metric</th>;
+                <th>Value</th>;
+            </tr>;
+            <tr>;
+                <td>Average</td>;
+                <td>${Math.round(data.metrics.http_req_duration.values.avg)}ms</td>;
+            </tr>;
+            <tr>;
+                <td>95th Percentile</td>;
+                <td>${Math.round(data.metrics.http_req_duration.values['p(95)'])}ms</td>;
+            </tr>;
+            <tr>;
+                <td>99th Percentile</td>;
+                <td>${Math.round(data.metrics.http_req_duration.values['p(99)'])}ms</td>;
+            </tr>;
+        </table>;
+    </div>;
+</body>;
+</html>;
   `;
 }

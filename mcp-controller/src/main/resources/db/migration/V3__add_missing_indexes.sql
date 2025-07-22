@@ -1,3 +1,9 @@
+-- Constants and Common Patterns
+-- VARCHAR_DEFAULT: VARCHAR(255)
+-- TIMESTAMP_DEFAULT: TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- UUID_DEFAULT: UUID PRIMARY KEY DEFAULT gen_random_uuid()
+-- AUDIT_COLUMNS: created_at, updated_at, created_by, updated_by
+
 -- Critical and performance indexes for controller module (debates)
 -- Adds essential indexes for debate management, participants, and response tracking
 

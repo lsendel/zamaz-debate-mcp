@@ -1,13 +1,17 @@
+// TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
+// Consider breaking down complex functions into smaller, more focused functions
+
 /**
  * Evidence Generator for Karate API Tests
  * This utility generates comprehensive evidence for each subproject
  */
 
 function fn() {
+    const evidenceGenerator = {
         // Generate evidence for a test scenario
         generatescenarioevidence: function(scenarioName, service, testData) {
-            var timestamp = new Date().toISOString();
-            var evidence = {
+            let timestamp = new Date().toISOString();
+            const evidence = {
                 scenario: scenarioName,
                 service: service,
                 timestamp: timestamp,
@@ -30,21 +34,21 @@ function fn() {
                     maxResponseTime: 0,
                     minResponseTime: 0
                 }
-            };
+            }
             
             return evidence;
         },
         
         // Record HTTP request
         recordrequest: function(evidence, request) {
-            var requestRecord = {
+            const requestRecord = {
                 timestamp: new Date().toISOString(),
                 method: request.method,
                 url: request.url,
                 headers: request.headers,
                 body: request.body,
                 startTime: Date.now()
-            };
+            }
             
             evidence.requests.push(requestRecord);
             evidence.metrics.totalRequests++;
@@ -54,17 +58,17 @@ function fn() {
         
         // Record HTTP response
         recordresponse: function(evidence, requestRecord, response) {
-            var endTime = Date.now();
-            var responseTime = endTime - requestRecord.startTime;
+            let endTime = Date.now();
+            const responseTime = endTime - requestRecord.startTime;
             
-            var responseRecord = {
+            const responseRecord = {
                 timestamp: new Date().toISOString(),
                 status: response.status,
                 headers: response.headers,
                 body: response.body,
                 responseTime: responseTime,
                 requestId: evidence.requests.length - 1
-            };
+            }
             
             evidence.responses.push(responseRecord);
             
@@ -84,7 +88,7 @@ function fn() {
                 evidence.metrics.minResponseTime = responseTime;
             }
             
-            var totalResponseTime = evidence.responses.reduce(function(sum, r) { return sum + r.responseTime; }, 0);
+            let totalResponseTime = evidence.responses.reduce(function(sum, r) { return sum + r.responseTime; }, 0);
             evidence.metrics.averageResponseTime = totalResponseTime / evidence.responses.length;
             
             return responseRecord;
@@ -92,13 +96,13 @@ function fn() {
         
         // Record validation result
         recordvalidation: function(evidence, validationType, result, details) {
-            var validationRecord = {
+            const validationRecord = {
                 timestamp: new Date().toISOString(),
                 type: validationType,
                 result: result,
                 details: details,
                 passed: result === 'PASS'
-            };
+            }
             
             evidence.validations.push(validationRecord);
             
@@ -107,13 +111,13 @@ function fn() {
         
         // Record error
         recorderror: function(evidence, error, context) {
-            var errorRecord = {
+            const errorRecord = {
                 timestamp: new Date().toISOString(),
                 message: error.message || error,
                 stack: error.stack,
                 context: context,
                 severity: 'ERROR'
-            };
+            }
             
             evidence.errors.push(errorRecord);
             
@@ -131,7 +135,7 @@ function fn() {
         
         // Generate evidence report
         generatereport: function(evidence) {
-            var report = {
+            const report = {
                 summary: {
                     scenario: evidence.scenario,
                     service: evidence.service,
@@ -153,14 +157,14 @@ function fn() {
                     metrics: evidence.metrics
                 },
                 recommendations: evidenceGenerator.generateRecommendations(evidence)
-            };
+            }
             
             return report;
         },
         
         // Generate recommendations based on evidence
         generaterecommendations: function(evidence) {
-            var recommendations = [];
+            const recommendations = [];
             
             // Performance recommendations
             if (evidence.metrics.averageResponseTime > 1000) {
@@ -173,7 +177,7 @@ function fn() {
             }
             
             // Error rate recommendations
-            var errorRate = evidence.metrics.failedRequests / evidence.metrics.totalRequests;
+            const errorRate = evidence.metrics.failedRequests / evidence.metrics.totalRequests;
             if (errorRate > 0.05) {
                 recommendations.push({
                     type: 'RELIABILITY',
@@ -184,7 +188,7 @@ function fn() {
             }
             
             // Validation recommendations
-            var validationFailures = evidence.validations.filter(v => !v.passed);
+            const validationFailures = evidence.validations.filter(v => !v.passed);
             if (validationFailures.length > 0) {
                 recommendations.push({
                     type: 'QUALITY',
@@ -195,7 +199,7 @@ function fn() {
             }
             
             // Security recommendations
-            var securityErrors = evidence.errors.filter(e => e.context && e.context.includes('security'));
+            const securityErrors = evidence.errors.filter(e => e.context && e.context.includes('security'));
             if (securityErrors.length > 0) {
                 recommendations.push({
                     type: 'SECURITY',
@@ -210,7 +214,7 @@ function fn() {
         
         // Generate service-specific evidence
         generateserviceevidence: function(serviceName, testResults) {
-            var serviceEvidence = {
+            const serviceEvidence = {
                 service: serviceName,
                 timestamp: new Date().toISOString(),
                 testSuite: {
@@ -237,14 +241,14 @@ function fn() {
                 },
                 errors: testResults.reduce((acc, r) => acc.concat(r.errors), []),
                 recommendations: testResults.reduce((acc, r) => acc.concat(evidenceGenerator.generateRecommendations(r)), [])
-            };
+            }
             
             return serviceEvidence;
         },
         
         // Calculate API coverage
         calculateapicoverage: function(serviceName, testResults) {
-            var endpointMap = {
+            const endpointMap = {
                 'organization': [
                     'POST /api/v1/organizations',
                     'GET /api/v1/organizations',
@@ -282,14 +286,14 @@ function fn() {
                     'POST /api/documents/{id}/process',
                     'POST /api/embeddings/generate'
                 ]
-            };
+            }
             
-            var expectedEndpoints = endpointMap[serviceName] || [];
-            var testedEndpoints = [];
+            const expectedEndpoints = endpointMap[serviceName] || [];
+            const testedEndpoints = [];
             
             testResults.forEach(function(result) {
                 result.requests.forEach(function(request) {
-                    var endpoint = request.method + ' ' + request.url.replace(/\/\d+/g, '/{id}');
+                    const endpoint = request.method + ' ' + request.url.replace(/\/\d+/g, '/{id}');
                     if (testedEndpoints.indexOf(endpoint) === -1) {
                         testedEndpoints.push(endpoint);
                     }
@@ -302,12 +306,12 @@ function fn() {
                 coverage: expectedEndpoints.length > 0 ? (testedEndpoints.length / expectedEndpoints.length * 100).toFixed(2) + '%' : '0%',
                 missing: expectedEndpoints.filter(e => testedEndpoints.indexOf(e) === -1),
                 tested: testedEndpoints
-            };
+            }
         },
         
         // Calculate method coverage
         calculatemethodcoverage: function(testResults) {
-            var methods = {};
+            const methods = {};
             
             testResults.forEach(function(result) {
                 result.requests.forEach(function(request) {
@@ -320,7 +324,7 @@ function fn() {
         
         // Calculate status code coverage
         calculatestatuscodecoverage: function(testResults) {
-            var statusCodes = {};
+            const statusCodes = {};
             
             testResults.forEach(function(result) {
                 result.responses.forEach(function(response) {
@@ -333,8 +337,8 @@ function fn() {
         
         // Calculate overall average response time
         calculateoverallaverageresponsetime: function(testResults) {
-            var totalResponseTime = 0;
-            var totalRequests = 0;
+            const totalResponseTime = 0;
+            const totalRequests = 0;
             
             testResults.forEach(function(result) {
                 totalResponseTime += result.metrics.averageResponseTime * result.metrics.totalRequests;
@@ -346,7 +350,7 @@ function fn() {
         
         // Generate HTML evidence report
         generatehtmlreport: function(serviceEvidence) {
-            var html = `
+            const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -487,8 +491,8 @@ function fn() {
         
         // Save evidence to file
         saveevidence: function(evidence, filename) {
-            var timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            var fullFilename = filename || `evidence-${evidence.service}-${timestamp}.json`;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const fullFilename = filename || `evidence-${evidence.service}-${timestamp}.json`;
             
             // In a real implementation, this would save to file system
             // For now, we'll just return the evidence object
@@ -496,9 +500,9 @@ function fn() {
                 filename: fullFilename,
                 evidence: evidence,
                 saved: true
-            };
+            }
         }
-    };
+    }
     
     return evidenceGenerator;
 }

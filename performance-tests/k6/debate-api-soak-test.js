@@ -1,3 +1,6 @@
+// TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
+// Consider breaking down complex functions into smaller, more focused functions
+
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend, Counter } from 'k6/metrics';
@@ -10,25 +13,25 @@ const failedTransactions = new Counter('failed_transactions');
 
 export const options = {
   stages: [
-    { duration: '5m', target: 50 },    // Ramp up to 50 users
-    { duration: '4h', target: 50 },    // Stay at 50 users for 4 hours
-    { duration: '5m', target: 0 },     // Ramp down to 0 users
+    { duration: '5m', target: 50 },    // Ramp up to 50 users;
+    { duration: '4h', target: 50 },    // Stay at 50 users for 4 hours;
+    { duration: '5m', target: 0 },     // Ramp down to 0 users;
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'],     // 95% of requests under 2s
-    errors: ['rate<0.02'],                 // Error rate under 2%
-    http_req_failed: ['rate<0.02'],        // HTTP failure rate under 2%
-    response_time_degradation: ['avg<100'], // Average degradation under 100ms
+    http_req_duration: ['p(95)<2000'],     // 95% of requests under 2s;
+    errors: ['rate<0.02'],                 // Error rate under 2%;
+    http_req_failed: ['rate<0.02'],        // HTTP failure rate under 2%;
+    response_time_degradation: ['avg<100'], // Average degradation under 100ms;
   },
-};
+}
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const JWT_TOKEN = __ENV.JWT_TOKEN || 'test-token';
 
 // Track baseline response times
-let baselineResponseTimes = {};
+let baselineResponseTimes = {}
 let isBaselineSet = false;
-const BASELINE_DURATION = 300000; // 5 minutes in ms
+const BASELINE_DURATION = 300000; // 5 minutes in ms;
 
 // Helper function to get test endpoints
 function getTestEndpoints() {
@@ -37,7 +40,7 @@ function getTestEndpoints() {
     { name: 'ListDebates', url: '/api/debate/list?page=0&size=20', method: 'GET' },
     { name: 'HealthCheck', url: '/health', method: 'GET' },
     { name: 'SearchDebates', url: '/api/debate/search?topic=test&page=0&size=10', method: 'GET' },
-  ];
+  ]
 }
 
 // Helper function to handle baseline tracking
@@ -52,7 +55,7 @@ function handleBaseline(endpoint, response, testStartTime) {
 // Helper function to track baseline response times
 function trackBaselineResponse(endpoint, response) {
   if (!baselineResponseTimes[endpoint.name]) {
-    baselineResponseTimes[endpoint.name] = [];
+    baselineResponseTimes[endpoint.name] = []
   }
   baselineResponseTimes[endpoint.name].push(response.timings.duration);
 }
@@ -62,7 +65,7 @@ function checkPerformanceDegradation(endpoint, response) {
   if (!isBaselineSet) {
     calculateBaselineAverages();
   }
-  
+
   const baseline = baselineResponseTimes[endpoint.name] || 1000;
   const degradation = response.timings.duration - baseline;
   if (degradation > 0) {
@@ -81,37 +84,37 @@ function createSoakTestDebate() {
         name: 'StabilityBot1',
         position: 'PRO',
         aiProvider: 'CLAUDE',
-        model: 'claude-3-opus-20240229'
+        model: 'claude-3-opus-20240229';
       },
       {
         name: 'StabilityBot2',
         position: 'CON',
         aiProvider: 'OPENAI',
-        model: 'gpt-4'
+        model: 'gpt-4';
       }
     ],
     config: {
       maxRounds: 2,
       responseTimeout: 10000,
-      maxResponseLength: 200
+      maxResponseLength: 200;
     }
   });
 
-  const createResponse = http.post(
+  const createResponse = http.post(;
     `${BASE_URL}/api/debate/create`,
     debatePayload,
     {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${JWT_TOKEN}`
+        'Authorization': `Bearer ${JWT_TOKEN}`;
       },
       tags: { name: 'CreateDebateSoakTest' },
-      timeout: '20s'
+      timeout: '20s';
     }
   );
 
   check(createResponse, {
-    'debate created': (r) => [200, 429].includes(r.status), // 429 is acceptable (rate limit)
+    'debate created': (r) => [200, 429].includes(r.status), // 429 is acceptable (rate limit);
   });
 
   return createResponse;
@@ -130,8 +133,8 @@ function calculateBaselineAverages() {
 export default function () {
   const testStartTime = Date.now();
   const endpoints = getTestEndpoints();
-  const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
-  
+  const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)]
+
   const params = {
     headers: {
       'Authorization': `Bearer ${JWT_TOKEN}`,
@@ -139,11 +142,11 @@ export default function () {
     },
     tags: { name: endpoint.name },
     timeout: '10s',
-  };
+  }
 
-  const response = http[endpoint.method.toLowerCase()](
+  const response = http[endpoint.method.toLowerCase()](;
     `${BASE_URL}${endpoint.url}`,
-    params
+    params;
   );
 
   const checks = check(response, {
@@ -160,20 +163,20 @@ export default function () {
     errorRate.add(1);
   }
 
-  // Simulate realistic user behavior with variable think time
-  sleep(Math.random() * 5 + 2); // 2-7 seconds between requests
+  // Simulate realistic user behavior with variable think time;
+  sleep(Math.random() * 5 + 2); // 2-7 seconds between requests;
 
-  // Every 100 iterations, perform a more complex operation
+  // Every 100 iterations, perform a more complex operation;
   if (__ITER % 100 === 0) {
     createSoakTestDebate();
   }
 }
 
 export function handleSummary(data) {
-  // Calculate performance degradation over time
+  // Calculate performance degradation over time;
   const degradation = data.metrics.response_time_degradation;
   const avgDegradation = degradation ? degradation.values.avg : 0;
-  
+
   const summary = {
     testDuration: data.state.testRunDurationMs,
     totalRequests: data.metrics.http_reqs.values.count,
@@ -184,10 +187,10 @@ export function handleSummary(data) {
     p95ResponseTime: data.metrics.http_req_duration.values['p(95)'],
     performanceDegradation: avgDegradation,
     possibleMemoryLeak: avgDegradation > 100,
-  };
+  }
 
   return {
     'soak-test-results.json': JSON.stringify(summary, null, 2),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
-  };
+  }
 }

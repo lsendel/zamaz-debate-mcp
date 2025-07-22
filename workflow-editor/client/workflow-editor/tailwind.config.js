@@ -8,4 +8,4 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx}",
     "../../../packages/zamaz-ui/src/**/*.{js,ts,jsx,tsx}",
   ],
-};
+}

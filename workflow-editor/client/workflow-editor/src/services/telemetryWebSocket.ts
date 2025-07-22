@@ -1,3 +1,6 @@
+// TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
+// Consider breaking down complex functions into smaller, more focused functions
+
 import { useEffect, useRef } from 'react';
 import { useWorkflowStore } from '../store/workflowStore';
 

@@ -31,7 +31,8 @@ RUN addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S appuser -G appgroup
 
 # Copy JAR from builder
-COPY --from=builder /app/mcp-gateway/target/*.jar app.jar
+COPY --from=builder app.jar
+COPY /app/mcp-gateway/target/*.jar app.jar
 
 # Set ownership
 RUN chown -R appuser:appgroup /app

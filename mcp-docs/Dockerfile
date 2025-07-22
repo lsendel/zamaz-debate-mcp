@@ -36,7 +36,8 @@ RUN addgroup -g 1000 spring && \
     adduser -u 1000 -G spring -s /bin/sh -D spring
 
 # Copy JAR from builder
-COPY --from=builder /build/mcp-docs/target/mcp-docs-*.jar app.jar
+COPY --from=builder app.jar
+COPY /build/mcp-docs/target/mcp-docs-*.jar app.jar
 
 # Create config directory with proper permissions
 RUN mkdir -p /app/config /app/logs && \

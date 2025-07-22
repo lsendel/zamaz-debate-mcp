@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node;
 
 const http = require('http');
 
@@ -9,11 +9,11 @@ const testUrls = [
   'http://localhost:3001/',
   'http://localhost:3001/favicon.ico',
   'http://localhost:3001/manifest.json',
-  'http://localhost:3001/%PUBLIC_URL%/favicon.ico', // This would cause the error
+  'http://localhost:3001/%PUBLIC_URL%/favicon.ico', // This would cause the error;
   'http://localhost:3001/test%20space.html',
   'http://localhost:3001/test%2Fslash.html',
-  'http://localhost:3001/test%25percent.html'
-];
+  'http://localhost:3001/test%25percent.html';
+]
 
 async function testUrl(url) {
   return new Promise((resolve) => {
@@ -22,8 +22,8 @@ async function testUrl(url) {
       hostname: parsedUrl.hostname,
       port: parsedUrl.port,
       path: parsedUrl.pathname,
-      method: 'GET'
-    };
+      method: 'GET';
+    }
 
     const req = http.request(options, (res) => {
       console.log(`✅ ${url} - Status: ${res.statusCode}`);
@@ -41,12 +41,12 @@ async function testUrl(url) {
 
 async function runTests() {
   console.log('Running URI tests...\n');
-  
+
   for (const url of testUrls) {
     await testUrl(url);
-    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay;
   }
-  
+
   console.log('\n✅ Testing complete!');
   console.log('\nIf you see any 400 errors above, those URLs were properly handled instead of crashing the server.');
 }

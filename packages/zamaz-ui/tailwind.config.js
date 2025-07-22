@@ -1,4 +1,3 @@
-const designTokens = require('../../ui-specs/design-tokens.json');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -148,4 +147,4 @@ module.exports = {
       strategy: 'class',
     }),
   ],
-};
+}

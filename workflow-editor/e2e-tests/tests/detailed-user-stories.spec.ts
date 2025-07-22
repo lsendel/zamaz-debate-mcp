@@ -1,3 +1,6 @@
+// TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
+// Consider breaking down complex functions into smaller, more focused functions
+
 import { test, expect } from '@playwright/test';
 
 test.describe('Workflow Editor - Detailed User Stories', () => {

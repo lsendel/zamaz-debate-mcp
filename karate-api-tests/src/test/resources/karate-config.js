@@ -1,19 +1,19 @@
 /**
- * Global Karate Configuration
- * This file contains global configuration and utilities for all Karate tests
+ * Global Karate Configuration;
+ * This file contains global configuration and utilities for all Karate tests;
  */
 
 function fn() {
-    var env = karate.env; // get java system property 'karate.env'
+    let env = karate.env; // get java system property 'karate.env';
     karate.log('karate.env system property was:', env);
     if (!env) {
         env = 'dev';
     }
-    
-    var config = {
+
+    let config = {
         env: env,
         baseUrl: 'http://localhost',
-        // Default service ports
+        // Default service ports;
         ports: {
             gateway: 8080,
             organization: 5005,
@@ -24,14 +24,14 @@ function fn() {
             context: 5007,
             ui: 3001
         },
-        // Default test timeouts
+        // Default test timeouts;
         timeouts: {
             default: 10000,
             slow: 30000,
             websocket: 60000,
             upload: 120000
         },
-        // Test data configuration
+        // Test data configuration;
         testData: {
             defaultOrganization: 'test-org',
             defaultUser: {
@@ -45,20 +45,20 @@ function fn() {
                 name: 'Admin User'
             }
         },
-        // Performance test configuration
+        // Performance test configuration;
         performance: {
             users: 10,
             duration: 60,
             rampUp: 30
         },
-        // Security test configuration
+        // Security test configuration;
         security: {
             rateLimitThreshold: 30,
             maxRetries: 3
         }
-    };
-    
-    // Environment-specific configurations
+    }
+
+    // Environment-specific configurations;
     if (env === 'dev') {
         config.baseUrl = 'http://localhost';
         config.debug = true;
@@ -81,8 +81,8 @@ function fn() {
         config.reportDir = 'target/security-reports';
         config.parallel = 2;
     }
-    
-    // Build service URLs
+
+    // Build service URLs;
     config.serviceUrls = {
         gateway: config.baseUrl + ':' + config.ports.gateway,
         organization: config.baseUrl + ':' + config.ports.organization,
@@ -92,9 +92,9 @@ function fn() {
         template: config.baseUrl + ':' + config.ports.template,
         context: config.baseUrl + ':' + config.ports.context,
         ui: config.baseUrl + ':' + config.ports.ui
-    };
-    
-    // Common API endpoints
+    }
+
+    // Common API endpoints;
     config.endpoints = {
         auth: {
             login: '/api/v1/auth/login',
@@ -128,101 +128,101 @@ function fn() {
         template: {
             base: '/api/v1/templates'
         }
-    };
-    
-    // Global utility functions
+    }
+
+    // Global utility functions;
     config.utils = {
-        // Generate random string
+        // Generate random string;
         randomString: function(length) {
             length = length || 10;
-            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            var result = '';
+            let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
             for (var i = 0; i < length; i++) {
                 result += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             return result;
         },
-        
-        // Generate unique email
+
+        // Generate unique email;
         generateEmail: function(prefix) {
             prefix = prefix || 'test';
-            var timestamp = Date.now();
-            var random = Math.floor(Math.random() * 1000);
+            let timestamp = Date.now();
+            let random = Math.floor(Math.random() * 1000);
             return prefix + '-' + timestamp + '-' + random + '@zamaz.com';
         },
-        
-        // Generate unique organization name
+
+        // Generate unique organization name;
         generateOrgName: function(prefix) {
             prefix = prefix || 'test-org';
-            var timestamp = Date.now();
+            let timestamp = Date.now();
             return prefix + '-' + timestamp;
         },
-        
-        // Wait for condition with timeout
+
+        // Wait for condition with timeout;
         waitForCondition: function(condition, timeout) {
             timeout = timeout || 30000;
-            var startTime = Date.now();
+            let startTime = Date.now();
             while (!condition() && (Date.now() - startTime) < timeout) {
                 java.lang.Thread.sleep(100);
             }
             return condition();
         },
-        
-        // Generate JWT token for testing
+
+        // Generate JWT token for testing;
         generateTestToken: function(payload) {
-            payload = payload || {};
-            var header = { alg: 'HS256', typ: 'JWT' };
-            var now = Math.floor(Date.now() / 1000);
-            var defaultPayload = {
+            payload = payload || {}
+            let header = { alg: 'HS256', typ: 'JWT' }
+            let now = Math.floor(Date.now() / 1000);
+            let defaultPayload = {
                 sub: 'test-user',
                 iat: now,
                 exp: now + 3600,
                 organizationId: 'test-org-id'
-            };
-            var finalPayload = Object.assign(defaultPayload, payload);
-            
-            // Simple base64 encoding for testing (not secure for production)
-            var headerStr = JSON.stringify(header);
-            var payloadStr = JSON.stringify(finalPayload);
-            var encodedHeader = java.util.Base64.getEncoder().encodeToString(headerStr.getBytes());
-            var encodedPayload = java.util.Base64.getEncoder().encodeToString(payloadStr.getBytes());
-            
+            }
+            let finalPayload = Object.assign(defaultPayload, payload);
+
+            // Simple base64 encoding for testing (not secure for production);
+            let headerStr = JSON.stringify(header);
+            let payloadStr = JSON.stringify(finalPayload);
+            let encodedHeader = java.util.Base64.getEncoder().encodeToString(headerStr.getBytes());
+            let encodedPayload = java.util.Base64.getEncoder().encodeToString(payloadStr.getBytes());
+
             return encodedHeader + '.' + encodedPayload + '.test-signature';
         }
-    };
-    
-    // Global headers for authenticated requests
+    }
+
+    // Global headers for authenticated requests;
     config.getAuthHeaders = function(token) {
         return {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json',
             'X-Organization-Id': config.testData.defaultOrganization
-        };
-    };
-    
-    // Database connection configuration
+        }
+    }
+
+    // Database connection configuration;
     config.database = {
         url: 'jdbc:postgresql://localhost:5432/test_db',
         username: 'test_user',
         password: 'test_password',
         driver: 'org.postgresql.Driver'
-    };
-    
-    // Redis connection configuration
+    }
+
+    // Redis connection configuration;
     config.redis = {
         host: 'localhost',
         port: 6379,
         database: 0
-    };
-    
-    // WebSocket configuration
+    }
+
+    // WebSocket configuration;
     config.websocket = {
         connectTimeout: 10000,
         maxMessageSize: 65536,
         heartbeatInterval: 30000
-    };
-    
-    // Performance testing thresholds
+    }
+
+    // Performance testing thresholds;
     config.performanceThresholds = {
         responseTime: {
             fast: 100,
@@ -234,9 +234,9 @@ function fn() {
             target: 100,
             maximum: 1000
         }
-    };
-    
-    // Test tags configuration
+    }
+
+    // Test tags configuration;
     config.tags = {
         smoke: '@smoke',
         regression: '@regression',
@@ -245,11 +245,11 @@ function fn() {
         integration: '@integration',
         slow: '@slow',
         ignore: '@ignore'
-    };
-    
+    }
+
     karate.log('Configuration loaded for environment:', env);
     karate.log('Base URL:', config.baseUrl);
     karate.log('Service URLs:', config.serviceUrls);
-    
+
     return config;
 }
