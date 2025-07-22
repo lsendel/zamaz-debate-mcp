@@ -11,7 +11,7 @@ const fetch = require('node-fetch');
 app.use(cors());
 app.use(express.json());
 
-// In-memory data store for debates
+// In-memory data store for debates and agentic flows
 let debates = [
   {
     id: "debate-001",
@@ -210,6 +210,39 @@ let debates = [
     updatedAt: "2024-01-03T00:00:00Z",
     organizationId: "org-002",
     createdBy: "user-003"
+  }
+];
+
+// In-memory store for agentic flow configurations
+let agenticFlowConfigurations = {
+  // debate-level configurations
+  debates: {},
+  // participant-level configurations  
+  participants: {}
+};
+
+// Sample agentic flow analytics data
+let agenticFlowAnalytics = [
+  {
+    flowType: 'INTERNAL_MONOLOGUE',
+    executionCount: 45,
+    averageConfidence: 82.5,
+    successRate: 0.95,
+    averageExecutionTime: 1200
+  },
+  {
+    flowType: 'SELF_CRITIQUE_LOOP', 
+    executionCount: 32,
+    averageConfidence: 88.2,
+    successRate: 0.91,
+    averageExecutionTime: 2800
+  },
+  {
+    flowType: 'MULTI_AGENT_RED_TEAM',
+    executionCount: 28,
+    averageConfidence: 85.7,
+    successRate: 0.89,
+    averageExecutionTime: 3500
   }
 ];
 
@@ -639,6 +672,232 @@ app.get('/api/v1/debates/:id/export', (req, res) => {
   }
 });
 
+// ============================================================================
+// AGENTIC FLOW ENDPOINTS
+// ============================================================================
+
+// Configure debate-level agentic flow
+app.post('/api/v1/debates/:debateId/agentic-flow', (req, res) => {
+  const { debateId } = req.params;
+  const { flowType, enabled = true, parameters = {} } = req.body;
+  
+  const debate = debates.find(d => d.id === debateId);
+  if (!debate) {
+    return res.status(404).json({ error: 'Debate not found' });
+  }
+  
+  const configuration = {
+    flowId: `flow-${Date.now()}`,
+    flowType,
+    enabled,
+    parameters,
+    debateId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  agenticFlowConfigurations.debates[debateId] = configuration;
+  
+  console.log(`🧠 Configured agentic flow ${flowType} for debate ${debateId}`);
+  res.status(201).json(configuration);
+});
+
+// Get debate-level agentic flow
+app.get('/api/v1/debates/:debateId/agentic-flow', (req, res) => {
+  const { debateId } = req.params;
+  
+  const debate = debates.find(d => d.id === debateId);
+  if (!debate) {
+    return res.status(404).json({ error: 'Debate not found' });
+  }
+  
+  const configuration = agenticFlowConfigurations.debates[debateId];
+  if (!configuration) {
+    return res.status(404).json({ error: 'Agentic flow configuration not found' });
+  }
+  
+  res.json(configuration);
+});
+
+// Configure participant-level agentic flow
+app.post('/api/v1/debates/:debateId/participants/:participantId/agentic-flow', (req, res) => {
+  const { debateId, participantId } = req.params;
+  const { flowType, enabled = true, parameters = {} } = req.body;
+  
+  const debate = debates.find(d => d.id === debateId);
+  if (!debate) {
+    return res.status(404).json({ error: 'Debate not found' });
+  }
+  
+  const participant = debate.participants.find(p => p.id === participantId);
+  if (!participant) {
+    return res.status(404).json({ error: 'Participant not found' });
+  }
+  
+  const configuration = {
+    flowId: `flow-${Date.now()}`,
+    flowType,
+    enabled,
+    parameters,
+    debateId,
+    participantId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  const key = `${debateId}-${participantId}`;
+  agenticFlowConfigurations.participants[key] = configuration;
+  
+  console.log(`🧠 Configured agentic flow ${flowType} for participant ${participantId} in debate ${debateId}`);
+  res.status(201).json(configuration);
+});
+
+// Get participant-level agentic flow
+app.get('/api/v1/debates/:debateId/participants/:participantId/agentic-flow', (req, res) => {
+  const { debateId, participantId } = req.params;
+  
+  const debate = debates.find(d => d.id === debateId);
+  if (!debate) {
+    return res.status(404).json({ error: 'Debate not found' });
+  }
+  
+  const participant = debate.participants.find(p => p.id === participantId);
+  if (!participant) {
+    return res.status(404).json({ error: 'Participant not found' });
+  }
+  
+  const key = `${debateId}-${participantId}`;
+  const configuration = agenticFlowConfigurations.participants[key];
+  if (!configuration) {
+    return res.status(404).json({ error: 'Agentic flow configuration not found' });
+  }
+  
+  res.json(configuration);
+});
+
+// Get agentic flow analytics for debate
+app.get('/api/v1/analytics/debates/:debateId/agentic-flows', (req, res) => {
+  const { debateId } = req.params;
+  
+  const debate = debates.find(d => d.id === debateId);
+  if (!debate) {
+    return res.status(404).json({ error: 'Debate not found' });
+  }
+  
+  // Return mock analytics data for the debate
+  const analytics = {
+    debateId,
+    flowTypeSummaries: {
+      INTERNAL_MONOLOGUE: {
+        executionCount: 12,
+        averageConfidence: 85.3,
+        successRate: 0.92,
+        averageExecutionTime: 1100
+      },
+      SELF_CRITIQUE_LOOP: {
+        executionCount: 8,
+        averageConfidence: 89.1,
+        successRate: 0.88,
+        averageExecutionTime: 2600
+      }
+    },
+    totalExecutions: 20,
+    averageConfidence: 87.2,
+    successRate: 0.90
+  };
+  
+  res.json(analytics);
+});
+
+// Get flow type statistics
+app.get('/api/v1/analytics/agentic-flows/statistics', (req, res) => {
+  const { organizationId, startDate, endDate } = req.query;
+  
+  // Return mock statistics data
+  res.json(agenticFlowAnalytics);
+});
+
+// Get flow execution time series
+app.get('/api/v1/analytics/agentic-flows/time-series', (req, res) => {
+  const { organizationId, startDate, endDate } = req.query;
+  
+  // Generate mock time series data
+  const timeSeries = [];
+  const now = new Date();
+  for (let i = 7; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    timeSeries.push({
+      date: date.toISOString().split('T')[0],
+      executions: Math.floor(Math.random() * 20) + 5,
+      averageConfidence: Math.floor(Math.random() * 20) + 75,
+      successRate: 0.85 + Math.random() * 0.1
+    });
+  }
+  
+  res.json(timeSeries);
+});
+
+// Get trending flow types
+app.get('/api/v1/analytics/agentic-flows/trending', (req, res) => {
+  const { organizationId, limit = 10 } = req.query;
+  
+  // Return mock trending data
+  const trending = [
+    {
+      flowType: 'INTERNAL_MONOLOGUE',
+      usageCount: 45,
+      averageConfidence: 82.5,
+      successRate: 0.95,
+      averageExecutionTime: 1200,
+      trendScore: 0.85,
+      trendCategory: 'Hot'
+    },
+    {
+      flowType: 'SELF_CRITIQUE_LOOP',
+      usageCount: 32,
+      averageConfidence: 88.2,
+      successRate: 0.91,
+      averageExecutionTime: 2800,
+      trendScore: 0.72,
+      trendCategory: 'Rising'
+    },
+    {
+      flowType: 'TOOL_CALLING_VERIFICATION',
+      usageCount: 28,
+      averageConfidence: 85.7,
+      successRate: 0.89,
+      averageExecutionTime: 3500,
+      trendScore: 0.68,
+      trendCategory: 'Stable'
+    }
+  ];
+  
+  res.json(trending.slice(0, parseInt(limit)));
+});
+
+// Compare flow types
+app.post('/api/v1/analytics/agentic-flows/compare', (req, res) => {
+  const { organizationId, flowTypes, startDate, endDate } = req.body;
+  
+  // Return mock comparison data
+  const comparison = {
+    organizationId,
+    flowTypes,
+    comparison: flowTypes.map(flowType => ({
+      flowType,
+      metrics: {
+        executionCount: Math.floor(Math.random() * 50) + 10,
+        averageConfidence: Math.floor(Math.random() * 20) + 75,
+        successRate: 0.8 + Math.random() * 0.15,
+        averageExecutionTime: Math.floor(Math.random() * 3000) + 1000
+      }
+    }))
+  };
+  
+  res.json(comparison);
+});
+
 // Health check
 app.get('/actuator/health', (req, res) => {
   res.json({ status: 'UP' });
@@ -669,6 +928,16 @@ app.listen(PORT, () => {
   console.log(`   GET    /api/v1/debates/:id/export - Export debate (json, markdown, pdf)`);
   console.log(`   GET    /api/v1/debate-formats - Get available debate formats`);
   console.log(`   GET    /api/v1/debates/stats - Get debate statistics`);
+  console.log(`   🧠 AGENTIC FLOW ENDPOINTS:`);
+  console.log(`   POST   /api/v1/debates/:id/agentic-flow - Configure debate agentic flow`);
+  console.log(`   GET    /api/v1/debates/:id/agentic-flow - Get debate agentic flow`);
+  console.log(`   POST   /api/v1/debates/:id/participants/:pid/agentic-flow - Configure participant flow`);
+  console.log(`   GET    /api/v1/debates/:id/participants/:pid/agentic-flow - Get participant flow`);
+  console.log(`   GET    /api/v1/analytics/debates/:id/agentic-flows - Get debate analytics`);
+  console.log(`   GET    /api/v1/analytics/agentic-flows/statistics - Get flow statistics`);
+  console.log(`   GET    /api/v1/analytics/agentic-flows/time-series - Get time series data`);
+  console.log(`   GET    /api/v1/analytics/agentic-flows/trending - Get trending flows`);
+  console.log(`   POST   /api/v1/analytics/agentic-flows/compare - Compare flow types`);
   console.log(`   GET    /actuator/health - Health check`);
   console.log(`\n✅ Service is ready to accept requests!`);
   console.log(`\n📊 Available debates: ${debates.length}`);

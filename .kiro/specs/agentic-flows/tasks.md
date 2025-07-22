@@ -117,7 +117,7 @@
   - Create fallback mechanisms for service unavailability
   - _Requirements: 15.3, 15.4_
 
-- [-] 5. Develop API layer for agentic flows
+- [x] 5. Develop API layer for agentic flows
 - [x] 5.1 Create GraphQL API for agentic flows
   - Implement AgenticFlowGraphQLController with queries and mutations
   - Create GraphQL schema definitions for agentic flow types
@@ -183,7 +183,7 @@
   - Create recommendation visualization in debate setup UI
   - _Requirements: 14.6, 14.7_
 
-- [ ] 8. Optimize performance and scalability
+- [x] 8. Optimize performance and scalability
 - [x] 8.1 Implement performance optimizations
   - Add caching for flow configurations and common results
   - Implement asynchronous processing for resource-intensive flows
@@ -205,7 +205,7 @@
   - Implement detailed logging for troubleshooting
   - _Requirements: 13.5, 13.6, 13.7_
 
-- [ ] 9. Create comprehensive testing suite
+- [x] 9. Create comprehensive testing suite
 - [x] 9.1 Implement domain layer unit tests
   - Create tests for all agentic flow processors
   - Implement domain service and entity tests
