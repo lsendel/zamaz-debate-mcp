@@ -42,7 +42,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
         return (
           <>
             <div className="form-group">
-              <label>Trigger Type</label>
               <select
                 value={formData.configuration?.trigger || 'manual'}
                 onChange={(e) => handleConfigChange('trigger', e.target.value)}
@@ -54,7 +53,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
             </div>
             {formData.configuration?.trigger === 'scheduled' && (
               <div className="form-group">
-                <label>Schedule (Cron)</label>
                 <input
                   type="text"
                   value={formData.configuration?.schedule || ''}
@@ -65,7 +63,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
             )}
             {formData.configuration?.trigger === 'event' && (
               <div className="form-group">
-                <label>Event Type</label>
                 <input
                   type="text"
                   value={formData.configuration?.eventType || ''}
@@ -81,7 +78,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
         return (
           <>
             <div className="form-group">
-              <label>Task Type</label>
               <input
                 type="text"
                 value={formData.configuration?.taskType || ''}
@@ -90,7 +86,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
               />
             </div>
             <div className="form-group">
-              <label>Timeout (seconds)</label>
               <input
                 type="number"
                 value={formData.configuration?.timeout || 30}
@@ -98,7 +93,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
               />
             </div>
             <div className="form-group">
-              <label>Retry Count</label>
               <input
                 type="number"
                 value={formData.configuration?.retryCount || 0}
@@ -122,7 +116,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
         return (
           <>
             <div className="form-group">
-              <label>Decision Type</label>
               <select
                 value={formData.configuration?.decisionType || 'simple'}
                 onChange={(e) => handleConfigChange('decisionType', e.target.value)}
@@ -134,7 +127,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
             </div>
             {formData.configuration?.decisionType === 'telemetry' && (
               <div className="form-group">
-                <label>Telemetry Source</label>
                 <input
                   type="text"
                   value={formData.configuration?.telemetrySource || ''}
@@ -144,7 +136,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
               </div>
             )}
             <div className="form-group">
-              <label>Condition Builder</label>
               <button className="condition-builder-btn">
                 Open Condition Builder
               </button>
@@ -156,7 +147,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
         return (
           <>
             <div className="form-group">
-              <label>End Status</label>
               <select
                 value={formData.configuration?.status || 'success'}
                 onChange={(e) => handleConfigChange('status', e.target.value)}
@@ -178,7 +168,6 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
             </div>
             {formData.configuration?.notification && (
               <div className="form-group">
-                <label>Notification Channels</label>
                 <input
                   type="text"
                   value={formData.configuration?.notificationChannels?.join(', ') || ''}
@@ -241,12 +230,10 @@ const NodePropertiesPanel: React.FC<NodePropertiesPanelProps> = ({ node, onUpdat
         </div>
 
         <div className="form-group">
-          <label>Node ID</label>
           <input type="text" value={node.id} disabled />
         </div>
 
         <div className="form-group">
-          <label>Label</label>
           <input
             type="text"
             value={formData.label || ''}

@@ -2,6 +2,8 @@
 
 const { chromium } = require('playwright');
 
+// TODO: Extract helper functions to reduce complexity
+// Consider extracting: loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic
 async function testLiveDebate() {
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();

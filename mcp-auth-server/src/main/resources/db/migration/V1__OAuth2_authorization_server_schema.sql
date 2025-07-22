@@ -1,3 +1,10 @@
+-- Constants
+DECLARE
+  C_DEFAULT_SCHEMA CONSTANT VARCHAR2(30) := 'PUBLIC';
+  C_ERROR_MSG CONSTANT VARCHAR2(100) := 'An error occurred';
+END;
+/
+
 -- OAuth2 Authorization Server Schema
 -- Based on Spring Authorization Server 1.2.x schema
 

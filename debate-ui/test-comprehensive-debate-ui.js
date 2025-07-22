@@ -35,6 +35,10 @@ async function waitForElement(page, selector, timeout = 10000) {
     await page.waitForSelector(selector, { timeout });
     return true;
   } catch (error) {
+    // Log error for debugging
+    console.error('[test-comprehensive-debate-ui] Error:', error);
+    // Rethrow if critical
+    if (error.critical) throw error;
       console.error("Error:", error);
     console.error(`❌ Element not found: ${selector}`);
     return false;
@@ -42,6 +46,8 @@ async function waitForElement(page, selector, timeout = 10000) {
   }
 }
 
+// TODO: Extract helper functions to reduce complexity
+// Consider extracting: loop logic
 async function checkForErrors(page) {
   const errors = await page.evaluate(() => {
     const errorMessages = [];

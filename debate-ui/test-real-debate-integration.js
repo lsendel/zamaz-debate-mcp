@@ -35,6 +35,10 @@ async function waitForElement(page, selector, timeout = 10000) {
     await page.waitForSelector(selector, { timeout });
     return true;
   } catch (error) {
+    // Log error for debugging
+    console.error('[test-real-debate-integration] Error:', error);
+    // Rethrow if critical
+    if (error.critical) throw error;
       console.error("Error:", error);
     console.error(`❌ Element not found: ${selector}`);
     return false;

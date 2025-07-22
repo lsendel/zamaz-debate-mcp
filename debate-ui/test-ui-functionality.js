@@ -165,6 +165,10 @@ async function testUIFunctionality() {
       await captureScreenshot(page, '04-debates-route', 'Debates route attempt');
       console.log('  ✓ Debates route accessible');
     } catch (error) {
+      // Log error for debugging
+      console.error('[test-ui-functionality] Error:', error);
+      // Rethrow if critical
+      if (error.critical) throw error;
         console.error("Error:", error);
       console.log('  ⚠️ Debates route requires authentication (expected)');
       console.error("Error:", error);

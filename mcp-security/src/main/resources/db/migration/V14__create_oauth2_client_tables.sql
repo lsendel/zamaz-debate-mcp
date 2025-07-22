@@ -1,3 +1,10 @@
+-- Constants
+DECLARE
+  C_DEFAULT_SCHEMA CONSTANT VARCHAR2(30) := 'PUBLIC';
+  C_ERROR_MSG CONSTANT VARCHAR2(100) := 'An error occurred';
+END;
+/
+
 -- OAuth2 Client Registration Tables
 -- Supports dynamic client management with PKCE and various grant types
 

@@ -351,7 +351,6 @@ test.describe('Agentic Flows Performance Tests', () => {
     const { token } = await loginResponse.json();
     
     // Measure execution times
-    const concurrentRequests = 20;
     
     const startTime = Date.now();
     

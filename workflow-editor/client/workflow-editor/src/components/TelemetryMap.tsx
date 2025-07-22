@@ -44,9 +44,7 @@ const TelemetryMap: React.FC<TelemetryMapProps> = ({
   onDeviceClick,
   height = '600px'
 }) => {
-// //   const { telemetryData, addTelemetryData } = useWorkflowStore(); // SonarCloud: removed useless assignment // Removed: useless assignment
   const [selectedDevice, setSelectedDevice] = useState<TelemetryDevice | null>(null);
-// //   const [mapBounds, setMapBounds] = useState<any>(null); // SonarCloud: removed useless assignment // Removed: useless assignment
   const [isSimulating, setIsSimulating] = useState(false);
   const [deviceData, setDeviceData] = useState<Map<string, TelemetryDevice>>(new Map());
   const [showAlertsState, setShowAlerts] = useState(showAlerts);

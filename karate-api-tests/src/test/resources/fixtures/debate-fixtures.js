@@ -6,14 +6,12 @@
 function fn() {
     var config = karate.callSingle('classpath:karate-config.js');
     var authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
-//     var debateTestData = karate.callSingle('classpath:test-data/debates.json'); // Removed: useless assignment
-    
     var debateFixtures = {
         // Debate cache
         debateCache: {},
         
         // Generate debate request
-        generateDebateRequest: function(overrides) {
+        generatedebaterequest: function(overrides) {
             var defaultRequest = {
                 topic: "Should artificial intelligence be regulated by government?",
                 description: "A debate about the role of government regulation in AI development",
@@ -46,7 +44,7 @@ function fn() {
         },
         
         // Generate participant request
-        generateParticipantRequest: function(userId, position, overrides) {
+        generateparticipantrequest: function(userId, position, overrides) {
             var defaultRequest = {
                 userId: userId,
                 position: position || "PRO",
@@ -59,7 +57,7 @@ function fn() {
         },
         
         // Generate response request
-        generateResponseRequest: function(content, overrides) {
+        generateresponserequest: function(content, overrides) {
             var defaultRequest = {
                 content: content || "This is a test response in the debate.",
                 type: "ARGUMENT",
@@ -72,7 +70,7 @@ function fn() {
         },
         
         // Create debate
-        createDebate: function(debateData, authToken) {
+        createdebate: function(debateData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -96,7 +94,7 @@ function fn() {
         },
         
         // Get debate
-        getDebate: function(debateId, authToken) {
+        getdebate: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -116,7 +114,7 @@ function fn() {
         },
         
         // Update debate
-        updateDebate: function(debateId, updateData, authToken) {
+        updatedebate: function(debateId, updateData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -139,7 +137,7 @@ function fn() {
         },
         
         // Delete debate
-        deleteDebate: function(debateId, authToken) {
+        deletedebate: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -160,7 +158,7 @@ function fn() {
         },
         
         // List debates
-        listDebates: function(filters, authToken) {
+        listdebates: function(filters, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -180,7 +178,7 @@ function fn() {
         },
         
         // Add participant to debate
-        addParticipant: function(debateId, participantData, authToken) {
+        addparticipant: function(debateId, participantData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -207,7 +205,7 @@ function fn() {
         },
         
         // Remove participant from debate
-        removeParticipant: function(debateId, participantId, authToken) {
+        removeparticipant: function(debateId, participantId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -224,7 +222,7 @@ function fn() {
         },
         
         // Start debate
-        startDebate: function(debateId, authToken) {
+        startdebate: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -246,7 +244,7 @@ function fn() {
         },
         
         // Submit response
-        submitResponse: function(debateId, responseData, authToken) {
+        submitresponse: function(debateId, responseData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -272,7 +270,7 @@ function fn() {
         },
         
         // Complete debate
-        completeDebate: function(debateId, authToken) {
+        completedebate: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -294,7 +292,7 @@ function fn() {
         },
         
         // Get debate analysis
-        getDebateAnalysis: function(debateId, authToken) {
+        getdebateanalysis: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -314,7 +312,7 @@ function fn() {
         },
         
         // Create debate with participants
-        createDebateWithParticipants: function(debateData, participantCount, authToken) {
+        createdebatewithparticipants: function(debateData, participantCount, authToken) {
             participantCount = participantCount || 4;
             
             if (!authToken) {
@@ -353,7 +351,7 @@ function fn() {
         },
         
         // Run complete debate scenario
-        runCompleteDebateScenario: function(debateData, participantCount, roundCount) {
+        runcompletedebatescenario: function(debateData, participantCount, roundCount) {
             participantCount = participantCount || 4;
             roundCount = roundCount || 3;
             
@@ -362,8 +360,6 @@ function fn() {
             
             // Start the debate
 //              // Removed: useless assignment
-            // Run rounds
-            var responses = [];
             for (var round = 1; round <= roundCount; round++) {
                 for (var i = 0; i < setup.participants.length; i++) {
                     var participant = setup.participants[i];
@@ -388,7 +384,7 @@ function fn() {
         },
         
         // Get debate statistics
-        getDebateStats: function(debateId, authToken) {
+        getdebatestats: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -408,7 +404,7 @@ function fn() {
         },
         
         // Connect to debate WebSocket
-        connectToDebateWebSocket: function(debateId, authToken) {
+        connecttodebatewebsocket: function(debateId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -423,7 +419,7 @@ function fn() {
                 authToken: authToken,
                 messages: [],
                 
-                sendMessage: function(message) {
+                sendmessage: function(message) {
                     this.messages.push({
                         type: 'outgoing',
                         message: message,
@@ -431,7 +427,7 @@ function fn() {
                     });
                 },
                 
-                receiveMessage: function() {
+                receivemessage: function() {
                     // Mock receiving a message
                     var mockMessage = {
                         type: 'debate.update',
@@ -459,7 +455,7 @@ function fn() {
         },
         
         // Validate debate response
-        validateDebateResponse: function(response) {
+        validatedebateresponse: function(response) {
             var validationErrors = [];
             
             if (!response.id || typeof response.id !== 'string') {
@@ -494,7 +490,7 @@ function fn() {
         },
         
         // Generate test debate topics
-        generateTestTopics: function() {
+        generatetesttopics: function() {
             return [
                 "Should artificial intelligence be regulated by government?",
                 "Is remote work better than office work?",
@@ -510,7 +506,7 @@ function fn() {
         },
         
         // Generate performance test scenarios
-        generatePerformanceScenarios: function() {
+        generateperformancescenarios: function() {
             return {
                 concurrent_debates: {
                     description: "Create multiple debates simultaneously",
@@ -538,12 +534,12 @@ function fn() {
         },
         
         // Clear debate cache
-        clearDebateCache: function() {
+        cleardebatecache: function() {
             debateFixtures.debateCache = {};
         },
         
         // Get sample debate data
-        getSampleDebateData: function(type) {
+        getsampledebatedata: function(type) {
             type = type || 'default';
             
             if (type === 'default') {
@@ -558,7 +554,7 @@ function fn() {
         },
         
         // Get debate template
-        getDebateTemplate: function(type) {
+        getdebatetemplate: function(type) {
             type = type || 'academic';
             
             if (type === 'academic') {

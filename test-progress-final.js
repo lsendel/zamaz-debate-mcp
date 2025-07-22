@@ -2,6 +2,8 @@
 
 const { chromium } = require('playwright');
 
+// TODO: Extract helper functions to reduce complexity
+// Consider extracting: loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic
 async function testDebateProgress() {
   console.log('🚀 Testing Debate Progress Implementation');
   console.log('=======================================\n');
@@ -78,6 +80,10 @@ async function testDebateProgress() {
             method: 'POST'
           });
         } catch (e) {
+          // Log error for debugging
+          console.error('[test-progress-final] Error:', e);
+          // Rethrow if critical
+          if (e.critical) throw e;
             console.error("Error:", e);
           console.log('Round generation request sent');
           console.error("Error:", error);

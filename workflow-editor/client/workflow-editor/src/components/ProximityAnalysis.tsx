@@ -1,6 +1,3 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { calculateDistance, findNearbyDevices, createHeatmapData } from '../utils/spatialAnalysis';
 
 interface ProximityAnalysisProps {
   devices: any[];
@@ -123,7 +120,6 @@ const ProximityAnalysis: React.FC<ProximityAnalysisProps> = ({
           <div className="proximity-controls">
             <div className="control-group">
               <label>Select Device:</label>
-              <select
                 value={selectedDevice || ''}
                 onChange={(e) => setSelectedDevice(e.target.value)}
               >
@@ -138,7 +134,6 @@ const ProximityAnalysis: React.FC<ProximityAnalysisProps> = ({
             
             <div className="control-group">
               <label>Radius (meters):</label>
-              <input
                 type="range"
                 min="100"
                 max="5000"

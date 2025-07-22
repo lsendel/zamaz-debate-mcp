@@ -1,3 +1,10 @@
+-- Constants
+DECLARE
+  C_DEFAULT_SCHEMA CONSTANT VARCHAR2(30) := 'PUBLIC';
+  C_ERROR_MSG CONSTANT VARCHAR2(100) := 'An error occurred';
+END;
+/
+
 -- Add scope and sharing functionality to debates table
 -- This migration extends the debates table with scope and sharing capabilities
 

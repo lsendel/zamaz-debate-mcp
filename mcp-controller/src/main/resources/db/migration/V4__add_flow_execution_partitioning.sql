@@ -1,3 +1,10 @@
+-- Constants
+DECLARE
+  C_DEFAULT_SCHEMA CONSTANT VARCHAR2(30) := 'PUBLIC';
+  C_ERROR_MSG CONSTANT VARCHAR2(100) := 'An error occurred';
+END;
+/
+
 -- Convert flow_executions to partitioned table for better performance at scale
 
 -- Create new partitioned table

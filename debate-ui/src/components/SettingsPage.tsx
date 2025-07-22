@@ -30,8 +30,6 @@ const SettingsPage: React.FC = () => {
   const { currentOrganization } = useAppSelector((state) => state.organization);
   const { user } = useAppSelector((state) => state.auth);
 
-// // // //   const [showApiKey, setShowApiKey] = useState(false); // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment
-  const [users, setUsers] = useState<any[]>([]);
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     username: "",
@@ -68,6 +66,10 @@ const SettingsPage: React.FC = () => {
         }),
       );
     } catch (error) {
+      // Log error for debugging
+      console.error('[SettingsPage] Error:', error);
+      // Rethrow if critical
+      if (error.critical) throw error;
         console.error("Error:", error);
       dispatch(
         addNotification({

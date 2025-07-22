@@ -21,6 +21,10 @@ test.describe('Screenshot Validation', () => {
       await page.screenshot({ path: 'validation-screenshots/03-after-login.png', fullPage: true });
       console.log('✓ Captured login flow');
     } catch (e) {
+      // Log error for debugging
+      console.error('[screenshot-validation.spec] Error:', e);
+      // Rethrow if critical
+      if (e.critical) throw e;
         console.error("Error:", e);
       console.log('⚠ Login elements not found, may already be logged in');
       console.error("Error:", error);

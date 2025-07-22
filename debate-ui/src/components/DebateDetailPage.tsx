@@ -5,7 +5,6 @@ import {
   Card,
   Avatar,
   Divider,
-  
   Tooltip,
   Badge,
   Alert,
@@ -29,7 +28,6 @@ import {
   startDebate,
   pauseDebate,
   cancelDebate,
-  
   disconnectFromDebate,
   clearError,
 } from "../store/slices/debateSlice";
@@ -155,6 +153,10 @@ const DebateDetailPage: React.FC = () => {
         }),
       );
     } catch (error) {
+      // Log error for debugging
+      console.error('[DebateDetailPage] Error:', error);
+      // Rethrow if critical
+      if (error.critical) throw error;
         console.error("Error:", error);
       dispatch(
         addNotification({
@@ -333,7 +335,6 @@ const DebateDetailPage: React.FC = () => {
                     {round.responses.map((response) => {
                           // Handle both string and object participants
                           let participant;
-                          let participantIndex = -1;
 // //                           let participantName = 'Unknown'; // SonarCloud: removed useless assignment // Removed: useless assignment
                           
                           if (typeof currentDebate.participants[0] === 'string') {

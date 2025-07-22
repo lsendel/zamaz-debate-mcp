@@ -9,29 +9,22 @@ import {
   DatePicker,
   Space,
   Spin,
-  
   Tag,
   Progress,
   Tabs,
   Table,
   Empty,
-  
 } from 'antd';
 import {
   TrendingUpOutlined,
   TrendingDownOutlined,
   ThunderboltOutlined,
-  
   CheckCircleOutlined,
   AimOutlined,
   FireOutlined,
   BulbOutlined,
-  
-  
-  
 } from '@ant-design/icons';
 import debateClient from '../api/debateClient';
-
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;

@@ -15,14 +15,11 @@ import {
   Col,
   Statistic,
   Badge,
-  
-  
 } from 'antd';
 import {
   BulbOutlined,
   ThunderboltOutlined,
   CheckCircleOutlined,
-  
   InfoCircleOutlined,
   ExperimentOutlined,
   FileSearchOutlined,

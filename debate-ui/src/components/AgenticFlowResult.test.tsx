@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect } from 'vitest';
 import AgenticFlowResult from './AgenticFlowResult';
 
 describe('AgenticFlowResult Component', () => {

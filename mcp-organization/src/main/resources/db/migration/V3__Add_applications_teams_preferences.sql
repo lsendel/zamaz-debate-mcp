@@ -1,3 +1,10 @@
+-- Constants
+DECLARE
+  C_DEFAULT_SCHEMA CONSTANT VARCHAR2(30) := 'PUBLIC';
+  C_ERROR_MSG CONSTANT VARCHAR2(100) := 'An error occurred';
+END;
+/
+
 -- Add applications, teams, and user preferences to organization service
 -- This migration extends the organization service with application and team management capabilities
 

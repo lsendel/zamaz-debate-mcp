@@ -106,8 +106,6 @@ async function testUIAndAPI() {
   console.log('\n🔍 Checking UI component files...');
   
   const fs = require('fs');
-//    // Removed: useless assignment
-  const componentFiles = [
     'debate-ui/src/components/AgenticFlowConfig.tsx',
     'debate-ui/src/components/AgenticFlowResult.tsx', 
     'debate-ui/src/components/AgenticFlowAnalytics.tsx',

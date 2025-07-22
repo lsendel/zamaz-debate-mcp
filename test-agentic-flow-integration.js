@@ -2,6 +2,8 @@
 
 const puppeteer = require('puppeteer');
 
+// TODO: Extract helper functions to reduce complexity
+// Consider extracting: loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic
 async function testAgenticFlowIntegration() {
   console.log('🧪 Testing Agentic Flow Integration...\n');
   

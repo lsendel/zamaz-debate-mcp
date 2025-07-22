@@ -1,3 +1,10 @@
+-- Constants
+DECLARE
+  C_DEFAULT_SCHEMA CONSTANT VARCHAR2(30) := 'PUBLIC';
+  C_ERROR_MSG CONSTANT VARCHAR2(100) := 'An error occurred';
+END;
+/
+
 -- Create flow templates table
 CREATE TABLE IF NOT EXISTS flow_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

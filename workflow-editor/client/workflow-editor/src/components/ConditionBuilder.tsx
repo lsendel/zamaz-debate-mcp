@@ -5,7 +5,6 @@ import QueryBuilder, {
   formatQuery,
   defaultOperators,
   RuleType,
-  OptionGroup
 } from 'react-querybuilder';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'react-querybuilder/dist/query-builder.css';
@@ -196,7 +195,6 @@ const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
             <div className="test-panel-content">
               <h4>Test Your Condition</h4>
               <div className="test-input">
-                <label>Test Data (JSON):</label>
                 <textarea
                   value={testData}
                   onChange={(e) => setTestData(e.target.value)}

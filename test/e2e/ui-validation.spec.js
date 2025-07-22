@@ -73,8 +73,6 @@ test.describe('UI Validation Tests', () => {
       console.log(`\nChecking ${pageInfo.name} page...`);
       
       try {
-//           waitUntil: 'networkidle', // Removed: useless assignment
-          timeout: 30000
         });
         
         // Take screenshot

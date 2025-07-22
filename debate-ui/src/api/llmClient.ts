@@ -267,6 +267,10 @@ class LLMClient extends BaseApiClient {
         const response = await this.client.get(`/providers/${provider.id}/health`);
         providerStatus[provider.id] = response.data.available ? 'available' : 'unavailable';
       } catch (error) {
+        // Log error for debugging
+        console.error('[llmClient] Error:', error);
+        // Rethrow if critical
+        if (error.critical) throw error;
           console.error("Error:", error);
         providerStatus[provider.id] = 'unavailable';
         console.error("Error:", error);

@@ -34,7 +34,7 @@ function fn() {
         },
         
         // Generate completion request
-        generateCompletionRequest: function(overrides) {
+        generatecompletionrequest: function(overrides) {
             var defaultRequest = {
                 prompt: "What is the capital of France?",
                 maxTokens: 100,
@@ -49,14 +49,14 @@ function fn() {
         },
         
         // Generate streaming completion request
-        generateStreamingRequest: function(overrides) {
+        generatestreamingrequest: function(overrides) {
             var baseRequest = llmFixtures.generateCompletionRequest(overrides);
             baseRequest.streaming = true;
             return baseRequest;
         },
         
         // Generate complex prompt for testing
-        generateComplexPrompt: function(type) {
+        generatecomplexprompt: function(type) {
             var prompts = {
                 debate: "You are participating in a debate about artificial intelligence regulation. Present three strong arguments for why AI should be regulated by government agencies, including specific examples and potential risks.",
                 analysis: "Analyze the following debate transcript and provide a summary of the main arguments from each side, identifying the strongest points and any logical fallacies present.",
@@ -69,7 +69,7 @@ function fn() {
         },
         
         // Create completion
-        createCompletion: function(requestData, authToken) {
+        createcompletion: function(requestData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -91,7 +91,7 @@ function fn() {
         },
         
         // Create streaming completion
-        createStreamingCompletion: function(requestData, authToken) {
+        createstreamingcompletion: function(requestData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -113,7 +113,7 @@ function fn() {
         },
         
         // List available providers
-        listProviders: function(authToken) {
+        listproviders: function(authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -132,7 +132,7 @@ function fn() {
         },
         
         // Check provider health
-        checkProviderHealth: function(providerId, authToken) {
+        checkproviderhealth: function(providerId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -152,7 +152,7 @@ function fn() {
         },
         
         // Get provider models
-        getProviderModels: function(providerId, authToken) {
+        getprovidermodels: function(providerId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -172,7 +172,7 @@ function fn() {
         },
         
         // Estimate tokens
-        estimateTokens: function(text, model, authToken) {
+        estimatetokens: function(text, model, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -193,7 +193,7 @@ function fn() {
         },
         
         // Validate completion response
-        validateCompletionResponse: function(response, expectedProvider, expectedModel) {
+        validatecompletionresponse: function(response, expectedProvider, expectedModel) {
             var validationErrors = [];
             
             if (!response.id || typeof response.id !== 'string') {
@@ -236,7 +236,7 @@ function fn() {
         },
         
         // Generate test prompts for different scenarios
-        generateTestPrompts: function() {
+        generatetestprompts: function() {
             return {
                 simple: "Hello, how are you?",
                 medium: "Explain the concept of machine learning in simple terms.",
@@ -259,7 +259,7 @@ function fn() {
         },
         
         // Generate performance test scenarios
-        generatePerformanceScenarios: function() {
+        generateperformancescenarios: function() {
             return {
                 concurrent_requests: {
                     description: "Test concurrent completion requests",
@@ -290,7 +290,7 @@ function fn() {
         },
         
         // Mock provider responses for testing
-        mockProviderResponse: function(provider, model, success) {
+        mockproviderresponse: function(provider, model, success) {
             if (success !== false) {
                 return {
                     id: "completion-" + config.utils.randomString(10),
@@ -318,7 +318,7 @@ function fn() {
         },
         
         // Wait for streaming completion
-        waitForStreamingCompletion: function(streamId, timeout) {
+        waitforstreamingcompletion: function(streamId, timeout) {
             timeout = timeout || 30000;
             var startTime = Date.now();
             var chunks = [];
@@ -352,7 +352,7 @@ function fn() {
         },
         
         // Calculate response quality metrics
-        calculateQualityMetrics: function(prompt, response) {
+        calculatequalitymetrics: function(prompt, response) {
             var metrics = {
                 length: response.length,
                 wordCount: response.split(/\s+/).length,

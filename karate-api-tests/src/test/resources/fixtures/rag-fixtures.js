@@ -12,7 +12,7 @@ function fn() {
         documentCache: {},
         
         // Generate document upload request
-        generateDocumentRequest: function(overrides) {
+        generatedocumentrequest: function(overrides) {
             var defaultRequest = {
                 title: "Test Document",
                 content: "This is a test document for RAG processing. It contains information about artificial intelligence and machine learning concepts.",
@@ -36,7 +36,7 @@ function fn() {
         },
         
         // Generate search request
-        generateSearchRequest: function(query, overrides) {
+        generatesearchrequest: function(query, overrides) {
             var defaultRequest = {
                 query: query || "artificial intelligence",
                 maxResults: 10,
@@ -51,7 +51,7 @@ function fn() {
         },
         
         // Generate knowledge base request
-        generateKnowledgeBaseRequest: function(overrides) {
+        generateknowledgebaserequest: function(overrides) {
             var defaultRequest = {
                 name: "Test Knowledge Base",
                 description: "A test knowledge base for RAG operations",
@@ -69,7 +69,7 @@ function fn() {
         },
         
         // Upload document
-        uploadDocument: function(documentData, knowledgeBaseId, authToken) {
+        uploaddocument: function(documentData, knowledgeBaseId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -94,7 +94,7 @@ function fn() {
         },
         
         // Get document
-        getDocument: function(documentId, authToken) {
+        getdocument: function(documentId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -114,7 +114,7 @@ function fn() {
         },
         
         // Search documents
-        searchDocuments: function(searchData, knowledgeBaseId, authToken) {
+        searchdocuments: function(searchData, knowledgeBaseId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -137,7 +137,7 @@ function fn() {
         },
         
         // Delete document
-        deleteDocument: function(documentId, authToken) {
+        deletedocument: function(documentId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -158,7 +158,7 @@ function fn() {
         },
         
         // Create knowledge base
-        createKnowledgeBase: function(kbData, authToken) {
+        createknowledgebase: function(kbData, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -180,7 +180,7 @@ function fn() {
         },
         
         // Process document
-        processDocument: function(documentId, processingOptions, authToken) {
+        processdocument: function(documentId, processingOptions, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -201,7 +201,7 @@ function fn() {
         },
         
         // Generate embeddings
-        generateEmbeddings: function(text, model, authToken) {
+        generateembeddings: function(text, model, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -222,7 +222,7 @@ function fn() {
         },
         
         // Upload multiple documents
-        uploadMultipleDocuments: function(documents, knowledgeBaseId, authToken) {
+        uploadmultipledocuments: function(documents, knowledgeBaseId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -238,7 +238,7 @@ function fn() {
         },
         
         // Create knowledge base with documents
-        createKnowledgeBaseWithDocuments: function(kbData, documents, authToken) {
+        createknowledgebasewithdocuments: function(kbData, documents, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -257,7 +257,7 @@ function fn() {
         },
         
         // Get document chunks
-        getDocumentChunks: function(documentId, authToken) {
+        getdocumentchunks: function(documentId, authToken) {
             if (!authToken) {
                 var auth = authFixtures.login();
                 authToken = auth.token;
@@ -277,7 +277,7 @@ function fn() {
         },
         
         // Validate document response
-        validateDocumentResponse: function(response) {
+        validatedocumentresponse: function(response) {
             var validationErrors = [];
             
             if (!response.id || typeof response.id !== 'string') {
@@ -316,7 +316,7 @@ function fn() {
         },
         
         // Generate test documents
-        generateTestDocuments: function() {
+        generatetestdocuments: function() {
             return [
                 {
                     title: "Artificial Intelligence Overview",
@@ -377,7 +377,7 @@ function fn() {
         },
         
         // Generate test search queries
-        generateTestSearchQueries: function() {
+        generatetestsearchqueries: function() {
             return [
                 "What is artificial intelligence?",
                 "How does machine learning work?",
@@ -393,7 +393,7 @@ function fn() {
         },
         
         // Generate performance test scenarios
-        generatePerformanceScenarios: function() {
+        generateperformancescenarios: function() {
             return {
                 bulk_upload: {
                     description: "Upload multiple documents simultaneously",
@@ -419,12 +419,12 @@ function fn() {
         },
         
         // Clear document cache
-        clearDocumentCache: function() {
+        cleardocumentcache: function() {
             ragFixtures.documentCache = {};
         },
         
         // Generate file content for different types
-        generateFileContent: function(type, size) {
+        generatefilecontent: function(type, size) {
             size = size || 1000;
             
             var content = "";
@@ -458,7 +458,7 @@ function fn() {
         },
         
         // Wait for document processing
-        waitForDocumentProcessing: function(documentId, timeout, authToken) {
+        waitfordocumentprocessing: function(documentId, timeout, authToken) {
             timeout = timeout || 30000;
             var startTime = Date.now();
             

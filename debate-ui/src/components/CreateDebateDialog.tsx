@@ -5,10 +5,7 @@ import {
   addNotification,
 } from '../store/slices/uiSlice';
 import { createDebate } from '../store/slices/debateSlice';
-import llmClient, { LLMProvider } from '../api/llmClient';
 import { Modal, Button, Input, Select, Card, Form, Slider, InputNumber, Typography, Space, Row, Col } from 'antd';
-import {  PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
@@ -170,6 +167,10 @@ const CreateDebateDialog: React.FC = () => {
         );
       }
     } catch (error) {
+      // Log error for debugging
+      console.error('[CreateDebateDialog] Error:', error);
+      // Rethrow if critical
+      if (error.critical) throw error;
         console.error("Error:", error);
       dispatch(
         addNotification({

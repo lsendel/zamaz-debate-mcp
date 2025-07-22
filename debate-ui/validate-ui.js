@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 
+// TODO: Extract helper functions to reduce complexity
+// Consider extracting: loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic
 async function validateUI() {
   console.log('Starting UI validation...');
   const browser = await puppeteer.launch({ 

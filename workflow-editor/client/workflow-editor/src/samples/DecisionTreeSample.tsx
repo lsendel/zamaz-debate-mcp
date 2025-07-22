@@ -30,10 +30,6 @@ const DecisionTreeSample: React.FC = () => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('loan-approval');
   const [showConditionBuilder, setShowConditionBuilder] = useState(false);
-// // // //   const [editingNodeId, setEditingNodeId] = useState<string | null>(null); // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment
-// // // //   const { createWorkflow, startExecution, updateNodeStatus } = useWorkflowStore(); // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment
-
-  // Decision tree templates
   const templates = {
     'loan-approval': {
       name: 'Loan Approval Process',

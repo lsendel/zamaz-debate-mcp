@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer');
 
+// TODO: Extract helper functions to reduce complexity
+// Consider extracting: loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic, loop logic
 async function testUI() {
   console.log('Starting UI test...');
   const browser = await puppeteer.launch({ 

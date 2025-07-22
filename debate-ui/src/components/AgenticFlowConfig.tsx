@@ -8,13 +8,9 @@ import {
   InputNumber,
   Slider,
   Button,
-  
   Divider,
   Collapse,
-  
   Tooltip,
-  
-  
   Form,
   Alert,
   Spin,
@@ -22,8 +18,6 @@ import {
 import {
   InfoCircleOutlined,
   SaveOutlined,
-  
-  
   SettingOutlined,
 } from '@ant-design/icons';
 import debateClient from '../api/debateClient';
@@ -304,6 +298,10 @@ const AgenticFlowConfig: React.FC<AgenticFlowConfigProps> = ({
         onSave(configuration);
       }
     } catch (error) {
+      // Log error for debugging
+      console.error('[AgenticFlowConfig] Error:', error);
+      // Rethrow if critical
+      if (error.critical) throw error;
         console.error("Error:", error);
       dispatch(addNotification({
         type: 'error',

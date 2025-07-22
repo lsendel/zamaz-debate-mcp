@@ -1,6 +1,3 @@
-import React, { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import {  useMutation } from '@tanstack/react-query';
 import { useWorkflowStore } from '../store/workflowStore';
 
 interface DocumentSelection {
@@ -55,6 +52,10 @@ const AIDocumentAnalysisSample: React.FC = () => {
         if (!response.ok) throw new Error('AI analysis failed');
         return response.json();
       } catch (error) {
+        // Log error for debugging
+        console.error('[AIDocumentAnalysisSample] Error:', error);
+        // Rethrow if critical
+        if (error.critical) throw error;
           console.error("Error:", error);
         // Return mock analysis if service is not available
         return generateMockAnalysis(content);

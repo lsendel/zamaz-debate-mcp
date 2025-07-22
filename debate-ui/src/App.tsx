@@ -9,7 +9,6 @@ import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { store } from './store';
 import { useAppSelector, useAppDispatch } from './store';
-import { ConfigProvider } from 'antd';
 import 'antd/dist/reset.css';
 
 // Components

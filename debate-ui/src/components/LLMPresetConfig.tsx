@@ -9,7 +9,6 @@ import {
   Button,
   Switch,
   Space,
-  Divider,
   Tag,
   Alert,
   Tooltip,
@@ -75,7 +74,6 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
   onLoad,
 }) => {
   const [form] = Form.useForm();
-// //   const [loading, setLoading] = useState(false); // SonarCloud: removed useless assignment // Removed: useless assignment
   const [saving, setSaving] = useState(false);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [presets, setPresets] = useState<LLMPreset[]>([]);

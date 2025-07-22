@@ -22,7 +22,6 @@ import {
   KeyOutlined,
   SettingOutlined,
   ThunderboltOutlined,
-  
 } from "@ant-design/icons";
 
 const { TextArea } = Input;
@@ -36,14 +35,12 @@ import {
 } from "../store/slices/organizationSlice";
 import { addNotification } from "../store/slices/uiSlice";
 import organizationClient, {
-  
   User,
 } from "../api/organizationClient";
 import LLMPresetConfig from "./LLMPresetConfig";
 
 const OrganizationManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
-// //   const { organizations, currentOrganization, loading } = useAppSelector( // SonarCloud: removed useless assignment // Removed: useless assignment
     (state) => state.organization,
   );
   const { user } = useAppSelector((state) => state.auth);
@@ -99,6 +96,10 @@ const OrganizationManagementPage: React.FC = () => {
       setCreateModalOpen(false);
       setNewOrgForm({ name: "", description: "" });
     } catch (error) {
+      // Log error for debugging
+      console.error('[OrganizationManagementPage] Error:', error);
+      // Rethrow if critical
+      if (error.critical) throw error;
         console.error("Error:", error);
       dispatch(
         addNotification({

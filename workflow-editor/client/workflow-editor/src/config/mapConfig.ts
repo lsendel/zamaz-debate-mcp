@@ -1,5 +1,4 @@
 
-import {  getProfessionalMapStyle } from './professionalMapStyles';
 
 // Map configuration for OpenMapTiles and other providers
 export const MAP_CONFIG = {

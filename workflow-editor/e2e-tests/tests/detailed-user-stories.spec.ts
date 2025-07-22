@@ -266,7 +266,6 @@ test.describe('Workflow Editor - Detailed User Stories', () => {
       }
       
       // Create a test file buffer for PDF simulation
-// //       const testPDF = Buffer.from('%PDF-1.4 test document content'); // SonarCloud: removed useless assignment // Removed: useless assignment
       
       // Set up file chooser handler for PDF upload
       page.on('filechooser', async fileChooser => {

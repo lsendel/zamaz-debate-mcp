@@ -64,6 +64,10 @@ const puppeteer = require('puppeteer');
       ]);
       console.log('✅ Some content appeared\n');
     } catch (err) {
+      // Log error for debugging
+      console.error('[test-specific-debate] Error:', err);
+      // Rethrow if critical
+      if (err.critical) throw err;
         console.error("Error:", e);
       console.log('❌ No content appeared within timeout\n');
       console.error("Error:", error);

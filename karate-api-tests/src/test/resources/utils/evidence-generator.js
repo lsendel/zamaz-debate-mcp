@@ -4,10 +4,8 @@
  */
 
 function fn() {
-//      // Removed: useless assignment
-    var evidenceGenerator = {
         // Generate evidence for a test scenario
-        generateScenarioEvidence: function(scenarioName, service, testData) {
+        generatescenarioevidence: function(scenarioName, service, testData) {
             var timestamp = new Date().toISOString();
             var evidence = {
                 scenario: scenarioName,
@@ -38,7 +36,7 @@ function fn() {
         },
         
         // Record HTTP request
-        recordRequest: function(evidence, request) {
+        recordrequest: function(evidence, request) {
             var requestRecord = {
                 timestamp: new Date().toISOString(),
                 method: request.method,
@@ -55,7 +53,7 @@ function fn() {
         },
         
         // Record HTTP response
-        recordResponse: function(evidence, requestRecord, response) {
+        recordresponse: function(evidence, requestRecord, response) {
             var endTime = Date.now();
             var responseTime = endTime - requestRecord.startTime;
             
@@ -93,7 +91,7 @@ function fn() {
         },
         
         // Record validation result
-        recordValidation: function(evidence, validationType, result, details) {
+        recordvalidation: function(evidence, validationType, result, details) {
             var validationRecord = {
                 timestamp: new Date().toISOString(),
                 type: validationType,
@@ -108,7 +106,7 @@ function fn() {
         },
         
         // Record error
-        recordError: function(evidence, error, context) {
+        recorderror: function(evidence, error, context) {
             var errorRecord = {
                 timestamp: new Date().toISOString(),
                 message: error.message || error,
@@ -123,7 +121,7 @@ function fn() {
         },
         
         // Complete evidence recording
-        completeEvidence: function(evidence, status) {
+        completeevidence: function(evidence, status) {
             evidence.execution.endTime = Date.now();
             evidence.execution.duration = evidence.execution.endTime - evidence.execution.startTime;
             evidence.execution.status = status || 'completed';
@@ -132,7 +130,7 @@ function fn() {
         },
         
         // Generate evidence report
-        generateReport: function(evidence) {
+        generatereport: function(evidence) {
             var report = {
                 summary: {
                     scenario: evidence.scenario,
@@ -161,7 +159,7 @@ function fn() {
         },
         
         // Generate recommendations based on evidence
-        generateRecommendations: function(evidence) {
+        generaterecommendations: function(evidence) {
             var recommendations = [];
             
             // Performance recommendations
@@ -211,7 +209,7 @@ function fn() {
         },
         
         // Generate service-specific evidence
-        generateServiceEvidence: function(serviceName, testResults) {
+        generateserviceevidence: function(serviceName, testResults) {
             var serviceEvidence = {
                 service: serviceName,
                 timestamp: new Date().toISOString(),
@@ -245,7 +243,7 @@ function fn() {
         },
         
         // Calculate API coverage
-        calculateApiCoverage: function(serviceName, testResults) {
+        calculateapicoverage: function(serviceName, testResults) {
             var endpointMap = {
                 'organization': [
                     'POST /api/v1/organizations',
@@ -308,7 +306,7 @@ function fn() {
         },
         
         // Calculate method coverage
-        calculateMethodCoverage: function(testResults) {
+        calculatemethodcoverage: function(testResults) {
             var methods = {};
             
             testResults.forEach(function(result) {
@@ -321,7 +319,7 @@ function fn() {
         },
         
         // Calculate status code coverage
-        calculateStatusCodeCoverage: function(testResults) {
+        calculatestatuscodecoverage: function(testResults) {
             var statusCodes = {};
             
             testResults.forEach(function(result) {
@@ -334,7 +332,7 @@ function fn() {
         },
         
         // Calculate overall average response time
-        calculateOverallAverageResponseTime: function(testResults) {
+        calculateoverallaverageresponsetime: function(testResults) {
             var totalResponseTime = 0;
             var totalRequests = 0;
             
@@ -347,7 +345,7 @@ function fn() {
         },
         
         // Generate HTML evidence report
-        generateHtmlReport: function(serviceEvidence) {
+        generatehtmlreport: function(serviceEvidence) {
             var html = `
 <!DOCTYPE html>
 <html>
@@ -488,7 +486,7 @@ function fn() {
         },
         
         // Save evidence to file
-        saveEvidence: function(evidence, filename) {
+        saveevidence: function(evidence, filename) {
             var timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             var fullFilename = filename || `evidence-${evidence.service}-${timestamp}.json`;
             

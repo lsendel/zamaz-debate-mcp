@@ -10,7 +10,6 @@ import {
   Statistic,
   Progress,
   Tag,
-  
   Divider,
   Alert,
 } from 'antd';
@@ -63,13 +62,8 @@ const DebateVisualizations: React.FC<DebateVisualizationsProps> = ({
   debateId,
   debate,
 }) => {
-// //   const [loading, setLoading] = useState(false); // SonarCloud: removed useless assignment // Removed: useless assignment
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [selectedVisualization, setSelectedVisualization] = useState('engagement');
-// // // //   const [showPdfViewer, setShowPdfViewer] = useState(false); // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment
-// // // //   const [showMap, setShowMap] = useState(false); // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment
-
-  useEffect(() => {
     loadAnalyticsData();
   }, [debateId]);
 
