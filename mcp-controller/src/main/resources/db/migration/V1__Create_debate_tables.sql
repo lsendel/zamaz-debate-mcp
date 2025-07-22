@@ -1,8 +1,8 @@
 -- Create debates table
 CREATE TABLE debates (
     id UUID PRIMARY KEY,
-    topic VARCHAR(1000) NOT NULL,
-    status VARCHAR(50) NOT NULL,
+    topic VARCHAR2(1000) NOT NULL,
+    status VARCHAR2(50) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     started_at TIMESTAMP,
     completed_at TIMESTAMP,
@@ -27,16 +27,16 @@ CREATE TABLE debates (
 CREATE TABLE participants (
     id UUID PRIMARY KEY,
     debate_id UUID NOT NULL REFERENCES debates(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    type VARCHAR(50) NOT NULL,
-    position VARCHAR(1000) NOT NULL,
-    provider VARCHAR(50),
+    name VARCHAR2(255) NOT NULL,
+    type VARCHAR2(50) NOT NULL,
+    position VARCHAR2(1000) NOT NULL,
+    provider VARCHAR2(50),
     joined_at TIMESTAMP NOT NULL,
     active BOOLEAN NOT NULL,
     response_count INTEGER NOT NULL DEFAULT 0,
     
     -- Provider configuration fields
-    provider_model VARCHAR(255),
+    provider_model VARCHAR2(255),
     provider_max_tokens INTEGER,
     provider_temperature DECIMAL(3,2),
     provider_top_p DECIMAL(3,2),
@@ -57,7 +57,7 @@ CREATE TABLE rounds (
     id UUID PRIMARY KEY,
     debate_id UUID NOT NULL REFERENCES debates(id) ON DELETE CASCADE,
     round_number INTEGER NOT NULL,
-    status VARCHAR(50) NOT NULL,
+    status VARCHAR2(50) NOT NULL,
     started_at TIMESTAMP NOT NULL,
     completed_at TIMESTAMP,
     time_limit_minutes INTEGER,
@@ -70,12 +70,12 @@ CREATE TABLE responses (
     id UUID PRIMARY KEY,
     round_id UUID NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
     participant_id UUID NOT NULL,
-    position VARCHAR(1000) NOT NULL,
+    position VARCHAR2(1000) NOT NULL,
     content TEXT NOT NULL,
     submitted_at TIMESTAMP NOT NULL,
     response_time_seconds BIGINT,
     flagged BOOLEAN NOT NULL DEFAULT FALSE,
-    flag_reason VARCHAR(1000),
+    flag_reason VARCHAR2(1000),
     
     -- Quality metrics
     quality_logical_strength DECIMAL(4,2),

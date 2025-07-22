@@ -304,6 +304,7 @@ const AgenticFlowConfig: React.FC<AgenticFlowConfigProps> = ({
         onSave(configuration);
       }
     } catch (error) {
+        console.error("Error:", error);
       dispatch(addNotification({
         type: 'error',
         message: 'Failed to save agentic flow configuration',

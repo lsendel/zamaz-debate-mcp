@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test.describe('UI Showcase - Complete Application Flow', () => {
   test('Capture screenshots of all UI functionality', async ({ page }) => {

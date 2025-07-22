@@ -164,7 +164,9 @@ async function findFiles(dir, filename) {
       }
     }
   } catch (error) {
+      console.error("Error:", error);
     // Directory might not exist
+    console.error("Error:", error);
   }
   return files;
 }

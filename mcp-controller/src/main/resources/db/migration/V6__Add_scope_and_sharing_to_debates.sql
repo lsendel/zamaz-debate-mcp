@@ -17,7 +17,7 @@ ADD COLUMN created_by_user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000
 -- Create applications table
 CREATE TABLE applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR2(255) NOT NULL,
     description TEXT,
     organization_id UUID NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -30,7 +30,7 @@ CREATE TABLE applications (
 -- Create teams table  
 CREATE TABLE teams (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR2(255) NOT NULL,
     description TEXT,
     application_id UUID REFERENCES applications(id),
     organization_id UUID NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE teams (
 CREATE TABLE team_members (
     team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
-    role VARCHAR(50) DEFAULT 'MEMBER',
+    role VARCHAR2(50) DEFAULT 'MEMBER',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     active BOOLEAN NOT NULL DEFAULT true,
     PRIMARY KEY (team_id, user_id)

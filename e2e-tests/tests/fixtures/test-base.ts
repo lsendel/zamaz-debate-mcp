@@ -165,8 +165,10 @@ export class DebateTestUtils {
       });
       return response.data.token;
     } catch (error) {
+        console.error("Error:", error);
       console.log('Using mock token for testing');
       return 'mock-jwt-token-' + userId;
+      console.error("Error:", error);
     }
   }
 }

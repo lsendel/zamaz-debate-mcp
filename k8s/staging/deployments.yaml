@@ -18,6 +18,19 @@ spec:
         environment: staging
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-organization
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-organization:latest
         ports:
@@ -84,6 +97,19 @@ spec:
         environment: staging
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-gateway
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-gateway:latest
         ports:
@@ -158,6 +184,19 @@ spec:
         environment: staging
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-debate-engine
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-debate-engine:latest
         ports:
@@ -228,6 +267,19 @@ spec:
         environment: staging
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-llm
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-llm:latest
         ports:
@@ -294,6 +346,19 @@ spec:
         environment: staging
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-rag
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-rag:latest
         ports:

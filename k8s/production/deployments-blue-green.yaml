@@ -22,6 +22,12 @@ spec:
         environment: production
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: mcp-gateway
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-gateway:stable
         ports:
@@ -92,6 +98,19 @@ spec:
         environment: production
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-gateway
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-gateway:latest
         ports:
@@ -162,6 +181,12 @@ spec:
         environment: production
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: mcp-debate-engine
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-debate-engine:stable
         ports:
@@ -235,6 +260,19 @@ spec:
         environment: production
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-debate-engine
         image: ghcr.io/zamaz/zamaz-debate-mcp/mcp-debate-engine:latest
         ports:

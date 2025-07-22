@@ -49,7 +49,7 @@ describe('Agentic Flow Accessibility Tests', () => {
 
     it('should have proper ARIA labels for interactive elements', () => {
       const store = createTestStore();
-//       const { getByLabelText, getByRole } = render( // SonarCloud: removed useless assignment
+// //       const { getByLabelText, getByRole } = render( // SonarCloud: removed useless assignment // Removed: useless assignment
         <Provider store={store}>
           <AgenticFlowConfig debateId="test-debate" />
         </Provider>
@@ -169,7 +169,7 @@ describe('Agentic Flow Accessibility Tests', () => {
     });
 
     it('should provide alternative text for visual indicators', () => {
-//       const { getByText, getByRole } = render( // SonarCloud: removed useless assignment
+// //       const { getByText, getByRole } = render( // SonarCloud: removed useless assignment // Removed: useless assignment
         <AgenticFlowResult result={mockResults.INTERNAL_MONOLOGUE} />
       );
 

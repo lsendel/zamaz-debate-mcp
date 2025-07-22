@@ -55,7 +55,7 @@ async function captureLLMPresets() {
     // Click on LLM Presets tab (should be the 4th tab, index 3)
     const llmTabClicked = await page.evaluate(() => {
       const tabs = document.querySelectorAll('.ant-tabs-tab');
-      for (let i = 0; i < tabs.length; i++) {
+      for (let item of tabs)
         if (tabs[i].textContent.includes('LLM Presets')) {
           tabs[i].click();
           return true;

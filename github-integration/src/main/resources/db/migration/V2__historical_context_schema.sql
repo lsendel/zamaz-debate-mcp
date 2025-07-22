@@ -4,16 +4,16 @@
 -- Developer profile and learning progress tracking
 CREATE TABLE developer_profile (
     id SERIAL PRIMARY KEY,
-    github_username VARCHAR(255) NOT NULL,
+    github_username VARCHAR2(255) NOT NULL,
     github_user_id BIGINT NOT NULL,
-    email VARCHAR(255),
-    display_name VARCHAR(255),
-    experience_level VARCHAR(50) NOT NULL DEFAULT 'intermediate', -- beginner, intermediate, advanced, expert
+    email VARCHAR2(255),
+    display_name VARCHAR2(255),
+    experience_level VARCHAR2(50) NOT NULL DEFAULT 'intermediate', -- beginner, intermediate, advanced, expert
     primary_languages TEXT[], -- Array of programming languages
     domain_expertise TEXT[], -- Array of domain areas
-    communication_style VARCHAR(50) NOT NULL DEFAULT 'standard', -- concise, detailed, educational
+    communication_style VARCHAR2(50) NOT NULL DEFAULT 'standard', -- concise, detailed, educational
     learning_preferences JSONB, -- JSON object with learning preferences
-    timezone VARCHAR(50),
+    timezone VARCHAR2(50),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_developer_profile_github_user_id UNIQUE (github_user_id),
@@ -26,7 +26,7 @@ CREATE TABLE pr_historical_metrics (
     repository_id BIGINT NOT NULL,
     pr_number INT NOT NULL,
     pr_author_id BIGINT NOT NULL,
-    pr_size VARCHAR(50) NOT NULL, -- xs, small, medium, large, xl
+    pr_size VARCHAR2(50) NOT NULL, -- xs, small, medium, large, xl
     complexity_score DECIMAL(5,2), -- 0-100 complexity score
     test_coverage_change DECIMAL(5,2), -- Change in test coverage percentage
     code_quality_score DECIMAL(5,2), -- 0-100 quality score
@@ -54,12 +54,12 @@ CREATE TABLE pr_historical_metrics (
 CREATE TABLE developer_skill_assessment (
     id SERIAL PRIMARY KEY,
     developer_id BIGINT NOT NULL,
-    skill_category VARCHAR(100) NOT NULL, -- e.g., 'java', 'testing', 'security', 'performance'
-    skill_level VARCHAR(50) NOT NULL, -- novice, competent, proficient, expert
+    skill_category VARCHAR2(100) NOT NULL, -- e.g., 'java', 'testing', 'security', 'performance'
+    skill_level VARCHAR2(50) NOT NULL, -- novice, competent, proficient, expert
     confidence_score DECIMAL(5,2), -- 0-100 confidence in this skill
     evidence_count INT DEFAULT 0, -- Number of PRs/reviews that contributed to this assessment
     last_demonstration_date TIMESTAMP, -- Last time skill was demonstrated
-    improvement_trend VARCHAR(50), -- improving, stable, declining
+    improvement_trend VARCHAR2(50), -- improving, stable, declining
     learning_goals TEXT[], -- Array of specific learning goals
     recommended_resources TEXT[], -- Array of recommended learning resources
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -72,18 +72,18 @@ CREATE TABLE developer_skill_assessment (
 CREATE TABLE knowledge_base_entry (
     id SERIAL PRIMARY KEY,
     repository_id BIGINT NOT NULL,
-    category VARCHAR(100) NOT NULL, -- e.g., 'best_practice', 'anti_pattern', 'common_issue'
-    title VARCHAR(255) NOT NULL,
+    category VARCHAR2(100) NOT NULL, -- e.g., 'best_practice', 'anti_pattern', 'common_issue'
+    title VARCHAR2(255) NOT NULL,
     description TEXT NOT NULL,
     content TEXT NOT NULL,
     tags TEXT[], -- Array of tags for categorization
-    severity VARCHAR(50), -- critical, high, medium, low
+    severity VARCHAR2(50), -- critical, high, medium, low
     frequency_count INT DEFAULT 1, -- How often this pattern appears
     effectiveness_score DECIMAL(5,2), -- 0-100 score of how effective this knowledge is
     source_review_ids BIGINT[], -- Array of review IDs that contributed to this entry
     created_by_user_id BIGINT,
-    language VARCHAR(50), -- Programming language if applicable
-    framework VARCHAR(100), -- Framework if applicable
+    language VARCHAR2(50), -- Programming language if applicable
+    framework VARCHAR2(100), -- Framework if applicable
     is_approved BOOLEAN DEFAULT FALSE,
     approval_date TIMESTAMP,
     approved_by_user_id BIGINT,
@@ -98,10 +98,10 @@ CREATE TABLE code_quality_trends (
     id SERIAL PRIMARY KEY,
     repository_id BIGINT NOT NULL,
     analysis_date DATE NOT NULL,
-    period_type VARCHAR(50) NOT NULL, -- daily, weekly, monthly
-    metric_name VARCHAR(100) NOT NULL, -- e.g., 'bug_rate', 'test_coverage', 'complexity'
+    period_type VARCHAR2(50) NOT NULL, -- daily, weekly, monthly
+    metric_name VARCHAR2(100) NOT NULL, -- e.g., 'bug_rate', 'test_coverage', 'complexity'
     metric_value DECIMAL(10,4) NOT NULL,
-    trend_direction VARCHAR(50), -- improving, stable, declining
+    trend_direction VARCHAR2(50), -- improving, stable, declining
     change_percentage DECIMAL(5,2), -- Percentage change from previous period
     developer_count INT, -- Number of active developers in this period
     pr_count INT, -- Number of PRs in this period
@@ -116,8 +116,8 @@ CREATE TABLE code_quality_trends (
 CREATE TABLE review_feedback_learning (
     id SERIAL PRIMARY KEY,
     original_review_id BIGINT NOT NULL,
-    feedback_type VARCHAR(50) NOT NULL, -- positive, negative, neutral, suggestion
-    feedback_category VARCHAR(100) NOT NULL, -- accuracy, helpfulness, clarity, relevance
+    feedback_type VARCHAR2(50) NOT NULL, -- positive, negative, neutral, suggestion
+    feedback_category VARCHAR2(100) NOT NULL, -- accuracy, helpfulness, clarity, relevance
     feedback_score INT NOT NULL CHECK (feedback_score >= 1 AND feedback_score <= 5),
     feedback_text TEXT,
     reviewer_id BIGINT NOT NULL, -- Person who gave the feedback
@@ -135,12 +135,12 @@ CREATE TABLE review_feedback_learning (
 CREATE TABLE personalized_suggestions (
     id SERIAL PRIMARY KEY,
     developer_id BIGINT NOT NULL,
-    suggestion_type VARCHAR(100) NOT NULL, -- code_pattern, best_practice, learning_resource
-    suggestion_title VARCHAR(255) NOT NULL,
+    suggestion_type VARCHAR2(100) NOT NULL, -- code_pattern, best_practice, learning_resource
+    suggestion_title VARCHAR2(255) NOT NULL,
     suggestion_content TEXT NOT NULL,
     context_data JSONB, -- JSON object with context information
     confidence_score DECIMAL(5,2), -- 0-100 confidence in this suggestion
-    priority_level VARCHAR(50), -- high, medium, low
+    priority_level VARCHAR2(50), -- high, medium, low
     trigger_conditions TEXT[], -- Array of conditions that triggered this suggestion
     success_metrics JSONB, -- JSON object defining success metrics
     is_accepted BOOLEAN,
@@ -155,13 +155,13 @@ CREATE TABLE personalized_suggestions (
 -- Machine learning training data and patterns
 CREATE TABLE ml_training_data (
     id SERIAL PRIMARY KEY,
-    data_type VARCHAR(100) NOT NULL, -- pr_pattern, code_smell, review_quality
+    data_type VARCHAR2(100) NOT NULL, -- pr_pattern, code_smell, review_quality
     input_features JSONB NOT NULL, -- JSON object with input features
-    output_label VARCHAR(255) NOT NULL, -- The label/classification
+    output_label VARCHAR2(255) NOT NULL, -- The label/classification
     confidence_score DECIMAL(5,2), -- 0-100 confidence in this label
-    source_type VARCHAR(50) NOT NULL, -- manual, automatic, hybrid
+    source_type VARCHAR2(50) NOT NULL, -- manual, automatic, hybrid
     source_id BIGINT, -- ID of source entity (PR, review, etc.)
-    validation_status VARCHAR(50), -- pending, validated, rejected
+    validation_status VARCHAR2(50), -- pending, validated, rejected
     validated_by_user_id BIGINT,
     validation_date TIMESTAMP,
     repository_id BIGINT,
@@ -172,15 +172,15 @@ CREATE TABLE ml_training_data (
 -- Historical pattern recognition results
 CREATE TABLE pattern_recognition_results (
     id SERIAL PRIMARY KEY,
-    pattern_type VARCHAR(100) NOT NULL, -- code_duplication, naming_convention, architecture_violation
-    pattern_name VARCHAR(255) NOT NULL,
+    pattern_type VARCHAR2(100) NOT NULL, -- code_duplication, naming_convention, architecture_violation
+    pattern_name VARCHAR2(255) NOT NULL,
     pattern_description TEXT NOT NULL,
-    detection_algorithm VARCHAR(100) NOT NULL, -- rule_based, ml_based, hybrid
+    detection_algorithm VARCHAR2(100) NOT NULL, -- rule_based, ml_based, hybrid
     confidence_score DECIMAL(5,2), -- 0-100 confidence in pattern detection
     occurrence_count INT DEFAULT 1,
     first_detected_date TIMESTAMP NOT NULL,
     last_detected_date TIMESTAMP NOT NULL,
-    severity_level VARCHAR(50), -- critical, high, medium, low
+    severity_level VARCHAR2(50), -- critical, high, medium, low
     impact_assessment TEXT,
     resolution_suggestions TEXT[],
     repository_ids BIGINT[], -- Array of repository IDs where pattern was found
@@ -192,7 +192,7 @@ CREATE TABLE pattern_recognition_results (
 -- Knowledge transfer tracking
 CREATE TABLE knowledge_transfer_sessions (
     id SERIAL PRIMARY KEY,
-    session_type VARCHAR(100) NOT NULL, -- mentoring, code_review, pair_programming
+    session_type VARCHAR2(100) NOT NULL, -- mentoring, code_review, pair_programming
     mentor_id BIGINT NOT NULL,
     mentee_id BIGINT NOT NULL,
     repository_id BIGINT,
@@ -212,20 +212,20 @@ CREATE TABLE knowledge_transfer_sessions (
 -- Best practice extraction and evolution
 CREATE TABLE best_practices (
     id SERIAL PRIMARY KEY,
-    practice_category VARCHAR(100) NOT NULL, -- coding, testing, documentation, architecture
-    practice_title VARCHAR(255) NOT NULL,
+    practice_category VARCHAR2(100) NOT NULL, -- coding, testing, documentation, architecture
+    practice_title VARCHAR2(255) NOT NULL,
     practice_description TEXT NOT NULL,
     practice_details TEXT NOT NULL,
     applicable_languages TEXT[], -- Array of programming languages
     applicable_frameworks TEXT[], -- Array of frameworks
-    confidence_level VARCHAR(50), -- low, medium, high
+    confidence_level VARCHAR2(50), -- low, medium, high
     adoption_rate DECIMAL(5,2), -- 0-100 percentage of team adoption
     evidence_count INT DEFAULT 0, -- Number of examples supporting this practice
     success_stories TEXT[], -- Array of success story descriptions
     common_pitfalls TEXT[], -- Array of common pitfalls to avoid
     related_practices BIGINT[], -- Array of related practice IDs
-    source_type VARCHAR(50), -- extracted, manual, imported
-    extraction_algorithm VARCHAR(100), -- If extracted automatically
+    source_type VARCHAR2(50), -- extracted, manual, imported
+    extraction_algorithm VARCHAR2(100), -- If extracted automatically
     is_deprecated BOOLEAN DEFAULT FALSE,
     deprecation_reason TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

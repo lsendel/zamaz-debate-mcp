@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -360,7 +360,7 @@ describe('AgenticFlowConfig Component', () => {
 
   it('should support flow templates', async () => {
     const user = userEvent.setup();
-//     const mockTemplates = [ // SonarCloud: removed useless assignment
+// //     const mockTemplates = [ // SonarCloud: removed useless assignment // Removed: useless assignment
       {
         name: 'Fact-Checking Template',
         flowType: 'TOOL_CALLING_VERIFICATION',

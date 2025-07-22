@@ -27,6 +27,19 @@ spec:
     spec:
       serviceAccountName: mcp-organization
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-organization
         image: mcp-organization:latest
         ports:
@@ -134,6 +147,19 @@ spec:
     spec:
       serviceAccountName: mcp-llm
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-llm
         image: mcp-llm:latest
         ports:
@@ -235,6 +261,19 @@ spec:
     spec:
       serviceAccountName: mcp-controller
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-controller
         image: mcp-controller:latest
         ports:
@@ -340,6 +379,19 @@ spec:
     spec:
       serviceAccountName: mcp-rag
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-rag
         image: mcp-rag:latest
         ports:
@@ -444,6 +496,19 @@ spec:
     spec:
       serviceAccountName: mcp-template
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-template
         image: mcp-template:latest
         ports:

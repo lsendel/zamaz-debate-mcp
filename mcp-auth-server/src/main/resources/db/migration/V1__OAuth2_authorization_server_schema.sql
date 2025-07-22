@@ -6,13 +6,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- OAuth2 Authorization table
 CREATE TABLE oauth2_authorization (
-    id VARCHAR(100) NOT NULL,
-    registered_client_id VARCHAR(100) NOT NULL,
-    principal_name VARCHAR(200) NOT NULL,
-    authorization_grant_type VARCHAR(100) NOT NULL,
+    id VARCHAR2(100) NOT NULL,
+    registered_client_id VARCHAR2(100) NOT NULL,
+    principal_name VARCHAR2(200) NOT NULL,
+    authorization_grant_type VARCHAR2(100) NOT NULL,
     authorized_scopes TEXT DEFAULT NULL,
     attributes TEXT DEFAULT NULL,
-    state VARCHAR(500) DEFAULT NULL,
+    state VARCHAR2(500) DEFAULT NULL,
     authorization_code_value TEXT DEFAULT NULL,
     authorization_code_issued_at TIMESTAMP DEFAULT NULL,
     authorization_code_expires_at TIMESTAMP DEFAULT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE oauth2_authorization (
     access_token_issued_at TIMESTAMP DEFAULT NULL,
     access_token_expires_at TIMESTAMP DEFAULT NULL,
     access_token_metadata TEXT DEFAULT NULL,
-    access_token_type VARCHAR(100) DEFAULT NULL,
+    access_token_type VARCHAR2(100) DEFAULT NULL,
     access_token_scopes TEXT DEFAULT NULL,
     oidc_id_token_value TEXT DEFAULT NULL,
     oidc_id_token_issued_at TIMESTAMP DEFAULT NULL,
@@ -44,20 +44,20 @@ CREATE TABLE oauth2_authorization (
 
 -- OAuth2 Authorization Consent table
 CREATE TABLE oauth2_authorization_consent (
-    registered_client_id VARCHAR(100) NOT NULL,
-    principal_name VARCHAR(200) NOT NULL,
+    registered_client_id VARCHAR2(100) NOT NULL,
+    principal_name VARCHAR2(200) NOT NULL,
     authorities TEXT NOT NULL,
     PRIMARY KEY (registered_client_id, principal_name)
 );
 
 -- OAuth2 Registered Client table
 CREATE TABLE oauth2_registered_client (
-    id VARCHAR(100) NOT NULL,
-    client_id VARCHAR(100) NOT NULL,
+    id VARCHAR2(100) NOT NULL,
+    client_id VARCHAR2(100) NOT NULL,
     client_id_issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    client_secret VARCHAR(200) DEFAULT NULL,
+    client_secret VARCHAR2(200) DEFAULT NULL,
     client_secret_expires_at TIMESTAMP DEFAULT NULL,
-    client_name VARCHAR(200) NOT NULL,
+    client_name VARCHAR2(200) NOT NULL,
     client_authentication_methods TEXT NOT NULL,
     authorization_grant_types TEXT NOT NULL,
     redirect_uris TEXT DEFAULT NULL,
@@ -78,10 +78,10 @@ BEGIN
     IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users') THEN
         CREATE TABLE users (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            email VARCHAR(255) UNIQUE NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            first_name VARCHAR(100),
-            last_name VARCHAR(100),
+            email VARCHAR2(255) UNIQUE NOT NULL,
+            password_hash VARCHAR2(255) NOT NULL,
+            first_name VARCHAR2(100),
+            last_name VARCHAR2(100),
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             is_active BOOLEAN DEFAULT true
@@ -104,7 +104,7 @@ BEGIN
     END IF;
     
     IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'mfa_secret') THEN
-        ALTER TABLE users ADD COLUMN mfa_secret VARCHAR(255);
+        ALTER TABLE users ADD COLUMN mfa_secret VARCHAR2(255);
     END IF;
     
     -- Account security
@@ -133,7 +133,7 @@ BEGIN
     IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'organizations') THEN
         CREATE TABLE organizations (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            name VARCHAR(255) NOT NULL,
+            name VARCHAR2(255) NOT NULL,
             description TEXT,
             settings JSONB DEFAULT '{}',
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -151,7 +151,7 @@ BEGIN
         CREATE TABLE organization_users (
             organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
             user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-            role VARCHAR(50) NOT NULL DEFAULT 'member',
+            role VARCHAR2(50) NOT NULL DEFAULT 'member',
             joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (organization_id, user_id)
         );
@@ -166,7 +166,7 @@ BEGIN
         CREATE TABLE refresh_tokens (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-            token VARCHAR(500) UNIQUE NOT NULL,
+            token VARCHAR2(500) UNIQUE NOT NULL,
             expires_at TIMESTAMP NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );

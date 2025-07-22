@@ -462,6 +462,12 @@ spec:
         app: kiali
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: kiali
         image: quay.io/kiali/kiali:v1.73
         ports:

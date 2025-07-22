@@ -35,6 +35,15 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: mcp-sidecar
         image: zamaz/mcp-sidecar:latest
         imagePullPolicy: Always

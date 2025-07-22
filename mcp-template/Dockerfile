@@ -32,8 +32,14 @@ USER spring
 
 HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
 EXPOSE 5006
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:8080/health || exit 1
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+USER node
+
+  CMD curl -f http://localhost:8080/health || exit 1
+
   CMD curl -f http://localhost:5006/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

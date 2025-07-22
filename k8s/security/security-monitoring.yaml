@@ -26,6 +26,19 @@ spec:
         runAsUser: 10001
         fsGroup: 10001
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: security-monitor
         image: mcp-debate/security-monitor:latest
         ports:
@@ -579,6 +592,12 @@ spec:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: fluentd
         image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
         env:

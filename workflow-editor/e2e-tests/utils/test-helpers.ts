@@ -1,4 +1,4 @@
-import { Page, expect, Locator } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 export class WorkflowEditorTestHelpers {
   constructor(private readonly page: Page) {}
@@ -81,7 +81,7 @@ export class WorkflowEditorTestHelpers {
    * Check real-time data updates
    */
   async verifyRealTimeUpdates(componentSelector: string): Promise<void> {
-//     const initialText = await this.page.locator(componentSelector).textContent(); // SonarCloud: removed useless assignment
+// //     const initialText = await this.page.locator(componentSelector).textContent(); // SonarCloud: removed useless assignment // Removed: useless assignment
     await this.page.waitForTimeout(2000);
     const updatedText = await this.page.locator(componentSelector).textContent();
     

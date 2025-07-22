@@ -28,7 +28,7 @@ const DebateTreeMapSample: React.FC = () => {
   const [viewMode, setViewMode] = useState<'tree' | 'treemap' | 'hierarchy'>('tree');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved' | 'archived'>('all');
-//   const { createWorkflow, addTelemetryData } = useWorkflowStore(); // SonarCloud: removed useless assignment
+// //   const { createWorkflow, addTelemetryData } = useWorkflowStore(); // SonarCloud: removed useless assignment // Removed: useless assignment
 
   // Fetch debate data from SASS debate system
   const { data: debateData, isLoading, refetch } = useQuery({
@@ -43,7 +43,9 @@ const DebateTreeMapSample: React.FC = () => {
           return convertSASSDebatesToTree(debates);
         }
       } catch (error) {
+          console.error("Error:", error);
         console.log('Debate controller not available, trying organization service...');
+        console.error("Error:", error);
       }
       
       try {
@@ -55,6 +57,7 @@ const DebateTreeMapSample: React.FC = () => {
         }
       } catch (error) {
         console.log('Organization service not available, using enhanced mock data...');
+        console.error("Error:", error);
       }
       
       // Return realistic SASS debate mock data
@@ -310,7 +313,7 @@ const DebateTreeMapSample: React.FC = () => {
   };
 
   // Convert to treemap format
-//   const convertToTreeMap = (nodes: DebateNode[]): TreeMapNode => { // SonarCloud: removed useless assignment
+// //   const convertToTreeMap = (nodes: DebateNode[]): TreeMapNode => { // SonarCloud: removed useless assignment // Removed: useless assignment
     const convertNode = (node: DebateNode): TreeMapNode => ({
       name: node.title,
       value: node.votes + 1, // +1 to avoid zero values

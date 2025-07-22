@@ -155,6 +155,7 @@ const DebateDetailPage: React.FC = () => {
         }),
       );
     } catch (error) {
+        console.error("Error:", error);
       dispatch(
         addNotification({
           type: "error",
@@ -333,7 +334,7 @@ const DebateDetailPage: React.FC = () => {
                           // Handle both string and object participants
                           let participant;
                           let participantIndex = -1;
-//                           let participantName = 'Unknown'; // SonarCloud: removed useless assignment
+// //                           let participantName = 'Unknown'; // SonarCloud: removed useless assignment // Removed: useless assignment
                           
                           if (typeof currentDebate.participants[0] === 'string') {
                             // Participants are strings - use response index or participantId

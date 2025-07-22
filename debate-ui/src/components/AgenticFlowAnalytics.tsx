@@ -31,7 +31,6 @@ import {
   
 } from '@ant-design/icons';
 import debateClient from '../api/debateClient';
-import type { Dayjs } from 'antd/es/date-picker/generatePicker/interface';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;

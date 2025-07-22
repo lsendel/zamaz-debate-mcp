@@ -488,9 +488,11 @@ const runTests = async () => {
   try {
     require.resolve('puppeteer');
   } catch (e) {
+      console.error("Error:", e);
     console.log('Installing puppeteer...');
     const { execSync } = require('child_process');
     execSync('npm install puppeteer', { stdio: 'inherit' });
+    console.error("Error:", error);
   }
   
   const tester = new ComprehensiveUITester();

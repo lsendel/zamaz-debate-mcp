@@ -106,7 +106,7 @@ test.describe('Participant Management', () => {
     await screenshots.capture('ai-participants-configured');
 
     // Verify AI configurations
-//     const aiConfigs = await page.evaluate(() => { // SonarCloud: removed useless assignment
+// //     const aiConfigs = await page.evaluate(() => { // SonarCloud: removed useless assignment // Removed: useless assignment
       const configs = [];
       document.querySelectorAll('[data-testid^="ai-participant-"]').forEach(el => {
         configs.push({

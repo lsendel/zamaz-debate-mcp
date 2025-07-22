@@ -26,7 +26,7 @@ async function testLiveDebate() {
     const debateCards = await page.locator('.MuiCard-root').all();
     let foundCreatedDebate = false;
     
-    for (let i = 0; i < debateCards.length; i++) {
+    for (let item of debateCards)
       const card = debateCards[i];
       const cardText = await card.textContent();
       

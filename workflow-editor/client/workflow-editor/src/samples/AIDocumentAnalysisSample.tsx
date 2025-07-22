@@ -55,8 +55,10 @@ const AIDocumentAnalysisSample: React.FC = () => {
         if (!response.ok) throw new Error('AI analysis failed');
         return response.json();
       } catch (error) {
+          console.error("Error:", error);
         // Return mock analysis if service is not available
         return generateMockAnalysis(content);
+        console.error("Error:", error);
       }
     },
     onSuccess: (data) => {

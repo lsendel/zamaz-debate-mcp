@@ -165,7 +165,9 @@ async function testUIFunctionality() {
       await captureScreenshot(page, '04-debates-route', 'Debates route attempt');
       console.log('  ✓ Debates route accessible');
     } catch (error) {
+        console.error("Error:", error);
       console.log('  ⚠️ Debates route requires authentication (expected)');
+      console.error("Error:", error);
     }
     
     // Test homepage
@@ -175,6 +177,7 @@ async function testUIFunctionality() {
       console.log('  ✓ Homepage accessible');
     } catch (error) {
       console.log('  ⚠️ Homepage might redirect to login (expected)');
+      console.error("Error:", error);
     }
     
   } catch (error) {

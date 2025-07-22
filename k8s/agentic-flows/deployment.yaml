@@ -30,6 +30,12 @@ spec:
         runAsUser: 1000
         fsGroup: 1000
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: agentic-flows
         image: zamaz/agentic-flows-processor:1.0.0
         imagePullPolicy: IfNotPresent

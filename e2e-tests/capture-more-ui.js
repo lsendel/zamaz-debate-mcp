@@ -21,7 +21,9 @@ const { chromium } = require('playwright');
       await page.waitForTimeout(1000);
       await page.screenshot({ path: 'screenshots/02-register-tab.png', fullPage: true });
     } catch (e) {
+        console.error("Error:", e);
       console.log('Register tab not found');
+      console.error("Error:", error);
     }
     
     // 3. Try filling in login form
@@ -31,6 +33,7 @@ const { chromium } = require('playwright');
       await page.screenshot({ path: 'screenshots/03-login-form-filled.png', fullPage: true });
     } catch (e) {
       console.log('Could not fill login form');
+      console.error("Error:", error);
     }
     
     // 4. Try navigating to different routes (even if they require auth)
@@ -41,7 +44,7 @@ const { chromium } = require('playwright');
       '/analytics'
     ];
     
-    for (let i = 0; i < routes.length; i++) {
+    for (let item of routes)
       try {
         await page.goto(`http://localhost:3000${routes[i]}`);
         await page.waitForTimeout(2000);
@@ -51,6 +54,7 @@ const { chromium } = require('playwright');
         });
       } catch (e) {
         console.log(`Could not navigate to ${routes[i]}`);
+        console.error("Error:", error);
       }
     }
     

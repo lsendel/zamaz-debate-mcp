@@ -21,7 +21,9 @@ test.describe('Screenshot Validation', () => {
       await page.screenshot({ path: 'validation-screenshots/03-after-login.png', fullPage: true });
       console.log('✓ Captured login flow');
     } catch (e) {
+        console.error("Error:", e);
       console.log('⚠ Login elements not found, may already be logged in');
+      console.error("Error:", error);
     }
     
     // 3. Debates page

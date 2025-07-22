@@ -811,7 +811,7 @@ app.get('/api/v1/analytics/debates/:debateId/agentic-flows', (req, res) => {
 
 // Get flow type statistics
 app.get('/api/v1/analytics/agentic-flows/statistics', (req, res) => {
-// // //   const { organizationId, startDate, endDate } = req.query; // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment
+// // // // // //   const { organizationId, startDate, endDate } = req.query; // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment // Removed: useless assignment
   
   // Return mock statistics data
   res.json(agenticFlowAnalytics);
@@ -819,7 +819,7 @@ app.get('/api/v1/analytics/agentic-flows/statistics', (req, res) => {
 
 // Get flow execution time series
 app.get('/api/v1/analytics/agentic-flows/time-series', (req, res) => {
-// // //   const { organizationId, startDate, endDate } = req.query; // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment
+// // // // // //   const { organizationId, startDate, endDate } = req.query; // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment // Removed: useless assignment
   
   // Generate mock time series data
   const timeSeries = [];
@@ -840,7 +840,7 @@ app.get('/api/v1/analytics/agentic-flows/time-series', (req, res) => {
 
 // Get trending flow types
 app.get('/api/v1/analytics/agentic-flows/trending', (req, res) => {
-//   const { organizationId, limit = 10 } = req.query; // SonarCloud: removed useless assignment
+// //   const { organizationId, limit = 10 } = req.query; // SonarCloud: removed useless assignment // Removed: useless assignment
   
   // Return mock trending data
   const trending = [
@@ -878,7 +878,7 @@ app.get('/api/v1/analytics/agentic-flows/trending', (req, res) => {
 
 // Compare flow types
 app.post('/api/v1/analytics/agentic-flows/compare', (req, res) => {
-// //   const { organizationId, flowTypes, startDate, endDate } = req.body; // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment
+// // // //   const { organizationId, flowTypes, startDate, endDate } = req.body; // SonarCloud: removed useless assignment // SonarCloud: removed useless assignment // Removed: useless assignment // Removed: useless assignment
   
   // Return mock comparison data
   const comparison = {

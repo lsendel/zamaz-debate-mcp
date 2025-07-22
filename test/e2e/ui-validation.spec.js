@@ -73,8 +73,7 @@ test.describe('UI Validation Tests', () => {
       console.log(`\nChecking ${pageInfo.name} page...`);
       
       try {
-//         const response = await page.goto(`${BASE_URL}${pageInfo.path}`, { // SonarCloud: removed useless assignment
-          waitUntil: 'networkidle',
+//           waitUntil: 'networkidle', // Removed: useless assignment
           timeout: 30000
         });
         
@@ -124,6 +123,7 @@ test.describe('UI Validation Tests', () => {
         }
       } catch (error) {
         console.log(`✗ ${endpoint.name}: Not running`);
+        console.error("Error:", error);
       }
     }
   });

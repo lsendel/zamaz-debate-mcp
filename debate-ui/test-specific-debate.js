@@ -64,7 +64,9 @@ const puppeteer = require('puppeteer');
       ]);
       console.log('✅ Some content appeared\n');
     } catch (err) {
+        console.error("Error:", e);
       console.log('❌ No content appeared within timeout\n');
+      console.error("Error:", error);
     }
     
     // Take screenshot of current state

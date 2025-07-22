@@ -11,7 +11,9 @@ test.describe('Login and Navigation Flow', () => {
         localStorage.clear();
         sessionStorage.clear();
       } catch (e) {
+          console.error("Error:", e);
         // Ignore security errors
+        console.error("Error:", error);
       }
     });
   });

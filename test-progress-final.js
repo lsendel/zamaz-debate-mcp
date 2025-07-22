@@ -78,7 +78,9 @@ async function testDebateProgress() {
             method: 'POST'
           });
         } catch (e) {
+            console.error("Error:", e);
           console.log('Round generation request sent');
+          console.error("Error:", error);
         }
       }, debateId);
       

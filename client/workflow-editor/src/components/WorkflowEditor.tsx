@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactFlow, { Node, Edge } from 'react-flow-renderer';
 import { useWorkflowStore } from '../store/workflowStore';
 import StartNode from './nodes/StartNode';
 import DecisionNode from './nodes/DecisionNode';

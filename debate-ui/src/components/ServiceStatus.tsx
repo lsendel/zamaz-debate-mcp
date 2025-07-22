@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, Space } from 'antd';
-import { ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { ReloadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 interface ServiceStatusProps {
   serviceName: string;
@@ -27,10 +27,12 @@ const ServiceStatus: React.FC<ServiceStatusProps> = ({ serviceName, serviceUrl, 
           signal: controller.signal,
         });
       } catch (healthError) {
+          console.error("Error:", e);
         // If health endpoint fails, try the actual API endpoint
         response = await fetch(`${serviceUrl}/api/v1/debates`, {
           signal: controller.signal,
         });
+        console.error("Error:", error);
       }
       
       clearTimeout(timeoutId);

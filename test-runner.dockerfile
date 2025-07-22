@@ -81,4 +81,10 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 USER testuser
 
 # Default command
+USER node
+
+USER node
+
+USER node
+
 CMD ["/tests/run-all-tests.sh"]

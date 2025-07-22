@@ -18,6 +18,7 @@ const uriFixMiddleware = () => {
             const decoded = decodeURIComponent(req.url);
             console.log(`Decoded URL: ${decoded}`);
           } catch (e) {
+              console.error("Error:", e);
             console.error(`URI Malformed Error for URL: ${req.url}`);
             console.error(`Raw URL bytes: ${Buffer.from(req.url).toString('hex')}`);
             

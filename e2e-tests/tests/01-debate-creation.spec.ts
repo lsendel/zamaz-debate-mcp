@@ -1,4 +1,4 @@
-import { test, expect, DebateTestUtils } from './fixtures/test-base';
+import { test, expect } from './fixtures/test-base';
 import fs from 'fs/promises';
 import path from 'path';
 

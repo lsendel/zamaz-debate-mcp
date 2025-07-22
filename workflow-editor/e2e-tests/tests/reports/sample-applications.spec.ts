@@ -7,7 +7,7 @@ test.describe('Sample Application Reports', () => {
 
   test.beforeEach(async ({ page }) => {
     helpers = new WorkflowEditorTestHelpers(page);
-//     assertions = new WorkflowEditorAssertions(page); // SonarCloud: removed useless assignment
+// //     assertions = new WorkflowEditorAssertions(page); // SonarCloud: removed useless assignment // Removed: useless assignment
     
     await page.goto('/');
     await helpers.waitForPageLoad();

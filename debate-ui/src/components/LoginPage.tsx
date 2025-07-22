@@ -13,7 +13,7 @@ const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.auth);
 
-//   const [isLogin, setIsLogin] = useState(true); // SonarCloud: removed useless assignment
+// //   const [isLogin, setIsLogin] = useState(true); // SonarCloud: removed useless assignment // Removed: useless assignment
   const [loginForm] = Form.useForm();
   const [registerForm] = Form.useForm();
 

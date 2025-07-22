@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { vi, describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { render } from '@testing-library/react';
+import { vi, describe, it, expect, beforeAll } from 'vitest';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
 import AgenticFlowResult from '../../components/AgenticFlowResult';
 import AgenticFlowAnalytics from '../../components/AgenticFlowAnalytics';

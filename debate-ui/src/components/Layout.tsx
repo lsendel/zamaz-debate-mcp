@@ -4,7 +4,7 @@ import { useAppSelector, useAppDispatch } from '../store';
 import { toggleSidebar } from '../store/slices/uiSlice';
 import { logout } from '../store/slices/authSlice';
 import OrganizationSwitcher from './OrganizationSwitcher';
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Typography, Badge } from 'antd';
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Typography } from 'antd';
 import {
   MenuOutlined,
   MessageOutlined,

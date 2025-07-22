@@ -25,6 +25,12 @@ spec:
         prometheus.io/port: "8080"
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: github-integration
         image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
         imagePullPolicy: Always

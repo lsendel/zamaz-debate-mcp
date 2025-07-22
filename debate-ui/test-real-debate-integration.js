@@ -35,8 +35,10 @@ async function waitForElement(page, selector, timeout = 10000) {
     await page.waitForSelector(selector, { timeout });
     return true;
   } catch (error) {
+      console.error("Error:", error);
     console.error(`❌ Element not found: ${selector}`);
     return false;
+    console.error("Error:", error);
   }
 }
 

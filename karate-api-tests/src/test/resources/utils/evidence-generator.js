@@ -4,8 +4,7 @@
  */
 
 function fn() {
-//     var config = karate.callSingle('classpath:karate-config.js'); // SonarCloud: removed useless assignment
-    
+//      // Removed: useless assignment
     var evidenceGenerator = {
         // Generate evidence for a test scenario
         generateScenarioEvidence: function(scenarioName, service, testData) {

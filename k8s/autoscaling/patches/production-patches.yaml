@@ -11,6 +11,12 @@ spec:
   template:
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: cluster-autoscaler
         image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.28.2
         resources:
@@ -233,6 +239,12 @@ spec:
   template:
     spec:
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
       - name: predictive-scaler
         resources:
           requests:

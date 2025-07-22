@@ -43,7 +43,7 @@ import LLMPresetConfig from "./LLMPresetConfig";
 
 const OrganizationManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
-//   const { organizations, currentOrganization, loading } = useAppSelector( // SonarCloud: removed useless assignment
+// //   const { organizations, currentOrganization, loading } = useAppSelector( // SonarCloud: removed useless assignment // Removed: useless assignment
     (state) => state.organization,
   );
   const { user } = useAppSelector((state) => state.auth);
@@ -99,6 +99,7 @@ const OrganizationManagementPage: React.FC = () => {
       setCreateModalOpen(false);
       setNewOrgForm({ name: "", description: "" });
     } catch (error) {
+        console.error("Error:", error);
       dispatch(
         addNotification({
           type: "error",
@@ -118,6 +119,7 @@ const OrganizationManagementPage: React.FC = () => {
         }),
       );
     } catch (error) {
+        console.error("Error:", error);
       dispatch(
         addNotification({
           type: "error",
@@ -140,6 +142,7 @@ const OrganizationManagementPage: React.FC = () => {
       setNewUserForm({ username: "", email: "", password: "", role: "member" });
       loadUsers();
     } catch (error) {
+        console.error("Error:", error);
       dispatch(
         addNotification({
           type: "error",

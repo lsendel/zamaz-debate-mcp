@@ -168,8 +168,10 @@ try {
   require.resolve('puppeteer');
   testLogin();
 } catch (e) {
+    console.error("Error:", e);
   console.log('Installing puppeteer first...');
   const { execSync } = require('child_process');
   execSync('npm install puppeteer', { stdio: 'inherit' });
   testLogin();
+  console.error("Error:", error);
 }

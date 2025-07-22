@@ -38,13 +38,16 @@ async function testOrganizationUI() {
         await page.waitForTimeout(1000);
       }
     } catch (error) {
+        console.error("Error:", error);
       // Try alternative navigation methods
       console.log('Trying alternative navigation...');
       try {
         await page.goto('http://localhost:3002/organization-management');
         await page.waitForTimeout(2000);
       } catch (navError) {
+          console.error("Error:", e);
         console.log('Could not navigate to organization management page');
+        console.error("Error:", error);
       }
     }
     
@@ -79,6 +82,7 @@ async function testOrganizationUI() {
       }
     } catch (error) {
       console.log('❌ Could not test create organization dialog');
+      console.error("Error:", error);
     }
     
     // Test organization tabs
@@ -97,6 +101,7 @@ async function testOrganizationUI() {
       }
     } catch (error) {
       console.log('❌ Could not test users tab');
+      console.error("Error:", error);
     }
     
     // Final screenshot

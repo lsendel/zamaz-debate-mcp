@@ -209,7 +209,9 @@ function fn() {
                 
                 return header.alg && header.typ && payload.sub && payload.exp;
             } catch (e) {
+                console.error("Error:", e);
                 return false;
+              console.error("Error:", error);
             }
         },
         
@@ -240,6 +242,7 @@ function fn() {
                 };
             } catch (e) {
                 return null;
+              console.error("Error:", error);
             }
         }
     };

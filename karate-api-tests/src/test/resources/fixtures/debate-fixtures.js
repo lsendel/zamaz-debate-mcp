@@ -6,8 +6,7 @@
 function fn() {
     var config = karate.callSingle('classpath:karate-config.js');
     var authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
-//     var orgFixtures = karate.callSingle('classpath:fixtures/organization-fixtures.js'); // SonarCloud: removed useless assignment
-    var debateTestData = karate.callSingle('classpath:test-data/debates.json');
+//     var debateTestData = karate.callSingle('classpath:test-data/debates.json'); // Removed: useless assignment
     
     var debateFixtures = {
         // Debate cache
@@ -362,8 +361,7 @@ function fn() {
             var setup = debateFixtures.createDebateWithParticipants(debateData, participantCount, auth.token);
             
             // Start the debate
-//             var startedDebate = debateFixtures.startDebate(setup.debate.id, auth.token); // SonarCloud: removed useless assignment
-            
+//              // Removed: useless assignment
             // Run rounds
             var responses = [];
             for (var round = 1; round <= roundCount; round++) {

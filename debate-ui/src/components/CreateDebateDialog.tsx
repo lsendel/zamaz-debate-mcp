@@ -170,6 +170,7 @@ const CreateDebateDialog: React.FC = () => {
         );
       }
     } catch (error) {
+        console.error("Error:", error);
       dispatch(
         addNotification({
           type: 'error',

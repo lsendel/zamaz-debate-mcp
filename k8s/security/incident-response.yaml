@@ -198,6 +198,19 @@ spec:
         runAsUser: 10001
         fsGroup: 10001
       containers:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        securityContext:
+          readOnlyRootFilesystem: true
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
       - name: incident-response
         image: mcp-debate/incident-response:latest
         ports:
