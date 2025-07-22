@@ -22,7 +22,7 @@ import {
   KeyOutlined,
   SettingOutlined,
   ThunderboltOutlined,
-  RobotOutlined,
+  
 } from "@ant-design/icons";
 
 const { TextArea } = Input;
@@ -36,7 +36,7 @@ import {
 } from "../store/slices/organizationSlice";
 import { addNotification } from "../store/slices/uiSlice";
 import organizationClient, {
-  Organization,
+  
   User,
 } from "../api/organizationClient";
 import LLMPresetConfig from "./LLMPresetConfig";

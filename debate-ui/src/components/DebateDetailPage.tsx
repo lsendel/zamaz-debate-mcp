@@ -5,7 +5,7 @@ import {
   Card,
   Avatar,
   Divider,
-  Progress,
+  
   Tooltip,
   Badge,
   Alert,
@@ -29,7 +29,7 @@ import {
   startDebate,
   pauseDebate,
   cancelDebate,
-  connectToDebate,
+  
   disconnectFromDebate,
   clearError,
 } from "../store/slices/debateSlice";

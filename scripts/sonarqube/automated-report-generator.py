@@ -533,11 +533,11 @@ class SonarQubeReportGenerator:
         # Links
         import re
 
-        html = re.sub(r"\\[([^\\]]+)\\]\\(([^)]+)\\)", r'<a href="\\2">\\1</a>', html)
+        html = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', html)
 
         # Lists
-        html = re.sub(r"^- (.+)$", r"<li>\\1</li>", html, flags=re.MULTILINE)
-        html = re.sub(r"(<li>.*</li>)", r"<ul>\\1</ul>", html, flags=re.DOTALL)
+        html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+        html = re.sub(r"(<li>.*</li>)", r"<ul>\1</ul>", html, flags=re.DOTALL)
 
         # Tables (simplified)
         lines = html.split("\n")

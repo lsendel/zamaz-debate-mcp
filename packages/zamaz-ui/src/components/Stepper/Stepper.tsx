@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
-import { Check, Circle } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export interface StepperProps {
   steps: {

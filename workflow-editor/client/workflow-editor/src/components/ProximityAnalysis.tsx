@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import TelemetryMap from './TelemetryMap';
 import { calculateDistance, findNearbyDevices, createHeatmapData } from '../utils/spatialAnalysis';
 
 interface ProximityAnalysisProps {

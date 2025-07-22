@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+import {  useMutation } from '@tanstack/react-query';
 import { useWorkflowStore } from '../store/workflowStore';
 
 interface DocumentSelection {

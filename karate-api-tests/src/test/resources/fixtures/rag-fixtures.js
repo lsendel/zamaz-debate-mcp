@@ -229,8 +229,8 @@ function fn() {
             }
             
             var uploadedDocs = [];
-            for (var i = 0; i < documents.length; i++) {
-                var doc = ragFixtures.uploadDocument(documents[i], knowledgeBaseId, authToken);
+            for (var item of documents)
+                var doc = ragFixtures.uploadDocument(item, knowledgeBaseId, authToken);
                 uploadedDocs.push(doc);
             }
             

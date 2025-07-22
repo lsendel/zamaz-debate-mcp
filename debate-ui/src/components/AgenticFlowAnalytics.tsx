@@ -9,26 +9,26 @@ import {
   DatePicker,
   Space,
   Spin,
-  Alert,
+  
   Tag,
   Progress,
   Tabs,
   Table,
   Empty,
-  Badge,
+  
 } from 'antd';
 import {
   TrendingUpOutlined,
   TrendingDownOutlined,
   ThunderboltOutlined,
-  ClockCircleOutlined,
+  
   CheckCircleOutlined,
   AimOutlined,
   FireOutlined,
   BulbOutlined,
-  BarChartOutlined,
-  PieChartOutlined,
-  LineChartOutlined,
+  
+  
+  
 } from '@ant-design/icons';
 import debateClient from '../api/debateClient';
 import type { Dayjs } from 'antd/es/date-picker/generatePicker/interface';

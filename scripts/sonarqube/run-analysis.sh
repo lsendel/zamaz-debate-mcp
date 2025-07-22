@@ -72,22 +72,24 @@ done
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd """"$SCRIPT_DIR""""
+cd "$SCRIPT_DIR"
 
 # Check if configuration file exists
-if [[ ! -f """"$CONFIG_FILE"""" ]]; then
-    echo -e "${RED}Error: Configuration file '"""$CONFIG_FILE"""' not found${NC}"
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo -e "${RED}Error: Configuration file '"$CONFIG_FILE"' not found${NC}"
     exit 1
 fi
 
 # Load environment variables if .env exists
 if [[ -f "../../.env" ]]; then
     echo -e "${BLUE}Loading environment variables from .env file...${NC}"
-    export $(cat ../../.env | grep -v '^#' | grep -v '^$' | xargs)
+    set -a
+    source ../../.env
+    set +a
 fi
 
 # Check if SONAR_TOKEN is set
-if [[ -z """"$SONAR_TOKEN"""" ]]; then
+if [[ -z "$SONAR_TOKEN" ]]; then
     echo -e "${RED}Error: SONAR_TOKEN environment variable is not set${NC}"
     echo -e "${YELLOW}Please set your SonarCloud token:${NC}"
     echo "export SONAR_TOKEN='your-token-here'"
@@ -102,45 +104,50 @@ fi
 
 # Install required Python packages if needed
 echo -e "${BLUE}Checking Python dependencies...${NC}"
-pip3 install -q requests pyyaml schedule 2>/dev/null || true
+if [[ -f "requirements.txt" ]]; then
+    pip3 install -q -r requirements.txt 2>/dev/null || true
+else
+    echo -e "${YELLOW}Warning: requirements.txt not found, installing basic dependencies...${NC}"
+    pip3 install -q requests pyyaml schedule 2>/dev/null || true
+fi
 
 # Create output directory
 mkdir -p sonar-reports
 
 # Build command
-CMD="python3 run-sonar-analysis.py --config '"""$CONFIG_FILE"""'"
+CMD="python3 run-sonar-analysis.py --config '$CONFIG_FILE'"
 
-if [[ """"$FIX_ISSUES"""" == true ]]; then
-    CMD=""""$CMD""" --fix-issues"
+if [[ "$FIX_ISSUES" == true ]]; then
+    CMD="$CMD --fix-issues"
 fi
 
-if [[ """"$DETAILED_REPORT"""" == true ]]; then
-    CMD=""""$CMD""" --detailed-report"
+if [[ "$DETAILED_REPORT" == true ]]; then
+    CMD="$CMD --detailed-report"
 fi
 
-if [[ """"$QUIET"""" == true ]]; then
-    CMD=""""$CMD""" --quiet"
+if [[ "$QUIET" == true ]]; then
+    CMD="$CMD --quiet"
 fi
 
 # Run the analysis
 echo -e "${GREEN}Starting SonarQube analysis...${NC}"
-echo -e "${BLUE}Command: """$CMD"""${NC}"
+echo -e "${BLUE}Command: $CMD${NC}"
 
 eval $CMD
 
 exit_code=$?
 
-if [[ """$exit_code""" -eq 0 ]]; then
+if [[ "$exit_code" -eq 0 ]]; then
     echo -e "${GREEN}✅ Analysis completed successfully!${NC}"
     
     # Show generated files
     echo -e "${BLUE}Generated files:${NC}"
     ls -la sonar-reports/ | grep -E '\.(md|html|json)$' | tail -5
     
-    if [[ """"$FIX_ISSUES"""" == true ]]; then
+    if [[ "$FIX_ISSUES" == true ]]; then
         echo -e "${YELLOW}⚠️  Issues were automatically fixed. Please review the changes before committing.${NC}"
     fi
 else
-    echo -e "${RED}❌ Analysis failed with exit code """$exit_code"""${NC}"
+    echo -e "${RED}❌ Analysis failed with exit code "$exit_code"${NC}"
     exit $exit_code
 fi

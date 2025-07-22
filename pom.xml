@@ -67,7 +67,7 @@
         <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
         
         <!-- SonarQube Properties -->
-        <sonar.projectKey>zamaz-debate-mcp</sonar.projectKey>
+        <sonar.projectKey>lsendel_zamaz-debate-mcp</sonar.projectKey>
         <sonar.projectName>Zamaz Debate MCP</sonar.projectName>
         <sonar.projectVersion>${project.version}</sonar.projectVersion>
         <sonar.sources>src/main/java</sonar.sources>
@@ -78,7 +78,7 @@
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>zamaz</sonar.organization>
+        <sonar.organization>lsendel</sonar.organization>
     </properties>
 
     <modules>

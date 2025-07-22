@@ -5,9 +5,9 @@ import {
   addNotification,
 } from '../store/slices/uiSlice';
 import { createDebate } from '../store/slices/debateSlice';
-import llmClient, { LLMProvider, LLMModel } from '../api/llmClient';
+import llmClient, { LLMProvider } from '../api/llmClient';
 import { Modal, Button, Input, Select, Card, Form, Slider, InputNumber, Typography, Space, Row, Col } from 'antd';
-import { CloseOutlined, PlusOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import {  PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;

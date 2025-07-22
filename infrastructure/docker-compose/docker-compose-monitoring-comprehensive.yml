@@ -14,7 +14,7 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/github_integration
       - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-postgres}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - GITHUB_APP_ID=${GITHUB_APP_ID}
@@ -46,7 +46,7 @@ services:
     environment:
       - POSTGRES_DB=github_integration
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./github-integration/src/main/resources/db/migration:/docker-entrypoint-initdb.d
@@ -66,7 +66,7 @@ services:
     container_name: postgres-exporter
     restart: unless-stopped
     environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:${DB_PASSWORD}@postgres:5432/github_integration?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://postgres:${DB_PASSWORD:-postgres}@postgres:5432/github_integration?sslmode=disable
     ports:
       - "9187:9187"
     depends_on:
