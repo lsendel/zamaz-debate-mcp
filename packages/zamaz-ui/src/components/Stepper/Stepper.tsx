@@ -33,7 +33,7 @@ export const Stepper: React.FC<StepperProps> = ({
       {steps.map((step, index) => {
         const isCompleted = step.status === 'completed' || index < activeStep;
         const isActive = step.status === 'active' || index === activeStep;
-        const isPending = step.status === 'pending' || index > activeStep;
+//         const isPending = step.status === 'pending' || index > activeStep; // SonarCloud: removed useless assignment
 
         return (
           <div

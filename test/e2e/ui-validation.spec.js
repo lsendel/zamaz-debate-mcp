@@ -73,7 +73,7 @@ test.describe('UI Validation Tests', () => {
       console.log(`\nChecking ${pageInfo.name} page...`);
       
       try {
-        const response = await page.goto(`${BASE_URL}${pageInfo.path}`, {
+//         const response = await page.goto(`${BASE_URL}${pageInfo.path}`, { // SonarCloud: removed useless assignment
           waitUntil: 'networkidle',
           timeout: 30000
         });

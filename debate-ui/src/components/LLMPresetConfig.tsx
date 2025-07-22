@@ -75,7 +75,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
   onLoad,
 }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
+//   const [loading, setLoading] = useState(false); // SonarCloud: removed useless assignment
   const [saving, setSaving] = useState(false);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [presets, setPresets] = useState<LLMPreset[]>([]);

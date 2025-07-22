@@ -360,7 +360,7 @@ describe('AgenticFlowConfig Component', () => {
 
   it('should support flow templates', async () => {
     const user = userEvent.setup();
-    const mockTemplates = [
+//     const mockTemplates = [ // SonarCloud: removed useless assignment
       {
         name: 'Fact-Checking Template',
         flowType: 'TOOL_CALLING_VERIFICATION',

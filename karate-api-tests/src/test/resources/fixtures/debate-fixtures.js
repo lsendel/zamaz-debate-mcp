@@ -6,7 +6,7 @@
 function fn() {
     var config = karate.callSingle('classpath:karate-config.js');
     var authFixtures = karate.callSingle('classpath:fixtures/auth-fixtures.js');
-    var orgFixtures = karate.callSingle('classpath:fixtures/organization-fixtures.js');
+//     var orgFixtures = karate.callSingle('classpath:fixtures/organization-fixtures.js'); // SonarCloud: removed useless assignment
     var debateTestData = karate.callSingle('classpath:test-data/debates.json');
     
     var debateFixtures = {
@@ -362,7 +362,7 @@ function fn() {
             var setup = debateFixtures.createDebateWithParticipants(debateData, participantCount, auth.token);
             
             // Start the debate
-            var startedDebate = debateFixtures.startDebate(setup.debate.id, auth.token);
+//             var startedDebate = debateFixtures.startDebate(setup.debate.id, auth.token); // SonarCloud: removed useless assignment
             
             // Run rounds
             var responses = [];

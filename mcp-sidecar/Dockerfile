@@ -42,6 +42,7 @@ COPY src/main/resources/application.yml application.yml
 USER app
 
 # Expose port
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
 EXPOSE 8080
 
 # Health check

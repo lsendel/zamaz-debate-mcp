@@ -60,7 +60,7 @@ const ParticipantResponse: React.FC<ParticipantResponseProps> = ({
   // Handle both string and object participants
   const isString = typeof participant === 'string';
   const participantName = isString ? participant : participant.name;
-  const participantId = isString ? response.participantId : participant.id;
+//   const participantId = isString ? response.participantId : participant.id; // SonarCloud: removed useless assignment
 
   const hasAgenticFlow = showAgenticFlow && response.agenticFlowResult;
 

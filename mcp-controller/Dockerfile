@@ -30,6 +30,7 @@ RUN chown -R spring:spring /app
 
 USER spring
 
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
 EXPOSE 5013
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \

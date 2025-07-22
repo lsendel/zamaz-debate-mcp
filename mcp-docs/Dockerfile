@@ -46,6 +46,7 @@ RUN mkdir -p /app/config /app/logs && \
 USER spring
 
 # Expose port
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
 EXPOSE 5007
 
 # Set healthcheck

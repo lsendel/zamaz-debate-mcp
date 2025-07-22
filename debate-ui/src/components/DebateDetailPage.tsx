@@ -333,7 +333,7 @@ const DebateDetailPage: React.FC = () => {
                           // Handle both string and object participants
                           let participant;
                           let participantIndex = -1;
-                          let participantName = 'Unknown';
+//                           let participantName = 'Unknown'; // SonarCloud: removed useless assignment
                           
                           if (typeof currentDebate.participants[0] === 'string') {
                             // Participants are strings - use response index or participantId

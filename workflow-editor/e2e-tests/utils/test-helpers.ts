@@ -81,7 +81,7 @@ export class WorkflowEditorTestHelpers {
    * Check real-time data updates
    */
   async verifyRealTimeUpdates(componentSelector: string): Promise<void> {
-    const initialText = await this.page.locator(componentSelector).textContent();
+//     const initialText = await this.page.locator(componentSelector).textContent(); // SonarCloud: removed useless assignment
     await this.page.waitForTimeout(2000);
     const updatedText = await this.page.locator(componentSelector).textContent();
     

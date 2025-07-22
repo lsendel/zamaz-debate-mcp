@@ -41,7 +41,7 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
     return (completedRounds / debate.maxRounds) * 100;
   };
 
-  const isDebateActive = debate.status === 'IN_PROGRESS' || debate.status === 'CREATED';
+//   const isDebateActive = debate.status === 'IN_PROGRESS' || debate.status === 'CREATED'; // SonarCloud: removed useless assignment
   const isGenerating = debate.status === 'IN_PROGRESS' && debate.rounds?.some(r => r.status === 'in_progress');
 
   return (

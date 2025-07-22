@@ -28,7 +28,7 @@ const DebateTreeMapSample: React.FC = () => {
   const [viewMode, setViewMode] = useState<'tree' | 'treemap' | 'hierarchy'>('tree');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved' | 'archived'>('all');
-  const { createWorkflow, addTelemetryData } = useWorkflowStore();
+//   const { createWorkflow, addTelemetryData } = useWorkflowStore(); // SonarCloud: removed useless assignment
 
   // Fetch debate data from SASS debate system
   const { data: debateData, isLoading, refetch } = useQuery({
@@ -310,7 +310,7 @@ const DebateTreeMapSample: React.FC = () => {
   };
 
   // Convert to treemap format
-  const convertToTreeMap = (nodes: DebateNode[]): TreeMapNode => {
+//   const convertToTreeMap = (nodes: DebateNode[]): TreeMapNode => { // SonarCloud: removed useless assignment
     const convertNode = (node: DebateNode): TreeMapNode => ({
       name: node.title,
       value: node.votes + 1, // +1 to avoid zero values

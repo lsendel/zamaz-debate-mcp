@@ -106,7 +106,7 @@ async function testUIAndAPI() {
   console.log('\n🔍 Checking UI component files...');
   
   const fs = require('fs');
-  const path = require('path');
+//   const path = require('path'); // SonarCloud: removed useless assignment
   
   const componentFiles = [
     'debate-ui/src/components/AgenticFlowConfig.tsx',

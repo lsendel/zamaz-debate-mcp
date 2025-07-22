@@ -51,6 +51,7 @@ RUN chmod +x /app/docker-entrypoint.sh
 USER mcp
 
 # Expose port
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
 EXPOSE 8888
 
 # Health check

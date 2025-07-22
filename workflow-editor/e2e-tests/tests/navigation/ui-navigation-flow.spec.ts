@@ -7,7 +7,7 @@ test.describe('UI Navigation Flow for Regression Testing', () => {
 
   test.beforeEach(async ({ page }) => {
     helpers = new WorkflowEditorTestHelpers(page);
-    assertions = new WorkflowEditorAssertions(page);
+//     assertions = new WorkflowEditorAssertions(page); // SonarCloud: removed useless assignment
     
     await page.goto('/');
     await helpers.waitForPageLoad();

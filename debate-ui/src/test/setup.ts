@@ -25,15 +25,15 @@ Object.defineProperty(window, 'matchMedia', {
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
+  disconnect() { /* TODO: implement */ }
+  observe() { /* TODO: implement */ }
+  unobserve() { /* TODO: implement */ }
 };
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
+  disconnect() { /* TODO: implement */ }
+  observe() { /* TODO: implement */ }
+  unobserve() { /* TODO: implement */ }
 };

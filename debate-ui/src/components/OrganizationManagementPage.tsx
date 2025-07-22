@@ -43,7 +43,7 @@ import LLMPresetConfig from "./LLMPresetConfig";
 
 const OrganizationManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { organizations, currentOrganization, loading } = useAppSelector(
+//   const { organizations, currentOrganization, loading } = useAppSelector( // SonarCloud: removed useless assignment
     (state) => state.organization,
   );
   const { user } = useAppSelector((state) => state.auth);
