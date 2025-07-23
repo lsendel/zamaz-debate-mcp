@@ -33,12 +33,12 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           languages: java, javascript
 
@@ -54,14 +54,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
 
       - name: Cache Maven dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
@@ -97,7 +97,7 @@ jobs:
           reporter: java-junit
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: ${{ matrix.service }}
@@ -115,7 +115,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -140,14 +140,14 @@ jobs:
           GENERATE_SOURCEMAP: false
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: debate-ui/build/
           retention-days: 7
 
       - name: Upload test coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./debate-ui/coverage/lcov.info
           flags: frontend
@@ -163,7 +163,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
@@ -205,7 +205,7 @@ jobs:
           ./scripts/testing/wait-for-services.sh
 
       - name: Set up Node.js for E2E tests
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -222,7 +222,7 @@ jobs:
           CI: true
 
       - name: Upload E2E test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: e2e-test-results
@@ -245,7 +245,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
@@ -268,7 +268,7 @@ jobs:
           mvn org.owasp:dependency-check-maven:check -B
 
       - name: Upload security test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-test-results
@@ -288,7 +288,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
@@ -305,7 +305,7 @@ jobs:
           mvn gatling:test -B
 
       - name: Upload performance test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-test-results
           path: load-tests/target/gatling/
@@ -353,7 +353,7 @@ jobs:
 
       - name: Download frontend build artifacts
         if: matrix.service == 'debate-ui'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: debate-ui/build/
@@ -381,7 +381,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
         with:
           version: 'v1.28.0'
 
@@ -403,11 +403,15 @@ jobs:
           ./scripts/testing/smoke-tests.sh staging
 
       - name: Notify deployment status
-        uses: 8398a7/action-slack@v3
+        uses: slackapi/slack-github-action@v2
         with:
-          status: ${{ job.status }}
-          channel: '#deployments'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Deployment to staging: ${{ job.status }}",
+              "channel": "#deployments"
+            }
         if: always()
 
   # Deploy to Production
@@ -422,7 +426,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
         with:
           version: 'v1.28.0'
 
@@ -455,12 +459,15 @@ jobs:
             }'
 
       - name: Notify production deployment
-        uses: 8398a7/action-slack@v3
+        uses: slackapi/slack-github-action@v2
         with:
-          status: ${{ job.status }}
-          channel: '#production'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          text: 'Production deployment completed for version ${{ github.event.release.tag_name }}'
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Production deployment completed for version ${{ github.event.release.tag_name }} - Status: ${{ job.status }}",
+              "channel": "#production"
+            }
         if: always()
 
   # Automated Workflow Failure Handler
