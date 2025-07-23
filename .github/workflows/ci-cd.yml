@@ -476,7 +476,7 @@ jobs:
       # Dynamic assignees based on failure
       assignees: ${{ (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'devops-team,platform-lead,oncall' || (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'security-team,team-lead' || (needs.java-services.result == 'failure') && 'backend-team' || (needs.frontend.result == 'failure') && 'frontend-team' || 'dev-team' }}
       # Comprehensive labels
-      labels: ${{ format('workflow-failure,ci-cd,{0}{1}{2}{3}{4}{5}', (needs.deploy-production.result == 'failure') && 'production,critical,deployment,' || '', (needs.deploy-staging.result == 'failure') && 'staging,deployment,' || '', (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'security,' || '', (needs.e2e-tests.result == 'failure') && 'e2e-tests,' || '', (needs.performance-tests.result == 'failure') && 'performance,' || '', github.ref_name) }}
+      labels: "workflow-failure,ci-cd,branch-${{ github.ref_name }}"
       # Template selection
       template: ${{ (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'deployment' || (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'security' || 'ci-cd' }}
       notify-slack: true

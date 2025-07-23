@@ -290,7 +290,7 @@ jobs:
       severity: "critical"
       assignees: "release-manager,team-lead,devops-team"
       # Comprehensive labels
-      labels: ${{ format('workflow-failure,release,critical,{0}{1}{2}{3}', (needs.create-release.result == 'failure' && 'release-creation,' || ''), (needs.build-release-artifacts.result == 'failure' && 'build-artifacts,' || ''), (needs.build-release-images.result == 'failure' && 'docker-build,' || ''), (needs.create-release.outputs.tag_name || github.ref_name)) }}
+      labels: "workflow-failure,release,critical,tag-${{ needs.create-release.outputs.tag_name || github.ref_name }}"
       template: "deployment"
       # Always notify for release issues
       notify-slack: true

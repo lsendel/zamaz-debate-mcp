@@ -469,7 +469,7 @@ jobs:
       # Dynamic assignees based on failure
       assignees: ${{ (needs.java-linting.result == 'failure' && 'backend-team,code-quality-team' || needs.frontend-linting.result == 'failure' && 'frontend-team,code-quality-team' || needs.security-scan.result == 'failure' && 'security-team' || 'code-quality-team') }}
       # Comprehensive labels
-      labels: ${{ format('workflow-failure,code-quality,{0}{1}{2}{3}{4}{5}', (needs.java-linting.result == 'failure' && 'java,linting,' || ''), (needs.frontend-linting.result == 'failure' && 'frontend,linting,' || ''), (needs.config-linting.result == 'failure' && 'configuration,' || ''), (needs.docs-linting.result == 'failure' && 'documentation,' || ''), (needs.security-scan.result == 'failure' && 'security,vulnerability,' || ''), github.ref_name) }}
+      labels: "workflow-failure,code-quality,branch-${{ github.ref_name }}"
       template: "linting"
       notify-slack: ${{ github.ref == 'refs/heads/main' }}
     secrets:

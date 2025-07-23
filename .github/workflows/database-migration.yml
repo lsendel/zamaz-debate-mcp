@@ -132,7 +132,7 @@ jobs:
       severity: ${{ (github.event.inputs.environment == 'production' && 'critical' || 'high') }}
       assignees: "dba-team,backend-team,oncall"
       # Comprehensive labels
-      labels: ${{ format('workflow-failure,database,migration,{0}{1}{2}', (github.event.inputs.migration_type == 'rollback' && 'rollback,urgent,' || ''), (github.event.inputs.environment == 'production' && 'production,critical,' || ''), github.event.inputs.environment) }}
+      labels: "workflow-failure,database,migration,env-${{ github.event.inputs.environment }}"
       template: "deployment"
       # Always notify for database issues
       notify-slack: true

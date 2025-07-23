@@ -109,10 +109,10 @@ jobs:
     needs: [simulate-workflow]
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
-      workflow-name: ${{ format('Test {0} Workflow', inputs.failure-type) }}
+      workflow-name: "Test ${{ inputs.failure-type }} Workflow"
       severity: ${{ inputs.failure-type == 'deployment' && 'critical' || inputs.failure-type == 'security' && 'high' || 'medium' }}
       assignees: "test-team"
-      labels: ${{ format('test,workflow-failure,{0}', inputs.failure-type) }}
+      labels: "test,workflow-failure,${{ inputs.failure-type }}"
       template: ${{ inputs.failure-type == 'deployment' && 'deployment' || inputs.failure-type == 'security' && 'security' || inputs.failure-type == 'linting' && 'linting' || inputs.failure-type == 'build' && 'ci-cd' || 'default' }}
       dry-run: true  # Set to false to actually create issues
     secrets:

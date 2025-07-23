@@ -177,7 +177,7 @@ jobs:
       severity: ${{ (github.ref == 'refs/heads/main' && 'high' || 'medium') }}
       assignees: "devops-team,platform-team"
       # Comprehensive labels
-      labels: ${{ format('workflow-failure,docker,build,{0}container,{1}', (contains(needs.build-images.result, 'failure') && 'build-failure,' || ''), github.ref_name) }}
+      labels: "workflow-failure,docker,build,container,branch-${{ github.ref_name }}"
       template: "ci-cd"
       notify-slack: ${{ github.ref == 'refs/heads/main' }}
     secrets:

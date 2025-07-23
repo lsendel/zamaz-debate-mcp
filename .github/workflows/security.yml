@@ -14,6 +14,20 @@ env:
   JAVA_VERSION: "21"
 
 jobs:
+  # Debug job to ensure workflow runs
+  debug-info:
+    name: 🔍 Debug Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show context
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Workflow: ${{ github.workflow }}"
+
   semgrep:
     name: 🔍 Semgrep Code Security
     runs-on: ubuntu-latest
@@ -23,7 +37,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check for Semgrep token
+        id: check-token
+        run: |
+          if [ -n "${{ secrets.SEMGREP_APP_TOKEN }}" ]; then
+            echo "has-token=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-token=false" >> $GITHUB_OUTPUT
+            echo "⚠️ SEMGREP_APP_TOKEN not configured, skipping Semgrep scan"
+          fi
+
       - name: Run Semgrep security scan
+        if: steps.check-token.outputs.has-token == 'true'
         uses: semgrep/semgrep-action@v1
         with:
           config: >-
@@ -35,6 +60,10 @@ jobs:
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
         continue-on-error: true
+      
+      - name: Skip Semgrep scan
+        if: steps.check-token.outputs.has-token == 'false'
+        run: echo "Semgrep scan skipped - SEMGREP_APP_TOKEN not configured"
 
   java-security:
     name: ☕ Java Security Scan
@@ -144,11 +173,11 @@ jobs:
     with:
       workflow-name: "Security Scanning"
       # High severity for security failures
-      severity: ${{ (needs.secrets-scan.result == 'failure' && 'critical') || (github.event_name == 'schedule' && failure() && 'high') || (github.ref == 'refs/heads/main' && 'high') || 'medium' }}
+      severity: ${{ (needs.secrets-scan.result == 'failure' && 'critical') || (github.event_name == 'schedule' && 'high') || (github.ref == 'refs/heads/main' && 'high') || 'medium' }}
       # Security team assignment
       assignees: "security-team,team-lead"
       # Comprehensive security labels
-      labels: ${{ format('workflow-failure,security,compliance,{0}{1}{2}{3}{4}', (needs.secrets-scan.result == 'failure' && 'secrets-exposed,critical,' || ''), (needs.java-security.result == 'failure' && 'java-vulnerability,' || ''), (needs.frontend-security.result == 'failure' && 'frontend-vulnerability,npm,' || ''), (needs.semgrep.result == 'failure' && 'code-vulnerability,' || ''), (github.event_name == 'schedule' && 'scheduled-scan' || github.ref_name)) }}
+      labels: "workflow-failure,security,compliance"
       # Use security template
       template: "security"
       # Always notify for security issues
