@@ -1,5 +1,6 @@
 const { Octokit } = require('@octokit/rest');
 const core = require('@actions/core');
+const { MonitoringService } = require('./monitoring');
 
 class IssueManager {
   constructor(token, owner, repo) {
@@ -7,6 +8,7 @@ class IssueManager {
     this.owner = owner;
     this.repo = repo;
     this.maxRetries = 3;
+    this.monitoring = new MonitoringService();
   }
 
   async analyzeFailure(workflowData) {
@@ -62,6 +64,7 @@ class IssueManager {
 
   async createWorkflowIssue(issueData) {
     let attempt = 0;
+    const timer = this.monitoring.startTimer('issue_creation');
     
     while (attempt < this.maxRetries) {
       try {
@@ -73,6 +76,9 @@ class IssueManager {
           labels: issueData.labels,
           assignees: issueData.assignees
         });
+        
+        const duration = this.monitoring.endTimer(timer);
+        this.monitoring.recordIssueCreation(issueData, duration);
         
         core.info(`Created issue #${response.data.number}: ${response.data.html_url}`);
         return response.data;

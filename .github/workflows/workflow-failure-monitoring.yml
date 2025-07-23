@@ -1,0 +1,325 @@
+name: Workflow Failure Monitoring
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      report-type:
+        description: 'Type of report to generate'
+        required: true
+        type: choice
+        options:
+          - summary
+          - detailed
+          - health-check
+        default: 'summary'
+
+jobs:
+  generate-monitoring-report:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      actions: read
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: |
+          cd .github/scripts
+          npm ci
+          
+      - name: Collect workflow failure metrics
+        id: collect-metrics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd .github/scripts
+          
+          # Get workflow failure issues from last 7 days
+          node -e "
+            const { Octokit } = require('@octokit/rest');
+            const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+            
+            async function collectMetrics() {
+              const oneWeekAgo = new Date();
+              oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+              
+              // Search for workflow failure issues
+              const issues = await octokit.rest.search.issuesAndPullRequests({
+                q: \`repo:\${process.env.GITHUB_REPOSITORY} label:workflow-failure created:>\${oneWeekAgo.toISOString().split('T')[0]}\`,
+                sort: 'created',
+                order: 'desc',
+                per_page: 100
+              });
+              
+              // Analyze issues
+              const metrics = {
+                total_failures: issues.data.total_count,
+                failures_by_severity: {},
+                failures_by_workflow: {},
+                failures_by_category: {},
+                recent_failures: []
+              };
+              
+              for (const issue of issues.data.items) {
+                // Extract metadata from issue body
+                const severityMatch = issue.body?.match(/\*\*Severity:\*\* (\w+)/);
+                const workflowMatch = issue.body?.match(/workflow:([^\n]+)/);
+                const categoryMatch = issue.body?.match(/failure-type:([^\n]+)/);
+                
+                const severity = severityMatch?.[1] || 'unknown';
+                const workflow = workflowMatch?.[1] || 'unknown';
+                const category = categoryMatch?.[1] || 'unknown';
+                
+                metrics.failures_by_severity[severity] = (metrics.failures_by_severity[severity] || 0) + 1;
+                metrics.failures_by_workflow[workflow] = (metrics.failures_by_workflow[workflow] || 0) + 1;
+                metrics.failures_by_category[category] = (metrics.failures_by_category[category] || 0) + 1;
+                
+                metrics.recent_failures.push({
+                  title: issue.title,
+                  url: issue.html_url,
+                  created_at: issue.created_at,
+                  severity,
+                  workflow,
+                  category,
+                  state: issue.state
+                });
+              }
+              
+              return metrics;
+            }
+            
+            collectMetrics()
+              .then(metrics => {
+                console.log(JSON.stringify(metrics, null, 2));
+                require('fs').writeFileSync('metrics.json', JSON.stringify(metrics, null, 2));
+              })
+              .catch(error => {
+                console.error('Failed to collect metrics:', error);
+                process.exit(1);
+              });
+          "
+          
+      - name: Generate monitoring report
+        env:
+          REPORT_TYPE: ${{ inputs.report-type || 'summary' }}
+        run: |
+          cd .github/scripts
+          
+          REPORT_DATE=$(date +"%Y-%m-%d %H:%M:%S UTC")
+          METRICS=$(cat metrics.json)
+          
+          # Generate report based on type
+          if [ "$REPORT_TYPE" = "health-check" ]; then
+            HEALTH_STATUS=$(node monitoring.js health)
+            echo "$HEALTH_STATUS" > health-report.json
+            
+            cat > monitoring-report.md << EOF
+          # Workflow Failure Handler Health Check
+          
+          **Generated:** $REPORT_DATE
+          
+          ## System Health
+          
+          \`\`\`json
+          $HEALTH_STATUS
+          \`\`\`
+          EOF
+          
+          else
+            # Generate metrics report
+            cat > monitoring-report.md << EOF
+          # Workflow Failure Monitoring Report
+          
+          **Generated:** $REPORT_DATE
+          **Report Type:** $REPORT_TYPE
+          
+          ## Summary (Last 7 Days)
+          
+          - **Total Workflow Failures:** $(echo "$METRICS" | jq -r '.total_failures')
+          - **Open Issues:** $(echo "$METRICS" | jq -r '.recent_failures | map(select(.state == "open")) | length')
+          - **Closed Issues:** $(echo "$METRICS" | jq -r '.recent_failures | map(select(.state == "closed")) | length')
+          
+          ## Failures by Severity
+          
+          | Severity | Count |
+          |----------|-------|
+          $(echo "$METRICS" | jq -r '.failures_by_severity | to_entries | .[] | "| \(.key) | \(.value) |"')
+          
+          ## Failures by Workflow
+          
+          | Workflow | Count |
+          |----------|-------|
+          $(echo "$METRICS" | jq -r '.failures_by_workflow | to_entries | sort_by(.value) | reverse | .[] | "| \(.key) | \(.value) |"')
+          
+          ## Failures by Category
+          
+          | Category | Count |
+          |----------|-------|
+          $(echo "$METRICS" | jq -r '.failures_by_category | to_entries | .[] | "| \(.key) | \(.value) |"')
+          
+          EOF
+          
+            if [ "$REPORT_TYPE" = "detailed" ]; then
+              cat >> monitoring-report.md << EOF
+          
+          ## Recent Failures
+          
+          | Workflow | Severity | Category | Created | Status | Link |
+          |----------|----------|----------|---------|--------|------|
+          $(echo "$METRICS" | jq -r '.recent_failures[:20] | .[] | "| \(.workflow) | \(.severity) | \(.category) | \(.created_at | split("T")[0]) | \(.state) | [\(.title)](\(.url)) |"')
+          
+          EOF
+            fi
+          fi
+          
+          # Add performance metrics if available
+          if [ -f "performance-metrics.json" ]; then
+            PERF_METRICS=$(cat performance-metrics.json)
+            cat >> monitoring-report.md << EOF
+          
+          ## Performance Metrics
+          
+          - **Average Issue Creation Time:** $(echo "$PERF_METRICS" | jq -r '.avg_issue_creation_time')ms
+          - **Average Notification Delivery Time:** $(echo "$PERF_METRICS" | jq -r '.avg_notification_time')ms
+          - **Success Rate:** $(echo "$PERF_METRICS" | jq -r '.success_rate')%
+          
+          EOF
+          fi
+          
+          echo "Report generated successfully"
+          
+      - name: Create monitoring artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-monitoring-report-${{ github.run_id }}
+          path: |
+            .github/scripts/monitoring-report.md
+            .github/scripts/metrics.json
+            .github/scripts/health-report.json
+          retention-days: 30
+          
+      - name: Update monitoring dashboard
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.report-type == 'summary')
+        run: |
+          cd .github/scripts
+          
+          # Create or update dashboard file
+          DASHBOARD_DIR="../../docs/monitoring"
+          mkdir -p "$DASHBOARD_DIR"
+          
+          # Copy latest report
+          cp monitoring-report.md "$DASHBOARD_DIR/latest-report.md"
+          
+          # Archive with timestamp
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          cp monitoring-report.md "$DASHBOARD_DIR/archive/report-$TIMESTAMP.md"
+          
+          # Update dashboard index
+          cat > "$DASHBOARD_DIR/README.md" << EOF
+          # Workflow Failure Monitoring Dashboard
+          
+          ## Latest Report
+          
+          [View Latest Report](latest-report.md)
+          
+          ## Historical Data
+          
+          - [Archived Reports](archive/)
+          - [Metrics Trends](trends.md)
+          - [Health Check History](health-history.md)
+          
+          ## Quick Stats
+          
+          $(cat monitoring-report.md | grep -A 3 "## Summary" || echo "No data available")
+          
+          ## Alerts
+          
+          $([ $(cat metrics.json | jq -r '.failures_by_severity.critical // 0') -gt 0 ] && echo "⚠️ **Critical failures detected!**" || echo "✅ No critical failures")
+          
+          ---
+          
+          Last updated: $(date +"%Y-%m-%d %H:%M:%S UTC")
+          EOF
+          
+      - name: Send monitoring alerts
+        if: github.event_name == 'schedule'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.MONITORING_SLACK_WEBHOOK }}
+        run: |
+          cd .github/scripts
+          
+          # Check for critical issues
+          CRITICAL_COUNT=$(cat metrics.json | jq -r '.failures_by_severity.critical // 0')
+          HIGH_COUNT=$(cat metrics.json | jq -r '.failures_by_severity.high // 0')
+          
+          if [ "$CRITICAL_COUNT" -gt 0 ] || [ "$HIGH_COUNT" -gt 5 ]; then
+            # Send alert
+            node -e "
+              const https = require('https');
+              const metrics = require('./metrics.json');
+              
+              const message = {
+                text: '🚨 Workflow Failure Alert',
+                blocks: [
+                  {
+                    type: 'header',
+                    text: {
+                      type: 'plain_text',
+                      text: '🚨 High Workflow Failure Rate Detected'
+                    }
+                  },
+                  {
+                    type: 'section',
+                    fields: [
+                      {
+                        type: 'mrkdwn',
+                        text: '*Critical Failures:*\n${metrics.failures_by_severity.critical || 0}'
+                      },
+                      {
+                        type: 'mrkdwn',
+                        text: '*High Severity:*\n${metrics.failures_by_severity.high || 0}'
+                      },
+                      {
+                        type: 'mrkdwn',
+                        text: '*Total (7 days):*\n${metrics.total_failures}'
+                      },
+                      {
+                        type: 'mrkdwn',
+                        text: '*Open Issues:*\n${metrics.recent_failures.filter(f => f.state === 'open').length}'
+                      }
+                    ]
+                  },
+                  {
+                    type: 'actions',
+                    elements: [
+                      {
+                        type: 'button',
+                        text: {
+                          type: 'plain_text',
+                          text: 'View Full Report'
+                        },
+                        url: 'https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}'
+                      }
+                    ]
+                  }
+                ]
+              };
+              
+              // Send to Slack if webhook is configured
+              if (process.env.SLACK_WEBHOOK) {
+                // Implementation would send to Slack
+                console.log('Alert would be sent to Slack');
+              }
+            "
+          fi
