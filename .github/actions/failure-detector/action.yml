@@ -1,0 +1,29 @@
+name: "Workflow Failure Detector"
+description: "Detects workflow failures and prepares issue creation data"
+inputs:
+  workflow-name:
+    description: "Name of the workflow"
+    required: true
+  failure-context:
+    description: "Additional context about the failure"
+    required: false
+    default: "auto-detect"
+  severity:
+    description: "Failure severity (critical, high, medium, low)"
+    required: false
+    default: "medium"
+  assignees:
+    description: "Comma-separated list of GitHub usernames to assign"
+    required: false
+  labels:
+    description: "Comma-separated list of labels to apply"
+    required: false
+    default: "workflow-failure,bug"
+outputs:
+  issue-data:
+    description: "JSON data for issue creation"
+  should-create-issue:
+    description: "Boolean indicating if issue should be created"
+runs:
+  using: "node20"
+  main: "index.js"

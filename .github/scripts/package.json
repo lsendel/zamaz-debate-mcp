@@ -1,0 +1,17 @@
+{
+  "name": "workflow-issue-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for automated workflow issue creation",
+  "main": "config-parser.js",
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

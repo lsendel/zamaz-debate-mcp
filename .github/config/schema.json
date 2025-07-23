@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Workflow Issue Configuration Schema",
+  "type": "object",
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable or disable the workflow failure issue creation system"
+        },
+        "default_assignees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Default GitHub usernames to assign to workflow failure issues"
+        },
+        "default_labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Default labels to apply to workflow failure issues"
+        },
+        "notification_channels": {
+          "type": "object",
+          "properties": {
+            "slack": {
+              "type": "string",
+              "description": "Default Slack channel for notifications"
+            },
+            "email": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              },
+              "description": "Default email addresses for notifications"
+            }
+          }
+        },
+        "escalation_threshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of failures before escalating notifications"
+        },
+        "duplicate_detection": {
+          "type": "boolean",
+          "description": "Enable duplicate issue detection and updating"
+        }
+      },
+      "required": ["enabled"]
+    },
+    "workflows": {
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "type": "object",
+          "properties": {
+            "severity": {
+              "type": "string",
+              "enum": ["critical", "high", "medium", "low"],
+              "description": "Severity level for this workflow's failures"
+            },
+            "assignees": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "GitHub usernames to assign for this workflow's failures"
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Labels to apply for this workflow's failures"
+            },
+            "template": {
+              "type": "string",
+              "description": "Template to use for issue creation"
+            },
+            "escalation_threshold": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of failures before escalating for this workflow"
+            },
+            "notification_channels": {
+              "type": "object",
+              "properties": {
+                "slack": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            },
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable or disable issue creation for this specific workflow"
+            }
+          }
+        }
+      }
+    },
+    "templates": {
+      "type": "object",
+      "properties": {
+        "default_template": {
+          "type": "string",
+          "description": "Default template to use when no specific template is configured"
+        },
+        "custom_template_path": {
+          "type": "string",
+          "description": "Path to custom template directory"
+        }
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable or disable notifications"
+        },
+        "throttle_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum minutes between notifications for the same workflow"
+        },
+        "escalation_delay_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minutes to wait before escalating notifications"
+        },
+        "max_notifications_per_hour": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of notifications to send per hour"
+        }
+      }
+    }
+  },
+  "required": ["global"]
+}

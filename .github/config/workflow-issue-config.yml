@@ -1,0 +1,75 @@
+# Global configuration for workflow failure issue creation
+global:
+  enabled: true
+  default_assignees: ["team-lead", "devops-team"]
+  default_labels: ["workflow-failure", "bug"]
+  notification_channels:
+    slack: "#ci-cd-alerts"
+    email: ["team@company.com"]
+  escalation_threshold: 3
+  duplicate_detection: true
+
+# Workflow-specific configurations
+workflows:
+  "CI/CD Pipeline":
+    severity: critical
+    assignees: ["backend-team", "devops-team"]
+    labels: ["ci-cd", "critical", "workflow-failure"]
+    template: "ci-cd"
+    escalation_threshold: 2
+    notification_channels:
+      slack: "#ci-cd-alerts"
+      email: ["devops@company.com"]
+
+  "Code Quality":
+    severity: medium
+    assignees: ["code-quality-team"]
+    labels: ["code-quality", "workflow-failure"]
+    template: "linting"
+    escalation_threshold: 5
+
+  "Security Scanning":
+    severity: high
+    assignees: ["security-team", "team-lead"]
+    labels: ["security", "workflow-failure"]
+    template: "security"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#security-alerts"
+      email: ["security@company.com"]
+
+  "Build":
+    severity: high
+    assignees: ["backend-team"]
+    labels: ["build", "workflow-failure"]
+    template: "build"
+    escalation_threshold: 3
+
+  "Test":
+    severity: medium
+    assignees: ["qa-team", "backend-team"]
+    labels: ["test", "workflow-failure"]
+    template: "test"
+    escalation_threshold: 4
+
+  "Deployment":
+    severity: critical
+    assignees: ["devops-team", "team-lead"]
+    labels: ["deployment", "critical", "workflow-failure"]
+    template: "deployment"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#deployment-alerts"
+      email: ["devops@company.com", "team-lead@company.com"]
+
+# Template configuration
+templates:
+  default_template: "default"
+  custom_template_path: ".github/templates/workflow-issues/custom/"
+
+# Notification settings
+notifications:
+  enabled: true
+  throttle_minutes: 30
+  escalation_delay_minutes: 60
+  max_notifications_per_hour: 10

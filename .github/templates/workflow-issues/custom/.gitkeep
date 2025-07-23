@@ -1,0 +1,4 @@
+# Custom workflow templates directory
+# Place workflow-specific templates here with the format:
+# - {workflow-name}.md for specific workflow templates
+# - {workflow-type}.md for workflow type templates
