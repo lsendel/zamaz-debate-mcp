@@ -1,0 +1,54 @@
+{
+  "timestamp": "2025-07-23T16:08:52Z",
+  "affected_modules": [
+    "mcp-organization",
+    "debate-ui"
+  ],
+  "test_plan": "standard",
+  "risk_level": "medium",
+  "execution_plan": {
+    "plan": "standard",
+    "unit_tests": [
+      "frontend:test",
+      "mcp-organization:test"
+    ],
+    "integration_tests": [
+      "auth-integration-tests",
+      "frontend-integration-tests",
+      "organization-integration-tests"
+    ],
+    "e2e_tests": [],
+    "performance_tests": [],
+    "security_tests": []
+  },
+  "parallelization_strategy": [
+    {
+      "group": "unit",
+      "parallel": true,
+      "tests": [
+        "frontend:test",
+        "mcp-organization:test"
+      ],
+      "max_time": "5m"
+    },
+    {
+      "group": "integration",
+      "parallel": true,
+      "max_parallel": 2,
+      "tests": [
+        "auth-integration-tests",
+        "frontend-integration-tests",
+        "organization-integration-tests"
+      ],
+      "max_time": "15m"
+    }
+  ],
+  "time_estimate": {
+    "unit_time": "60s",
+    "integration_time": "360s",
+    "e2e_time": "0s",
+    "performance_time": "0s",
+    "security_time": "0s",
+    "total_estimated_time": "420s"
+  }
+}

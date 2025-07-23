@@ -41,9 +41,23 @@ analyze_dependency_impact() {
         module_transitive=$(get_transitive_dependencies "${module}")
         
         # Merge results
-        upstream_deps=($(merge_json_arrays "$(printf '%s\n' "${upstream_deps[@]}" | jq -R . | jq -s .)" "${module_upstream}"))
-        downstream_deps=($(merge_json_arrays "$(printf '%s\n' "${downstream_deps[@]}" | jq -R . | jq -s .)" "${module_downstream}"))
-        transitive_deps=($(merge_json_arrays "$(printf '%s\n' "${transitive_deps[@]}" | jq -R . | jq -s .)" "${module_transitive}"))
+        if [[ ${#upstream_deps[@]} -gt 0 ]]; then
+            upstream_deps=($(merge_json_arrays "$(printf '%s\n' "${upstream_deps[@]}" | jq -R . | jq -s .)" "${module_upstream}"))
+        else
+            upstream_deps=($(echo "${module_upstream}" | jq -r '.[]' 2>/dev/null || echo ""))
+        fi
+        
+        if [[ ${#downstream_deps[@]} -gt 0 ]]; then
+            downstream_deps=($(merge_json_arrays "$(printf '%s\n' "${downstream_deps[@]}" | jq -R . | jq -s .)" "${module_downstream}"))
+        else
+            downstream_deps=($(echo "${module_downstream}" | jq -r '.[]' 2>/dev/null || echo ""))
+        fi
+        
+        if [[ ${#transitive_deps[@]} -gt 0 ]]; then
+            transitive_deps=($(merge_json_arrays "$(printf '%s\n' "${transitive_deps[@]}" | jq -R . | jq -s .)" "${module_transitive}"))
+        else
+            transitive_deps=($(echo "${module_transitive}" | jq -r '.[]' 2>/dev/null || echo ""))
+        fi
         
     done <<< "${modules}"
     
@@ -87,7 +101,11 @@ get_upstream_dependencies() {
             ;;
     esac
     
-    printf '%s\n' "${deps[@]}" | jq -R . | jq -s . | jq 'unique'
+    if [[ ${#deps[@]} -gt 0 ]]; then
+        printf '%s\n' "${deps[@]}" | jq -R . | jq -s . | jq 'unique'
+    else
+        echo "[]"
+    fi
 }
 
 # Get downstream dependencies (what depends on this module)
@@ -126,7 +144,11 @@ get_downstream_dependencies() {
             ;;
     esac
     
-    printf '%s\n' "${deps[@]}" | jq -R . | jq -s . | jq 'unique'
+    if [[ ${#deps[@]} -gt 0 ]]; then
+        printf '%s\n' "${deps[@]}" | jq -R . | jq -s . | jq 'unique'
+    else
+        echo "[]"
+    fi
 }
 
 # Get transitive dependencies
@@ -146,7 +168,11 @@ get_transitive_dependencies() {
         deps+=($(echo "${transitive}" | jq -r '.[]' 2>/dev/null || echo ""))
     done <<< "$(echo "${direct_upstream}" | jq -r '.[]' 2>/dev/null || echo "")"
     
-    printf '%s\n' "${deps[@]}" | jq -R . | jq -s . | jq 'unique'
+    if [[ ${#deps[@]} -gt 0 ]]; then
+        printf '%s\n' "${deps[@]}" | jq -R . | jq -s . | jq 'unique'
+    else
+        echo "[]"
+    fi
 }
 
 # Get Maven upstream dependencies

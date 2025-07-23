@@ -128,7 +128,7 @@ analyze_affected_modules() {
         # Check Java services
         for service in "${java_services[@]}"; do
             if [[ "${file}" == "${service}/"* ]]; then
-                if ! array_contains "${service}" "${modules[@]}"; then
+                if [[ ${#modules[@]} -eq 0 ]] || ! array_contains "${service}" "${modules[@]}"; then
                     modules+=("${service}")
                 fi
             fi
@@ -136,28 +136,28 @@ analyze_affected_modules() {
         
         # Check frontend
         if [[ "${file}" == "debate-ui/"* ]]; then
-            if ! array_contains "debate-ui" "${modules[@]}"; then
+            if [[ ${#modules[@]} -eq 0 ]] || ! array_contains "debate-ui" "${modules[@]}"; then
                 modules+=("debate-ui")
             fi
         fi
         
         # Check infrastructure
         if [[ "${file}" == "docker-compose"* ]] || [[ "${file}" == "Dockerfile"* ]] || [[ "${file}" == "k8s/"* ]] || [[ "${file}" == "helm/"* ]]; then
-            if ! array_contains "infrastructure" "${modules[@]}"; then
+            if [[ ${#modules[@]} -eq 0 ]] || ! array_contains "infrastructure" "${modules[@]}"; then
                 modules+=("infrastructure")
             fi
         fi
         
         # Check CI/CD
         if [[ "${file}" == ".github/"* ]] || [[ "${file}" == "scripts/"* ]] || [[ "${file}" == "Makefile" ]]; then
-            if ! array_contains "ci-cd" "${modules[@]}"; then
+            if [[ ${#modules[@]} -eq 0 ]] || ! array_contains "ci-cd" "${modules[@]}"; then
                 modules+=("ci-cd")
             fi
         fi
         
         # Check root configuration
         if [[ "${file}" == "pom.xml" ]] || [[ "${file}" == "*.properties" ]] || [[ "${file}" == "*.yml" ]] || [[ "${file}" == "*.yaml" ]]; then
-            if ! array_contains "config" "${modules[@]}"; then
+            if [[ ${#modules[@]} -eq 0 ]] || ! array_contains "config" "${modules[@]}"; then
                 modules+=("config")
             fi
         fi

@@ -98,6 +98,10 @@ calculate_change_complexity() {
     local added=$(echo "${stats}" | cut -f1)
     local deleted=$(echo "${stats}" | cut -f2)
     
+    # Ensure numeric values
+    [[ "${added}" =~ ^[0-9]+$ ]] || added=0
+    [[ "${deleted}" =~ ^[0-9]+$ ]] || deleted=0
+    
     # Simple complexity calculation
     local complexity=$((added + deleted))
     

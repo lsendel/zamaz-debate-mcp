@@ -1,0 +1,19 @@
+{
+  "deployment_frequency": [
+    {
+      "timestamp": "2025-07-23T16:08:53Z",
+      "commit": "abc123",
+      "environment": "unknown",
+      "success": true
+    }
+  ],
+  "lead_time": [],
+  "change_failure_rate": [
+    {
+      "timestamp": "2025-07-23T16:08:53Z",
+      "commit": "abc123",
+      "failed": false
+    }
+  ],
+  "mttr": []
+}
