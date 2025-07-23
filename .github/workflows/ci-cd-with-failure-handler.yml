@@ -411,51 +411,13 @@ jobs:
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "CI/CD Pipeline"
-      # Dynamic severity based on what failed and where
-      severity: ${{ 
-        (failure() && needs.deploy-production.result == 'failure') && 'critical' ||
-        (failure() && needs.deploy-staging.result == 'failure') && 'high' ||
-        (failure() && needs.security-scan.result == 'failure') && 'high' ||
-        (failure() && needs.e2e-tests.result == 'failure') && 'high' ||
-        'medium'
-      }}
-      # Dynamic assignees based on what failed
-      assignees: ${{
-        (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'devops-team,oncall,platform-lead' ||
-        (needs.security-scan.result == 'failure') && 'security-team,team-lead' ||
-        (needs.java-services.result == 'failure' || needs.frontend.result == 'failure') && 'dev-team,backend-lead' ||
-        (needs.e2e-tests.result == 'failure' || needs.contract-tests.result == 'failure') && 'qa-team,dev-team' ||
-        'platform-team'
-      }}
-      # Comprehensive labels
-      labels: "workflow-failure,ci-cd,${{
-        (needs.security-scan.result == 'failure') && 'security,compliance,' || ''
-      }}${{
-        (needs.deploy-production.result == 'failure') && 'production,critical,incident,' || ''
-      }}${{
-        (needs.deploy-staging.result == 'failure') && 'staging,deployment,' || ''
-      }}${{
-        (needs.e2e-tests.result == 'failure' || needs.contract-tests.result == 'failure') && 'testing,' || ''
-      }}${{
-        (needs.performance-tests.result == 'failure') && 'performance,' || ''
-      }}${{
-        github.event_name == 'release' && 'release' || github.ref_name
-      }}"
-      # Template selection based on failure type
-      template: ${{
-        (needs.security-scan.result == 'failure') && 'security' ||
-        (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'deployment' ||
-        'ci-cd'
-      }}
-      # Notification settings
+      severity: ${{ (failure() && needs.deploy-production.result == 'failure') && 'critical' || (failure() && needs.deploy-staging.result == 'failure') && 'high' || (failure() && needs.security-scan.result == 'failure') && 'high' || (failure() && needs.e2e-tests.result == 'failure') && 'high' || 'medium' }}
+      assignees: ${{ (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'devops-team,oncall,platform-lead' || (needs.security-scan.result == 'failure') && 'security-team,team-lead' || (needs.java-services.result == 'failure' || needs.frontend.result == 'failure') && 'dev-team,backend-lead' || (needs.e2e-tests.result == 'failure' || needs.contract-tests.result == 'failure') && 'qa-team,dev-team' || 'platform-team' }}
+      labels: "workflow-failure,ci-cd"
+      template: ${{ (needs.security-scan.result == 'failure') && 'security' || (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'deployment' || 'ci-cd' }}
       notify-slack: true
-      notify-email: ${{ 
-        github.ref == 'refs/heads/main' || 
-        github.event_name == 'release' ||
-        needs.deploy-production.result == 'failure'
-      }}
+      notify-email: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' || needs.deploy-production.result == 'failure' }}
     secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
       SMTP_USER: ${{ secrets.SMTP_USER }}
       SMTP_PASS: ${{ secrets.SMTP_PASS }}

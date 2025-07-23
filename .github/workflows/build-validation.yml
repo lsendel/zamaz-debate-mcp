@@ -198,19 +198,9 @@ jobs:
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "Build Validation"
-      # Dynamic severity based on what failed
-      severity: ${{
-        (github.ref == 'refs/heads/main') && 'high' ||
-        (github.event_name == 'schedule') && 'medium' ||
-        'medium'
-      }}
+      severity: ${{ (github.ref == 'refs/heads/main') && 'high' || (github.event_name == 'schedule') && 'medium' || 'medium' }}
       assignees: "backend-team,devops-team"
-      # Comprehensive labels
-      labels: "workflow-failure,build,${{
-        (needs.build-validation.result == 'failure') && 'compilation,test-failure,' || ''
-      }}${{
-        (needs.dependency-validation.result == 'failure') && 'dependency-conflict,' || ''
-      }}${{ github.ref_name }}"
+      labels: "workflow-failure,build"
       template: "ci-cd"
       notify-slack: ${{ github.ref == 'refs/heads/main' || github.event_name == 'schedule' }}
     secrets:

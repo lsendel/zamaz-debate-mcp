@@ -167,34 +167,13 @@ jobs:
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "Security Scanning"
-      # High severity for security failures
-      severity: ${{
-        (needs.secrets-scan.result == 'failure') && 'critical' ||
-        (github.event_name == 'schedule' && failure()) && 'high' ||
-        (github.ref == 'refs/heads/main') && 'high' ||
-        'medium'
-      }}
-      # Security team assignment
+      severity: ${{ (needs.secrets-scan.result == 'failure') && 'critical' || (github.event_name == 'schedule' && failure()) && 'high' || (github.ref == 'refs/heads/main') && 'high' || 'medium' }}
       assignees: "security-team,team-lead"
-      # Comprehensive security labels
-      labels: "workflow-failure,security,compliance,${{
-        (needs.secrets-scan.result == 'failure') && 'secrets-exposed,critical,' || ''
-      }}${{
-        (needs.java-security.result == 'failure') && 'java-vulnerability,' || ''
-      }}${{
-        (needs.frontend-security.result == 'failure') && 'frontend-vulnerability,npm,' || ''
-      }}${{
-        (needs.semgrep.result == 'failure') && 'code-vulnerability,' || ''
-      }}${{
-        github.event_name == 'schedule' && 'scheduled-scan' || github.ref_name
-      }}"
-      # Use security template
+      labels: "workflow-failure,security,compliance"
       template: "security"
-      # Always notify for security issues
       notify-slack: true
       notify-email: ${{ github.ref == 'refs/heads/main' || needs.secrets-scan.result == 'failure' }}
     secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SLACK_WEBHOOK: ${{ secrets.SECURITY_SLACK_WEBHOOK || secrets.SLACK_WEBHOOK }}
       SMTP_USER: ${{ secrets.SMTP_USER }}
       SMTP_PASS: ${{ secrets.SMTP_PASS }}

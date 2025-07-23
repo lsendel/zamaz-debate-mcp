@@ -174,15 +174,10 @@ jobs:
     with:
       workflow-name: "Docker Image Build"
       # High severity for docker build failures
-      severity: ${{
-        (github.ref == 'refs/heads/main') && 'high' ||
-        'medium'
-      }}
+      severity: ${{ (github.ref == 'refs/heads/main' && 'high' || 'medium') }}
       assignees: "devops-team,platform-team"
       # Comprehensive labels
-      labels: "workflow-failure,docker,build,${{
-        contains(needs.build-images.result, 'failure') && 'build-failure,' || ''
-      }}container,${{ github.ref_name }}"
+      labels: ${{ format('workflow-failure,docker,build,{0}container,{1}', (contains(needs.build-images.result, 'failure') && 'build-failure,' || ''), github.ref_name) }}
       template: "ci-cd"
       notify-slack: ${{ github.ref == 'refs/heads/main' }}
     secrets:

@@ -93,24 +93,3 @@ jobs:
       SMTP_PASS: ${{ secrets.SMTP_PASS }}
       TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
 
-# Alternative approach: Use workflow_run event
-# This creates a separate workflow that triggers on failure
----
-name: Handle CI/CD Pipeline Failures
-
-on:
-  workflow_run:
-    workflows: ["Example CI/CD Pipeline with Failure Handler"]
-    types: [completed]
-
-jobs:
-  on-failure:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-    uses: ./.github/workflows/workflow-failure-handler.yml
-    with:
-      workflow-name: ${{ github.event.workflow_run.name }}
-      severity: ${{ github.event.workflow_run.head_branch == 'main' && 'critical' || 'high' }}
-      template: "auto"
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
