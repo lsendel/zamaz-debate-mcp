@@ -1,7 +1,7 @@
+#!/usr/bin/env node
+
 // TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
 // Consider breaking down complex functions into smaller, more focused functions
-
-#!/usr/bin/env node;
 
 const express = require('express');
 const cors = require('cors');
@@ -153,7 +153,7 @@ app.post('/api/v1/chat/completions', (req, res) => {
         index: 0,
         message: {
           role: "assistant",
-          content: content;
+          content: content
         },
         finish_reason: "stop"
       }
@@ -161,7 +161,7 @@ app.post('/api/v1/chat/completions', (req, res) => {
     usage: {
       prompt_tokens: estimateTokens(messages.map(m => m.content).join(' ')),
       completion_tokens: estimateTokens(content),
-      total_tokens: estimateTokens(messages.map(m => m.content).join(' ') + content);
+      total_tokens: estimateTokens(messages.map(m => m.content).join(' ') + content)
     }
   }
 
@@ -179,8 +179,8 @@ app.get('/api/v1/providers/:id/health', (req, res) => {
     provider: provider.id,
     status: provider.status,
     timestamp: new Date().toISOString(),
-    latency: Math.floor(Math.random() * 100) + 20, // Mock latency;
-    available: true;
+    latency: Math.floor(Math.random() * 100) + 20, // Mock latency
+    available: true
   });
 });
 
@@ -231,8 +231,8 @@ function generateDebateResponse(model, messages) {
 
   // Determine position (pro/con) from system prompt;
   const systemPrompt = systemMessage?.content || '';
-  const isProPosition = systemPrompt.toLowerCase().includes('for') || ;
-                       systemPrompt.toLowerCase().includes('support') ||;
+  const isProPosition = systemPrompt.toLowerCase().includes('for') || 
+                       systemPrompt.toLowerCase().includes('support') ||
                        systemPrompt.toLowerCase().includes('favor');
 
   // Generate response based on topic and position;

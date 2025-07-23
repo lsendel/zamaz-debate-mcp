@@ -64,6 +64,9 @@ const DebateVisualizations: React.FC<DebateVisualizationsProps> = ({
 }) => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [selectedVisualization, setSelectedVisualization] = useState('engagement');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
     loadAnalyticsData();
   }, [debateId]);
 

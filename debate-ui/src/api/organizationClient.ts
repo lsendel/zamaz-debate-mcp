@@ -43,27 +43,8 @@ class OrganizationClient extends BaseApiClient {
 
   // Authentication
   async login(credentials: AuthRequest): Promise<AuthResponse> {
-    // For testing with simple backend, return mock response
-    // In production, this would connect to a real auth service
-    return Promise.resolve({
-      token: "simple-test-token",
-      user: {
-        id: "user-001",
-        username: credentials.username,
-        email: "admin@acme.com",
-        organizationId: "org-001",
-        role: "admin",
-        createdAt: "2024-01-01T00:00:00Z"
-      },
-      organization: {
-        id: "org-001",
-        name: "Acme Corporation",
-        description: "Leading technology company",
-        apiKey: "ak_test_abc123",
-        createdAt: "2024-01-01T00:00:00Z",
-        updatedAt: "2024-01-01T00:00:00Z"
-      }
-    });
+    const response = await this.client.post("/login", credentials);
+    return response.data;
   }
 
   async register(

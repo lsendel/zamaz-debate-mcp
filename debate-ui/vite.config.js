@@ -25,7 +25,7 @@ const uriFixMiddleware = () => {
             // Try to fix common encoding issues;
             try {
               // Replace problematic sequences;
-              req.url = req.url;
+              req.url = req.url
                 .replace(/%25/g, '%')  // Double-encoded percent;
                 .replace(/%20/g, ' ')  // Space;
                 .replace(/%2F/g, '/')  // Forward slash;
@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => {
   return {
   plugins: [
     react(),
-    uriFixMiddleware();
+    uriFixMiddleware()
   ],
   server: {
     port: parseInt(env.VITE_PORT || '3001'),
@@ -66,9 +66,20 @@ export default defineConfig(({ mode }) => {
     strictPort: false,
     // Add middleware to handle errors;
     hmr: {
-      overlay: true;
+      overlay: true
     },
     proxy: {
+      '/api/v1/login': {
+        target: env.VITE_ORGANIZATION_API_URL || 'http://localhost:5005',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('Login API proxy error:', err.message);
+          });
+        }
+      },
       '/api/v1/organizations': {
         target: env.VITE_ORGANIZATION_API_URL,
         changeOrigin: true,
@@ -162,7 +173,7 @@ export default defineConfig(({ mode }) => {
     }
   },
   define: {
-    'process.env.NODE_ENV': '"development"';
+    'process.env.NODE_ENV': '"development"'
   },
   test: {
     globals: true,

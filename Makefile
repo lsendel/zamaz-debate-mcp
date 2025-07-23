@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║                     ZAMAZ DEBATE MCP SYSTEM                     ║
-# ║                    Clean, User-Friendly Makefile                ║
+# ║                  ZAMAZ DEBATE MCP - ROOT MAKEFILE               ║
+# ║                 Orchestrator for All Sub-Projects               ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
 # Load environment variables
@@ -8,9 +8,23 @@
 export
 
 # Configuration
+PROJECT_ROOT := $(shell pwd)
 COMPOSE_FILE := infrastructure/docker-compose/docker-compose.yml
 COMPOSE_DIR := infrastructure/docker-compose
 PROJECT_NAME := zamaz-debate-mcp
+
+# Sub-project directories
+DEBATE_UI_DIR := debate-ui
+WORKFLOW_EDITOR_DIR := workflow-editor
+E2E_TESTS_DIR := e2e-tests
+
+# Detect available sub-projects
+HAS_DEBATE_UI := $(shell test -d $(DEBATE_UI_DIR) && echo "yes")
+HAS_WORKFLOW_EDITOR := $(shell test -d $(WORKFLOW_EDITOR_DIR) && echo "yes")
+HAS_E2E_TESTS := $(shell test -d $(E2E_TESTS_DIR) && echo "yes")
+
+# Java MCP modules
+MCP_MODULES := mcp-organization mcp-llm mcp-debate mcp-rag mcp-template mcp-gateway mcp-auth-server
 
 # Colors for output
 RED := \033[0;31m
@@ -22,27 +36,17 @@ CYAN := \033[0;36m
 WHITE := \033[1;37m
 NC := \033[0m
 
-# Default ports
+# Default ports (matching sub-project Makefile)
 UI_PORT ?= 3001
 WORKFLOW_UI_PORT ?= 3002
 POSTGRES_PORT ?= 5432
 REDIS_PORT ?= 6379
-NEO4J_PORT ?= 7687
-INFLUXDB_PORT ?= 8086
 MCP_ORGANIZATION_PORT ?= 5005
 MCP_LLM_PORT ?= 5002
 MCP_DEBATE_PORT ?= 5013
 MCP_RAG_PORT ?= 5004
-MCP_TEMPLATE_PORT ?= 5006
-WORKFLOW_API_PORT ?= 8080
-QDRANT_PORT ?= 6333
-JAEGER_UI_PORT ?= 16686
-PROMETHEUS_PORT ?= 9090
-GRAFANA_PORT ?= 3000
-LOKI_PORT ?= 3100
-OLLAMA_PORT ?= 11434
 
-.PHONY: help setup start stop restart build clean test lint status logs ui health check-env install hooks
+.PHONY: help all setup start stop restart clean build test lint ui
 
 # =============================================================================
 # HELP & DOCUMENTATION
@@ -50,113 +54,78 @@ OLLAMA_PORT ?= 11434
 
 help: ## 📚 Show this help message
 	@echo '$(CYAN)╔══════════════════════════════════════════════════════════════════╗$(NC)'
-	@echo '$(CYAN)║                   ZAMAZ DEBATE MCP SYSTEM                       ║$(NC)'
-	@echo '$(CYAN)║                     Quick Reference Guide                       ║$(NC)'
+	@echo '$(CYAN)║               ZAMAZ DEBATE MCP - ROOT ORCHESTRATOR              ║$(NC)'
+	@echo '$(CYAN)║                    Manage All Sub-Projects                      ║$(NC)'
 	@echo '$(CYAN)╚══════════════════════════════════════════════════════════════════╝$(NC)'
 	@echo ''
-	@echo '$(WHITE)🚀 QUICK START (First Time):$(NC)'
-	@echo '  $(GREEN)make setup$(NC)        - Set up environment and install dependencies'
-	@echo '  $(GREEN)make start$(NC)        - Start all backend services'
-	@echo '  $(GREEN)make ui$(NC)           - Start debate UI (run in new terminal)'
-	@echo '  $(GREEN)make workflow$(NC)     - Start workflow editor UI (port 3002)'
+	@echo '$(WHITE)🚀 QUICK START:$(NC)'
+	@echo '  $(GREEN)make all$(NC)           - Set up and start everything'
+	@echo '  $(GREEN)make setup$(NC)         - Initial setup for all projects'
+	@echo '  $(GREEN)make start$(NC)         - Start all backend services'
+	@echo '  $(GREEN)make ui$(NC)            - Start UI development server'
 	@echo ''
-	@echo '$(WHITE)⚡ WORKFLOW EDITOR DEVELOPMENT:$(NC)'
-	@echo '  $(GREEN)make workflow-dev$(NC) - Start complete workflow editor (backend + frontend)'
-	@echo '  $(GREEN)make workflow-api$(NC) - Start workflow API backend only'
-	@echo '  $(GREEN)make workflow-ui$(NC)  - Start workflow editor frontend only'
-	@echo '  $(GREEN)make workflow-test$(NC)- Run workflow editor E2E tests'
+	@echo '$(WHITE)🎯 DEVELOPMENT:$(NC)'
+	@echo '  $(GREEN)make dev$(NC)           - Start complete dev environment'
+	@echo '  $(GREEN)make restart$(NC)       - Restart all services'
+	@echo '  $(GREEN)make stop$(NC)          - Stop all services'
+	@echo '  $(GREEN)make clean$(NC)         - Clean up everything'
 	@echo ''
-	@echo '$(WHITE)⚡ DAILY DEVELOPMENT:$(NC)'
-	@echo '  $(GREEN)make dev$(NC)          - Start everything (services + UI) for development'
-	@echo '  $(GREEN)make restart$(NC)      - Restart all services'
-	@echo '  $(GREEN)make stop$(NC)         - Stop all services'
-	@echo '  $(GREEN)make logs$(NC)         - View all service logs'
+	@echo '$(WHITE)🧪 TESTING:$(NC)'
+	@echo '  $(GREEN)make test$(NC)          - Run all tests'
+	@echo '  $(GREEN)make test-ui$(NC)       - Run UI tests only'
+	@echo '  $(GREEN)make test-java$(NC)     - Run Java tests'
+	@echo '  $(GREEN)make lint$(NC)          - Run all linters'
 	@echo ''
-	@echo '$(WHITE)🧪 TESTING & QUALITY:$(NC)'
-	@echo '  $(GREEN)make test$(NC)      - Run all tests (quick validation)'
-	@echo '  $(GREEN)make test-e2e$(NC)  - Run comprehensive end-to-end tests'
-	@echo '  $(GREEN)make test-ui$(NC)   - Run UI tests only'
-	@echo '  $(GREEN)make test-integration$(NC) - Run integration tests (80% coverage target)'
-	@echo '  $(GREEN)make lint$(NC)      - Check code quality with incremental linting'
+	@echo '$(WHITE)📦 BUILDING:$(NC)'
+	@echo '  $(GREEN)make build$(NC)         - Build all projects'
+	@echo '  $(GREEN)make build-java$(NC)    - Build Java services'
+	@echo '  $(GREEN)make build-ui$(NC)      - Build UI projects'
+	@echo '  $(GREEN)make build-docker$(NC)  - Build Docker images'
 	@echo ''
-	@echo '$(WHITE)📊 MONITORING & DEBUG:$(NC)'
-	@echo '  $(GREEN)make status$(NC)    - Show service status'
-	@echo '  $(GREEN)make health$(NC)    - Check service health'
-	@echo '  $(GREEN)make show-urls$(NC) - Show all service URLs and ports'
-	@echo '  $(GREEN)make diagnose$(NC)  - Diagnose connectivity issues'
-	@echo '  $(GREEN)make logs$(NC)      - View all service logs'
+	@echo '$(WHITE)🔍 MONITORING:$(NC)'
+	@echo '  $(GREEN)make status$(NC)        - Show all service status'
+	@echo '  $(GREEN)make health$(NC)        - Health check all services'
+	@echo '  $(GREEN)make logs$(NC)          - View all logs'
+	@echo '  $(GREEN)make show-urls$(NC)     - Show all service URLs'
 	@echo ''
-	@echo '$(WHITE)🔧 MAINTENANCE:$(NC)'
-	@echo '  $(GREEN)make clean$(NC)     - Clean up containers and volumes'
-	@echo '  $(GREEN)make reset$(NC)     - Complete reset (clean + fresh start)'
-	@echo '  $(GREEN)make build$(NC)     - Rebuild Docker images'
-	@echo '  $(GREEN)make fix-connectivity$(NC) - Auto-fix connection issues'
-	@echo ''
-	@echo '$(WHITE)🌍 ENVIRONMENTS:$(NC)'
-	@echo '  $(GREEN)make prod$(NC)      - Deploy to production mode'
-	@echo '  $(GREEN)make staging$(NC)   - Deploy to staging mode'
+	@echo '$(WHITE)📋 SUB-PROJECT COMMANDS:$(NC)'
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo '  $(BLUE)make ui-*$(NC)          - Debate UI commands (ui-help for list)'; \
+	fi
+	@if [ "$(HAS_WORKFLOW_EDITOR)" = "yes" ]; then \
+		echo '  $(BLUE)make workflow-*$(NC)    - Workflow editor commands'; \
+	fi
+	@echo '  $(BLUE)make java-*$(NC)        - Java service commands'
 	@echo ''
 	@echo '$(YELLOW)💡 Examples:$(NC)'
-	@echo '  New developer: $(CYAN)make setup && make dev$(NC)'
-	@echo '  Daily work:    $(CYAN)make restart && make ui$(NC)'
-	@echo '  Before commit: $(CYAN)make lint && make test$(NC)'
-	@echo '  Show all URLs: $(CYAN)make show-urls$(NC)'
+	@echo '  First time:     $(CYAN)make all$(NC)'
+	@echo '  Daily work:     $(CYAN)make dev$(NC)'
+	@echo '  Just backend:   $(CYAN)make start$(NC)'
+	@echo '  Just frontend:  $(CYAN)make ui$(NC)'
 	@echo ''
 	@echo '$(WHITE)📋 ALL COMMANDS:$(NC)'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(NC) %s\n", $$1, $$2}'
 
 # =============================================================================
-# SETUP & ENVIRONMENT
+# HIGH-LEVEL ORCHESTRATION
 # =============================================================================
 
-setup: check-deps check-env install hooks ## 🛠️ Complete project setup (run this first!)
-	@echo "$(GREEN)✅ Project setup complete!$(NC)"
-	@echo "$(YELLOW)Next steps:$(NC)"
-	@echo "  1. Edit .env with your API keys if needed"
-	@echo "  2. Run '$(CYAN)make dev$(NC)' to start development"
-	@echo "  3. Open $(CYAN)http://localhost:$(UI_PORT)$(NC) in your browser"
+all: setup start ui ## 🎯 Complete setup and start everything
 
-hooks: ## 🔗 Install git hooks for code quality
-	@echo "$(BLUE)Installing git hooks...$(NC)"
-	@chmod +x scripts/setup/install-git-hooks.sh
-	@./scripts/setup/install-git-hooks.sh
-	@echo "$(GREEN)✅ Git hooks installed$(NC)"
+setup: check-root setup-env setup-projects ## 🛠️ Set up all projects
+	@echo "$(GREEN)✅ All projects set up successfully!$(NC)"
 
-check-deps: ## 🔍 Check if required tools are installed
-	@echo "$(BLUE)Checking dependencies...$(NC)"
-	@command -v docker >/dev/null 2>&1 || (echo "$(RED)❌ Docker is required$(NC)" && exit 1)
-	@command -v docker-compose >/dev/null 2>&1 || (echo "$(RED)❌ Docker Compose is required$(NC)" && exit 1)
-	@command -v node >/dev/null 2>&1 || (echo "$(RED)❌ Node.js is required$(NC)" && exit 1)
-	@echo "$(GREEN)✅ All dependencies found$(NC)"
-
-check-env: ## 🔧 Check and create environment configuration
-	@echo "$(BLUE)Checking environment...$(NC)"
-	@if [ ! -f .env ]; then \
-		echo "$(YELLOW)Creating .env from template...$(NC)"; \
-		cp .env.example .env 2>/dev/null || echo "# Add your environment variables here" > .env; \
-		echo "$(GREEN)✅ .env file created$(NC)"; \
+dev: start ## 🚀 Start complete development environment
+	@echo "$(GREEN)🚀 Development environment starting...$(NC)"
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo "$(YELLOW)Starting UI on http://localhost:$(UI_PORT)$(NC)"; \
+		$(MAKE) ui; \
 	else \
-		echo "$(GREEN)✅ .env file exists$(NC)"; \
+		echo "$(YELLOW)No UI project found. Backend services are running.$(NC)"; \
 	fi
-
-install: ## 📦 Install all dependencies
-	@echo "$(BLUE)Installing dependencies...$(NC)"
-	@if [ -d "debate-ui" ]; then \
-		echo "$(YELLOW)Installing UI dependencies...$(NC)"; \
-		cd debate-ui && npm install --silent; \
-	fi
-	@if [ -d "workflow-editor/client/workflow-editor" ]; then \
-		echo "$(YELLOW)Installing workflow editor dependencies...$(NC)"; \
-		cd workflow-editor/client/workflow-editor && npm install --silent; \
-	fi
-	@if [ -d "e2e-tests" ]; then \
-		echo "$(YELLOW)Installing E2E test dependencies...$(NC)"; \
-		cd e2e-tests && npm install --silent; \
-	fi
-	@echo "$(GREEN)✅ Dependencies installed$(NC)"
 
 # =============================================================================
-# DOCKER SERVICES
+# DOCKER & SERVICES
 # =============================================================================
 
 start: ## 🚀 Start all backend services
@@ -170,426 +139,254 @@ stop: ## 🛑 Stop all services
 	@echo "$(BLUE)Stopping all services...$(NC)"
 	@docker-compose -f $(COMPOSE_FILE) down
 	@pkill -f "npm run dev" 2>/dev/null || true
+	@pkill -f "mvn spring-boot:run" 2>/dev/null || true
 	@echo "$(GREEN)✅ All services stopped$(NC)"
 
 restart: stop start ## 🔄 Restart all services
 
-build: ## 🏗️ Build/rebuild all Docker images
+build-docker: ## 🐳 Build Docker images
 	@echo "$(BLUE)Building Docker images...$(NC)"
 	@docker-compose -f $(COMPOSE_FILE) build
-	@echo "$(GREEN)✅ Build complete$(NC)"
+	@echo "$(GREEN)✅ Docker build complete$(NC)"
 
 # =============================================================================
-# DEVELOPMENT
+# UI PROJECTS
 # =============================================================================
 
-dev: start ## 🎯 Start complete development environment
-	@echo "$(GREEN)🚀 Development environment ready!$(NC)"
-	@echo "$(YELLOW)Starting UI in development mode...$(NC)"
-	@echo "$(WHITE)💡 Open http://localhost:$(UI_PORT) in your browser$(NC)"
-	@$(MAKE) ui
+ui: ui-start ## 🎨 Start UI (alias for ui-start)
 
-ui: ## 🎨 Start UI development server
-	@echo "$(BLUE)Starting UI development server...$(NC)"
-	@if [ ! -d "debate-ui" ]; then \
-		echo "$(RED)❌ debate-ui directory not found$(NC)"; \
-		exit 1; \
-	fi
-	@cd debate-ui && npm run dev
-
-# =============================================================================
-# WORKFLOW EDITOR COMMANDS
-# =============================================================================
-
-workflow: workflow-ui ## 🔄 Start workflow editor UI (shortcut)
-
-workflow-dev: ## 🎯 Start complete workflow editor (backend + frontend)
-	@echo "$(GREEN)🚀 Starting complete workflow editor environment...$(NC)"
-	@echo "$(YELLOW)Starting workflow API backend...$(NC)"
-	@$(MAKE) workflow-api &
-	@sleep 5
-	@echo "$(YELLOW)Starting workflow editor frontend...$(NC)"
-	@$(MAKE) workflow-ui
-
-workflow-api: ## 🔌 Start workflow API backend only
-	@echo "$(BLUE)Starting workflow API backend...$(NC)"
-	@if [ ! -d "workflow-editor" ]; then \
-		echo "$(RED)❌ workflow-editor directory not found$(NC)"; \
-		exit 1; \
-	fi
-	@cd workflow-editor && mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=$(WORKFLOW_API_PORT)
-
-workflow-ui: ## 🎨 Start workflow editor frontend only
-	@echo "$(BLUE)Starting workflow editor frontend...$(NC)"
-	@if [ ! -d "workflow-editor/client/workflow-editor" ]; then \
-		echo "$(RED)❌ workflow-editor frontend not found$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(WHITE)💡 Workflow Editor will be available at http://localhost:$(WORKFLOW_UI_PORT)$(NC)"
-	@cd workflow-editor/client/workflow-editor && BROWSER=none PORT=$(WORKFLOW_UI_PORT) npm start
-
-workflow-build: ## 🏗️ Build workflow editor (frontend + backend)
-	@echo "$(BLUE)Building workflow editor...$(NC)"
-	@if [ -d "workflow-editor/client/workflow-editor" ]; then \
-		echo "$(YELLOW)Building frontend...$(NC)"; \
-		cd workflow-editor/client/workflow-editor && npm install && npm run build; \
-	fi
-	@if [ -d "workflow-editor" ]; then \
-		echo "$(YELLOW)Building backend...$(NC)"; \
-		cd workflow-editor && mvn clean package -DskipTests; \
-	fi
-	@echo "$(GREEN)✅ Workflow editor build complete$(NC)"
-
-workflow-install: ## 📦 Install workflow editor dependencies
-	@echo "$(BLUE)Installing workflow editor dependencies...$(NC)"
-	@if [ -d "workflow-editor/client/workflow-editor" ]; then \
-		echo "$(YELLOW)Installing frontend dependencies...$(NC)"; \
-		cd workflow-editor/client/workflow-editor && npm install; \
-	fi
-	@echo "$(GREEN)✅ Workflow editor dependencies installed$(NC)"
-
-workflow-test: ## 🧪 Run workflow editor E2E tests
-	@echo "$(BLUE)Running workflow editor E2E tests...$(NC)"
-	@if [ -d "workflow-editor/e2e-tests" ]; then \
-		cd workflow-editor/e2e-tests && npm test; \
+ui-start: ## 🎨 Start debate UI development server
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo "$(BLUE)Starting UI development server...$(NC)"; \
+		cd $(DEBATE_UI_DIR) && npm run dev; \
 	else \
-		echo "$(YELLOW)⚠️ Setting up E2E tests for workflow editor...$(NC)"; \
-		$(MAKE) setup-workflow-e2e; \
+		echo "$(RED)❌ Debate UI directory not found$(NC)"; \
+		exit 1; \
 	fi
 
-setup-workflow-e2e: ## 🎭 Set up Playwright E2E testing for workflow editor
-	@echo "$(BLUE)Setting up Playwright E2E testing...$(NC)"
-	@mkdir -p workflow-editor/e2e-tests
-	@cd workflow-editor/e2e-tests && \
-		if [ ! -f "package.json" ]; then \
-			npm init -y; \
-			npm install --save-dev @playwright/test; \
-			npx playwright install; \
-		fi
-	@echo "$(GREEN)✅ Playwright E2E testing setup complete$(NC)"
+ui-build: ## 🏗️ Build debate UI for production
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo "$(BLUE)Building UI...$(NC)"; \
+		cd $(DEBATE_UI_DIR) && npm run build; \
+	else \
+		echo "$(RED)❌ Debate UI directory not found$(NC)"; \
+	fi
+
+ui-test: ## 🧪 Run UI tests
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo "$(BLUE)Running UI tests...$(NC)"; \
+		cd $(DEBATE_UI_DIR) && npm run test:e2e; \
+	else \
+		echo "$(RED)❌ Debate UI directory not found$(NC)"; \
+	fi
+
+ui-lint: ## 🔍 Lint UI code (including React import validation)
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo "$(BLUE)Validating React imports...$(NC)"; \
+		cd $(DEBATE_UI_DIR) && npm run lint:react-imports; \
+		echo "$(BLUE)Linting UI code...$(NC)"; \
+		cd $(DEBATE_UI_DIR) && npm run lint; \
+	else \
+		echo "$(RED)❌ Debate UI directory not found$(NC)"; \
+	fi
+
+ui-help: ## ❓ Show debate UI Makefile help
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ] && [ -f "$(DEBATE_UI_DIR)/Makefile" ]; then \
+		cd $(DEBATE_UI_DIR) && make help; \
+	else \
+		echo "$(YELLOW)Debate UI Makefile not found$(NC)"; \
+	fi
+
+# Pass-through commands to debate-ui Makefile
+ui-%:
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ] && [ -f "$(DEBATE_UI_DIR)/Makefile" ]; then \
+		cd $(DEBATE_UI_DIR) && make $*; \
+	else \
+		echo "$(RED)❌ Cannot run ui-$*: Debate UI Makefile not found$(NC)"; \
+	fi
+
+# =============================================================================
+# WORKFLOW EDITOR
+# =============================================================================
+
+workflow-start: ## 🔄 Start workflow editor
+	@if [ "$(HAS_WORKFLOW_EDITOR)" = "yes" ]; then \
+		echo "$(BLUE)Starting workflow editor...$(NC)"; \
+		cd $(WORKFLOW_EDITOR_DIR)/client/workflow-editor && npm start; \
+	else \
+		echo "$(RED)❌ Workflow editor not found$(NC)"; \
+	fi
+
+workflow-api: ## 🔌 Start workflow API backend
+	@if [ "$(HAS_WORKFLOW_EDITOR)" = "yes" ]; then \
+		echo "$(BLUE)Starting workflow API...$(NC)"; \
+		cd $(WORKFLOW_EDITOR_DIR) && mvn spring-boot:run; \
+	else \
+		echo "$(RED)❌ Workflow editor not found$(NC)"; \
+	fi
+
+# =============================================================================
+# JAVA SERVICES
+# =============================================================================
+
+build-java: ## ☕ Build all Java services
+	@echo "$(BLUE)Building Java services...$(NC)"
+	@for module in $(MCP_MODULES); do \
+		if [ -d "$$module" ]; then \
+			echo "$(YELLOW)Building $$module...$(NC)"; \
+			cd $$module && mvn clean package -DskipTests && cd ..; \
+		fi; \
+	done
+	@echo "$(GREEN)✅ Java build complete$(NC)"
+
+test-java: ## 🧪 Run Java tests
+	@echo "$(BLUE)Running Java tests...$(NC)"
+	@for module in $(MCP_MODULES); do \
+		if [ -d "$$module" ]; then \
+			echo "$(YELLOW)Testing $$module...$(NC)"; \
+			cd $$module && mvn test && cd ..; \
+		fi; \
+	done
+
+java-status: ## 📊 Check Java service status
+	@echo "$(BLUE)Java Service Status:$(NC)"
+	@for port in $(MCP_ORGANIZATION_PORT) $(MCP_LLM_PORT) $(MCP_DEBATE_PORT) $(MCP_RAG_PORT); do \
+		curl -s http://localhost:$$port/actuator/health > /dev/null 2>&1 && \
+		echo "  Port $$port: $(GREEN)✓ Running$(NC)" || \
+		echo "  Port $$port: $(RED)✗ Not running$(NC)"; \
+	done
 
 # =============================================================================
 # TESTING
 # =============================================================================
 
-test: ## 🧪 Run quick validation tests
-	@echo "$(BLUE)Running quick validation tests...$(NC)"
-	@$(MAKE) health
-	@if [ -f "scripts/testing/smoke-tests.sh" ]; then \
-		chmod +x scripts/testing/smoke-tests.sh && ./scripts/testing/smoke-tests.sh; \
-	else \
-		echo "$(GREEN)✅ Basic health checks passed$(NC)"; \
-	fi
+test: test-java ui-test ## 🧪 Run all tests
 
-test-e2e: ## 🎭 Run comprehensive end-to-end tests
-	@echo "$(BLUE)Running E2E tests...$(NC)"
-	@if [ -d "e2e-tests" ]; then \
-		cd e2e-tests && npm test; \
-	else \
-		echo "$(YELLOW)⚠️ E2E tests directory not found$(NC)"; \
-	fi
-
-test-ui: ## 🖥️ Run UI tests only
-	@echo "$(BLUE)Running UI tests...$(NC)"
-	@if [ -d "e2e-tests" ]; then \
-		cd e2e-tests && npm run test:ui 2>/dev/null || npm test; \
-	else \
-		echo "$(YELLOW)⚠️ UI tests not available$(NC)"; \
-	fi
-
-test-services: ## 🔧 Test individual services
-	@echo "$(BLUE)Testing MCP services...$(NC)"
-	@if [ -f "scripts/testing/test-mcp-services.sh" ]; then \
-		chmod +x scripts/testing/test-mcp-services.sh && ./scripts/testing/test-mcp-services.sh; \
-	else \
-		$(MAKE) health; \
-	fi
-
-# =============================================================================
-# CODE QUALITY & LINTING
-# =============================================================================
-
-lint: ## 🔍 Run incremental linting (fast, smart analysis)
-	@echo "$(BLUE)Running incremental linting...$(NC)"
-	@if [ -f "scripts/testing/test-incremental-linting.sh" ]; then \
-		chmod +x scripts/testing/test-incremental-linting.sh && ./scripts/testing/test-incremental-linting.sh; \
-	elif [ -d "debate-ui" ]; then \
-		echo "$(YELLOW)Running frontend linting...$(NC)"; \
-		cd debate-ui && npm run lint --silent 2>/dev/null || echo "$(YELLOW)⚠️ Frontend linting skipped$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠️ No linting configuration found$(NC)"; \
-	fi
-	@echo "$(GREEN)✅ Linting complete$(NC)"
-
-lint-fix: ## 🔧 Auto-fix linting issues
-	@echo "$(BLUE)Auto-fixing linting issues...$(NC)"
-	@if [ -d "debate-ui" ]; then \
-		cd debate-ui && npm run lint:fix --silent 2>/dev/null || true; \
-		cd debate-ui && npm run format --silent 2>/dev/null || true; \
-	fi
-	@echo "$(GREEN)✅ Auto-fixes applied$(NC)"
-
-test-integration: ## 🧪 Run comprehensive integration tests (80% coverage target)
-	@echo "$(BLUE)Running comprehensive integration tests...$(NC)"
-	@echo "$(YELLOW)Target: 80% functionality coverage$(NC)"
+test-integration: ## 🧪 Run integration tests
+	@echo "$(BLUE)Running integration tests...$(NC)"
 	@if [ -f ".linting/scripts/simple-integration-test.sh" ]; then \
-		chmod +x .linting/scripts/simple-integration-test.sh && .linting/scripts/simple-integration-test.sh; \
+		chmod +x .linting/scripts/simple-integration-test.sh && ./.linting/scripts/simple-integration-test.sh; \
 	else \
-		echo "$(RED)❌ Integration test runner not found$(NC)"; \
-		exit 1; \
-	fi
-
-test-integration-core: ## 🔧 Run core linting integration tests
-	@echo "$(BLUE)Running core integration tests...$(NC)"
-	@if [ -f ".linting/scripts/integration-test-suite.sh" ]; then \
-		chmod +x .linting/scripts/integration-test-suite.sh && .linting/scripts/integration-test-suite.sh; \
-	else \
-		echo "$(RED)❌ Core integration tests not found$(NC)"; \
-		exit 1; \
-	fi
-
-test-integration-performance: ## ⚡ Run performance integration tests
-	@echo "$(BLUE)Running performance integration tests...$(NC)"
-	@if [ -f ".linting/scripts/performance-integration-tests.sh" ]; then \
-		chmod +x .linting/scripts/performance-integration-tests.sh && .linting/scripts/performance-integration-tests.sh; \
-	else \
-		echo "$(RED)❌ Performance integration tests not found$(NC)"; \
-		exit 1; \
-	fi
-
-test-integration-workflow: ## 🔄 Run workflow integration tests
-	@echo "$(BLUE)Running workflow integration tests...$(NC)"
-	@if [ -f ".linting/scripts/workflow-integration-tests.sh" ]; then \
-		chmod +x .linting/scripts/workflow-integration-tests.sh && .linting/scripts/workflow-integration-tests.sh; \
-	else \
-		echo "$(RED)❌ Workflow integration tests not found$(NC)"; \
-		exit 1; \
-	fi
-
-test-coverage-report: ## 📊 Generate integration test coverage report
-	@echo "$(BLUE)Generating integration test coverage report...$(NC)"
-	@if [ -f ".linting/test-results/master/comprehensive-test-report.md" ]; then \
-		echo "$(GREEN)✅ Coverage report available:$(NC)"; \
-		echo "$(CYAN)   .linting/test-results/master/comprehensive-test-report.md$(NC)"; \
-		echo ""; \
-		echo "$(YELLOW)Coverage Summary:$(NC)"; \
-		grep -A 5 "Coverage Percentage" .linting/test-results/master/comprehensive-test-report.md 2>/dev/null || echo "Run integration tests first"; \
-	else \
-		echo "$(YELLOW)⚠️ No coverage report found. Run 'make test-integration' first$(NC)"; \
+		echo "$(YELLOW)Integration tests not found$(NC)"; \
 	fi
 
 # =============================================================================
-# MONITORING & DEBUGGING
+# UTILITIES & MONITORING
 # =============================================================================
 
-status: ## 📊 Show service status
-	@echo "$(BLUE)Service Status:$(NC)"
+status: ## 📊 Show all service status
+	@echo "$(BLUE)=== Docker Services ===$(NC)"
 	@docker-compose -f $(COMPOSE_FILE) ps
+	@echo ""
+	@echo "$(BLUE)=== Java Services ===$(NC)"
+	@$(MAKE) java-status
+	@echo ""
+	@echo "$(BLUE)=== Node.js Services ===$(NC)"
+	@ps aux | grep -E "node|npm" | grep -v grep || echo "  No Node.js services running"
 
-health: ## 🏥 Check service health
+health: ## 🏥 Health check all services
 	@echo "$(BLUE)Health Check:$(NC)"
 	@echo -n "PostgreSQL: "
-	@docker-compose -f $(COMPOSE_FILE) exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) exec -T postgres pg_isready -U postgres > /dev/null 2>&1 && \
+		echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
 	@echo -n "Redis: "
-	@docker-compose -f $(COMPOSE_FILE) exec -T redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) exec -T redis redis-cli ping > /dev/null 2>&1 && \
+		echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
 	@echo -n "Qdrant: "
-	@curl -s http://localhost:$(QDRANT_PORT)/collections > /dev/null 2>&1 && echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
-	@echo -n "Organization API: "
-	@curl -s http://localhost:$(MCP_ORGANIZATION_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
-	@echo -n "LLM API: "
-	@curl -s http://localhost:$(MCP_LLM_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
-	@echo -n "Debate API: "
-	@curl -s http://localhost:$(MCP_DEBATE_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
-	@echo -n "RAG API: "
-	@curl -s http://localhost:$(MCP_RAG_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
-	@echo -n "Template API: "
-	@curl -s http://localhost:$(MCP_TEMPLATE_PORT)/actuator/health > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Not running$(NC)"
-	@echo -n "UI: "
-	@curl -s http://localhost:$(UI_PORT) > /dev/null 2>&1 && echo "$(GREEN)✓ Running$(NC)" || echo "$(YELLOW)⚠️ Run 'make ui'$(NC)"
+	@curl -s http://localhost:6333/collections > /dev/null 2>&1 && \
+		echo "$(GREEN)✓ Healthy$(NC)" || echo "$(RED)✗ Down$(NC)"
+	@$(MAKE) java-status
 
-logs: ## 📜 View all service logs
-	@echo "$(BLUE)Following all logs (Ctrl+C to stop)...$(NC)"
+logs: ## 📜 View all logs
+	@echo "$(BLUE)Docker logs (Ctrl+C to stop):$(NC)"
 	@docker-compose -f $(COMPOSE_FILE) logs -f --tail=50
 
-logs-ui: ## 📱 View UI logs only
-	@echo "$(BLUE)UI Development Logs:$(NC)"
-	@echo "$(YELLOW)UI logs appear in the terminal where you ran 'make ui'$(NC)"
-
-logs-api: ## 🔌 View API logs only
-	@echo "$(BLUE)API Service Logs:$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) logs -f --tail=20
-
-show-urls: ## 🌐 Show all service URLs and access information
+show-urls: ## 🌐 Show all service URLs
 	@echo ""
 	@echo "$(CYAN)╔══════════════════════════════════════════════════════════════════╗$(NC)"
 	@echo "$(CYAN)║                     🌐 SERVICE ACCESS URLs                      ║$(NC)"
 	@echo "$(CYAN)╚══════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
-	@echo "$(WHITE)🎨 FRONTEND & USER INTERFACES:$(NC)"
-	@echo "  $(GREEN)Main UI (React)$(NC)     http://localhost:$(UI_PORT)"
+	@echo "$(WHITE)🎨 USER INTERFACES:$(NC)"
+	@echo "  $(GREEN)Debate UI$(NC)          http://localhost:$(UI_PORT)"
 	@echo "  $(GREEN)Workflow Editor$(NC)    http://localhost:$(WORKFLOW_UI_PORT)"
-	@echo "  $(GREEN)Grafana Dashboard$(NC)  http://localhost:$(GRAFANA_PORT) $(YELLOW)(admin/admin)$(NC)"
-	@echo "  $(GREEN)Jaeger Tracing$(NC)     http://localhost:$(JAEGER_UI_PORT)"
 	@echo ""
-	@echo "$(WHITE)🔌 MCP MICROSERVICES (REST APIs):$(NC)"
-	@echo "  $(BLUE)Organization API$(NC)   http://localhost:$(MCP_ORGANIZATION_PORT)/actuator/health"
-	@echo "  $(BLUE)LLM API$(NC)            http://localhost:$(MCP_LLM_PORT)/actuator/health"
-	@echo "  $(BLUE)Debate Controller$(NC)  http://localhost:$(MCP_DEBATE_PORT)/actuator/health"
-	@echo "  $(BLUE)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)/actuator/health"
-	@echo "  $(BLUE)Template API$(NC)       http://localhost:$(MCP_TEMPLATE_PORT)/actuator/health"
-	@echo "  $(BLUE)Workflow API$(NC)       http://localhost:$(WORKFLOW_API_PORT)/actuator/health"
+	@echo "$(WHITE)🔌 API SERVICES:$(NC)"
+	@echo "  $(BLUE)Organization API$(NC)   http://localhost:$(MCP_ORGANIZATION_PORT)"
+	@echo "  $(BLUE)LLM API$(NC)            http://localhost:$(MCP_LLM_PORT)"
+	@echo "  $(BLUE)Debate API$(NC)         http://localhost:$(MCP_DEBATE_PORT)"
+	@echo "  $(BLUE)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)"
 	@echo ""
-	@echo "$(WHITE)📊 MONITORING & OBSERVABILITY:$(NC)"
-	@echo "  $(PURPLE)Prometheus$(NC)        http://localhost:$(PROMETHEUS_PORT)"
-	@echo "  $(PURPLE)Loki Logs$(NC)         http://localhost:$(LOKI_PORT)"
-	@echo "  $(PURPLE)Qdrant Vector DB$(NC)  http://localhost:$(QDRANT_PORT)/dashboard"
-	@echo ""
-	@echo "$(WHITE)🗄️ DATABASES & STORAGE:$(NC)"
-	@echo "  $(YELLOW)PostgreSQL$(NC)        localhost:$(POSTGRES_PORT) $(YELLOW)(postgres/postgres)$(NC)"
-	@echo "  $(YELLOW)Redis Cache$(NC)       localhost:$(REDIS_PORT)"
-	@echo "  $(YELLOW)Neo4j Graph DB$(NC)    localhost:$(NEO4J_PORT) $(YELLOW)(neo4j/password)$(NC)"
-	@echo "  $(YELLOW)InfluxDB Time-Series$(NC) localhost:$(INFLUXDB_PORT)"
-	@echo ""
-	@echo "$(WHITE)🤖 AI & ML SERVICES:$(NC)"
-	@echo "  $(GREEN)Ollama (Local LLMs)$(NC) http://localhost:$(OLLAMA_PORT) $(YELLOW)(start with --profile llama)$(NC)"
-	@echo ""
-	@echo "$(WHITE)📋 API DOCUMENTATION:$(NC)"
-	@echo "  $(CYAN)Organization API$(NC)   http://localhost:$(MCP_ORGANIZATION_PORT)/swagger-ui.html"
-	@echo "  $(CYAN)LLM API$(NC)            http://localhost:$(MCP_LLM_PORT)/swagger-ui.html"  
-	@echo "  $(CYAN)Debate API$(NC)         http://localhost:$(MCP_DEBATE_PORT)/swagger-ui.html"
-	@echo "  $(CYAN)RAG API$(NC)            http://localhost:$(MCP_RAG_PORT)/swagger-ui.html"
-	@echo "  $(CYAN)Template API$(NC)       http://localhost:$(MCP_TEMPLATE_PORT)/swagger-ui.html"
-	@echo "  $(CYAN)Workflow API$(NC)       http://localhost:$(WORKFLOW_API_PORT)/graphql $(YELLOW)(GraphQL)$(NC)"
-	@echo ""
-	@echo "$(WHITE)🔧 QUICK HEALTH CHECKS:$(NC)"
-	@echo "  $(GREEN)make health$(NC)        - Check all service health"
-	@echo "  $(GREEN)make status$(NC)        - Show Docker container status"
-	@echo "  $(GREEN)make logs$(NC)          - View all service logs"
-	@echo ""
-	@echo "$(YELLOW)💡 TIPS:$(NC)"
-	@echo "  📖 Debate System: http://localhost:$(UI_PORT)"
-	@echo "  🔄 Workflow Editor: http://localhost:$(WORKFLOW_UI_PORT)"
+	@echo "$(WHITE)💾 DATABASES:$(NC)"
+	@echo "  $(YELLOW)PostgreSQL$(NC)         localhost:$(POSTGRES_PORT)"
+	@echo "  $(YELLOW)Redis$(NC)              localhost:$(REDIS_PORT)"
+	@echo "  $(YELLOW)Qdrant$(NC)             http://localhost:6333"
 	@echo ""
 
 # =============================================================================
-# CLEANUP & MAINTENANCE
+# SETUP HELPERS
 # =============================================================================
 
-clean: ## 🧹 Clean up containers and volumes
+check-root: ## 🔍 Verify we're in project root
+	@if [ ! -f "$(COMPOSE_FILE)" ]; then \
+		echo "$(RED)❌ Not in project root directory$(NC)"; \
+		echo "$(YELLOW)Current directory: $(PROJECT_ROOT)$(NC)"; \
+		exit 1; \
+	fi
+
+setup-env: ## 🔧 Set up environment files
+	@echo "$(BLUE)Setting up environment...$(NC)"
+	@if [ ! -f .env ]; then \
+		cp .env.example .env 2>/dev/null || echo "# Add your environment variables here" > .env; \
+		echo "$(GREEN)✅ Created .env file$(NC)"; \
+	fi
+
+setup-projects: ## 📦 Install dependencies for all projects
+	@echo "$(BLUE)Installing project dependencies...$(NC)"
+	@if [ "$(HAS_DEBATE_UI)" = "yes" ]; then \
+		echo "$(YELLOW)Installing debate-ui dependencies...$(NC)"; \
+		cd $(DEBATE_UI_DIR) && npm install; \
+	fi
+	@if [ "$(HAS_WORKFLOW_EDITOR)" = "yes" ] && [ -d "$(WORKFLOW_EDITOR_DIR)/client/workflow-editor" ]; then \
+		echo "$(YELLOW)Installing workflow editor dependencies...$(NC)"; \
+		cd $(WORKFLOW_EDITOR_DIR)/client/workflow-editor && npm install; \
+	fi
+	@if [ "$(HAS_E2E_TESTS)" = "yes" ]; then \
+		echo "$(YELLOW)Installing e2e test dependencies...$(NC)"; \
+		cd $(E2E_TESTS_DIR) && npm install; \
+	fi
+
+# =============================================================================
+# CLEANUP
+# =============================================================================
+
+clean: ## 🧹 Clean everything
 	@echo "$(YELLOW)⚠️ This will remove all data. Continue? [y/N]$(NC)"
 	@read -r response && \
 	if [ "$$response" = "y" ] || [ "$$response" = "Y" ]; then \
 		echo "$(BLUE)Cleaning up...$(NC)"; \
 		docker-compose -f $(COMPOSE_FILE) down -v --remove-orphans; \
 		docker system prune -f; \
+		find . -name "node_modules" -type d -prune -exec rm -rf '{}' + 2>/dev/null || true; \
+		find . -name "target" -type d -prune -exec rm -rf '{}' + 2>/dev/null || true; \
+		find . -name "dist" -type d -prune -exec rm -rf '{}' + 2>/dev/null || true; \
+		find . -name "build" -type d -prune -exec rm -rf '{}' + 2>/dev/null || true; \
 		echo "$(GREEN)✅ Cleanup complete$(NC)"; \
 	else \
 		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
 	fi
 
-reset: clean start ## 🔄 Complete reset (clean + fresh start)
-	@echo "$(GREEN)✅ System reset complete$(NC)"
-
 # =============================================================================
-# ENVIRONMENT DEPLOYMENTS
+# SPECIAL COMMANDS
 # =============================================================================
 
-prod: ## 🌐 Deploy production environment
-	@echo "$(BLUE)Starting production environment...$(NC)"
-	@COMPOSE_FILE="$(COMPOSE_DIR)/docker-compose.yml:$(COMPOSE_DIR)/docker-compose.prod.yml" docker-compose up -d
-	@echo "$(GREEN)✅ Production environment started$(NC)"
-
-staging: ## 🎪 Deploy staging environment
-	@echo "$(BLUE)Starting staging environment...$(NC)"
-	@COMPOSE_FILE="$(COMPOSE_DIR)/docker-compose.yml:$(COMPOSE_DIR)/docker-compose.staging.yml" docker-compose up -d
-	@echo "$(GREEN)✅ Staging environment started$(NC)"
-
-# =============================================================================
-# ADVANCED OPERATIONS
-# =============================================================================
-
-shell-db: ## 💾 Open database shell
-	@docker-compose -f $(COMPOSE_FILE) exec postgres psql -U postgres
-
-shell-redis: ## 🗄️ Open Redis CLI
-	@docker-compose -f $(COMPOSE_FILE) exec redis redis-cli
-
-backup: ## 💾 Backup database
-	@echo "$(BLUE)Creating database backup...$(NC)"
-	@mkdir -p backups
-	@docker-compose -f $(COMPOSE_FILE) exec postgres pg_dump -U postgres > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
-	@echo "$(GREEN)✅ Backup created in backups/$(NC)"
-
-# =============================================================================
-# QUICK SHORTCUTS
-# =============================================================================
-
-up: start ## ⬆️ Alias for start
-down: stop ## ⬇️ Alias for stop
-rebuild: clean build start ## 🔨 Complete rebuild
-
-# =============================================================================
-# UTILITIES
-# =============================================================================
-
-ports: ## 🔌 Show port usage
-	@echo "$(BLUE)Port Configuration:$(NC)"
-	@echo "  UI:         http://localhost:$(UI_PORT)"
-	@echo "  PostgreSQL: localhost:$(POSTGRES_PORT)"
-	@echo "  Redis:      localhost:$(REDIS_PORT)"
-	@echo ""
-	@echo "$(BLUE)Currently used ports:$(NC)"
-	@lsof -nP -i4TCP | grep LISTEN | awk '{print $$9}' | sort -u | grep -E ':(3001|5432|6379|500[0-9]|501[0-9])' || echo "No MCP ports in use"
-
-diagnose: ## 🔍 Diagnose connectivity issues
-	@echo "$(BLUE)🔍 Diagnosing connectivity issues...$(NC)"
-	@echo ""
-	@echo "$(WHITE)1. Docker Services:$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) ps
-	@echo ""
-	@echo "$(WHITE)2. Port Check:$(NC)"
-	@lsof -nP -i4TCP | grep LISTEN | grep -E ':(3001|5002|5004|5005|5006|5013|5432|6333|6379)' || echo "$(YELLOW)No MCP services listening$(NC)"
-	@echo ""
-	@echo "$(WHITE)3. Service URLs Test:$(NC)"
-	@echo -n "  UI ($(UI_PORT)): "
-	@curl -s -o /dev/null -w "%{http_code}" http://localhost:$(UI_PORT) 2>/dev/null || echo "Connection failed"
-	@echo ""
-	@echo -n "  Qdrant ($(QDRANT_PORT)): "
-	@curl -s -o /dev/null -w "%{http_code}" http://localhost:$(QDRANT_PORT) 2>/dev/null || echo "Connection failed"
-	@echo ""
-	@echo "$(WHITE)4. What's Missing:$(NC)"
-	@echo "$(YELLOW)To fix the issues:$(NC)"
-	@echo "  1. Run $(CYAN)make build$(NC) to build the Java services"
-	@echo "  2. Run $(CYAN)make start$(NC) to start all services"
-	@echo "  3. Run $(CYAN)make ui$(NC) in a separate terminal for the frontend"
-	@echo ""
-
-fix-connectivity: ## 🔧 Fix connectivity issues automatically
-	@echo "$(BLUE)🔧 Fixing connectivity issues...$(NC)"
-	@echo "$(YELLOW)Step 1: Building Java services...$(NC)"
-	@$(MAKE) build
-	@echo "$(YELLOW)Step 2: Starting all services...$(NC)"
-	@$(MAKE) start
-	@echo "$(YELLOW)Step 3: Waiting for services to start...$(NC)"
-	@sleep 10
-	@echo "$(YELLOW)Step 4: Checking health...$(NC)"
-	@$(MAKE) health
-	@echo ""
-	@echo "$(GREEN)✅ Services should now be accessible!$(NC)"
-	@echo "$(CYAN)Next: Run '$(WHITE)make ui$(CYAN)' in a separate terminal for the frontend$(NC)"
-
-info: ## ℹ️ Show project information
-	@echo "$(CYAN)Project: $(PROJECT_NAME)$(NC)"
-	@echo "$(CYAN)Compose File: $(COMPOSE_FILE)$(NC)"
-	@echo "$(CYAN)Status: $(NC)"
-	@$(MAKE) status --no-print-directory
-
-# Hidden debugging commands (not shown in help)
-debug-env:
-	@echo "COMPOSE_FILE: $(COMPOSE_FILE)"
-	@echo "UI_PORT: $(UI_PORT)"
-	@echo "POSTGRES_PORT: $(POSTGRES_PORT)"
-	@echo "REDIS_PORT: $(REDIS_PORT)"
+# Session management commands delegated to debate-ui
+login test-auth refresh-session keep-alive:
+	@if [ -f "$(DEBATE_UI_DIR)/Makefile" ]; then \
+		cd $(DEBATE_UI_DIR) && make $@; \
+	else \
+		echo "$(RED)❌ Session management requires debate-ui Makefile$(NC)"; \
+	fi
 
 # Default target
 .DEFAULT_GOAL := help

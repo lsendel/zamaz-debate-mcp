@@ -1,0 +1,47 @@
+name: React Import Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'debate-ui/**'
+      - '.github/workflows/react-validation.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'debate-ui/**'
+
+jobs:
+  validate-react-imports:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: debate-ui/package-lock.json
+        
+    - name: Install dependencies
+      run: |
+        cd debate-ui
+        npm ci
+        
+    - name: Validate React imports
+      run: |
+        cd debate-ui
+        npm run lint:react-imports
+        
+    - name: Run ESLint
+      run: |
+        cd debate-ui
+        npm run lint:check
+        
+    - name: Check TypeScript
+      run: |
+        cd debate-ui
+        npm run type-check

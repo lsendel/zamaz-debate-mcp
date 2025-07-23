@@ -1,4 +1,4 @@
-#!/usr/bin/env node;
+#!/usr/bin/env node
 
 const express = require('express');
 const cors = require('cors');
@@ -86,7 +86,7 @@ app.post('/api/v1/organizations', (req, res) => {
     description: description || '',
     apiKey: null,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString();
+    updatedAt: new Date().toISOString()
   }
 
   organizations.push(newOrg);
@@ -174,7 +174,7 @@ app.post('/api/v1/users', (req, res) => {
     email,
     organizationId: organizationId || organizations[0]?.id,
     role,
-    createdAt: new Date().toISOString();
+    createdAt: new Date().toISOString()
   }
 
   users.push(newUser);
@@ -189,6 +189,32 @@ app.get('/actuator/health', (req, res) => {
 // Current organization (for compatibility)
 app.get('/api/v1/current-organization', (req, res) => {
   res.json(organizations[0] || null);
+});
+
+// Login endpoint
+app.post('/api/v1/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  // Simple demo authentication
+  if (username === 'demo' && password === 'demo123') {
+    const user = {
+      id: 'user-demo',
+      username: 'demo',
+      email: 'demo@example.com',
+      organizationId: organizations[0]?.id || 'org-001',
+      role: 'admin'
+    };
+    
+    const response = {
+      token: 'demo-token-' + Date.now(),
+      user: user,
+      organization: organizations[0] || organizations[0]
+    };
+    
+    res.json(response);
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
 });
 
 // Error handling middleware

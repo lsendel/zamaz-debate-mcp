@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ConfigProvider } from 'antd';
 import { store } from './store';
 import { useAppSelector, useAppDispatch } from './store';
 import 'antd/dist/reset.css';

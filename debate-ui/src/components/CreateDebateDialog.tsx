@@ -6,6 +6,7 @@ import {
 } from '../store/slices/uiSlice';
 import { createDebate } from '../store/slices/debateSlice';
 import { Modal, Button, Input, Select, Card, Form, Slider, InputNumber, Typography, Space, Row, Col } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 

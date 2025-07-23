@@ -41,6 +41,7 @@ import LLMPresetConfig from "./LLMPresetConfig";
 
 const OrganizationManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { organizations, selectedOrganization, loading, error } = useAppSelector(
     (state) => state.organization,
   );
   const { user } = useAppSelector((state) => state.auth);

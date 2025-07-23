@@ -29,8 +29,7 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 # Copy the built JAR
-COPY --from=builder app.jar
-COPY /app/github-integration/target/github-integration-*.jar app.jar
+COPY --from=builder /app/github-integration/target/github-integration-*.jar app.jar
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R kiro:kiro /app
@@ -38,17 +37,12 @@ RUN mkdir -p /app/logs && chown -R kiro:kiro /app
 # Switch to non-root user
 USER kiro
 
+# Expose port
+EXPOSE 8080
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
-
     CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-# Expose port
-HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:8080/health || exit 1
 
 # JVM optimization for containers
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"

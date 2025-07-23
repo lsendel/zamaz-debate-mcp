@@ -9,17 +9,17 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
-  Settings,
-  Smartphone,
-  Download,
-  Trash2,
-  RefreshCw,
-  Wifi,
-  WifiOff,
-  HardDrive,
-  Bell,
-  BellOff,
-} from "lucide-react";
+  SettingOutlined,
+  MobileOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
+  SyncOutlined,
+  WifiOutlined,
+  DisconnectOutlined,
+  DatabaseOutlined,
+  BellOutlined,
+  BellFilled,
+} from "@ant-design/icons";
 import { usePWA } from "../hooks/usePWA";
 
 const SettingsDialog = () => {
@@ -141,7 +141,7 @@ const SettingsDialog = () => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Settings className="w-4 h-4 mr-2" />
+          <SettingOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
           Settings
         </Button>
       </DialogTrigger>
@@ -149,7 +149,7 @@ const SettingsDialog = () => {
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Settings className="w-5 h-5" />
+            <SettingOutlined style={{ fontSize: '20px' }} />
             <span>App Settings</span>
           </DialogTitle>
         </DialogHeader>
@@ -159,9 +159,9 @@ const SettingsDialog = () => {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
               {isOnline ? (
-                <Wifi className="w-4 h-4" />
+                <WifiOutlined style={{ fontSize: '16px' }} />
               ) : (
-                <WifiOff className="w-4 h-4" />
+                <DisconnectOutlined style={{ fontSize: '16px' }} />
               )}
               <span>Connection Status</span>
             </h3>
@@ -187,7 +187,7 @@ const SettingsDialog = () => {
           {/* PWA Installation */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-              <Smartphone className="w-4 h-4" />
+              <MobileOutlined style={{ fontSize: '16px' }} />
               <span>Progressive Web App</span>
             </h3>
 
@@ -218,7 +218,7 @@ const SettingsDialog = () => {
                   disabled={loading}
                   className="w-full"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <DownloadOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
                   {loading ? "Installing..." : "Install App"}
                 </Button>
               )}
@@ -230,7 +230,7 @@ const SettingsDialog = () => {
                   variant="outline"
                   className="w-full"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <SyncOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
                   {loading ? "Updating..." : "Update Available - Install Now"}
                 </Button>
               )}
@@ -241,9 +241,9 @@ const SettingsDialog = () => {
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
               {notificationsEnabled ? (
-                <Bell className="w-4 h-4" />
+                <BellOutlined style={{ fontSize: '16px' }} />
               ) : (
-                <BellOff className="w-4 h-4" />
+                <BellFilled style={{ fontSize: '16px' }} />
               )}
               <span>Notifications</span>
             </h3>
@@ -275,7 +275,7 @@ const SettingsDialog = () => {
                   variant="outline"
                   className="w-full"
                 >
-                  <Bell className="w-4 h-4 mr-2" />
+                  <BellOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
                   Enable Notifications
                 </Button>
               )}
@@ -285,7 +285,7 @@ const SettingsDialog = () => {
           {/* Cache Management */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-              <HardDrive className="w-4 h-4" />
+              <DatabaseOutlined style={{ fontSize: '16px' }} />
               <span>Cache Management</span>
             </h3>
 
@@ -334,7 +334,7 @@ const SettingsDialog = () => {
                   size="sm"
                   className="flex-1"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <SyncOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
                   Refresh
                 </Button>
                 <Button
@@ -344,7 +344,7 @@ const SettingsDialog = () => {
                   className="flex-1 text-red-600 hover:text-red-700"
                   disabled={loading}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
+                  <DeleteOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
                   Clear Cache
                 </Button>
               </div>

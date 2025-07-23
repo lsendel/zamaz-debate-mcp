@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test React App</title>
+</head>
+<body>
+    <div id="test-root">
+        <h1>If you see this, React didn't load</h1>
+    </div>
+    
+    <script src="http://localhost:3001/@vite/client"></script>
+    <script type="module">
+        console.log('Testing React app...');
+        
+        // Try to load React
+        import('http://localhost:3001/src/index.tsx')
+            .then(() => console.log('React loaded successfully'))
+            .catch(err => console.error('Failed to load React:', err));
+            
+        // Check if root gets populated
+        setTimeout(() => {
+            const root = document.getElementById('test-root');
+            console.log('Root content after 3s:', root.innerHTML);
+        }, 3000);
+    </script>
+</body>
+</html>

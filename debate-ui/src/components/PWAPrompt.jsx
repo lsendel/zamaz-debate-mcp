@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { X, Download, Smartphone, Monitor, Wifi, WifiOff } from "lucide-react";
+import { 
+  CloseOutlined, 
+  DownloadOutlined, 
+  MobileOutlined, 
+  DesktopOutlined, 
+  WifiOutlined, 
+  DisconnectOutlined 
+} from "@ant-design/icons";
 import { usePWA } from "../hooks/usePWA";
 
 const PWAPrompt = () => {
@@ -63,7 +70,7 @@ const PWAPrompt = () => {
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white py-2 px-4 text-center text-sm">
           <div className="flex items-center justify-center space-x-2">
-            <WifiOff className="w-4 h-4" />
+            <DisconnectOutlined style={{ fontSize: '16px' }} />
             <span>You're offline. Some features may be limited.</span>
           </div>
         </div>
@@ -75,7 +82,7 @@ const PWAPrompt = () => {
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Download className="w-5 h-5 text-blue-600" />
+                <DownloadOutlined style={{ fontSize: '20px', color: '#2563eb' }} />
               </div>
             </div>
 
@@ -89,9 +96,9 @@ const PWAPrompt = () => {
               </p>
 
               <div className="flex items-center space-x-2 text-xs text-gray-500 mb-3">
-                <Monitor className="w-3 h-3" />
+                <DesktopOutlined style={{ fontSize: '12px' }} />
                 <span>Works on desktop</span>
-                <Smartphone className="w-3 h-3 ml-2" />
+                <MobileOutlined style={{ fontSize: '12px', marginLeft: '8px' }} />
                 <span>and mobile</span>
               </div>
 
@@ -116,7 +123,7 @@ const PWAPrompt = () => {
               onClick={() => setShowInstallPrompt(false)}
               className="flex-shrink-0 text-gray-400 hover:text-gray-600"
             >
-              <X className="w-4 h-4" />
+              <CloseOutlined style={{ fontSize: '16px' }} />
             </button>
           </div>
         </div>
@@ -128,7 +135,7 @@ const PWAPrompt = () => {
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Download className="w-5 h-5 text-blue-600" />
+                <DownloadOutlined style={{ fontSize: '20px', color: '#2563eb' }} />
               </div>
             </div>
 
@@ -162,7 +169,7 @@ const PWAPrompt = () => {
               onClick={() => setShowUpdatePrompt(false)}
               className="flex-shrink-0 text-gray-400 hover:text-gray-600"
             >
-              <X className="w-4 h-4" />
+              <CloseOutlined style={{ fontSize: '16px' }} />
             </button>
           </div>
         </div>
@@ -177,12 +184,12 @@ const PWAPrompt = () => {
         >
           {isOnline ? (
             <>
-              <Wifi className="w-3 h-3" />
+              <WifiOutlined style={{ fontSize: '12px' }} />
               <span>Online</span>
             </>
           ) : (
             <>
-              <WifiOff className="w-3 h-3" />
+              <DisconnectOutlined style={{ fontSize: '12px' }} />
               <span>Offline</span>
             </>
           )}

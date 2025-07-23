@@ -33,16 +33,22 @@
   },
   "scripts": {
     "start": "vite",
+    "prebuild": "npm run lint:react-imports",
     "build": "vite build",
     "test": "vite test",
     "dev": "vite",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx --config ../.linting/frontend/.eslintrc.js",
     "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --config ../.linting/frontend/.eslintrc.js --fix",
     "lint:check": "eslint src --ext .ts,.tsx,.js,.jsx --config ../.linting/frontend/.eslintrc.js --max-warnings 0",
+    "lint:react-imports": "node scripts/check-react-imports.js",
     "format": "prettier --write src/**/*.{ts,tsx,js,jsx,json,css,md} --config ../.linting/frontend/.prettierrc",
     "format:check": "prettier --check src/**/*.{ts,tsx,js,jsx,json,css,md} --config ../.linting/frontend/.prettierrc",
     "type-check": "tsc --noEmit --project ../.linting/frontend/tsconfig.lint.json",
-    "lint-all": "npm run lint:check && npm run format:check && npm run type-check"
+    "lint-all": "npm run lint:react-imports && npm run lint:check && npm run format:check && npm run type-check",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report"
   },
   "eslintConfig": {
     "extends": [
@@ -64,6 +70,7 @@
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.3.4",
+    "@playwright/test": "^1.54.1",
     "@rollup/rollup-darwin-arm64": "^4.45.1",
     "@tailwindcss/forms": "^0.5.7",
     "@testing-library/jest-dom": "^6.6.3",
