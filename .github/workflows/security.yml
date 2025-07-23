@@ -49,77 +49,53 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: "temurin"
+          distribution: 'temurin'
           cache: maven
 
-      - name: Run OWASP Dependency Check
+      - name: Run SpotBugs security checks
         run: |
-          mvn org.owasp:dependency-check-maven:check \
-            -DfailBuildOnCVSS=7 \
-            -DskipTestScope=false
+          mvn com.github.spotbugs:spotbugs-maven-plugin:spotbugs \
+            -Dspotbugs.effort=Max \
+            -Dspotbugs.threshold=Low \
+            -Dspotbugs.xmlOutput=true \
+            -Dspotbugs.includeFilterFile=spotbugs-security-include.xml
         continue-on-error: true
 
-      - name: Upload OWASP results
+      - name: Upload SpotBugs results
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: owasp-dependency-check-report
-          path: target/dependency-check-report.html
-          retention-days: 30
+          name: spotbugs-results
+          path: '**/target/spotbugsXml.xml'
 
   frontend-security:
-    name: ⚛️ Frontend Security Scan
+    name: 🌐 Frontend Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: ./debate-ui
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: "./debate-ui/package-lock.json"
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline
+          cache: 'npm'
+          cache-dependency-path: debate-ui/package-lock.json
 
       - name: Run npm audit
+        working-directory: ./debate-ui
         run: |
-          npm audit --audit-level moderate --json > audit-results.json || true
-          npm audit --audit-level moderate
+          npm audit --production
         continue-on-error: true
 
-      - name: Install SARIF formatter
-        run: npm install --no-save @microsoft/eslint-formatter-sarif
-        continue-on-error: true
-
-      - name: Run ESLint security rules
-        run: |
-          if [ -f .eslintrc.security.js ]; then
-            npx eslint src \
-              --ext .ts,.tsx,.js,.jsx \
-              --format json \
-              --output-file eslint-results.json \
-              --config .eslintrc.security.js || true
-            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"ESLint"}},"results":[]}]}' > eslint-security.sarif
-          else
-            echo "Security ESLint config not found, skipping..."
-            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"ESLint"}},"results":[]}]}' > eslint-security.sarif
-          fi
-        continue-on-error: true
-
-      - name: Upload security scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
         with:
-          sarif_file: ./debate-ui/eslint-security.sarif
-          wait-for-processing: true
+          args: --severity-threshold=high --file=debate-ui/package.json
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
 
   secrets-scan:
     name: 🔐 Secrets Detection
@@ -158,3 +134,44 @@ jobs:
           echo "| Java Security | ${{ needs.java-security.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Security | ${{ needs.frontend-security.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secrets Detection | ${{ needs.secrets-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+
+  # Automated Workflow Failure Handler
+  handle-security-failure:
+    name: Handle Security Scan Failure
+    if: failure()
+    needs: [semgrep, java-security, frontend-security, secrets-scan, security-summary]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Security Scanning"
+      # High severity for security failures
+      severity: ${{
+        (needs.secrets-scan.result == 'failure') && 'critical' ||
+        (github.event_name == 'schedule' && failure()) && 'high' ||
+        (github.ref == 'refs/heads/main') && 'high' ||
+        'medium'
+      }}
+      # Security team assignment
+      assignees: "security-team,team-lead"
+      # Comprehensive security labels
+      labels: "workflow-failure,security,compliance,${{
+        (needs.secrets-scan.result == 'failure') && 'secrets-exposed,critical,' || ''
+      }}${{
+        (needs.java-security.result == 'failure') && 'java-vulnerability,' || ''
+      }}${{
+        (needs.frontend-security.result == 'failure') && 'frontend-vulnerability,npm,' || ''
+      }}${{
+        (needs.semgrep.result == 'failure') && 'code-vulnerability,' || ''
+      }}${{
+        github.event_name == 'schedule' && 'scheduled-scan' || github.ref_name
+      }}"
+      # Use security template
+      template: "security"
+      # Always notify for security issues
+      notify-slack: true
+      notify-email: ${{ github.ref == 'refs/heads/main' || needs.secrets-scan.result == 'failure' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SECURITY_SLACK_WEBHOOK || secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

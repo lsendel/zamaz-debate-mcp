@@ -119,3 +119,36 @@ jobs:
             Status: ${{ job.status }}
             Actor: ${{ github.actor }}
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Automated Workflow Failure Handler
+  handle-migration-failure:
+    name: Handle Database Migration Failure
+    if: failure()
+    needs: [database-migration]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Database Migration"
+      # Critical severity for database failures
+      severity: ${{
+        (github.event.inputs.environment == 'production') && 'critical' ||
+        'high'
+      }}
+      assignees: "dba-team,backend-team,oncall"
+      # Comprehensive labels
+      labels: "workflow-failure,database,migration,${{
+        (github.event.inputs.migration_type == 'rollback') && 'rollback,urgent,' || ''
+      }}${{
+        (github.event.inputs.environment == 'production') && 'production,critical,' || ''
+      }}${{
+        github.event.inputs.environment
+      }}"
+      template: "deployment"
+      # Always notify for database issues
+      notify-slack: true
+      notify-email: true
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

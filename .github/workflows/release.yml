@@ -277,3 +277,35 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Automated Workflow Failure Handler
+  handle-release-failure:
+    name: Handle Release Failure
+    if: failure()
+    needs: [create-release, build-release-artifacts, build-release-images, create-deployment-manifests, notify-release]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Release"
+      # Critical severity for release failures
+      severity: "critical"
+      assignees: "release-manager,team-lead,devops-team"
+      # Comprehensive labels
+      labels: "workflow-failure,release,critical,${{
+        (needs.create-release.result == 'failure') && 'release-creation,' || ''
+      }}${{
+        (needs.build-release-artifacts.result == 'failure') && 'build-artifacts,' || ''
+      }}${{
+        (needs.build-release-images.result == 'failure') && 'docker-build,' || ''
+      }}${{
+        needs.create-release.outputs.tag_name || github.ref_name
+      }}"
+      template: "deployment"
+      # Always notify for release issues
+      notify-slack: true
+      notify-email: true
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

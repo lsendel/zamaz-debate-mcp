@@ -455,3 +455,45 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
       continue-on-error: true
+
+  # Automated Workflow Failure Handler
+  handle-quality-failure:
+    name: Handle Code Quality Failure
+    if: failure()
+    needs: [java-linting, frontend-linting, config-linting, docs-linting, linting-report, quality-gate, security-scan]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Code Quality"
+      # Dynamic severity based on what failed
+      severity: ${{
+        (needs.quality-gate.result == 'failure') && 'high' ||
+        (needs.java-linting.result == 'failure' || needs.frontend-linting.result == 'failure') && 'medium' ||
+        (needs.security-scan.result == 'failure') && 'high' ||
+        'low'
+      }}
+      # Dynamic assignees based on failure
+      assignees: ${{
+        (needs.java-linting.result == 'failure') && 'backend-team,code-quality-team' ||
+        (needs.frontend-linting.result == 'failure') && 'frontend-team,code-quality-team' ||
+        (needs.security-scan.result == 'failure') && 'security-team' ||
+        'code-quality-team'
+      }}
+      # Comprehensive labels
+      labels: "workflow-failure,code-quality,${{
+        (needs.java-linting.result == 'failure') && 'java,linting,' || ''
+      }}${{
+        (needs.frontend-linting.result == 'failure') && 'frontend,linting,' || ''
+      }}${{
+        (needs.config-linting.result == 'failure') && 'configuration,' || ''
+      }}${{
+        (needs.docs-linting.result == 'failure') && 'documentation,' || ''
+      }}${{
+        (needs.security-scan.result == 'failure') && 'security,vulnerability,' || ''
+      }}${{ github.ref_name }}"
+      template: "linting"
+      notify-slack: ${{ github.ref == 'refs/heads/main' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}

@@ -462,3 +462,55 @@ jobs:
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
           text: 'Production deployment completed for version ${{ github.event.release.tag_name }}'
         if: always()
+
+  # Automated Workflow Failure Handler
+  handle-cicd-failure:
+    name: Handle CI/CD Pipeline Failure
+    if: failure()
+    needs: [security-scan, java-services, frontend, contract-tests, e2e-tests, security-tests, performance-tests, build-images, deploy-staging, deploy-production]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "CI/CD Pipeline"
+      # Dynamic severity based on what failed
+      severity: ${{
+        (needs.deploy-production.result == 'failure') && 'critical' ||
+        (needs.deploy-staging.result == 'failure') && 'high' ||
+        (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'high' ||
+        (needs.e2e-tests.result == 'failure') && 'medium' ||
+        (github.ref == 'refs/heads/main') && 'high' ||
+        'medium'
+      }}
+      # Dynamic assignees based on failure
+      assignees: ${{
+        (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'devops-team,platform-lead,oncall' ||
+        (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'security-team,team-lead' ||
+        (needs.java-services.result == 'failure') && 'backend-team' ||
+        (needs.frontend.result == 'failure') && 'frontend-team' ||
+        'dev-team'
+      }}
+      # Comprehensive labels
+      labels: "workflow-failure,ci-cd,${{
+        (needs.deploy-production.result == 'failure') && 'production,critical,deployment,' || ''
+      }}${{
+        (needs.deploy-staging.result == 'failure') && 'staging,deployment,' || ''
+      }}${{
+        (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'security,' || ''
+      }}${{
+        (needs.e2e-tests.result == 'failure') && 'e2e-tests,' || ''
+      }}${{
+        (needs.performance-tests.result == 'failure') && 'performance,' || ''
+      }}${{ github.ref_name }}"
+      # Template selection
+      template: ${{
+        (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'deployment' ||
+        (needs.security-tests.result == 'failure' || needs.security-scan.result == 'failure') && 'security' ||
+        'ci-cd'
+      }}
+      notify-slack: true
+      notify-email: ${{ github.ref == 'refs/heads/main' || needs.deploy-production.result == 'failure' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

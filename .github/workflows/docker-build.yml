@@ -164,3 +164,29 @@ jobs:
           else
             echo "- Image signing skipped (only for main/develop branches)" >> $GITHUB_STEP_SUMMARY
           fi
+
+  # Automated Workflow Failure Handler
+  handle-docker-failure:
+    name: Handle Docker Build Failure
+    if: failure()
+    needs: [build-images, summary]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Docker Image Build"
+      # High severity for docker build failures
+      severity: ${{
+        (github.ref == 'refs/heads/main') && 'high' ||
+        'medium'
+      }}
+      assignees: "devops-team,platform-team"
+      # Comprehensive labels
+      labels: "workflow-failure,docker,build,${{
+        contains(needs.build-images.result, 'failure') && 'build-failure,' || ''
+      }}container,${{ github.ref_name }}"
+      template: "ci-cd"
+      notify-slack: ${{ github.ref == 'refs/heads/main' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
