@@ -1,131 +1,282 @@
 <?xml version="1.0"?>
-<!DOCTYPE module PUBLIC
-    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
-    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
-    <property name="charset" value="UTF-8"/>
-    <property name="severity" value="warning"/>
-    <property name="fileExtensions" value="java, properties, xml"/>
-    
+    <property name="charset" value="UTF-8" />
+    <property name="severity" value="warning" />
+    <property name="fileExtensions" value="java, properties, xml" />
+
     <!-- Exclude generated files -->
     <module name="SuppressionFilter">
-        <property name="file" value=".linting/java/checkstyle-suppressions.xml"/>
-        <property name="optional" value="true"/>
+        <property name="file" value=".linting/java/checkstyle-suppressions.xml" />
+        <property name="optional" value="true" />
     </module>
-    
+
     <!-- Check for tabs -->
     <module name="FileTabCharacter">
-        <property name="eachLine" value="true"/>
+        <property name="eachLine" value="true" />
     </module>
-    
+
     <!-- Check for trailing spaces -->
     <module name="RegexpSingleline">
-        <property name="format" value="\s+$"/>
-        <property name="message" value="Line has trailing spaces."/>
+        <property name="format" value="\s+$" />
+        <property name="message" value="Line has trailing spaces." />
     </module>
-    
+
     <module name="TreeWalker">
-        <!-- Naming Conventions -->
-        <module name="ConstantName"/>
-        <module name="LocalFinalVariableName"/>
-        <module name="LocalVariableName"/>
-        <module name="MemberName"/>
-        <module name="MethodName"/>
-        <module name="PackageName">
-            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        <!-- Enhanced Naming Conventions -->
+
+        <!-- General Class Naming -->
+        <module name="TypeName">
+            <property name="format" value="^[A-Z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern"
+                value="Class name ''{0}'' must start with uppercase letter and use PascalCase" />
         </module>
-        <module name="ParameterName"/>
-        <module name="StaticVariableName"/>
-        <module name="TypeName"/>
-        
+
+        <!-- Specific Class Type Patterns -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^public class [A-Z][a-zA-Z0-9]*Controller\s" />
+            <property name="message" value="Controller classes must end with 'Controller'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^public class [A-Z][a-zA-Z0-9]*Service\s" />
+            <property name="message" value="Service classes must end with 'Service'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^public interface [A-Z][a-zA-Z0-9]*Repository\s" />
+            <property name="message" value="Repository interfaces must end with 'Repository'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^public class [A-Z][a-zA-Z0-9]*Exception\s" />
+            <property name="message" value="Exception classes must end with 'Exception'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^public class [A-Z][a-zA-Z0-9]*Config\s" />
+            <property name="message" value="Configuration classes must end with 'Config'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- DTO Naming Pattern -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="^public class [A-Z][a-zA-Z0-9]*Dto\s" />
+            <property name="message" value="DTO classes must end with 'Dto'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- Method Naming -->
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern"
+                value="Method name ''{0}'' must use camelCase and start with lowercase letter" />
+        </module>
+
+        <!-- CRUD Method Patterns - Create Operations -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="public.*\s(create|add|register)[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Create methods should start with 'create', 'add', or 'register' followed by entity name" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- CRUD Method Patterns - Read Operations -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="public.*\s(get|find|list|search)[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Read methods should start with 'get', 'find', 'list', or 'search' followed by entity name" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- CRUD Method Patterns - Update Operations -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="public.*\s(update|modify|change)[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Update methods should start with 'update', 'modify', or 'change' followed by entity name" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- CRUD Method Patterns - Delete Operations -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="public.*\s(delete|remove|deactivate)[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Delete methods should start with 'delete', 'remove', or 'deactivate' followed by entity name" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- Boolean Method Patterns -->
+        <module name="RegexpSinglelineJava">
+            <property name="format"
+                value="public.*boolean\s(is|has|can|should|will)[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Boolean methods should start with 'is', 'has', 'can', 'should', or 'will'" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- Validation Method Patterns -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="private.*\svalidate[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Validation methods should start with 'validate' followed by descriptive name" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- Mapping Method Patterns -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="private.*\s(map|to|from)[A-Z][a-zA-Z0-9]*\(" />
+            <property name="message"
+                value="Mapping methods should start with 'map', 'to', or 'from' followed by descriptive name" />
+            <property name="ignoreComments" value="true" />
+        </module>
+
+        <!-- Variable Naming -->
+        <module name="LocalVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern" value="Local variable ''{0}'' must use camelCase" />
+        </module>
+
+        <module name="MemberName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern" value="Member variable ''{0}'' must use camelCase" />
+        </module>
+
+        <module name="ParameterName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern" value="Parameter ''{0}'' must use camelCase" />
+        </module>
+
+        <!-- Constants -->
+        <module name="ConstantName">
+            <property name="format" value="^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$" />
+            <message key="name.invalidPattern" value="Constant ''{0}'' must use UPPER_SNAKE_CASE" />
+        </module>
+
+        <!-- Static Variables -->
+        <module name="StaticVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern" value="Static variable ''{0}'' must use camelCase" />
+        </module>
+
+        <!-- Local Final Variables -->
+        <module name="LocalFinalVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$" />
+            <message key="name.invalidPattern"
+                value="Local final variable ''{0}'' must use camelCase" />
+        </module>
+
+        <!-- Package Naming -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$" />
+            <message key="name.invalidPattern"
+                value="Package name ''{0}'' must use lowercase letters and dots only" />
+        </module>
+
+        <!-- Avoid Abbreviations -->
+        <module name="AbbreviationAsWordInName">
+            <property name="allowedAbbreviationLength" value="3" />
+            <property name="allowedAbbreviations" value="DTO,API,HTTP,JSON,UUID,URL,URI,MCP,JWT,SQL" />
+            <property name="targets"
+                value="CLASS_DEF,INTERFACE_DEF,ENUM_DEF,ANNOTATION_DEF,ANNOTATION_FIELD_DEF,PARAMETER_DEF,VARIABLE_DEF,METHOD_DEF" />
+            <message key="abbreviation.as.word"
+                value="Avoid abbreviations in ''{0}'' except for well-known ones (DTO, API, HTTP, etc.)" />
+        </module>
+
         <!-- Imports -->
-        <module name="AvoidStarImport"/>
-        <module name="IllegalImport"/>
-        <module name="RedundantImport"/>
-        <module name="UnusedImports"/>
-        
+        <module name="AvoidStarImport" />
+        <module name="IllegalImport" />
+        <module name="RedundantImport" />
+        <module name="UnusedImports" />
+
         <!-- Size Violations -->
         <module name="LineLength">
-            <property name="max" value="120"/>
-            <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+            <property name="max" value="120" />
+            <property name="ignorePattern"
+                value="^package.*|^import.*|a href|href|http://|https://|ftp://" />
         </module>
         <module name="MethodLength">
-            <property name="max" value="50"/>
+            <property name="max" value="50" />
         </module>
         <module name="ParameterNumber">
-            <property name="max" value="7"/>
+            <property name="max" value="7" />
         </module>
-        
+
         <!-- Whitespace -->
-        <module name="EmptyForIteratorPad"/>
-        <module name="GenericWhitespace"/>
-        <module name="MethodParamPad"/>
-        <module name="NoWhitespaceAfter"/>
-        <module name="NoWhitespaceBefore"/>
-        <module name="OperatorWrap"/>
-        <module name="ParenPad"/>
-        <module name="TypecastParenPad"/>
-        <module name="WhitespaceAfter"/>
-        <module name="WhitespaceAround"/>
-        
+        <module name="EmptyForIteratorPad" />
+        <module name="GenericWhitespace" />
+        <module name="MethodParamPad" />
+        <module name="NoWhitespaceAfter" />
+        <module name="NoWhitespaceBefore" />
+        <module name="OperatorWrap" />
+        <module name="ParenPad" />
+        <module name="TypecastParenPad" />
+        <module name="WhitespaceAfter" />
+        <module name="WhitespaceAround" />
+
         <!-- Modifier Checks -->
-        <module name="ModifierOrder"/>
-        <module name="RedundantModifier"/>
-        
+        <module name="ModifierOrder" />
+        <module name="RedundantModifier" />
+
         <!-- Blocks -->
-        <module name="AvoidNestedBlocks"/>
-        <module name="EmptyBlock"/>
-        <module name="LeftCurly"/>
-        <module name="NeedBraces"/>
-        <module name="RightCurly"/>
-        
+        <module name="AvoidNestedBlocks" />
+        <module name="EmptyBlock" />
+        <module name="LeftCurly" />
+        <module name="NeedBraces" />
+        <module name="RightCurly" />
+
         <!-- Coding -->
-        <module name="EmptyStatement"/>
-        <module name="EqualsHashCode"/>
-        <module name="IllegalInstantiation"/>
-        <module name="InnerAssignment"/>
-        <module name="MissingSwitchDefault"/>
-        <module name="MultipleVariableDeclarations"/>
-        <module name="SimplifyBooleanExpression"/>
-        <module name="SimplifyBooleanReturn"/>
-        
+        <module name="EmptyStatement" />
+        <module name="EqualsHashCode" />
+        <module name="IllegalInstantiation" />
+        <module name="InnerAssignment" />
+        <module name="MissingSwitchDefault" />
+        <module name="MultipleVariableDeclarations" />
+        <module name="SimplifyBooleanExpression" />
+        <module name="SimplifyBooleanReturn" />
+
         <!-- Class Design -->
-        <module name="FinalClass"/>
-        <module name="HideUtilityClassConstructor"/>
-        <module name="InterfaceIsType"/>
-        
+        <module name="FinalClass" />
+        <module name="HideUtilityClassConstructor" />
+        <module name="InterfaceIsType" />
+
         <!-- Miscellaneous -->
-        <module name="ArrayTypeStyle"/>
+        <module name="ArrayTypeStyle" />
         <module name="TodoComment">
-            <property name="format" value="(TODO)|(FIXME)"/>
+            <property name="format" value="(TODO)|(FIXME)" />
         </module>
-        <module name="UpperEll"/>
-        
+        <module name="UpperEll" />
+
         <!-- Javadoc Comments -->
         <module name="JavadocMethod">
-            <property name="scope" value="public"/>
-            <property name="allowMissingParamTags" value="false"/>
-            <property name="allowMissingReturnTag" value="false"/>
-            <property name="allowedAnnotations" value="Override, Test"/>
+            <property name="scope" value="public" />
+            <property name="allowMissingParamTags" value="false" />
+            <property name="allowMissingReturnTag" value="false" />
+            <property name="allowedAnnotations" value="Override, Test" />
         </module>
         <module name="JavadocType">
-            <property name="scope" value="public"/>
+            <property name="scope" value="public" />
         </module>
         <module name="JavadocStyle">
-            <property name="checkFirstSentence" value="false"/>
+            <property name="checkFirstSentence" value="false" />
         </module>
-        
+
         <!-- Spring Boot specific rules -->
         <module name="SuppressionXpathSingleFilter">
-            <property name="checks" value="HideUtilityClassConstructor"/>
-            <property name="xpath" value="//CLASS_DEF[./MODIFIERS/ANNOTATION/IDENT[@text='SpringBootApplication']]"/>
+            <property name="checks" value="HideUtilityClassConstructor" />
+            <property name="xpath"
+                value="//CLASS_DEF[./MODIFIERS/ANNOTATION/IDENT[@text='SpringBootApplication']]" />
         </module>
-        
+
         <!-- Microservice specific rules -->
         <module name="SuppressionXpathSingleFilter">
-            <property name="checks" value="JavadocMethod"/>
-            <property name="xpath" value="//METHOD_DEF[./MODIFIERS/ANNOTATION/IDENT[@text='Bean' or @text='Configuration']]"/>
+            <property name="checks" value="JavadocMethod" />
+            <property name="xpath"
+                value="//METHOD_DEF[./MODIFIERS/ANNOTATION/IDENT[@text='Bean' or @text='Configuration']]" />
         </module>
     </module>
 </module>

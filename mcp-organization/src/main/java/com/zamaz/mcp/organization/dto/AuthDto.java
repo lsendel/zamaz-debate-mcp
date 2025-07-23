@@ -7,8 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-public class AuthRequest {
-    
+public class AuthDto {
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -17,11 +17,11 @@ public class AuthRequest {
         @NotBlank(message = "Email is required")
         @Email(message = "Invalid email format")
         private String email;
-        
+
         @NotBlank(message = "Password is required")
         private String password;
     }
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -34,7 +34,7 @@ public class AuthRequest {
         private Long expiresIn;
         private UserDto user;
     }
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -43,7 +43,7 @@ public class AuthRequest {
         @NotBlank(message = "Refresh token is required")
         private String refreshToken;
     }
-    
+
     @Data
     @Builder
     @NoArgsConstructor

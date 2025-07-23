@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN" "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Suppress naming checks for generated files -->
+    <suppress checks=".*" files=".*[\\/]target[\\/].*" />
+    <suppress checks=".*" files=".*[\\/]generated[\\/].*" />
+    <suppress checks=".*" files=".*[\\/]generated-sources[\\/].*" />
+
+    <!-- Suppress naming checks for test files where different patterns might be acceptable -->
+    <suppress checks="MethodName" files=".*Test\.java" />
+    <suppress checks="MethodName" files=".*Tests\.java" />
+
+    <!-- Allow main application classes to not follow service naming -->
+    <suppress checks="TypeName" files=".*Application\.java" />
+
+    <!-- Allow DTO inner classes to have different naming patterns -->
+    <suppress checks="TypeName" files=".*Dto\.java" />
+
+    <!-- Allow utility classes to not follow service naming -->
+    <suppress checks="TypeName" files=".*Utils\.java" />
+    <suppress checks="TypeName" files=".*Helper\.java" />
+
+    <!-- Allow enum classes to not follow service naming -->
+    <suppress checks="TypeName" files=".*\.java" message=".*enum.*" />
+
+    <!-- Allow entity classes to not follow service naming -->
+    <suppress checks="TypeName" files=".*[\\/]entity[\\/].*\.java" />
+
+    <!-- Allow specific abbreviations in domain classes -->
+    <suppress checks="AbbreviationAsWordInName" files=".*[\\/]entity[\\/].*\.java" />
+    <suppress checks="AbbreviationAsWordInName" files=".*[\\/]dto[\\/].*\.java" />
+
+    <!-- Allow JPA/Hibernate specific naming patterns -->
+    <suppress checks="MemberName" files=".*[\\/]entity[\\/].*\.java" message=".*id.*" />
+
+    <!-- Allow Spring Boot specific patterns -->
+    <suppress checks="MethodName" files=".*Config\.java" />
+    <suppress checks="MethodName" files=".*Configuration\.java" />
+</suppressions>
