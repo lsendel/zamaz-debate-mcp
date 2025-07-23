@@ -95,8 +95,11 @@
         <module>mcp-testing</module>
         <module>mcp-pattern-recognition</module>
         <module>github-integration</module>
+        <module>karate-api-tests</module>
         <module>load-tests</module>
+        <module>mcp-sidecar</module>
         <module>performance-tests/gatling</module>
+        <module>server</module>
         <module>workflow-editor</module>
         <!-- Legacy modules (to be phased out) -->
         <module>mcp-context</module>
