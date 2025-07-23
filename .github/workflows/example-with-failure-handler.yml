@@ -1,0 +1,116 @@
+name: Example CI/CD Pipeline with Failure Handler
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Main CI/CD job
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          
+  # Security scanning job
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run security scan
+        run: |
+          npm audit
+          # Additional security scanning tools can be added here
+          
+  # Deploy job (only on main branch)
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build-and-test, security-scan]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add actual deployment commands here
+          
+  # Failure handler job - runs when any job fails
+  handle-workflow-failure:
+    if: failure()
+    needs: [build-and-test, security-scan, deploy]
+    # Use the reusable workflow for failure handling
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "CI/CD Pipeline"
+      severity: ${{ contains(needs.*.result, 'failure') && github.ref == 'refs/heads/main' && 'critical' || 'high' }}
+      assignees: "backend-team,devops-team"
+      labels: "ci-cd,workflow-failure"
+      template: "ci-cd"
+      notify-slack: true
+      notify-email: ${{ github.ref == 'refs/heads/main' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
+
+# Alternative approach: Use workflow_run event
+# This creates a separate workflow that triggers on failure
+---
+name: Handle CI/CD Pipeline Failures
+
+on:
+  workflow_run:
+    workflows: ["Example CI/CD Pipeline with Failure Handler"]
+    types: [completed]
+
+jobs:
+  on-failure:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: ${{ github.event.workflow_run.name }}
+      severity: ${{ github.event.workflow_run.head_branch == 'main' && 'critical' || 'high' }}
+      template: "auto"
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

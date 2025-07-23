@@ -1,0 +1,147 @@
+name: Test Failure Handler
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulate-failure:
+        description: 'Simulate a workflow failure'
+        required: true
+        type: boolean
+        default: true
+      failure-type:
+        description: 'Type of failure to simulate'
+        required: true
+        type: choice
+        options:
+          - build
+          - test
+          - security
+          - deployment
+          - linting
+        default: 'test'
+
+jobs:
+  simulate-workflow:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Simulate Build Failure
+        if: inputs.failure-type == 'build' && inputs.simulate-failure
+        run: |
+          echo "Simulating build failure..."
+          echo "Error: Cannot find module 'missing-dependency'"
+          echo "    at Function.Module._resolveFilename (internal/modules/cjs/loader.js:815:15)"
+          echo "    at Function.Module._load (internal/modules/cjs/loader.js:667:27)"
+          exit 1
+          
+      - name: Simulate Test Failure
+        if: inputs.failure-type == 'test' && inputs.simulate-failure
+        run: |
+          echo "Running tests..."
+          echo "Test Suite: API Tests"
+          echo "  ✓ should create user (245ms)"
+          echo "  ✓ should update user (123ms)"
+          echo "  ✗ should delete user"
+          echo "    Expected: 200"
+          echo "    Received: 404"
+          echo "    at tests/api.test.js:45:10"
+          echo ""
+          echo "Tests: 2 passed, 1 failed, 3 total"
+          exit 1
+          
+      - name: Simulate Security Failure
+        if: inputs.failure-type == 'security' && inputs.simulate-failure
+        run: |
+          echo "Running security scan..."
+          echo "Found 3 vulnerabilities (1 critical, 1 high, 1 moderate)"
+          echo ""
+          echo "Critical: Remote Code Execution in dependency xyz v1.2.3"
+          echo "  CVE-2024-12345"
+          echo "  Fix available: Update to xyz v1.2.4"
+          echo ""
+          echo "High: SQL Injection vulnerability in user input handling"
+          echo "  File: src/api/users.js:156"
+          echo ""
+          exit 1
+          
+      - name: Simulate Deployment Failure
+        if: inputs.failure-type == 'deployment' && inputs.simulate-failure
+        run: |
+          echo "Deploying to production..."
+          echo "Checking prerequisites..."
+          echo "  ✓ Docker image built"
+          echo "  ✓ Health checks configured"
+          echo "  ✗ Database migration failed"
+          echo ""
+          echo "Error: Migration 20240115_add_user_roles failed"
+          echo "  ERROR: column 'role_id' cannot be added with NOT NULL constraint"
+          echo "  HINT: Add a default value or make the column nullable"
+          exit 1
+          
+      - name: Simulate Linting Failure
+        if: inputs.failure-type == 'linting' && inputs.simulate-failure
+        run: |
+          echo "Running code quality checks..."
+          echo ""
+          echo "ESLint Report:"
+          echo "  src/components/UserForm.js"
+          echo "    15:8  error  'useState' is defined but never used  no-unused-vars"
+          echo "    23:4  error  Expected indentation of 2 spaces but found 4  indent"
+          echo ""
+          echo "  src/utils/api.js"
+          echo "    45:10  warning  Unexpected console.log  no-console"
+          echo ""
+          echo "✖ 3 problems (2 errors, 1 warning)"
+          exit 1
+          
+      - name: Success Message
+        if: inputs.simulate-failure == false
+        run: |
+          echo "Workflow completed successfully!"
+          echo "No failures to report."
+
+  # Test the failure handler
+  test-failure-handler:
+    if: failure()
+    needs: [simulate-workflow]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: ${{ format('Test {0} Workflow', inputs.failure-type) }}
+      severity: ${{ inputs.failure-type == 'deployment' && 'critical' || inputs.failure-type == 'security' && 'high' || 'medium' }}
+      assignees: "test-team"
+      labels: ${{ format('test,workflow-failure,{0}', inputs.failure-type) }}
+      template: ${{ inputs.failure-type == 'deployment' && 'deployment' || inputs.failure-type == 'security' && 'security' || inputs.failure-type == 'linting' && 'linting' || inputs.failure-type == 'build' && 'ci-cd' || 'default' }}
+      dry-run: true  # Set to false to actually create issues
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Report test results
+  report-results:
+    if: always()
+    needs: [simulate-workflow, test-failure-handler]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Test Summary
+        run: |
+          echo "## Test Failure Handler Results"
+          echo ""
+          echo "**Test Configuration:**"
+          echo "- Failure Type: ${{ inputs.failure-type }}"
+          echo "- Simulate Failure: ${{ inputs.simulate-failure }}"
+          echo ""
+          echo "**Results:**"
+          echo "- Workflow Status: ${{ needs.simulate-workflow.result }}"
+          echo "- Handler Status: ${{ needs.test-failure-handler.result }}"
+          echo ""
+          if [[ "${{ needs.simulate-workflow.result }}" == "failure" && "${{ needs.test-failure-handler.result }}" == "success" ]]; then
+            echo "✅ **Test Passed**: Failure handler correctly triggered for workflow failure"
+          elif [[ "${{ needs.simulate-workflow.result }}" == "success" && "${{ needs.test-failure-handler.result }}" == "skipped" ]]; then
+            echo "✅ **Test Passed**: Failure handler correctly skipped for successful workflow"
+          else
+            echo "❌ **Test Failed**: Unexpected behavior"
+          fi

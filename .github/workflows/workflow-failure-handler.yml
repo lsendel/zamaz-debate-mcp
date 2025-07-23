@@ -1,0 +1,262 @@
+name: Workflow Failure Handler
+
+on:
+  workflow_call:
+    inputs:
+      workflow-name:
+        description: 'Name of the workflow that failed'
+        required: true
+        type: string
+      failure-context:
+        description: 'Additional context about the failure'
+        required: false
+        type: string
+        default: 'auto-detect'
+      severity:
+        description: 'Failure severity (critical, high, medium, low)'
+        required: false
+        type: string
+        default: 'medium'
+      assignees:
+        description: 'Comma-separated list of GitHub usernames to assign'
+        required: false
+        type: string
+      labels:
+        description: 'Comma-separated list of labels to apply'
+        required: false
+        type: string
+        default: 'workflow-failure,bug'
+      template:
+        description: 'Template name to use for issue creation'
+        required: false
+        type: string
+        default: 'auto'
+      notify-slack:
+        description: 'Whether to send Slack notifications'
+        required: false
+        type: boolean
+        default: true
+      notify-email:
+        description: 'Whether to send email notifications'
+        required: false
+        type: boolean
+        default: false
+      dry-run:
+        description: 'Run in dry-run mode (no issues created)'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      GITHUB_TOKEN:
+        description: 'GitHub token for creating issues'
+        required: true
+      SLACK_WEBHOOK:
+        description: 'Slack webhook URL for notifications'
+        required: false
+      SMTP_USER:
+        description: 'SMTP username for email notifications'
+        required: false
+      SMTP_PASS:
+        description: 'SMTP password for email notifications'
+        required: false
+      TEAMS_WEBHOOK:
+        description: 'Microsoft Teams webhook URL'
+        required: false
+
+jobs:
+  handle-failure:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: |
+          cd .github/actions/failure-detector
+          npm ci
+          cd ../../scripts
+          npm ci
+          
+      - name: Detect workflow failure
+        id: detect-failure
+        uses: ./.github/actions/failure-detector
+        with:
+          workflow-name: ${{ inputs.workflow-name }}
+          failure-context: ${{ inputs.failure-context }}
+          severity: ${{ inputs.severity }}
+          assignees: ${{ inputs.assignees }}
+          labels: ${{ inputs.labels }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Load workflow configuration
+        id: load-config
+        if: steps.detect-failure.outputs.should-create-issue == 'true'
+        run: |
+          # Load configuration for the workflow
+          CONFIG_FILE=".github/config/workflow-issue-config.yml"
+          if [ -f "$CONFIG_FILE" ]; then
+            echo "Loading configuration from $CONFIG_FILE"
+            # Parse YAML and extract relevant configuration
+            node -e "
+              const yaml = require('js-yaml');
+              const fs = require('fs');
+              const config = yaml.load(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+              const workflowConfig = config.workflows['${{ inputs.workflow-name }}'] || {};
+              const globalConfig = config.global || {};
+              
+              // Merge configurations
+              const finalConfig = { ...globalConfig, ...workflowConfig };
+              
+              // Output configuration as environment variables
+              console.log('CONFIG_SEVERITY=' + (finalConfig.severity || '${{ inputs.severity }}'));
+              console.log('CONFIG_ASSIGNEES=' + (finalConfig.assignees || []).join(','));
+              console.log('CONFIG_LABELS=' + (finalConfig.labels || []).join(','));
+              console.log('CONFIG_TEMPLATE=' + (finalConfig.template || 'default'));
+              console.log('CONFIG_SLACK_CHANNEL=' + (finalConfig.notification_channels?.slack || ''));
+              console.log('CONFIG_EMAIL_LIST=' + (finalConfig.notification_channels?.email || []).join(','));
+              console.log('CONFIG_ESCALATION_THRESHOLD=' + (finalConfig.escalation_threshold || 3));
+            " >> $GITHUB_ENV
+          else
+            echo "No configuration file found, using defaults"
+            echo "CONFIG_SEVERITY=${{ inputs.severity }}" >> $GITHUB_ENV
+            echo "CONFIG_ASSIGNEES=${{ inputs.assignees }}" >> $GITHUB_ENV
+            echo "CONFIG_LABELS=${{ inputs.labels }}" >> $GITHUB_ENV
+            echo "CONFIG_TEMPLATE=default" >> $GITHUB_ENV
+            echo "CONFIG_SLACK_CHANNEL=" >> $GITHUB_ENV
+            echo "CONFIG_EMAIL_LIST=" >> $GITHUB_ENV
+            echo "CONFIG_ESCALATION_THRESHOLD=3" >> $GITHUB_ENV
+          fi
+          
+      - name: Determine template
+        id: determine-template
+        if: steps.detect-failure.outputs.should-create-issue == 'true'
+        run: |
+          # Determine which template to use
+          TEMPLATE="${{ inputs.template }}"
+          if [ "$TEMPLATE" = "auto" ]; then
+            # Parse issue data to get category
+            ISSUE_DATA='${{ steps.detect-failure.outputs.issue-data }}'
+            CATEGORY=$(echo "$ISSUE_DATA" | jq -r '.failure.category')
+            
+            # Map category to template
+            case "$CATEGORY" in
+              "ci-cd") TEMPLATE="ci-cd" ;;
+              "security") TEMPLATE="security" ;;
+              "code-quality") TEMPLATE="linting" ;;
+              "deployment") TEMPLATE="deployment" ;;
+              *) TEMPLATE="default" ;;
+            esac
+          fi
+          
+          echo "template=$TEMPLATE" >> $GITHUB_OUTPUT
+          echo "Using template: $TEMPLATE"
+          
+      - name: Generate issue content
+        id: generate-issue
+        if: steps.detect-failure.outputs.should-create-issue == 'true' && inputs.dry-run != true
+        run: |
+          # Generate issue content from template
+          ISSUE_DATA='${{ steps.detect-failure.outputs.issue-data }}'
+          TEMPLATE="${{ steps.determine-template.outputs.template }}"
+          
+          # Save issue data to file
+          echo "$ISSUE_DATA" > issue-data.json
+          
+          # Generate issue content using template engine
+          cd .github/scripts
+          ISSUE_CONTENT=$(node template-engine.js "$TEMPLATE" ../../issue-data.json)
+          
+          # Extract title from issue data
+          ISSUE_TITLE=$(echo "$ISSUE_DATA" | jq -r '.workflow.name + " workflow failed on " + .workflow.branch')
+          
+          # Save for later use
+          echo "$ISSUE_CONTENT" > ../../issue-content.md
+          echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+          
+      - name: Create or update issue
+        id: manage-issue
+        if: steps.detect-failure.outputs.should-create-issue == 'true' && inputs.dry-run != true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_DATA: ${{ steps.detect-failure.outputs.issue-data }}
+        run: |
+          cd .github/scripts
+          
+          # Run issue manager
+          RESULT=$(node issue-manager.js)
+          echo "$RESULT"
+          
+          # Extract issue URL from result
+          ISSUE_URL=$(echo "$RESULT" | grep -oP 'https://github.com/[^/]+/[^/]+/issues/\d+' | head -1)
+          echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
+          
+      - name: Send notifications
+        if: steps.detect-failure.outputs.should-create-issue == 'true' && inputs.dry-run != true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
+          ISSUE_URL: ${{ steps.manage-issue.outputs.issue_url }}
+        run: |
+          # Prepare notification channels
+          NOTIFICATION_CHANNELS="{}"
+          
+          if [ "${{ inputs.notify-slack }}" = "true" ] && [ -n "$SLACK_WEBHOOK" ]; then
+            NOTIFICATION_CHANNELS=$(echo "$NOTIFICATION_CHANNELS" | jq --arg url "$SLACK_WEBHOOK" '. + {slack: $url}')
+          fi
+          
+          if [ "${{ inputs.notify-email }}" = "true" ] && [ -n "$CONFIG_EMAIL_LIST" ] && [ -n "$SMTP_USER" ]; then
+            NOTIFICATION_CHANNELS=$(echo "$NOTIFICATION_CHANNELS" | jq --arg emails "$CONFIG_EMAIL_LIST" '. + {email: ($emails | split(","))}')
+          fi
+          
+          if [ -n "$TEAMS_WEBHOOK" ]; then
+            NOTIFICATION_CHANNELS=$(echo "$NOTIFICATION_CHANNELS" | jq --arg url "$TEAMS_WEBHOOK" '. + {teams: $url}')
+          fi
+          
+          # Send notifications
+          cd .github/scripts
+          node -e "
+            const { NotificationService } = require('./notification-service');
+            const service = new NotificationService();
+            const issueData = { html_url: '$ISSUE_URL' };
+            const workflowData = JSON.parse(process.env.ISSUE_DATA);
+            const channels = JSON.parse('$NOTIFICATION_CHANNELS');
+            
+            service.sendNotifications(issueData, workflowData, channels)
+              .then(() => console.log('Notifications sent successfully'))
+              .catch(err => console.error('Failed to send notifications:', err));
+          "
+          
+      - name: Dry run summary
+        if: inputs.dry-run == true
+        run: |
+          echo "## Dry Run Summary"
+          echo "Would have created issue with:"
+          echo "- Template: ${{ steps.determine-template.outputs.template }}"
+          echo "- Severity: $CONFIG_SEVERITY"
+          echo "- Assignees: $CONFIG_ASSIGNEES"
+          echo "- Labels: $CONFIG_LABELS"
+          echo ""
+          echo "Issue data:"
+          echo '${{ steps.detect-failure.outputs.issue-data }}' | jq .
+          
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-failure-handler-artifacts
+          path: |
+            issue-data.json
+            issue-content.md
+          retention-days: 7

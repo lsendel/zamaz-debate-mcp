@@ -1,32 +1,59 @@
-# Workflow Failure: {{workflow.name}}
+## Workflow Failure Report
 
-## Summary
-The workflow **{{workflow.name}}** has failed and requires attention.
+**workflow:{{workflow.name}}**
+**failure-type:{{failure.category}}**
 
-## Failure Details
-- **Workflow**: {{workflow.name}}
-- **Severity**: {{workflow.severity}}
-- **Timestamp**: {{failure.timestamp}}
-- **Branch**: {{workflow.branch}}
-- **Commit**: {{workflow.commit.sha}}
+### Summary
+The **{{workflow.name}}** workflow failed with {{failure.jobs.length}} failed job(s).
 
-## Failed Jobs
+### Details
+- **Workflow Run:** [#{{workflow.runNumber}}]({{workflow.url}})
+- **Branch:** `{{workflow.branch}}`
+- **Commit:** [`{{workflow.commit.sha|truncate:7}}`](https://github.com/{{owner}}/{{repo}}/commit/{{workflow.commit.sha}})
+- **Commit Message:** {{workflow.commit.message}}
+- **Triggered By:** @{{workflow.triggeredBy}}
+- **Timestamp:** {{failure.timestamp}}
+- **Severity:** {{failure.severity}}
+- **Category:** {{failure.category}}
+{{#if context.pullRequest}}
+- **Pull Request:** [#{{context.pullRequest.number}}](https://github.com/{{owner}}/{{repo}}/pull/{{context.pullRequest.number}}) - {{context.pullRequest.title}}
+{{/if}}
+
+### Failed Jobs
+
 {{#each failure.jobs}}
-- **{{name}}**: {{conclusion}}
-  {{#each steps}}
-  - Step: {{name}} - {{conclusion}}
-  {{/each}}
+#### ❌ {{name}}
+- **Job ID:** {{id}}
+- **Conclusion:** {{conclusion}}
+{{#if steps}}
+- **Failed Steps:**
+{{#each steps}}
+  - **{{name}}**: {{errorMessage}} ([View logs]({{logUrl}}))
+{{/each}}
+{{/if}}
+{{#if logs}}
+
+<details>
+<summary>Error Logs</summary>
+
+```
+{{logs}}
+```
+</details>
+{{/if}}
 {{/each}}
 
-## Troubleshooting Steps
-- [ ] Check the workflow logs for detailed error messages
-- [ ] Verify the commit changes didn't introduce breaking changes
-- [ ] Check if dependencies or environment variables have changed
-- [ ] Review recent configuration changes
+{{#if failure.errorPatterns}}
+### Error Patterns Detected
+{{#each failure.errorPatterns}}
+- {{this}}
+{{/each}}
+{{/if}}
 
-## Links
-- [Workflow Run]({{workflow.url}})
-- [Commit]({{workflow.commit.url}})
+### Troubleshooting Steps
+{{troubleshootingSteps}}
 
----
-*This issue was automatically created by the Workflow Failure Handler*
+### Metadata
+<!-- failure-count:1 -->
+<!-- last-failure:{{failure.timestamp}} -->
+<!-- workflow-category:{{failure.category}} -->
