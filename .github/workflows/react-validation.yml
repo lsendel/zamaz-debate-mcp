@@ -24,12 +24,11 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: debate-ui/package-lock.json
+        cache-dependency-path: package-lock.json
         
     - name: Install dependencies
       run: |
-        cd debate-ui
-        npm ci
+        npm install --workspace=debate-ui
         
     - name: Validate React imports
       run: |

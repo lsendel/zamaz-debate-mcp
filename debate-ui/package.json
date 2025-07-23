@@ -71,7 +71,6 @@
   "devDependencies": {
     "@hookform/resolvers": "^3.3.4",
     "@playwright/test": "^1.54.1",
-    "@rollup/rollup-darwin-arm64": "^4.45.1",
     "@tailwindcss/forms": "^0.5.7",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
