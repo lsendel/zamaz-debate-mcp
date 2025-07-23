@@ -1,0 +1,131 @@
+name: Advanced CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # Linting job
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ESLint
+        run: npm run lint
+      - name: Run Prettier
+        run: npm run format:check
+
+  # Testing job
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm test
+      - name: Run integration tests
+        run: npm run test:integration
+
+  # Security scanning
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run security audit
+        run: npm audit
+      - name: Run SAST scan
+        uses: github/super-linter@v4
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Build job
+  build:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build application
+        run: npm run build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+  # Deployment job (only on main branch)
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build, security]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment commands here
+
+  # Advanced failure handling with dynamic configuration
+  handle-failure:
+    if: failure()
+    needs: [lint, test, security, build, deploy]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Advanced CI/CD Pipeline"
+      # Dynamic severity based on branch and job
+      severity: ${{ 
+        (failure() && needs.deploy.result == 'failure') && 'critical' ||
+        (failure() && needs.security.result == 'failure') && 'high' ||
+        (github.ref == 'refs/heads/main') && 'high' ||
+        'medium' 
+      }}
+      # Dynamic assignees based on failed job
+      assignees: ${{
+        (needs.security.result == 'failure') && 'security-team,team-lead' ||
+        (needs.deploy.result == 'failure') && 'devops-team,oncall' ||
+        'dev-team'
+      }}
+      # Comprehensive labels
+      labels: "workflow-failure,ci-cd,${{ 
+        (needs.lint.result == 'failure') && 'code-quality,' || '' 
+      }}${{
+        (needs.test.result == 'failure') && 'testing,' || ''
+      }}${{
+        (needs.security.result == 'failure') && 'security,' || ''
+      }}${{
+        (needs.deploy.result == 'failure') && 'deployment,' || ''
+      }}${{
+        github.event_name == 'pull_request' && 'pr' || github.ref_name
+      }}"
+      # Template selection based on failure type
+      template: ${{
+        (needs.security.result == 'failure') && 'security' ||
+        (needs.deploy.result == 'failure') && 'deployment' ||
+        (needs.lint.result == 'failure') && 'linting' ||
+        'ci-cd'
+      }}
+      # Notification settings
+      notify-slack: true
+      notify-email: ${{ github.ref == 'refs/heads/main' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

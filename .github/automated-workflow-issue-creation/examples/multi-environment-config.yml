@@ -1,0 +1,237 @@
+# Example: Multi-environment configuration
+# Place in .github/config/workflow-issue-config.yml
+
+# Global settings apply to all workflows
+global:
+  enabled: true
+  default_assignees: ["platform-team"]
+  default_labels: ["workflow-failure", "automated"]
+  notification_channels:
+    slack: "#general-alerts"
+  duplicate_detection: true
+  escalation_threshold: 5
+
+# Environment-specific overrides
+environments:
+  development:
+    default_severity: low
+    notification_channels:
+      slack: "#dev-alerts"
+    escalation_threshold: 10
+    
+  staging:
+    default_severity: medium
+    notification_channels:
+      slack: "#staging-alerts"
+    escalation_threshold: 5
+    
+  production:
+    default_severity: high
+    notification_channels:
+      slack: "#prod-alerts"
+      email: ["oncall@company.com"]
+      teams: true
+    escalation_threshold: 2
+
+# Workflow-specific configurations
+workflows:
+  # CI/CD Workflows
+  "CI Pipeline - Development":
+    severity: low
+    assignees: ["dev-team"]
+    labels: ["ci-cd", "development"]
+    template: "ci-cd"
+    escalation_threshold: 10
+    
+  "CI Pipeline - Production":
+    severity: critical
+    assignees: ["platform-team", "oncall"]
+    labels: ["ci-cd", "production", "urgent"]
+    template: "ci-cd"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#critical-alerts"
+      email: ["platform@company.com", "management@company.com"]
+      teams: true
+      
+  # Security Workflows
+  "Security Scan - All Branches":
+    severity: high
+    assignees: ["security-team"]
+    labels: ["security", "compliance"]
+    template: "security"
+    escalation_threshold: 2
+    notification_channels:
+      slack: "#security-alerts"
+      email: ["security@company.com"]
+      
+  "Dependency Audit":
+    severity: medium
+    assignees: ["security-team", "dev-team"]
+    labels: ["security", "dependencies"]
+    template: "security"
+    custom_fields:
+      compliance_impact: true
+      requires_approval: true
+      
+  # Quality Workflows
+  "Code Quality Check":
+    severity: low
+    assignees: ["dev-team"]
+    labels: ["code-quality", "technical-debt"]
+    template: "linting"
+    escalation_threshold: 10
+    create_issue_on_pr_only: true
+    
+  "Performance Tests":
+    severity: medium
+    assignees: ["performance-team"]
+    labels: ["performance", "testing"]
+    template: "default"
+    notification_channels:
+      slack: "#performance-alerts"
+      
+  # Deployment Workflows
+  "Deploy to Staging":
+    severity: medium
+    assignees: ["devops-team"]
+    labels: ["deployment", "staging"]
+    template: "deployment"
+    escalation_threshold: 3
+    rollback_info:
+      enabled: true
+      instructions: "Run: ./scripts/rollback-staging.sh"
+      
+  "Deploy to Production":
+    severity: critical
+    assignees: ["devops-team", "oncall", "team-lead"]
+    labels: ["deployment", "production", "critical"]
+    template: "deployment"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#production-deployments"
+      email: ["devops@company.com", "oncall@company.com"]
+      teams: true
+      pagerduty: true
+    rollback_info:
+      enabled: true
+      instructions: "Follow runbook: https://wiki/production-rollback"
+      auto_rollback_on_failure: true
+      
+  # Testing Workflows
+  "Unit Tests":
+    severity: medium
+    assignees: ["dev-team"]
+    labels: ["testing", "unit-tests"]
+    template: "default"
+    group_by_test_suite: true
+    
+  "E2E Tests":
+    severity: high
+    assignees: ["qa-team", "dev-team"]
+    labels: ["testing", "e2e"]
+    template: "default"
+    notification_channels:
+      slack: "#qa-alerts"
+      
+  "Load Tests":
+    severity: medium
+    assignees: ["performance-team", "devops-team"]
+    labels: ["testing", "performance", "infrastructure"]
+    template: "default"
+    include_metrics: true
+
+# Pattern-based configurations (matched by regex)
+patterns:
+  # Any workflow with "security" in the name
+  ".*[Ss]ecurity.*":
+    severity: high
+    labels: ["security"]
+    assignees: ["security-team"]
+    template: "security"
+    
+  # Any workflow with "deploy" or "release"
+  ".*(deploy|release).*":
+    severity: high
+    labels: ["deployment"]
+    assignees: ["devops-team"]
+    template: "deployment"
+    
+  # Feature branch workflows
+  ".*feature/.*":
+    severity: low
+    labels: ["feature-branch"]
+    create_issue: false  # Don't create issues for feature branches
+    
+  # Hotfix workflows
+  ".*hotfix/.*":
+    severity: critical
+    labels: ["hotfix", "urgent"]
+    assignees: ["oncall", "team-lead"]
+    escalation_threshold: 1
+
+# Notification templates
+notification_templates:
+  slack:
+    critical: |
+      🚨 *CRITICAL WORKFLOW FAILURE* 🚨
+      *Workflow:* {{workflow.name}}
+      *Branch:* {{workflow.branch}}
+      *Failed Jobs:* {{failure.jobs}}
+      *Action Required:* Immediate attention needed!
+      
+  email:
+    subject_prefix: "[{{severity}}] "
+    footer: |
+      This is an automated message from the Workflow Failure Handler.
+      For questions, contact: platform-team@company.com
+
+# Escalation rules
+escalation:
+  time_window_minutes: 60
+  
+  contacts:
+    level_1: ["team-lead"]
+    level_2: ["engineering-manager", "platform-lead"]
+    level_3: ["cto", "vp-engineering"]
+    
+  rules:
+    critical:
+      threshold: 1
+      notify: ["level_1", "level_2"]
+      channels:
+        slack: "#escalations"
+        pagerduty: true
+        
+    high:
+      threshold: 3
+      notify: ["level_1"]
+      channels:
+        slack: "#escalations"
+        
+    medium:
+      threshold: 5
+      notify: ["level_1"]
+      
+    low:
+      threshold: 10
+      notify: []
+
+# Special handling
+special_cases:
+  # Don't create issues for these workflows
+  ignore_workflows:
+    - "Experimental Pipeline"
+    - "Draft PR Check"
+    
+  # Always create issues for these, regardless of other settings
+  always_create:
+    - "Production Deploy"
+    - "Security Audit"
+    
+  # Custom handling for specific scenarios
+  custom_handlers:
+    "Database Migration":
+      pre_check_script: "./scripts/check-db-state.sh"
+      post_failure_script: "./scripts/db-rollback.sh"
+      require_manual_intervention: true

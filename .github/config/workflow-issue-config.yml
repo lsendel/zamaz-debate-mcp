@@ -11,21 +11,140 @@ global:
 
 # Workflow-specific configurations
 workflows:
+  # Main CI/CD Pipeline (from ci-cd.yml)
   "CI/CD Pipeline":
     severity: critical
-    assignees: ["backend-team", "devops-team"]
+    assignees: ["backend-team", "devops-team", "platform-lead"]
     labels: ["ci-cd", "critical", "workflow-failure"]
     template: "ci-cd"
     escalation_threshold: 2
     notification_channels:
       slack: "#ci-cd-alerts"
-      email: ["devops@company.com"]
+      email: ["devops@company.com", "platform@company.com"]
+      
+  # Security Scanning (from security.yml)
+  "Security Scanning":
+    severity: high
+    assignees: ["security-team", "team-lead"]
+    labels: ["security", "compliance", "workflow-failure"]
+    template: "security"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#security-alerts"
+      email: ["security@company.com", "compliance@company.com"]
 
+  # Code Quality (from code-quality.yml)
   "Code Quality":
     severity: medium
-    assignees: ["code-quality-team"]
-    labels: ["code-quality", "workflow-failure"]
+    assignees: ["code-quality-team", "dev-team"]
+    labels: ["code-quality", "workflow-failure", "technical-debt"]
     template: "linting"
+    escalation_threshold: 5
+    notification_channels:
+      slack: "#code-quality"
+      
+  # Docker Build (from docker-build.yml)
+  "Docker Build":
+    severity: high
+    assignees: ["devops-team", "platform-team"]
+    labels: ["docker", "build", "workflow-failure"]
+    template: "ci-cd"
+    escalation_threshold: 3
+    notification_channels:
+      slack: "#builds"
+      
+  # Database Migration (from database-migration.yml)
+  "Database Migration":
+    severity: critical
+    assignees: ["dba-team", "backend-team", "oncall"]
+    labels: ["database", "migration", "critical", "workflow-failure"]
+    template: "deployment"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#database-alerts"
+      email: ["dba@company.com", "oncall@company.com"]
+      teams: true
+      
+  # GitHub Integration CI/CD (from github-integration-ci-cd.yml)
+  "GitHub Integration CI/CD":
+    severity: medium
+    assignees: ["integration-team", "platform-team"]
+    labels: ["github-integration", "ci-cd", "workflow-failure"]
+    template: "ci-cd"
+    escalation_threshold: 4
+    
+  # Intelligent CI (from intelligent-ci.yml)
+  "Intelligent CI":
+    severity: medium
+    assignees: ["dev-team"]
+    labels: ["ci", "smart-build", "workflow-failure"]
+    template: "ci-cd"
+    escalation_threshold: 5
+    
+  # Incremental Lint (from incremental-lint.yml)
+  "Incremental Lint":
+    severity: low
+    assignees: ["dev-team"]
+    labels: ["linting", "incremental", "workflow-failure"]
+    template: "linting"
+    escalation_threshold: 10
+    
+  # PR Linting (from pr-linting.yml)
+  "PR Linting":
+    severity: low
+    assignees: ["pr-author", "dev-team"]
+    labels: ["pr", "linting", "workflow-failure"]
+    template: "linting"
+    escalation_threshold: 8
+    create_issue_on_pr_only: false  # Don't create issues for PR checks
+    
+  # Python Linting (from python-linting.yml)
+  "Python Linting":
+    severity: low
+    assignees: ["python-team"]
+    labels: ["python", "linting", "workflow-failure"]
+    template: "linting"
+    escalation_threshold: 10
+    
+  # Release (from release.yml)
+  "Release":
+    severity: critical
+    assignees: ["release-manager", "team-lead", "devops-team"]
+    labels: ["release", "critical", "workflow-failure"]
+    template: "deployment"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#releases"
+      email: ["release@company.com", "management@company.com"]
+      teams: true
+      
+  # Rollback (from rollback.yml)
+  "Rollback":
+    severity: critical
+    assignees: ["oncall", "devops-team", "team-lead"]
+    labels: ["rollback", "incident", "critical", "workflow-failure"]
+    template: "deployment"
+    escalation_threshold: 1
+    notification_channels:
+      slack: "#incidents"
+      email: ["oncall@company.com", "management@company.com"]
+      teams: true
+      pagerduty: true
+      
+  # SonarQube Report (from sonarqube-report.yml)
+  "SonarQube Report":
+    severity: low
+    assignees: ["code-quality-team"]
+    labels: ["sonarqube", "code-quality", "workflow-failure"]
+    template: "default"
+    escalation_threshold: 10
+    
+  # Workflow Editor CI (from workflow-editor-ci.yml)
+  "Workflow Editor CI":
+    severity: medium
+    assignees: ["workflow-team", "frontend-team"]
+    labels: ["workflow-editor", "ci", "workflow-failure"]
+    template: "ci-cd"
     escalation_threshold: 5
 
   "Security Scanning":

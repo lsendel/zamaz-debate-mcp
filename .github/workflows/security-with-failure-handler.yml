@@ -1,0 +1,177 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scans daily at 3 AM UTC
+    - cron: "0 3 * * *"
+
+env:
+  NODE_VERSION: "18"
+  JAVA_VERSION: "21"
+
+jobs:
+  semgrep:
+    name: 🔍 Semgrep Code Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep security scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/java
+            p/typescript
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        continue-on-error: true
+
+  java-security:
+    name: ☕ Java Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run SpotBugs security checks
+        run: |
+          mvn com.github.spotbugs:spotbugs-maven-plugin:spotbugs \
+            -Dspotbugs.effort=Max \
+            -Dspotbugs.threshold=Low \
+            -Dspotbugs.xmlOutput=true \
+            -Dspotbugs.includeFilterFile=spotbugs-security-include.xml
+        continue-on-error: true
+
+      - name: Upload SpotBugs results
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-results
+          path: '**/target/spotbugsXml.xml'
+
+  frontend-security:
+    name: 🌐 Frontend Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: debate-ui/package-lock.json
+
+      - name: Run npm audit
+        working-directory: ./debate-ui
+        run: |
+          npm audit --production
+        continue-on-error: true
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        with:
+          args: --severity-threshold=high --file=debate-ui/package.json
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+  secrets-scan:
+    name: 🔐 Secrets Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog secrets scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || 'main' }}
+          head: ${{ github.event.pull_request.head.sha || 'HEAD' }}
+          extra_args: --config .trufflehog.yaml --only-verified
+        continue-on-error: true
+
+  security-summary:
+    name: 📊 Security Summary
+    runs-on: ubuntu-latest
+    needs: [semgrep, java-security, frontend-security, secrets-scan]
+    if: always()
+
+    steps:
+      - name: Security scan summary
+        run: |
+          echo "## 🛡️ Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep | ${{ needs.semgrep.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java Security | ${{ needs.java-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Security | ${{ needs.frontend-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets Detection | ${{ needs.secrets-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+
+  # Automated Workflow Failure Handler
+  handle-security-failure:
+    name: Handle Security Scan Failure
+    if: failure()
+    needs: [semgrep, java-security, frontend-security, secrets-scan, security-summary]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Security Scanning"
+      # High severity for security failures
+      severity: ${{
+        (needs.secrets-scan.result == 'failure') && 'critical' ||
+        (github.event_name == 'schedule' && failure()) && 'high' ||
+        (github.ref == 'refs/heads/main') && 'high' ||
+        'medium'
+      }}
+      # Security team assignment
+      assignees: "security-team,team-lead"
+      # Comprehensive security labels
+      labels: "workflow-failure,security,compliance,${{
+        (needs.secrets-scan.result == 'failure') && 'secrets-exposed,critical,' || ''
+      }}${{
+        (needs.java-security.result == 'failure') && 'java-vulnerability,' || ''
+      }}${{
+        (needs.frontend-security.result == 'failure') && 'frontend-vulnerability,npm,' || ''
+      }}${{
+        (needs.semgrep.result == 'failure') && 'code-vulnerability,' || ''
+      }}${{
+        github.event_name == 'schedule' && 'scheduled-scan' || github.ref_name
+      }}"
+      # Use security template
+      template: "security"
+      # Always notify for security issues
+      notify-slack: true
+      notify-email: ${{ github.ref == 'refs/heads/main' || needs.secrets-scan.result == 'failure' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SECURITY_SLACK_WEBHOOK || secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

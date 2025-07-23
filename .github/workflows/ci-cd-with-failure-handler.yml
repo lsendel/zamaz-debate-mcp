@@ -1,0 +1,462 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
+
+jobs:
+  # Security and Code Quality
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: java, javascript
+
+  # Java Services Build and Test
+  java-services:
+    name: Java Services CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [
+          mcp-gateway,
+          mcp-controller,
+          mcp-organization,
+          mcp-llm,
+          mcp-context,
+          mcp-debate
+        ]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests for ${{ matrix.service }}
+        run: |
+          cd ${{ matrix.service }}
+          mvn clean test -B
+
+      - name: Build ${{ matrix.service }}
+        run: |
+          cd ${{ matrix.service }}
+          mvn clean package -B -DskipTests
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.service }}
+          path: ${{ matrix.service }}/target/surefire-reports/
+          retention-days: 7
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          flags: ${{ matrix.service }}
+          name: codecov-${{ matrix.service }}
+
+  # Frontend Build and Test
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./debate-ui
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: debate-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run unit tests
+        run: npm run test:coverage
+
+      - name: Build application
+        run: npm run build
+        env:
+          CI: false
+          GENERATE_SOURCEMAP: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: debate-ui/build/
+          retention-days: 7
+
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./debate-ui/coverage/lcov.info
+          flags: frontend
+          name: codecov-frontend
+
+  # Contract Testing
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    needs: [java-services]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Pact consumer tests
+        run: |
+          cd mcp-testing
+          mvn test -Dtest=*PactTest -B
+
+      - name: Publish Pact contracts
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd mcp-testing
+          mvn pact:publish -B
+        env:
+          PACT_BROKER_URL: ${{ secrets.PACT_BROKER_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+
+  # End-to-End Testing
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: [java-services, frontend]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Start services with Docker Compose
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          ./scripts/testing/wait-for-services.sh
+
+      - name: Run E2E tests
+        run: |
+          cd e2e-tests
+          npm ci
+          npm run test:e2e
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: e2e-tests/test-results/
+          retention-days: 7
+
+      - name: Stop services
+        if: always()
+        run: docker-compose -f docker-compose.test.yml down
+
+  # Build Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [java-services, frontend, contract-tests]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        service: [
+          mcp-gateway,
+          mcp-controller,
+          mcp-organization,
+          mcp-llm,
+          mcp-context,
+          mcp-debate,
+          debate-ui
+        ]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Download build artifacts
+        if: matrix.service == 'debate-ui'
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: debate-ui/build/
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-images, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to staging
+        run: |
+          cd k8s/staging
+          kubectl apply -k .
+          kubectl rollout status deployment/mcp-gateway
+          kubectl rollout status deployment/mcp-controller
+          kubectl rollout status deployment/mcp-organization
+          kubectl rollout status deployment/debate-ui
+
+      - name: Run staging smoke tests
+        run: |
+          ./scripts/testing/smoke-tests.sh staging
+
+  # Performance Testing
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run performance tests
+        run: |
+          cd performance-tests
+          npm ci
+          npm run test:performance -- --target=staging
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: performance-tests/results/
+          retention-days: 30
+
+      - name: Comment on PR with performance results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const results = fs.readFileSync('performance-tests/results/summary.json', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Performance Test Results\n\`\`\`json\n${results}\n\`\`\``
+            });
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, performance-tests]
+    if: github.event_name == 'release'
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to production
+        run: |
+          cd k8s/production
+          kubectl apply -k .
+          kubectl rollout status deployment/mcp-gateway
+          kubectl rollout status deployment/mcp-controller
+          kubectl rollout status deployment/mcp-organization
+          kubectl rollout status deployment/debate-ui
+
+      - name: Run production smoke tests
+        run: |
+          ./scripts/testing/smoke-tests.sh production
+
+      - name: Update deployment tracking
+        run: |
+          curl -X POST "${{ secrets.DEPLOYMENT_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ github.event.release.tag_name }}",
+              "environment": "production",
+              "status": "success",
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            }'
+
+      - name: Notify production deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#production'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          text: 'Production deployment completed for version ${{ github.event.release.tag_name }}'
+        if: always()
+
+  # Automated Workflow Failure Handler
+  handle-workflow-failure:
+    name: Handle Workflow Failure
+    if: failure()
+    needs: [
+      security-scan,
+      java-services,
+      frontend,
+      contract-tests,
+      e2e-tests,
+      build-images,
+      deploy-staging,
+      performance-tests,
+      deploy-production
+    ]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "CI/CD Pipeline"
+      # Dynamic severity based on what failed and where
+      severity: ${{ 
+        (failure() && needs.deploy-production.result == 'failure') && 'critical' ||
+        (failure() && needs.deploy-staging.result == 'failure') && 'high' ||
+        (failure() && needs.security-scan.result == 'failure') && 'high' ||
+        (failure() && needs.e2e-tests.result == 'failure') && 'high' ||
+        'medium'
+      }}
+      # Dynamic assignees based on what failed
+      assignees: ${{
+        (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'devops-team,oncall,platform-lead' ||
+        (needs.security-scan.result == 'failure') && 'security-team,team-lead' ||
+        (needs.java-services.result == 'failure' || needs.frontend.result == 'failure') && 'dev-team,backend-lead' ||
+        (needs.e2e-tests.result == 'failure' || needs.contract-tests.result == 'failure') && 'qa-team,dev-team' ||
+        'platform-team'
+      }}
+      # Comprehensive labels
+      labels: "workflow-failure,ci-cd,${{
+        (needs.security-scan.result == 'failure') && 'security,compliance,' || ''
+      }}${{
+        (needs.deploy-production.result == 'failure') && 'production,critical,incident,' || ''
+      }}${{
+        (needs.deploy-staging.result == 'failure') && 'staging,deployment,' || ''
+      }}${{
+        (needs.e2e-tests.result == 'failure' || needs.contract-tests.result == 'failure') && 'testing,' || ''
+      }}${{
+        (needs.performance-tests.result == 'failure') && 'performance,' || ''
+      }}${{
+        github.event_name == 'release' && 'release' || github.ref_name
+      }}"
+      # Template selection based on failure type
+      template: ${{
+        (needs.security-scan.result == 'failure') && 'security' ||
+        (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'deployment' ||
+        'ci-cd'
+      }}
+      # Notification settings
+      notify-slack: true
+      notify-email: ${{ 
+        github.ref == 'refs/heads/main' || 
+        github.event_name == 'release' ||
+        needs.deploy-production.result == 'failure'
+      }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
