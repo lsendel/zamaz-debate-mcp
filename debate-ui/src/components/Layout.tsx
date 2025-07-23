@@ -16,6 +16,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { Layout as AntLayout, Menu, Typography, Button, Space, Badge, Avatar, Dropdown } from 'antd';
+import { colors, spacing, componentSpacing } from '../styles';
 
 const { Header, Sider, Content } = AntLayout;
 const { Text } = Typography;
@@ -75,7 +76,7 @@ const Layout: React.FC = () => {
         <div>
           <Text strong>{user?.username || 'User'}</Text>
           <br />
-          <Text type="secondary">{user?.email || ''}</Text>
+          <Text style={{ color: colors.text.secondary }}>{user?.email || ''}</Text>
         </div>
       ),
       disabled: true,
@@ -97,13 +98,13 @@ const Layout: React.FC = () => {
         trigger={null}
         collapsible
         collapsed={!sidebarOpen}
-        width={256}
+        width={componentSpacing.sidebarWidth}
         style={{
-          background: '#fff',
-          borderRight: '1px solid #f0f0f0',
+          background: colors.background.primary,
+          borderRight: `1px solid ${colors.border.light}`,
         }}
       >
-        <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ padding: spacing[4], borderBottom: `1px solid ${colors.border.light}` }}>
           <OrganizationSwitcher />
         </div>
         <Menu
@@ -111,22 +112,34 @@ const Layout: React.FC = () => {
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ borderRight: 0 }}
+          style={{ 
+            borderRight: 0,
+            fontSize: 15,
+            fontWeight: 500,
+          }}
         />
       </Sider>
       <AntLayout>
         <Header
           style={{
-            background: '#fff',
-            padding: '0 24px',
+            background: colors.background.primary,
+            padding: `0 ${spacing[6]}px`,
+            height: componentSpacing.headerHeight,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #f0f0f0',
+            borderBottom: `1px solid ${colors.border.light}`,
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
           }}
         >
           <MenuOutlined
-            style={{ fontSize: '20px', cursor: 'pointer' }}
+            style={{ 
+              fontSize: 24, 
+              cursor: 'pointer',
+              color: colors.text.primary,
+              padding: spacing[2],
+              margin: -spacing[2],
+            }}
             onClick={() => dispatch(toggleSidebar())}
           />
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
@@ -136,7 +149,11 @@ const Layout: React.FC = () => {
             />
           </Dropdown>
         </Header>
-        <Content style={{ padding: '24px', background: '#f5f5f5' }}>
+        <Content style={{ 
+          padding: componentSpacing.pageMargin, 
+          background: colors.background.secondary,
+          minHeight: `calc(100vh - ${componentSpacing.headerHeight}px)`,
+        }}>
           <Outlet />
         </Content>
       </AntLayout>

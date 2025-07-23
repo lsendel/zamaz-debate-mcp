@@ -1,0 +1,535 @@
+name: Intelligent CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      force_full_pipeline:
+        description: 'Force full pipeline execution'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  JAVA_VERSION: '21'
+  NODE_VERSION: '18'
+
+jobs:
+  # Intelligence Analysis - Determines what to build and test
+  intelligence:
+    name: 🧠 Pipeline Intelligence
+    runs-on: ubuntu-latest
+    outputs:
+      affected-modules: ${{ steps.analysis.outputs.affected-modules }}
+      test-plan: ${{ steps.analysis.outputs.test-plan }}
+      risk-level: ${{ steps.analysis.outputs.risk-level }}
+      should-run-full: ${{ steps.decision.outputs.should-run-full }}
+      build-matrix: ${{ steps.matrix.outputs.build-matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for change analysis
+
+      - name: Setup analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          chmod +x scripts/intelligence/*.sh
+
+      - name: Analyze changes
+        id: analysis
+        run: |
+          export GITHUB_BASE_REF="${{ github.event.pull_request.base.ref || 'main' }}"
+          export GITHUB_HEAD_REF="${{ github.event.pull_request.head.ref || github.ref_name }}"
+          export GITHUB_SHA="${{ github.sha }}"
+          ./scripts/intelligence/analyze-changes.sh
+
+      - name: Make pipeline decision
+        id: decision
+        run: |
+          FORCE_FULL="${{ github.event.inputs.force_full_pipeline || 'false' }}"
+          RISK_LEVEL="${{ steps.analysis.outputs.risk-level }}"
+          
+          if [[ "${FORCE_FULL}" == "true" ]] || [[ "${RISK_LEVEL}" == "critical" ]] || [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should-run-full=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run-full=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate build matrix
+        id: matrix
+        run: |
+          AFFECTED_MODULES='${{ steps.analysis.outputs.affected-modules }}'
+          SHOULD_RUN_FULL="${{ steps.decision.outputs.should-run-full }}"
+          
+          if [[ "${SHOULD_RUN_FULL}" == "true" ]]; then
+            # Full build matrix
+            BUILD_MATRIX='["mcp-organization", "mcp-gateway", "mcp-debate-engine", "mcp-llm", "mcp-rag", "mcp-security", "mcp-common"]'
+          else
+            # Filter to only affected Java modules
+            BUILD_MATRIX=$(echo "${AFFECTED_MODULES}" | jq '[.[] | select(startswith("mcp-"))]')
+            if [[ "${BUILD_MATRIX}" == "[]" ]]; then
+              BUILD_MATRIX='["mcp-common"]'  # Always build at least common
+            fi
+          fi
+          
+          echo "build-matrix=${BUILD_MATRIX}" >> $GITHUB_OUTPUT
+
+      - name: Upload intelligence results
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-analysis
+          path: .github/cache/intelligence/
+
+  # Fast Feedback Loop - Quick validation for PRs
+  fast-validation:
+    name: ⚡ Fast Validation
+    runs-on: ubuntu-latest
+    needs: intelligence
+    if: needs.intelligence.outputs.should-run-full != 'true' && github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        validation: [lint, security-quick, unit-tests-affected]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run ${{ matrix.validation }}
+        run: |
+          AFFECTED_MODULES='${{ needs.intelligence.outputs.affected-modules }}'
+          ./scripts/validation/run-${{ matrix.validation }}.sh --modules="${AFFECTED_MODULES}"
+
+      - name: Upload validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results-${{ matrix.validation }}
+          path: target/validation-reports/
+
+  # Intelligent Build - Build only affected modules
+  intelligent-build:
+    name: 🔨 Intelligent Build
+    runs-on: ubuntu-latest
+    needs: [intelligence, fast-validation]
+    if: always() && (needs.fast-validation.result == 'success' || needs.intelligence.outputs.should-run-full == 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.intelligence.outputs.build-matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Advanced Maven Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.sonar/cache
+            **/target/classes
+            **/target/test-classes
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', '.github/workflows/**') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', '.github/workflows/**') }}-
+            ${{ runner.os }}-maven-
+
+      - name: Build service
+        working-directory: ${{ matrix.service }}
+        run: |
+          # Intelligent build - only compile if source changed
+          if [[ "${{ needs.intelligence.outputs.should-run-full }}" == "true" ]] || echo '${{ needs.intelligence.outputs.affected-modules }}' | jq -e --arg service "${{ matrix.service }}" 'index($service) != null'; then
+            mvn clean compile -T 2C
+          else
+            echo "Skipping build for ${{ matrix.service }} - no changes detected"
+            exit 0
+          fi
+
+      - name: Run unit tests
+        working-directory: ${{ matrix.service }}
+        run: |
+          TEST_PLAN="${{ needs.intelligence.outputs.test-plan }}"
+          if [[ "${TEST_PLAN}" == "minimal" ]]; then
+            mvn test -Dtest="*Test" -DfailIfNoTests=false
+          else
+            mvn test
+          fi
+
+      - name: Build Docker image
+        if: success()
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }} \
+            --cache-from ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:latest \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -f ${{ matrix.service }}/Dockerfile \
+            ${{ matrix.service }}
+
+      - name: Save Docker image
+        if: success()
+        run: |
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }} \
+            -o ${{ matrix.service }}-image.tar
+
+      - name: Upload Docker image artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ matrix.service }}
+          path: ${{ matrix.service }}-image.tar
+          retention-days: 1
+
+  # Frontend Build - Only if frontend is affected
+  frontend-build:
+    name: 🎨 Frontend Build
+    runs-on: ubuntu-latest
+    needs: intelligence
+    if: contains(needs.intelligence.outputs.affected-modules, 'debate-ui') || needs.intelligence.outputs.should-run-full == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: debate-ui/package-lock.json
+
+      - name: Advanced NPM Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            debate-ui/node_modules
+            debate-ui/.next/cache
+          key: ${{ runner.os }}-npm-${{ hashFiles('debate-ui/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-npm-${{ hashFiles('debate-ui/package-lock.json') }}-
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        working-directory: debate-ui
+        run: npm ci --prefer-offline
+
+      - name: Run linting
+        working-directory: debate-ui
+        run: npm run lint
+
+      - name: Run unit tests
+        working-directory: debate-ui
+        run: |
+          TEST_PLAN="${{ needs.intelligence.outputs.test-plan }}"
+          if [[ "${TEST_PLAN}" == "minimal" ]]; then
+            npm test -- --coverage --watchAll=false --testPathPattern=".*\.(test|spec)\.(js|ts|tsx)$" --maxWorkers=2
+          else
+            npm test -- --coverage --watchAll=false
+          fi
+
+      - name: Build application
+        working-directory: debate-ui
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: debate-ui/build/
+          retention-days: 1
+
+  # Intelligent Integration Tests - Based on risk assessment
+  intelligent-integration-tests:
+    name: 🔗 Intelligent Integration Tests
+    runs-on: ubuntu-latest
+    needs: [intelligence, intelligent-build, frontend-build]
+    if: always() && (needs.intelligent-build.result == 'success' || needs.frontend-build.result == 'success') && needs.intelligence.outputs.test-plan != 'minimal'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Download Docker images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          merge-multiple: true
+
+      - name: Load Docker images
+        run: |
+          for image in *.tar; do
+            if [[ -f "$image" ]]; then
+              docker load -i "$image"
+            fi
+          done
+
+      - name: Generate integration test plan
+        id: test-plan
+        run: |
+          AFFECTED_MODULES='${{ needs.intelligence.outputs.affected-modules }}'
+          TEST_PLAN="${{ needs.intelligence.outputs.test-plan }}"
+          RISK_LEVEL="${{ needs.intelligence.outputs.risk-level }}"
+          
+          ./scripts/intelligence/generate-integration-test-plan.sh \
+            --modules="${AFFECTED_MODULES}" \
+            --plan="${TEST_PLAN}" \
+            --risk="${RISK_LEVEL}"
+
+      - name: Start affected services
+        run: |
+          AFFECTED_MODULES='${{ needs.intelligence.outputs.affected-modules }}'
+          ./scripts/testing/start-affected-services.sh --modules="${AFFECTED_MODULES}"
+          sleep 30  # Wait for services to be ready
+
+      - name: Run integration tests
+        run: |
+          TEST_PLAN_FILE="${{ steps.test-plan.outputs.test-plan-file }}"
+          if [[ -f "${TEST_PLAN_FILE}" ]]; then
+            ./scripts/testing/run-integration-tests.sh --plan="${TEST_PLAN_FILE}"
+          else
+            mvn verify -Pintegration-tests
+          fi
+
+      - name: Collect service logs on failure
+        if: failure()
+        run: |
+          mkdir -p logs/
+          docker-compose logs > logs/docker-compose.log 2>&1 || true
+          kubectl logs --all-containers=true --tail=1000 > logs/kubernetes.log 2>&1 || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            target/failsafe-reports/
+            logs/
+
+      - name: Stop services
+        if: always()
+        run: ./scripts/testing/stop-services.sh
+
+  # Risk-Based Security Scanning
+  intelligent-security-scan:
+    name: 🔒 Intelligent Security Scan
+    runs-on: ubuntu-latest
+    needs: intelligence
+    if: needs.intelligence.outputs.risk-level == 'high' || needs.intelligence.outputs.risk-level == 'critical' || contains(needs.intelligence.outputs.affected-modules, 'mcp-security')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Comprehensive Security Scan
+        uses: ./.github/actions/comprehensive-security-scan
+        with:
+          affected-modules: ${{ needs.intelligence.outputs.affected-modules }}
+          risk-level: ${{ needs.intelligence.outputs.risk-level }}
+
+      - name: Upload security results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: security-reports/
+
+  # Performance Testing - Only for high-risk changes
+  intelligent-performance-tests:
+    name: 🚀 Intelligent Performance Tests
+    runs-on: ubuntu-latest
+    needs: [intelligence, intelligent-integration-tests]
+    if: needs.intelligence.outputs.risk-level == 'critical' || needs.intelligence.outputs.test-plan == 'comprehensive'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          merge-multiple: true
+
+      - name: Load Docker images
+        run: |
+          for image in *.tar; do
+            if [[ -f "$image" ]]; then
+              docker load -i "$image"
+            fi
+          done
+
+      - name: Start performance test environment
+        run: |
+          docker-compose -f docker-compose.perf.yml up -d
+          sleep 60  # Wait for services to warm up
+
+      - name: Run performance tests
+        run: |
+          AFFECTED_MODULES='${{ needs.intelligence.outputs.affected-modules }}'
+          ./scripts/testing/run-performance-tests.sh --modules="${AFFECTED_MODULES}"
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: performance-reports/
+
+  # Deployment Decision
+  deployment-decision:
+    name: 📋 Deployment Decision
+    runs-on: ubuntu-latest
+    needs: [intelligence, intelligent-build, frontend-build, intelligent-integration-tests, intelligent-security-scan, intelligent-performance-tests]
+    if: always()
+    outputs:
+      should-deploy: ${{ steps.decision.outputs.should-deploy }}
+      deployment-strategy: ${{ steps.decision.outputs.deployment-strategy }}
+    steps:
+      - name: Evaluate deployment readiness
+        id: decision
+        run: |
+          RISK_LEVEL="${{ needs.intelligence.outputs.risk-level }}"
+          BUILD_SUCCESS="${{ needs.intelligent-build.result }}"
+          FRONTEND_SUCCESS="${{ needs.frontend-build.result }}"
+          INTEGRATION_SUCCESS="${{ needs.intelligent-integration-tests.result }}"
+          SECURITY_SUCCESS="${{ needs.intelligent-security-scan.result }}"
+          PERFORMANCE_SUCCESS="${{ needs.intelligent-performance-tests.result }}"
+          
+          # Determine if we should deploy
+          SHOULD_DEPLOY="false"
+          DEPLOYMENT_STRATEGY="blue-green"
+          
+          if [[ "${BUILD_SUCCESS}" == "success" ]] && [[ "${INTEGRATION_SUCCESS}" != "failure" ]]; then
+            if [[ "${RISK_LEVEL}" == "critical" ]]; then
+              if [[ "${SECURITY_SUCCESS}" == "success" ]] && [[ "${PERFORMANCE_SUCCESS}" == "success" ]]; then
+                SHOULD_DEPLOY="true"
+                DEPLOYMENT_STRATEGY="canary"
+              fi
+            elif [[ "${RISK_LEVEL}" == "high" ]]; then
+              if [[ "${SECURITY_SUCCESS}" != "failure" ]]; then
+                SHOULD_DEPLOY="true"
+                DEPLOYMENT_STRATEGY="blue-green"
+              fi
+            else
+              SHOULD_DEPLOY="true"
+              DEPLOYMENT_STRATEGY="rolling"
+            fi
+          fi
+          
+          echo "should-deploy=${SHOULD_DEPLOY}" >> $GITHUB_OUTPUT
+          echo "deployment-strategy=${DEPLOYMENT_STRATEGY}" >> $GITHUB_OUTPUT
+
+  # Intelligent Deployment
+  intelligent-deployment:
+    name: 🚀 Intelligent Deployment
+    runs-on: ubuntu-latest
+    needs: [intelligence, deployment-decision]
+    if: needs.deployment-decision.outputs.should-deploy == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          merge-multiple: true
+
+      - name: Load Docker images
+        run: |
+          for image in *.tar; do
+            if [[ -f "$image" ]]; then
+              docker load -i "$image"
+            fi
+          done
+
+      - name: Deploy with intelligent strategy
+        uses: ./.github/actions/intelligent-deployment
+        with:
+          strategy: ${{ needs.deployment-decision.outputs.deployment-strategy }}
+          affected-modules: ${{ needs.intelligence.outputs.affected-modules }}
+          risk-level: ${{ needs.intelligence.outputs.risk-level }}
+          environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+      - name: Post-deployment validation
+        run: |
+          ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+          AFFECTED_MODULES='${{ needs.intelligence.outputs.affected-modules }}'
+          ./scripts/deployment/validate-deployment.sh \
+            --environment="${ENVIRONMENT}" \
+            --modules="${AFFECTED_MODULES}"
+
+  # Analytics and Reporting
+  pipeline-analytics:
+    name: 📊 Pipeline Analytics
+    runs-on: ubuntu-latest
+    needs: [intelligence, intelligent-deployment]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Collect pipeline metrics
+        run: |
+          ./scripts/analytics/collect-pipeline-metrics.sh \
+            --run-id="${{ github.run_id }}" \
+            --affected-modules='${{ needs.intelligence.outputs.affected-modules }}' \
+            --risk-level="${{ needs.intelligence.outputs.risk-level }}" \
+            --test-plan="${{ needs.intelligence.outputs.test-plan }}"
+
+      - name: Update DORA metrics
+        run: |
+          ./scripts/analytics/update-dora-metrics.sh \
+            --deployment-success="${{ needs.intelligent-deployment.result }}" \
+            --lead-time="${{ github.event.pull_request.created_at }}" \
+            --commit-sha="${{ github.sha }}"
+
+      - name: Upload analytics
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-analytics
+          path: analytics/

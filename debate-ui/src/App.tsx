@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConfigProvider } from 'antd';
 import { store } from './store';
 import { useAppSelector, useAppDispatch } from './store';
+import { antdTheme } from './styles';
 import 'antd/dist/reset.css';
 
 // Components
@@ -75,7 +76,7 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <ConfigProvider>
+        <ConfigProvider theme={antdTheme}>
           <Router>
             <AppContent />
           </Router>

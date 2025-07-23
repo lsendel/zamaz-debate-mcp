@@ -9,7 +9,7 @@ import {
 } from '../store/slices/debateSlice';
 import { openCreateDebateDialog } from '../store/slices/uiSlice';
 import CreateDebateDialog from './CreateDebateDialog';
-import { Button, Card, Badge, Typography, Row, Col, Spin, Empty, Space } from 'antd';
+import { Button, Card, Badge, Row, Col, Spin, Empty, Space } from 'antd';
 import { 
   PlusOutlined, 
   PlayCircleOutlined, 
@@ -17,8 +17,15 @@ import {
   StopOutlined, 
   ReloadOutlined 
 } from '@ant-design/icons';
-
-const { Title, Text, Paragraph } = Typography;
+import { 
+  PageTitle, 
+  SectionTitle, 
+  CardTitle, 
+  BodyText, 
+  BodyParagraph,
+  Caption
+} from './Typography';
+import { colors, spacing, borderRadius, shadows } from '../styles';
 
 const DebatesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -72,7 +79,12 @@ const DebatesPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: `${spacing[64]}px` 
+      }}>
         <Spin size="large" />
       </div>
     );
@@ -80,10 +92,15 @@ const DebatesPage: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <Title level={2} style={{ margin: 0 }}>Debates</Title>
-          <Space>
+      <div style={{ marginBottom: `${spacing[6]}px` }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: `${spacing[4]}px` 
+        }}>
+          <PageTitle style={{ margin: 0 }}>Debates</PageTitle>
+          <Space size={spacing[2]}>
             <Button
               onClick={handleRefresh}
               icon={<ReloadOutlined />}
@@ -101,19 +118,37 @@ const DebatesPage: React.FC = () => {
         </div>
         
         {currentOrganization && (
-          <Card size="small" style={{ backgroundColor: '#f6f8fa' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Card 
+            size="small" 
+            style={{ 
+              backgroundColor: colors.background.tertiary,
+              border: `1px solid ${colors.border.light}`,
+              borderRadius: `${borderRadius.card}px`
+            }}
+          >
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: `${spacing[4]}px`,
+              flexWrap: 'wrap'
+            }}>
               <div>
-                <Text strong>Organization Scope: </Text>
-                <Badge color="blue" text={currentOrganization.name} />
+                <BodyText style={{ fontWeight: 600, marginRight: `${spacing[2]}px` }}>
+                  Organization Scope:
+                </BodyText>
+                <Badge color={colors.primary[500]} text={currentOrganization.name} />
               </div>
               <div>
-                <Text strong>Active LLM Presets: </Text>
-                <Badge color="green" text="3 presets available" />
+                <BodyText style={{ fontWeight: 600, marginRight: `${spacing[2]}px` }}>
+                  Active LLM Presets:
+                </BodyText>
+                <Badge color={colors.semantic.success} text="3 presets available" />
               </div>
               <div>
-                <Text strong>Debate Access: </Text>
-                <Badge color="purple" text="Organization members" />
+                <BodyText style={{ fontWeight: 600, marginRight: `${spacing[2]}px` }}>
+                  Debate Access:
+                </BodyText>
+                <Badge color={colors.primary[700]} text="Organization members" />
               </div>
             </div>
           </Card>
@@ -121,16 +156,27 @@ const DebatesPage: React.FC = () => {
       </div>
 
       {debates.length === 0 ? (
-        <Card style={{ textAlign: 'center', padding: '48px' }}>
+        <Card style={{ 
+          textAlign: 'center', 
+          padding: `${spacing[12]}px`,
+          boxShadow: shadows.card,
+          borderRadius: `${borderRadius.card}px`
+        }}>
           <Empty
             description={
-              <Space direction="vertical" size="large">
-                <Title level={4} style={{ margin: 0 }}>No debates yet</Title>
-                <Text type="secondary">Create your first debate to get started</Text>
+              <Space direction="vertical" size={spacing[6]}>
+                <SectionTitle style={{ margin: 0, color: colors.text.primary }}>
+                  No debates yet
+                </SectionTitle>
+                <BodyText secondary style={{ fontSize: '16px' }}>
+                  Create your first debate to get started
+                </BodyText>
                 <Button
                   type="primary"
                   onClick={() => dispatch(openCreateDebateDialog())}
                   icon={<PlusOutlined />}
+                  size="large"
+                  style={{ marginTop: `${spacing[4]}px` }}
                 >
                   Create Debate
                 </Button>
@@ -139,13 +185,29 @@ const DebatesPage: React.FC = () => {
           />
         </Card>
       ) : (
-        <Row gutter={[16, 16]}>
+        <Row gutter={[spacing[4], spacing[4]]}>
           {debates.map((debate) => (
             <Col key={debate.id} xs={24} md={12} lg={8}>
               <Card
                 hoverable
                 onClick={() => navigate(`/debates/${debate.id}`)}
-                style={{ cursor: 'pointer', height: '100%' }}
+                style={{ 
+                  cursor: 'pointer', 
+                  height: '100%',
+                  transition: 'all 0.3s ease',
+                  boxShadow: shadows.card,
+                  borderRadius: `${borderRadius.card}px`,
+                  border: `1px solid ${colors.border.light}`
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = shadows.cardHover;
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = shadows.card;
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+                bodyStyle={{ padding: `${spacing[6]}px` }}
                 actions={[
                   debate.status === 'created' && (
                     <Button
@@ -181,38 +243,60 @@ const DebatesPage: React.FC = () => {
                   ),
                 ].filter(Boolean)}
               >
-                <Card.Meta
-                  title={
-                    <Text 
-                      ellipsis={{ tooltip: debate.topic }} 
-                      style={{ marginBottom: '8px' }}
-                    >
-                      {debate.topic}
-                    </Text>
-                  }
-                  description={
-                    <Paragraph 
-                      ellipsis={{ rows: 2, tooltip: debate.description || 'No description' }}
-                      style={{ marginBottom: '16px' }}
-                    >
-                      {debate.description || 'No description'}
-                    </Paragraph>
-                  }
-                />
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Space wrap>
+                <div style={{ marginBottom: `${spacing[4]}px` }}>
+                  <CardTitle 
+                    style={{ 
+                      marginBottom: `${spacing[2]}px`,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {debate.topic}
+                  </CardTitle>
+                  <BodyParagraph 
+                    secondary
+                    style={{ 
+                      marginBottom: `${spacing[4]}px`,
+                      minHeight: '44px',
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {debate.description || 'No description provided'}
+                  </BodyParagraph>
+                </div>
+                <Space direction="vertical" style={{ width: '100%' }} size={spacing[3]}>
+                  <Space wrap size={spacing[2]}>
                     <Badge 
                       status={getStatusColor(debate.status)}
-                      text={debate.status.replace('_', ' ')}
+                      text={
+                        <BodyText style={{ textTransform: 'capitalize' }}>
+                          {debate.status.replace('_', ' ')}
+                        </BodyText>
+                      }
                     />
                     <Badge 
-                      count={`Round ${debate.currentRound}/${debate.maxRounds}`}
-                      style={{ backgroundColor: '#f0f0f0', color: '#666' }}
+                      count={
+                        <span style={{ 
+                          backgroundColor: colors.background.tertiary, 
+                          color: colors.text.secondary,
+                          padding: `${spacing[1]}px ${spacing[2]}px`,
+                          borderRadius: `${borderRadius.badge}px`,
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}>
+                          Round {debate.currentRound}/{debate.maxRounds}
+                        </span>
+                      }
                     />
                   </Space>
-                  <Text type="secondary" style={{ fontSize: '14px' }}>
+                  <Caption style={{ color: colors.text.secondary }}>
                     {debate.participants.length} participants
-                  </Text>
+                  </Caption>
                 </Space>
               </Card>
             </Col>
