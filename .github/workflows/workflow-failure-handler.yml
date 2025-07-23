@@ -47,9 +47,6 @@ on:
         type: boolean
         default: false
     secrets:
-      GITHUB_TOKEN:
-        description: 'GitHub token for creating issues'
-        required: true
       SLACK_WEBHOOK:
         description: 'Slack webhook URL for notifications'
         required: false
@@ -95,7 +92,7 @@ jobs:
           severity: ${{ inputs.severity }}
           assignees: ${{ inputs.assignees }}
           labels: ${{ inputs.labels }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           
       - name: Load workflow configuration
         id: load-config
@@ -186,7 +183,7 @@ jobs:
         id: manage-issue
         if: steps.detect-failure.outputs.should-create-issue == 'true' && inputs.dry-run != true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           ISSUE_DATA: ${{ steps.detect-failure.outputs.issue-data }}
         run: |
           cd .github/scripts
@@ -202,7 +199,7 @@ jobs:
       - name: Send notifications
         if: steps.detect-failure.outputs.should-create-issue == 'true' && inputs.dry-run != true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
