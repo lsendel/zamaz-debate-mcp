@@ -184,28 +184,15 @@ jobs:
           
           # Generate test issue content
           ISSUE_TITLE="🧪 Workflow Health Monitor Test - $TRIGGER_TYPE"
-          ISSUE_BODY="## 🧪 Workflow Health Monitor Test
           
-**Trigger Type**: $TRIGGER_TYPE  
-**Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)  
-**Details**: $TRIGGER_DETAILS
-
-### Test Status
-This is a test issue created to verify the workflow health monitor is working correctly.
-
-### System Information
-- **Event**: ${{ github.event_name }}
-- **Repository**: ${{ github.repository }}
-- **Branch**: ${{ github.ref_name }}
-- **Commit**: ${{ github.sha }}
-- **Actor**: ${{ github.actor }}
-
-### Next Steps
-If you see this issue, the workflow health monitor basic functionality is working. 
-The system should also create issues for actual workflow failures.
-
----
-*This test issue was created by the Workflow Health Monitor Debug system*"
+          # Build issue body in parts to avoid YAML parsing issues
+          ISSUE_BODY_HEADER="## 🧪 Workflow Health Monitor Test"
+          ISSUE_BODY_INFO="Trigger Type: $TRIGGER_TYPE"$'\n'"Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n'"Details: $TRIGGER_DETAILS"
+          ISSUE_BODY_STATUS="### Test Status"$'\n'"This is a test issue created to verify the workflow health monitor is working correctly."
+          ISSUE_BODY_SYSTEM="### System Information"$'\n'"- Event: ${{ github.event_name }}"$'\n'"- Repository: ${{ github.repository }}"$'\n'"- Branch: ${{ github.ref_name }}"$'\n'"- Commit: ${{ github.sha }}"$'\n'"- Actor: ${{ github.actor }}"
+          ISSUE_BODY_FOOTER="### Next Steps"$'\n'"If you see this issue, the workflow health monitor basic functionality is working."$'\n'"The system should also create issues for actual workflow failures."$'\n\n'"---"$'\n'"This test issue was created by the Workflow Health Monitor Debug system"
+          
+          ISSUE_BODY="$ISSUE_BODY_HEADER"$'\n\n'"$ISSUE_BODY_INFO"$'\n\n'"$ISSUE_BODY_STATUS"$'\n\n'"$ISSUE_BODY_SYSTEM"$'\n\n'"$ISSUE_BODY_FOOTER"
 
           # Create the test issue
           echo "Creating test issue..."
@@ -253,28 +240,15 @@ The system should also create issues for actual workflow failures.
           ISSUE_TITLE="🚨 $WORKFLOW_NAME workflow failed on $WORKFLOW_BRANCH"
           CURRENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           
-          ISSUE_BODY="## 🚨 Workflow Failure Detected
-
-**Workflow**: $WORKFLOW_NAME  
-**Status**: 🔴 FAILED  
-**Time**: $CURRENT_TIME
-
-### 📋 Failure Details
-- **Run ID**: $WORKFLOW_ID
-- **Branch**: $WORKFLOW_BRANCH  
-- **Commit**: $WORKFLOW_SHA
-- **Triggered by**: @$WORKFLOW_ACTOR
-- **Conclusion**: $WORKFLOW_CONCLUSION
-- **URL**: $WORKFLOW_URL
-
-### 🔍 Analysis
-This workflow failed and requires investigation.
-
-### 📊 Severity
-**Priority**: $SEVERITY
-
----
-*This issue was automatically created by the Workflow Health Monitor*"
+          # Build issue body in parts to avoid YAML parsing issues
+          FAILURE_HEADER="## 🚨 Workflow Failure Detected"
+          FAILURE_INFO="Workflow: $WORKFLOW_NAME"$'\n'"Status: 🔴 FAILED"$'\n'"Time: $CURRENT_TIME"
+          FAILURE_DETAILS="### 📋 Failure Details"$'\n'"- Run ID: $WORKFLOW_ID"$'\n'"- Branch: $WORKFLOW_BRANCH"$'\n'"- Commit: $WORKFLOW_SHA"$'\n'"- Triggered by: @$WORKFLOW_ACTOR"$'\n'"- Conclusion: $WORKFLOW_CONCLUSION"$'\n'"- URL: $WORKFLOW_URL"
+          FAILURE_ANALYSIS="### 🔍 Analysis"$'\n'"This workflow failed and requires investigation."
+          FAILURE_SEVERITY="### 📊 Severity"$'\n'"Priority: $SEVERITY"
+          FAILURE_FOOTER="---"$'\n'"This issue was automatically created by the Workflow Health Monitor"
+          
+          ISSUE_BODY="$FAILURE_HEADER"$'\n\n'"$FAILURE_INFO"$'\n\n'"$FAILURE_DETAILS"$'\n\n'"$FAILURE_ANALYSIS"$'\n\n'"$FAILURE_SEVERITY"$'\n\n'"$FAILURE_FOOTER"
 
           # Check for existing issues
           echo "Checking for existing issues..."
@@ -286,16 +260,13 @@ This workflow failed and requires investigation.
             if [ -n "$LATEST_ISSUE" ] && [ "$LATEST_ISSUE" != "null" ]; then
               echo "Found existing issue #$LATEST_ISSUE, adding comment"
               
-              COMMENT_BODY="## 🔄 New Failure Detected
-
-**Time**: $CURRENT_TIME  
-**Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)  
-**Commit**: \`$WORKFLOW_SHA\`
-
-The workflow has failed again and requires attention.
-
----
-*Automated update by Workflow Health Monitor*"
+              # Build comment body in parts
+              COMMENT_HEADER="## 🔄 New Failure Detected"
+              COMMENT_INFO="Time: $CURRENT_TIME"$'\n'"Run: [#$WORKFLOW_ID]($WORKFLOW_URL)"$'\n'"Commit: $WORKFLOW_SHA"
+              COMMENT_MESSAGE="The workflow has failed again and requires attention."
+              COMMENT_FOOTER="---"$'\n'"Automated update by Workflow Health Monitor"
+              
+              COMMENT_BODY="$COMMENT_HEADER"$'\n\n'"$COMMENT_INFO"$'\n\n'"$COMMENT_MESSAGE"$'\n\n'"$COMMENT_FOOTER"
 
               if gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY"; then
                 echo "✅ Updated existing issue #$LATEST_ISSUE"
