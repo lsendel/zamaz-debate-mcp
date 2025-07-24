@@ -178,10 +178,74 @@ jobs:
           extra_args: --config .trufflehog.yaml --only-verified
         continue-on-error: true
 
+  # CodeQL Analysis from security-scan.yml
+  codeql-analysis:
+    name: 🔍 CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: validate-workflow
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['java', 'javascript']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+          
+      - name: Build code for analysis
+        if: matrix.language == 'java'
+        run: |
+          mvn clean compile -DskipTests
+          
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+        continue-on-error: true
+
+  # OWASP Dependency Check from security-updated.yml
+  owasp-dependency-check:
+    name: 🛡️ OWASP Dependency Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: validate-workflow
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+          
+      - name: Run OWASP Dependency Check
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DassemblyAnalyzerEnabled=false \
+            -DnodeAnalyzerEnabled=false
+        continue-on-error: true
+        
+      - name: Upload OWASP results
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-results
+          path: '**/target/dependency-check-report.html'
+
   security-summary:
     name: 📊 Security Summary
     runs-on: ubuntu-latest
-    needs: [validate-workflow, semgrep, java-security, frontend-security, secrets-scan]
+    needs: [validate-workflow, semgrep, java-security, frontend-security, secrets-scan, codeql-analysis, owasp-dependency-check]
     if: always()
 
     steps:
@@ -192,20 +256,29 @@ jobs:
           echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Semgrep | ${{ needs.semgrep.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Java Security | ${{ needs.java-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java Security (SpotBugs) | ${{ needs.java-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL Analysis | ${{ needs.codeql-analysis.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP Dependency Check | ${{ needs.owasp-dependency-check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Security | ${{ needs.frontend-security.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secrets Detection | ${{ needs.secrets-scan.result }} |" >> $GITHUB_STEP_SUMMARY
 
   # Automated Workflow Failure Handler
   handle-security-failure:
     name: Handle Security Scan Failure
-    if: always() && (needs.validate-workflow.result == 'failure' || needs.semgrep.result == 'failure' || needs.java-security.result == 'failure' || needs.frontend-security.result == 'failure' || needs.secrets-scan.result == 'failure' || needs.security-summary.result == 'failure')
-    needs: [validate-workflow, semgrep, java-security, frontend-security, secrets-scan, security-summary]
+    if: |
+      always() && contains(needs.*.result, 'failure')
+    needs: [validate-workflow, semgrep, java-security, frontend-security, secrets-scan, codeql-analysis, owasp-dependency-check, security-summary]
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "Security Scanning"
-      # High severity for security failures
-      severity: ${{ (needs.secrets-scan.result == 'failure' && 'critical') || (github.event_name == 'schedule' && 'high') || (github.ref == 'refs/heads/main' && 'high') || 'medium' }}
+      # Severity based on context
+      severity: |
+        ${{
+          needs.secrets-scan.result == 'failure' && 'critical' ||
+          github.ref == 'refs/heads/main' && 'high' ||
+          github.event_name == 'schedule' && 'high' ||
+          'medium'
+        }}
       # Security team assignment
       assignees: "security-team,team-lead"
       # Comprehensive security labels
