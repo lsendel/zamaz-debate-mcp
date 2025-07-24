@@ -332,7 +332,7 @@ jobs:
           if [[ -f "${TEST_PLAN_FILE}" ]]; then
             ./scripts/testing/run-integration-tests.sh --plan="${TEST_PLAN_FILE}"
           else
-            mvn verify -Pintegration-tests
+            mvn verify -Pintegration-tests ${{ env.MAVEN_BATCH_MODE }}
           fi
 
       - name: Collect service logs on failure

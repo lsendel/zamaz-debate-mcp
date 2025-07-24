@@ -14,6 +14,7 @@ permissions:
   issues: write
   security-events: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   JAVA_VERSION: '21'
   NODE_VERSION: '18'
   MAVEN_OPTS: '-Xmx2048m -XX:MaxMetaspaceSize=512m'
@@ -49,13 +50,13 @@ jobs:
       run: |
         echo "::group::Running Checkstyle"
         if [ -f pom.xml ]; then
-          mvn checkstyle:check -q
+          mvn checkstyle:check -q ${{ env.MAVEN_BATCH_MODE }}
         else
           echo "No pom.xml found in root directory. Checking for service-level pom.xml files..."
           for dir in mcp-*; do
             if [ -d "$dir" ] && [ -f "$dir/pom.xml" ]; then
               echo "Running Checkstyle in $dir"
-              (cd "$dir" && mvn checkstyle:check -q) || true
+              (cd "$dir" && mvn checkstyle:check -q ${{ env.MAVEN_BATCH_MODE }}) || true
             fi
           done
         fi
@@ -65,13 +66,13 @@ jobs:
       run: |
         echo "::group::Running SpotBugs"
         if [ -f pom.xml ]; then
-          mvn spotbugs:check -q
+          mvn spotbugs:check -q ${{ env.MAVEN_BATCH_MODE }}
         else
           echo "No pom.xml found in root directory. Checking for service-level pom.xml files..."
           for dir in mcp-*; do
             if [ -d "$dir" ] && [ -f "$dir/pom.xml" ]; then
               echo "Running SpotBugs in $dir"
-              (cd "$dir" && mvn spotbugs:check -q) || true
+              (cd "$dir" && mvn spotbugs:check -q ${{ env.MAVEN_BATCH_MODE }}) || true
             fi
           done
         fi
@@ -81,13 +82,13 @@ jobs:
       run: |
         echo "::group::Running PMD"
         if [ -f pom.xml ]; then
-          mvn pmd:check -q
+          mvn pmd:check -q ${{ env.MAVEN_BATCH_MODE }}
         else
           echo "No pom.xml found in root directory. Checking for service-level pom.xml files..."
           for dir in mcp-*; do
             if [ -d "$dir" ] && [ -f "$dir/pom.xml" ]; then
               echo "Running PMD in $dir"
-              (cd "$dir" && mvn pmd:check -q) || true
+              (cd "$dir" && mvn pmd:check -q ${{ env.MAVEN_BATCH_MODE }}) || true
             fi
           done
         fi
@@ -99,13 +100,13 @@ jobs:
         echo "::group::Generating Java Reports"
         mkdir -p .linting/reports/java
         if [ -f pom.xml ]; then
-          mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q || true
+          mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q ${{ env.MAVEN_BATCH_MODE }} || true
         else
           echo "No root pom.xml, generating reports for individual services"
           for dir in mcp-*; do
             if [ -d "$dir" ] && [ -f "$dir/pom.xml" ]; then
               echo "Generating reports for $dir"
-              (cd "$dir" && mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q) || true
+              (cd "$dir" && mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q ${{ env.MAVEN_BATCH_MODE }}) || true
             fi
           done
         fi

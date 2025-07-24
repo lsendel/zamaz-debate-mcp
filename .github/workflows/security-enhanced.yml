@@ -54,6 +54,7 @@ permissions:
   contents: read
   security-events: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   NODE_VERSION: "18"
   JAVA_VERSION: "21"
   REGISTRY: ghcr.io

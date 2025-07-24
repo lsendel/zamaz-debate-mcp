@@ -21,6 +21,7 @@ on:
 permissions:
   contents: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   JAVA_VERSION: '21'
   NODE_VERSION: '18'
 
@@ -82,7 +83,7 @@ jobs:
         echo "Changed Java files: ${{ steps.changed-files.outputs.all_changed_files }}"
 
         # Run quick Java checks
-        mvn checkstyle:check -q -Dcheckstyle.includeTestSourceDirectory=false
+        mvn checkstyle:check -q ${{ env.MAVEN_BATCH_MODE }} -Dcheckstyle.includeTestSourceDirectory=false
         echo "::endgroup::"
 
     - name: Lint changed frontend files

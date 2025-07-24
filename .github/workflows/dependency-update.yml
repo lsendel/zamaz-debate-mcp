@@ -7,6 +7,10 @@ on:
   workflow_dispatch:
 
 
+
+env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
+
 permissions:
   actions: read
   contents: read
@@ -31,11 +35,11 @@ jobs:
 
       - name: Update Maven dependencies
         run: |
-          mvn versions:update-properties
-          mvn versions:use-latest-releases
+          mvn versions:update-properties ${{ env.MAVEN_BATCH_MODE }}
+          mvn versions:use-latest-releases ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Run tests to verify updates
-        run: mvn test -B
+        run: mvn test ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5

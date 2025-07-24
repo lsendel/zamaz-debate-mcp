@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       target-env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
         description: 'Environment to test'
         required: true
         default: 'staging'
@@ -77,7 +78,7 @@ jobs:
 
       - name: Run OWASP Dependency Check
         run: |
-          mvn org.owasp:dependency-check-maven:check \
+          mvn org.owasp:dependency-check-maven:check ${{ env.MAVEN_BATCH_MODE }} \
             -DfailBuildOnCVSS=7 \
             -DsuppressionsFile=.security/dependency-check-suppressions.xml \
             -Dformats=HTML,JSON,JUNIT

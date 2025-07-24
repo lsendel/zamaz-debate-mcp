@@ -10,6 +10,10 @@ on:
     - cron: '0 2 * * *'
 
 
+
+env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
+
 permissions:
   actions: read
   contents: read
@@ -47,7 +51,7 @@ jobs:
         fi
         
         # Check for circular dependencies
-        mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:tree \
+        mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:tree ${{ env.MAVEN_BATCH_MODE }} \
           -DoutputType=dot -DoutputFile=dependency-tree.dot
         
         if grep -q "cyclic" dependency-tree.dot; then
@@ -59,21 +63,21 @@ jobs:
     - name: Compile with Maven
       run: |
         echo "Compiling all modules..."
-        mvn clean compile -B -V -T 1C \
+        mvn clean compile ${{ env.MAVEN_BATCH_MODE }} -V -T 1C \
           -Dmaven.compiler.failOnError=true \
           -Dmaven.compiler.showWarnings=true
 
     - name: Run Unit Tests
       run: |
         echo "Running unit tests..."
-        mvn test -B -V \
+        mvn test ${{ env.MAVEN_BATCH_MODE }} -V \
           -Dmaven.test.failure.ignore=false \
           -Djacoco.skip=false
 
     - name: Check Code Quality
       run: |
         echo "Running code quality checks..."
-        mvn verify -B -V \
+        mvn verify ${{ env.MAVEN_BATCH_MODE }} \
           -Pcode-quality \
           -Dmaven.test.skip=true \
           -Dcheckstyle.failOnViolation=true \
@@ -82,14 +86,14 @@ jobs:
     - name: Dependency Security Scan
       run: |
         echo "Running dependency security scan..."
-        mvn org.owasp:dependency-check-maven:check \
+        mvn org.owasp:dependency-check-maven:check ${{ env.MAVEN_BATCH_MODE }} \
           -DfailBuildOnCVSS=7 \
           -DskipTestScope=false
 
     - name: Package Applications
       run: |
         echo "Packaging applications..."
-        mvn package -B -V \
+        mvn package ${{ env.MAVEN_BATCH_MODE }} \
           -Dmaven.test.skip=true \
           -Dmaven.javadoc.skip=true
 
@@ -158,7 +162,7 @@ jobs:
     - name: Check for Version Conflicts
       run: |
         echo "Checking for dependency version conflicts..."
-        mvn dependency:tree -Dverbose | grep -E "(omitted|conflicts)" > conflicts.txt || true
+        mvn dependency:tree -Dverbose ${{ env.MAVEN_BATCH_MODE }} | grep -E "(omitted|conflicts)" > conflicts.txt || true
         
         if [ -s conflicts.txt ]; then
           echo "WARNING: Dependency conflicts detected:"

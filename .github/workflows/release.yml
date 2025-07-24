@@ -12,6 +12,7 @@ permissions:
   packages: write
   issues: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -123,7 +124,7 @@ jobs:
         if: matrix.type == 'java'
         run: |
           cd ${{ matrix.service }}
-          mvn clean package -DskipTests -B
+          mvn clean package -DskipTests ${{ env.MAVEN_BATCH_MODE }} -B
           mv target/*.jar ../
 
       - name: Build Frontend artifact

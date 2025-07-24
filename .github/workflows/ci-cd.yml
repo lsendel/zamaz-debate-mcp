@@ -16,6 +16,7 @@ permissions:
   issues: write
   security-events: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   NODE_VERSION: '18'
@@ -78,21 +79,21 @@ jobs:
         run: |
           if [ -d "${{ matrix.service }}" ]; then
             cd ${{ matrix.service }}
-            mvn clean compile -B
+            mvn clean compile ${{ env.MAVEN_BATCH_MODE }}
           fi
 
       - name: Run unit tests
         run: |
           if [ -d "${{ matrix.service }}" ]; then
             cd ${{ matrix.service }}
-            mvn test -B
+            mvn test ${{ env.MAVEN_BATCH_MODE }}
           fi
 
       - name: Run integration tests
         run: |
           if [ -d "${{ matrix.service }}" ]; then
             cd ${{ matrix.service }}
-            mvn verify -P integration-test -B
+            mvn verify -P integration-test ${{ env.MAVEN_BATCH_MODE }}
           fi
 
       - name: Generate test report
@@ -181,13 +182,13 @@ jobs:
       - name: Run Pact consumer tests
         run: |
           cd mcp-testing
-          mvn test -Dtest=*PactTest -B
+          mvn test -Dtest=*PactTest ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Publish Pact contracts
         if: github.ref == 'refs/heads/main'
         run: |
           cd mcp-testing
-          mvn pact:publish -B
+          mvn pact:publish ${{ env.MAVEN_BATCH_MODE }}
         env:
           PACT_BROKER_URL: ${{ secrets.PACT_BROKER_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
@@ -268,13 +269,13 @@ jobs:
       - name: Run security tests
         run: |
           cd mcp-testing
-          mvn test -Dtest=SecurityTestSuite -B
+          mvn test -Dtest=SecurityTestSuite ${{ env.MAVEN_BATCH_MODE }}
         env:
           SPRING_PROFILES_ACTIVE: security-test
 
       - name: Run OWASP dependency check
         run: |
-          mvn org.owasp:dependency-check-maven:check -B
+          mvn org.owasp:dependency-check-maven:check ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Upload security test results
         uses: actions/upload-artifact@v4
@@ -311,7 +312,7 @@ jobs:
       - name: Run Gatling load tests
         run: |
           cd load-tests
-          mvn gatling:test -B
+          mvn gatling:test ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Upload performance test results
         uses: actions/upload-artifact@v4

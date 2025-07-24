@@ -16,6 +16,7 @@ permissions:
   contents: read
   packages: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/workflow-editor
 
@@ -35,7 +36,7 @@ jobs:
     - name: Run tests
       run: |
         cd workflow-editor
-        mvn clean test
+        mvn clean test ${{ env.MAVEN_BATCH_MODE }}
     
     - name: Generate test report
       uses: dorny/test-reporter@v1
@@ -89,7 +90,7 @@ jobs:
     - name: Build application
       run: |
         cd workflow-editor
-        mvn clean package -DskipTests
+        mvn clean package -DskipTests ${{ env.MAVEN_BATCH_MODE }}
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3

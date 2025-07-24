@@ -18,6 +18,7 @@ permissions:
   pull-requests: read
 
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   NODE_VERSION: "18"
   JAVA_VERSION: "21"
 
@@ -214,7 +215,7 @@ jobs:
       - name: Build code for analysis
         if: matrix.language == 'java'
         run: |
-          mvn clean compile -DskipTests
+          mvn clean compile -DskipTests ${{ env.MAVEN_BATCH_MODE }}
           
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -242,7 +243,7 @@ jobs:
           
       - name: Run OWASP Dependency Check
         run: |
-          mvn org.owasp:dependency-check-maven:check \
+          mvn org.owasp:dependency-check-maven:check ${{ env.MAVEN_BATCH_MODE }} \
             -DfailBuildOnCVSS=7 \
             -DassemblyAnalyzerEnabled=false \
             -DnodeAnalyzerEnabled=false

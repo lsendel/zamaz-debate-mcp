@@ -19,6 +19,7 @@ permissions:
   contents: read
   security-events: write
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/github-integration
 
@@ -70,7 +71,7 @@ jobs:
 
     - name: Run tests
       run: |
-        mvn clean test -pl github-integration
+        mvn clean test ${{ env.MAVEN_BATCH_MODE }} -pl github-integration
       env:
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/github_integration_test
         SPRING_DATASOURCE_USERNAME: postgres
@@ -80,7 +81,7 @@ jobs:
 
     - name: Run integration tests
       run: |
-        mvn verify -pl github-integration
+        mvn verify -pl github-integration ${{ env.MAVEN_BATCH_MODE }}
       env:
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/github_integration_test
         SPRING_DATASOURCE_USERNAME: postgres
@@ -120,7 +121,7 @@ jobs:
 
     - name: Run OWASP Dependency Check
       run: |
-        mvn org.owasp:dependency-check-maven:check -pl github-integration
+        mvn org.owasp:dependency-check-maven:check -pl github-integration ${{ env.MAVEN_BATCH_MODE }}
         
     - name: Upload OWASP report
       uses: actions/upload-artifact@v4

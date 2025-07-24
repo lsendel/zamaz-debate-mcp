@@ -14,6 +14,10 @@ on:
         type: boolean
 
 
+
+env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
+
 permissions:
   contents: read
   security-events: write
@@ -99,7 +103,7 @@ jobs:
 
       - name: Run dependency check
         run: |
-          mvn org.owasp:dependency-check-maven:check \
+          mvn org.owasp:dependency-check-maven:check ${{ env.MAVEN_BATCH_MODE }} \
             -DfailBuildOnCVSS=8 \
             -DskipTestScope=true
 

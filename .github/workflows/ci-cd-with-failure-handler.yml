@@ -168,13 +168,13 @@ jobs:
       - name: Run Pact consumer tests
         run: |
           cd mcp-testing
-          mvn test -Dtest=*PactTest -B
+          mvn test -Dtest=*PactTest ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Publish Pact contracts
         if: github.ref == 'refs/heads/main'
         run: |
           cd mcp-testing
-          mvn pact:publish -B
+          mvn pact:publish ${{ env.MAVEN_BATCH_MODE }}
         env:
           PACT_BROKER_URL: ${{ secrets.PACT_BROKER_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
