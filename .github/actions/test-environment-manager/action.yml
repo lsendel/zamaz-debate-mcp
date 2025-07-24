@@ -1,0 +1,159 @@
+name: 'Test Environment Manager'
+description: 'Provision and manage isolated test environments'
+author: 'MCP Team'
+
+inputs:
+  environment:
+    description: 'Environment name from test-environments.yml'
+    required: true
+  action:
+    description: 'Action to perform: provision, status, cleanup'
+    required: true
+    default: 'provision'
+  namespace:
+    description: 'Namespace/identifier for the environment'
+    required: false
+    default: 'test-${{ github.run_id }}'
+  config-file:
+    description: 'Path to environment configuration file'
+    required: false
+    default: '.github/environments/test-environments.yml'
+  wait-timeout:
+    description: 'Timeout for environment readiness in seconds'
+    required: false
+    default: '300'
+  data-snapshot:
+    description: 'Test data snapshot to load'
+    required: false
+    default: 'latest'
+
+outputs:
+  endpoints:
+    description: 'JSON object with service endpoints'
+    value: ${{ steps.provision.outputs.endpoints }}
+  status:
+    description: 'Environment status'
+    value: ${{ steps.status.outputs.status }}
+  namespace:
+    description: 'Environment namespace'
+    value: ${{ inputs.namespace }}
+  cleanup-token:
+    description: 'Token for cleanup operations'
+    value: ${{ steps.provision.outputs.cleanup-token }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup environment manager
+      shell: bash
+      run: |
+        echo "🌍 Test Environment Manager"
+        echo "Environment: ${{ inputs.environment }}"
+        echo "Action: ${{ inputs.action }}"
+        echo "Namespace: ${{ inputs.namespace }}"
+        
+        # Install dependencies
+        npm install -g js-yaml uuid
+
+    - name: Provision environment
+      id: provision
+      if: inputs.action == 'provision'
+      shell: bash
+      run: |
+        echo "📦 Provisioning test environment..."
+        
+        # Generate unique cleanup token
+        CLEANUP_TOKEN=$(uuidgen)
+        echo "cleanup-token=$CLEANUP_TOKEN" >> $GITHUB_OUTPUT
+        
+        # Run provisioning script
+        node ${{ github.action_path }}/provision-environment.js \
+          --config "${{ inputs.config-file }}" \
+          --environment "${{ inputs.environment }}" \
+          --namespace "${{ inputs.namespace }}" \
+          --cleanup-token "$CLEANUP_TOKEN"
+        
+        # Get endpoints
+        ENDPOINTS=$(cat environment-endpoints.json)
+        echo "endpoints=$ENDPOINTS" >> $GITHUB_OUTPUT
+
+    - name: Wait for environment ready
+      if: inputs.action == 'provision'
+      shell: bash
+      run: |
+        echo "⏳ Waiting for environment to be ready..."
+        
+        node ${{ github.action_path }}/wait-for-ready.js \
+          --namespace "${{ inputs.namespace }}" \
+          --timeout "${{ inputs.wait-timeout }}" \
+          --config "${{ inputs.config-file }}" \
+          --environment "${{ inputs.environment }}"
+
+    - name: Load test data
+      if: inputs.action == 'provision' && inputs.data-snapshot != ''
+      shell: bash
+      run: |
+        echo "📊 Loading test data snapshot: ${{ inputs.data-snapshot }}"
+        
+        ${{ github.action_path }}/load-test-data.sh \
+          --namespace "${{ inputs.namespace }}" \
+          --snapshot "${{ inputs.data-snapshot }}" \
+          --endpoints-file environment-endpoints.json
+
+    - name: Check environment status
+      id: status
+      if: inputs.action == 'status'
+      shell: bash
+      run: |
+        echo "🔍 Checking environment status..."
+        
+        STATUS=$(node ${{ github.action_path }}/check-status.js \
+          --namespace "${{ inputs.namespace }}")
+        
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        echo "$STATUS"
+
+    - name: Cleanup environment
+      if: inputs.action == 'cleanup'
+      shell: bash
+      run: |
+        echo "🧹 Cleaning up environment..."
+        
+        node ${{ github.action_path }}/cleanup-environment.js \
+          --namespace "${{ inputs.namespace }}" \
+          --force true
+
+    - name: Generate environment report
+      if: always() && inputs.action == 'provision'
+      shell: bash
+      run: |
+        cat > environment-report.md << EOF
+        # Test Environment Report
+        
+        **Environment:** ${{ inputs.environment }}
+        **Namespace:** ${{ inputs.namespace }}
+        **Timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+        
+        ## Endpoints
+        \`\`\`json
+        $(cat environment-endpoints.json | jq .)
+        \`\`\`
+        
+        ## Resource Usage
+        $(cat resource-usage.json 2>/dev/null | jq . || echo "N/A")
+        
+        ## Health Status
+        $(cat health-status.json 2>/dev/null | jq . || echo "N/A")
+        EOF
+
+    - name: Upload environment artifacts
+      if: always() && inputs.action == 'provision'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-environment-${{ inputs.namespace }}
+        path: |
+          environment-report.md
+          environment-endpoints.json
+          resource-usage.json
+          health-status.json
+          provisioning.log

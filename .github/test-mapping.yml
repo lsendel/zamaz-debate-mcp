@@ -1,0 +1,184 @@
+# Test mapping configuration for incremental testing
+# Maps file patterns to test suites that should run when those files change
+
+mappings:
+  # Java Backend Services
+  - pattern: 'mcp-gateway/src/main/**/*.java'
+    tests:
+      - 'mcp-gateway:unit'
+      - 'mcp-gateway:integration'
+    impacts:
+      - 'e2e:api'
+      - 'performance:api'
+
+  - pattern: 'mcp-organization/src/main/**/*.java'
+    tests:
+      - 'mcp-organization:unit'
+      - 'mcp-organization:integration'
+    impacts:
+      - 'e2e:api'
+      - 'e2e:organization'
+
+  - pattern: 'mcp-controller/src/main/**/*.java'
+    tests:
+      - 'mcp-controller:unit'
+      - 'mcp-controller:integration'
+    impacts:
+      - 'e2e:workflow'
+      - 'e2e:api'
+
+  - pattern: 'mcp-common/**/*.java'
+    tests:
+      - '*:unit'  # All services depend on common
+      - '*:integration'
+    impacts: []
+
+  # Frontend
+  - pattern: 'debate-ui/src/components/**/*'
+    tests:
+      - 'debate-ui:unit'
+      - 'debate-ui:component'
+    impacts:
+      - 'e2e:ui'
+
+  - pattern: 'debate-ui/src/pages/**/*'
+    tests:
+      - 'debate-ui:unit'
+      - 'debate-ui:integration'
+    impacts:
+      - 'e2e:ui'
+      - 'e2e:user-journey'
+
+  - pattern: 'debate-ui/src/services/**/*'
+    tests:
+      - 'debate-ui:unit'
+      - 'debate-ui:integration'
+    impacts:
+      - 'e2e:ui'
+
+  # Database Changes
+  - pattern: '**/migrations/**/*.sql'
+    tests:
+      - '*:integration'
+    impacts:
+      - 'e2e:*'
+      - 'performance:*'
+
+  - pattern: '**/schema.sql'
+    tests:
+      - '*:integration'
+    impacts:
+      - 'e2e:*'
+
+  # Configuration
+  - pattern: '**/application*.yml'
+    tests:
+      - '*:integration'
+    impacts:
+      - 'e2e:*'
+
+  - pattern: '**/application*.properties'
+    tests:
+      - '*:integration'
+    impacts:
+      - 'e2e:*'
+
+  # Build Files
+  - pattern: '**/pom.xml'
+    tests:
+      - '{service}:unit'
+      - '{service}:integration'
+    impacts: []
+
+  - pattern: '**/package.json'
+    tests:
+      - '{service}:unit'
+      - '{service}:integration'
+    impacts: []
+
+  # Docker
+  - pattern: '**/Dockerfile'
+    tests:
+      - '{service}:integration'
+    impacts:
+      - 'e2e:deployment'
+
+  - pattern: 'docker-compose*.yml'
+    tests:
+      - '*:integration'
+    impacts:
+      - 'e2e:*'
+
+  # Kubernetes
+  - pattern: 'k8s/**/*.yaml'
+    tests: []
+    impacts:
+      - 'e2e:deployment'
+      - 'e2e:resilience'
+
+  # API Specs
+  - pattern: '**/openapi.yaml'
+    tests:
+      - '{service}:contract'
+    impacts:
+      - 'e2e:api'
+
+  # Security
+  - pattern: '**/security/**/*'
+    tests:
+      - '{service}:security'
+    impacts:
+      - 'security:*'
+
+# Service Dependencies
+# Used to determine which services need testing when dependencies change
+dependencies:
+  mcp-gateway:
+    - mcp-common
+  
+  mcp-organization:
+    - mcp-common
+  
+  mcp-controller:
+    - mcp-common
+    - mcp-gateway
+    - mcp-organization
+  
+  debate-ui:
+    - mcp-gateway  # Frontend depends on gateway API
+
+# Test Suite Definitions
+suites:
+  unit:
+    description: 'Fast unit tests with mocked dependencies'
+    timeout: 10m
+    parallel: true
+  
+  integration:
+    description: 'Integration tests with real dependencies'
+    timeout: 20m
+    parallel: true
+    requires:
+      - database
+      - redis
+  
+  e2e:
+    description: 'End-to-end tests across services'
+    timeout: 30m
+    parallel: false
+    requires:
+      - all-services
+  
+  performance:
+    description: 'Performance and load tests'
+    timeout: 45m
+    parallel: false
+    requires:
+      - all-services
+  
+  security:
+    description: 'Security scanning and penetration tests'
+    timeout: 30m
+    parallel: true
+    requires:
+      - all-services

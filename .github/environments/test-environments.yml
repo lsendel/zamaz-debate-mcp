@@ -1,0 +1,281 @@
+# Test Environment Configuration
+# Defines different test environments and their resource requirements
+
+environments:
+  # Unit test environment - minimal resources
+  unit-test:
+    description: "Lightweight environment for unit tests"
+    resources:
+      cpu: 2
+      memory: 4GB
+      disk: 10GB
+    services: []
+    timeout: 15m
+    parallel: true
+    cleanup: immediate
+
+  # Integration test environment - includes databases
+  integration-test:
+    description: "Environment with real service dependencies"
+    resources:
+      cpu: 4
+      memory: 8GB
+      disk: 20GB
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432
+        health_check:
+          test: ["CMD-SHELL", "pg_isready -U test"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379
+        health_check:
+          test: ["CMD", "redis-cli", "ping"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+      
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: test
+          RABBITMQ_DEFAULT_PASS: test
+        ports:
+          - 5672
+          - 15672
+        health_check:
+          test: ["CMD", "rabbitmq-diagnostics", "ping"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+    
+    timeout: 30m
+    parallel: true
+    cleanup: on-success
+
+  # E2E test environment - full stack
+  e2e-test:
+    description: "Complete application stack for end-to-end testing"
+    resources:
+      cpu: 8
+      memory: 16GB
+      disk: 50GB
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: mcp_db
+          POSTGRES_USER: mcp_user
+          POSTGRES_PASSWORD: mcp_pass
+        volumes:
+          - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+        ports:
+          - 5432
+      
+      redis:
+        image: redis:7
+        command: redis-server --appendonly yes
+        ports:
+          - 6379
+      
+      rabbitmq:
+        image: rabbitmq:3-management
+        env:
+          RABBITMQ_DEFAULT_USER: mcp
+          RABBITMQ_DEFAULT_PASS: mcp
+        ports:
+          - 5672
+          - 15672
+      
+      elasticsearch:
+        image: elasticsearch:8.11.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        ports:
+          - 9200
+          - 9300
+      
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333
+          - 6334
+      
+      mcp-gateway:
+        build:
+          context: ./mcp-gateway
+          dockerfile: Dockerfile.test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          DATABASE_URL: postgresql://mcp_user:mcp_pass@postgres:5432/mcp_db
+          REDIS_URL: redis://redis:6379
+        depends_on:
+          - postgres
+          - redis
+        ports:
+          - 8080
+      
+      mcp-organization:
+        build:
+          context: ./mcp-organization
+          dockerfile: Dockerfile.test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          DATABASE_URL: postgresql://mcp_user:mcp_pass@postgres:5432/mcp_db
+        depends_on:
+          - postgres
+        ports:
+          - 8081
+      
+      mcp-controller:
+        build:
+          context: ./mcp-controller
+          dockerfile: Dockerfile.test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          DATABASE_URL: postgresql://mcp_user:mcp_pass@postgres:5432/mcp_db
+          RABBITMQ_URL: amqp://mcp:mcp@rabbitmq:5672
+        depends_on:
+          - postgres
+          - rabbitmq
+        ports:
+          - 8082
+      
+      debate-ui:
+        build:
+          context: ./debate-ui
+          dockerfile: Dockerfile.test
+        env:
+          REACT_APP_API_URL: http://mcp-gateway:8080
+        depends_on:
+          - mcp-gateway
+        ports:
+          - 3000
+    
+    initialization:
+      - name: "Wait for services"
+        script: ./scripts/wait-for-services.sh
+      - name: "Load test data"
+        script: ./scripts/load-test-data.sh
+    
+    timeout: 45m
+    parallel: false
+    cleanup: always
+
+  # Performance test environment
+  performance-test:
+    description: "High-resource environment for performance testing"
+    resources:
+      cpu: 16
+      memory: 32GB
+      disk: 100GB
+    extends: e2e-test
+    services:
+      locust:
+        image: locustio/locust
+        command: -f /mnt/locust/locustfile.py --headless
+        volumes:
+          - ./performance-tests:/mnt/locust
+        env:
+          TARGET_HOST: http://mcp-gateway:8080
+        ports:
+          - 8089
+      
+      grafana:
+        image: grafana/grafana:latest
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: admin
+        ports:
+          - 3001
+        volumes:
+          - ./monitoring/grafana:/etc/grafana/provisioning
+      
+      prometheus:
+        image: prom/prometheus:latest
+        command:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+        volumes:
+          - ./monitoring/prometheus:/etc/prometheus
+        ports:
+          - 9090
+    
+    timeout: 60m
+    parallel: false
+    cleanup: always
+
+  # Security test environment
+  security-test:
+    description: "Isolated environment for security testing"
+    resources:
+      cpu: 8
+      memory: 16GB
+      disk: 50GB
+    extends: e2e-test
+    network:
+      isolated: true
+      ingress_rules:
+        - from: security-scanner
+          to: all
+          ports: all
+      egress_rules:
+        - from: all
+          to: none
+    services:
+      zap-proxy:
+        image: owasp/zap2docker-stable
+        command: zap.sh -daemon -host 0.0.0.0 -port 8090
+        ports:
+          - 8090
+      
+      nuclei:
+        image: projectdiscovery/nuclei:latest
+        volumes:
+          - ./security-tests/nuclei-templates:/templates
+    
+    timeout: 60m
+    parallel: false
+    cleanup: always
+
+# Environment templates for reuse
+templates:
+  base-services:
+    postgres:
+      image: postgres:15-alpine
+      env:
+        POSTGRES_DB: $DB_NAME
+        POSTGRES_USER: $DB_USER
+        POSTGRES_PASSWORD: $DB_PASS
+    
+    redis:
+      image: redis:7-alpine
+      command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+# Resource profiles
+profiles:
+  minimal:
+    cpu: 1
+    memory: 2GB
+    disk: 5GB
+  
+  standard:
+    cpu: 4
+    memory: 8GB
+    disk: 20GB
+  
+  high-performance:
+    cpu: 16
+    memory: 32GB
+    disk: 100GB

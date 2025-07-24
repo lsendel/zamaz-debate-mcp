@@ -1,0 +1,128 @@
+name: 'Test Data Manager'
+description: 'Manage test data snapshots, fixtures, and generation'
+author: 'MCP Team'
+
+inputs:
+  action:
+    description: 'Action to perform: generate, snapshot, restore, clean'
+    required: true
+  data-type:
+    description: 'Type of test data: unit, integration, e2e, performance'
+    required: false
+    default: 'integration'
+  service:
+    description: 'Service to generate data for'
+    required: false
+    default: 'all'
+  size:
+    description: 'Data size: small, medium, large, xlarge'
+    required: false
+    default: 'medium'
+  snapshot-name:
+    description: 'Name for snapshot (for snapshot/restore actions)'
+    required: false
+    default: 'snapshot-${{ github.sha }}'
+  seed:
+    description: 'Random seed for deterministic data generation'
+    required: false
+    default: '42'
+
+outputs:
+  data-location:
+    description: 'Location of generated/restored data'
+    value: ${{ steps.execute.outputs.location }}
+  record-count:
+    description: 'Number of records generated/restored'
+    value: ${{ steps.execute.outputs.count }}
+  snapshot-id:
+    description: 'ID of created snapshot'
+    value: ${{ steps.execute.outputs.snapshot-id }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup test data manager
+      shell: bash
+      run: |
+        echo "📊 Test Data Manager"
+        echo "Action: ${{ inputs.action }}"
+        echo "Data Type: ${{ inputs.data-type }}"
+        echo "Service: ${{ inputs.service }}"
+        echo "Size: ${{ inputs.size }}"
+        
+        # Install dependencies
+        npm install -g faker chance uuid
+        pip install faker pandas sqlalchemy
+
+    - name: Execute data action
+      id: execute
+      shell: bash
+      run: |
+        case "${{ inputs.action }}" in
+          "generate")
+            echo "🎲 Generating test data..."
+            python ${{ github.action_path }}/generate-data.py \
+              --type "${{ inputs.data-type }}" \
+              --service "${{ inputs.service }}" \
+              --size "${{ inputs.size }}" \
+              --seed "${{ inputs.seed }}" \
+              --output test-data
+            ;;
+          
+          "snapshot")
+            echo "📸 Creating data snapshot..."
+            ${{ github.action_path }}/create-snapshot.sh \
+              --name "${{ inputs.snapshot-name }}" \
+              --type "${{ inputs.data-type }}" \
+              --service "${{ inputs.service }}"
+            ;;
+          
+          "restore")
+            echo "🔄 Restoring data snapshot..."
+            ${{ github.action_path }}/restore-snapshot.sh \
+              --name "${{ inputs.snapshot-name }}" \
+              --type "${{ inputs.data-type }}" \
+              --service "${{ inputs.service }}"
+            ;;
+          
+          "clean")
+            echo "🧹 Cleaning test data..."
+            ${{ github.action_path }}/clean-data.sh \
+              --type "${{ inputs.data-type }}" \
+              --service "${{ inputs.service }}"
+            ;;
+          
+          *)
+            echo "❌ Unknown action: ${{ inputs.action }}"
+            exit 1
+            ;;
+        esac
+
+    - name: Generate data report
+      if: inputs.action == 'generate'
+      shell: bash
+      run: |
+        cat > test-data-report.md << EOF
+        # Test Data Generation Report
+        
+        **Type:** ${{ inputs.data-type }}
+        **Service:** ${{ inputs.service }}
+        **Size:** ${{ inputs.size }}
+        **Seed:** ${{ inputs.seed }}
+        
+        ## Statistics
+        $(cat test-data/statistics.json | jq .)
+        
+        ## Sample Data
+        $(head -20 test-data/sample.json | jq .)
+        EOF
+
+    - name: Upload test data artifacts
+      if: inputs.action == 'generate' || inputs.action == 'snapshot'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-data-${{ inputs.data-type }}-${{ github.run_id }}
+        path: |
+          test-data/
+          test-data-report.md
+          snapshot-metadata.json

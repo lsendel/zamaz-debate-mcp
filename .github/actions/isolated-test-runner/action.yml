@@ -1,0 +1,164 @@
+name: 'Isolated Test Runner'
+description: 'Run tests in isolated environments with proper cleanup and parallel execution'
+author: 'MCP Team'
+
+inputs:
+  test-suite:
+    description: 'Test suite to run (e.g., unit, integration, e2e)'
+    required: true
+  service:
+    description: 'Service to test (e.g., mcp-gateway, mcp-organization)'
+    required: true
+  isolation-level:
+    description: 'Isolation level: process, container, or vm'
+    required: false
+    default: 'container'
+  parallel-jobs:
+    description: 'Number of parallel test jobs'
+    required: false
+    default: '4'
+  test-timeout:
+    description: 'Maximum time for tests in minutes'
+    required: false
+    default: '30'
+  database-isolation:
+    description: 'Create isolated database for tests'
+    required: false
+    default: 'true'
+  cleanup-on-failure:
+    description: 'Clean up resources even on failure'
+    required: false
+    default: 'true'
+
+outputs:
+  test-results:
+    description: 'Path to test results'
+    value: ${{ steps.execute-tests.outputs.results }}
+  execution-time:
+    description: 'Total execution time in seconds'
+    value: ${{ steps.execute-tests.outputs.duration }}
+  parallel-efficiency:
+    description: 'Efficiency of parallel execution (0-100%)'
+    value: ${{ steps.analyze.outputs.efficiency }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup test environment
+      id: setup-env
+      shell: bash
+      run: |
+        echo "🔧 Setting up isolated test environment..."
+        echo "Service: ${{ inputs.service }}"
+        echo "Test Suite: ${{ inputs.test-suite }}"
+        echo "Isolation Level: ${{ inputs.isolation-level }}"
+        echo "Parallel Jobs: ${{ inputs.parallel-jobs }}"
+        
+        # Generate unique identifiers
+        TEST_RUN_ID="test-$(date +%s)-$RANDOM"
+        echo "test-run-id=$TEST_RUN_ID" >> $GITHUB_OUTPUT
+        
+        # Set up workspace
+        mkdir -p test-workspace/$TEST_RUN_ID
+        echo "workspace=test-workspace/$TEST_RUN_ID" >> $GITHUB_OUTPUT
+
+    - name: Provision isolated resources
+      id: provision
+      shell: bash
+      run: |
+        if [[ "${{ inputs.database-isolation }}" == "true" ]]; then
+          # Run provisioning script
+          ${{ github.action_path }}/scripts/provision-resources.sh \
+            --run-id "${{ steps.setup-env.outputs.test-run-id }}" \
+            --service "${{ inputs.service }}" \
+            --isolation "${{ inputs.isolation-level }}"
+        fi
+
+    - name: Split tests for parallel execution
+      id: split-tests
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/scripts/split-tests.js \
+          --service "${{ inputs.service }}" \
+          --suite "${{ inputs.test-suite }}" \
+          --workers "${{ inputs.parallel-jobs }}" \
+          --output "${{ steps.setup-env.outputs.workspace }}/test-splits.json"
+        
+        # Output test groups
+        echo "test-groups=${{ steps.setup-env.outputs.workspace }}/test-splits.json" >> $GITHUB_OUTPUT
+
+    - name: Execute tests in parallel
+      id: execute-tests
+      shell: bash
+      run: |
+        START_TIME=$(date +%s)
+        
+        # Run parallel test executor
+        node ${{ github.action_path }}/scripts/parallel-executor.js \
+          --groups "${{ steps.split-tests.outputs.test-groups }}" \
+          --service "${{ inputs.service }}" \
+          --suite "${{ inputs.test-suite }}" \
+          --isolation "${{ inputs.isolation-level }}" \
+          --timeout "${{ inputs.test-timeout }}" \
+          --workspace "${{ steps.setup-env.outputs.workspace }}"
+        
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        
+        echo "duration=$DURATION" >> $GITHUB_OUTPUT
+        echo "results=${{ steps.setup-env.outputs.workspace }}/test-results" >> $GITHUB_OUTPUT
+
+    - name: Merge parallel results
+      id: merge-results
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/scripts/merge-results.js \
+          --workspace "${{ steps.setup-env.outputs.workspace }}" \
+          --output "${{ steps.setup-env.outputs.workspace }}/merged-results.xml"
+
+    - name: Analyze parallel efficiency
+      id: analyze
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/scripts/analyze-efficiency.js \
+          --workspace "${{ steps.setup-env.outputs.workspace }}" \
+          --duration "${{ steps.execute-tests.outputs.duration }}" \
+          --workers "${{ inputs.parallel-jobs }}"
+
+    - name: Generate isolation report
+      shell: bash
+      run: |
+        cat > "${{ steps.setup-env.outputs.workspace }}/isolation-report.md" << EOF
+        # Test Isolation Report
+        
+        **Run ID:** ${{ steps.setup-env.outputs.test-run-id }}
+        **Service:** ${{ inputs.service }}
+        **Test Suite:** ${{ inputs.test-suite }}
+        
+        ## Execution Summary
+        - **Total Duration:** ${{ steps.execute-tests.outputs.duration }}s
+        - **Parallel Workers:** ${{ inputs.parallel-jobs }}
+        - **Isolation Level:** ${{ inputs.isolation-level }}
+        - **Efficiency:** ${{ steps.analyze.outputs.efficiency }}%
+        
+        ## Resource Usage
+        $(cat "${{ steps.setup-env.outputs.workspace }}/resource-usage.json" | jq -r .)
+        EOF
+
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: isolated-test-results-${{ inputs.service }}-${{ inputs.test-suite }}
+        path: |
+          ${{ steps.setup-env.outputs.workspace }}/merged-results.xml
+          ${{ steps.setup-env.outputs.workspace }}/isolation-report.md
+          ${{ steps.setup-env.outputs.workspace }}/parallel-execution.log
+
+    - name: Cleanup resources
+      if: always() && inputs.cleanup-on-failure == 'true'
+      shell: bash
+      run: |
+        echo "🧹 Cleaning up test resources..."
+        ${{ github.action_path }}/scripts/cleanup-resources.sh \
+          --run-id "${{ steps.setup-env.outputs.test-run-id }}" \
+          --force

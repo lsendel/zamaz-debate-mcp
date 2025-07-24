@@ -1,0 +1,125 @@
+name: 'Performance Benchmark'
+description: 'Run performance benchmarks and detect regressions'
+author: 'MCP Team'
+
+inputs:
+  benchmark-suite:
+    description: 'Benchmark suite to run'
+    required: true
+    default: 'all'
+  comparison-branch:
+    description: 'Branch to compare against'
+    required: false
+    default: 'main'
+  threshold:
+    description: 'Regression threshold percentage'
+    required: false
+    default: '10'
+  output-format:
+    description: 'Output format: json, html, markdown'
+    required: false
+    default: 'json'
+  save-results:
+    description: 'Save results to benchmark history'
+    required: false
+    default: 'true'
+
+outputs:
+  results-file:
+    description: 'Path to benchmark results file'
+    value: ${{ steps.benchmark.outputs.results }}
+  regression-detected:
+    description: 'Whether performance regression was detected'
+    value: ${{ steps.analyze.outputs.regression }}
+  summary:
+    description: 'Performance summary'
+    value: ${{ steps.analyze.outputs.summary }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup benchmark environment
+      shell: bash
+      run: |
+        echo "⚡ Performance Benchmark Runner"
+        echo "Suite: ${{ inputs.benchmark-suite }}"
+        echo "Comparison: ${{ inputs.comparison-branch }}"
+        echo "Threshold: ${{ inputs.threshold }}%"
+        
+        # Install benchmark tools
+        npm install -g autocannon clinic
+        pip install locust pytest-benchmark
+
+    - name: Checkout comparison branch
+      if: inputs.comparison-branch != ''
+      shell: bash
+      run: |
+        git fetch origin ${{ inputs.comparison-branch }}
+        git checkout -b benchmark-base origin/${{ inputs.comparison-branch }}
+        
+        # Save baseline benchmark results
+        ./scripts/run-benchmarks.sh --suite ${{ inputs.benchmark-suite }} --output baseline.json
+
+    - name: Run benchmarks
+      id: benchmark
+      shell: bash
+      run: |
+        # Switch back to current branch
+        git checkout -
+        
+        # Run benchmarks
+        node ${{ github.action_path }}/run-benchmarks.js \
+          --suite "${{ inputs.benchmark-suite }}" \
+          --output "benchmark-results.json"
+        
+        echo "results=benchmark-results.json" >> $GITHUB_OUTPUT
+
+    - name: Analyze results
+      id: analyze
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/analyze-benchmarks.js \
+          --current "benchmark-results.json" \
+          --baseline "baseline.json" \
+          --threshold "${{ inputs.threshold }}" \
+          --format "${{ inputs.output-format }}"
+
+    - name: Generate report
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/generate-report.js \
+          --results "benchmark-results.json" \
+          --baseline "baseline.json" \
+          --format "${{ inputs.output-format }}" \
+          --output "benchmark-report.${{ inputs.output-format }}"
+
+    - name: Save to history
+      if: inputs.save-results == 'true' && github.ref == 'refs/heads/main'
+      shell: bash
+      run: |
+        mkdir -p .benchmark-history
+        cp benchmark-results.json ".benchmark-history/$(date +%Y%m%d-%H%M%S)-${{ github.sha }}.json"
+
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('benchmark-report.markdown', 'utf8');
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: report
+          });
+
+    - name: Upload benchmark artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ github.run_id }}
+        path: |
+          benchmark-results.json
+          benchmark-report.*
+          baseline.json

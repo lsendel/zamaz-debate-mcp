@@ -1,0 +1,218 @@
+name: 'Enhanced Test Reporter'
+description: 'Comprehensive test reporting with error analysis and actionable insights'
+author: 'MCP Team'
+
+inputs:
+  test-results:
+    description: 'Path to test result files (supports wildcards)'
+    required: true
+  name:
+    description: 'Name of the test report'
+    required: true
+  reporter:
+    description: 'Format of test results (jest, junit, etc.)'
+    required: true
+    default: 'junit'
+  fail-on-error:
+    description: 'Fail the action if tests failed'
+    required: false
+    default: 'true'
+  create-issue-on-failure:
+    description: 'Create GitHub issue for test failures'
+    required: false
+    default: 'false'
+  assignees:
+    description: 'Comma-separated list of assignees for issues'
+    required: false
+    default: ''
+
+outputs:
+  total-tests:
+    description: 'Total number of tests'
+    value: ${{ steps.analyze.outputs.total }}
+  passed-tests:
+    description: 'Number of passed tests'
+    value: ${{ steps.analyze.outputs.passed }}
+  failed-tests:
+    description: 'Number of failed tests'
+    value: ${{ steps.analyze.outputs.failed }}
+  skipped-tests:
+    description: 'Number of skipped tests'
+    value: ${{ steps.analyze.outputs.skipped }}
+  test-report-url:
+    description: 'URL to the test report'
+    value: ${{ steps.report.outputs.url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+      shell: bash
+
+    - name: Install dependencies
+      run: |
+        npm install -g junit-viewer jest-junit xmldom xpath
+      shell: bash
+
+    - name: Analyze test results
+      id: analyze
+      run: |
+        node ${{ github.action_path }}/analyze-results.js \
+          --results "${{ inputs.test-results }}" \
+          --format "${{ inputs.reporter }}"
+      shell: bash
+
+    - name: Generate detailed report
+      id: report
+      run: |
+        node ${{ github.action_path }}/generate-report.js \
+          --results "${{ inputs.test-results }}" \
+          --name "${{ inputs.name }}" \
+          --format "${{ inputs.reporter }}"
+      shell: bash
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ inputs.name }}
+        path: |
+          test-report.html
+          test-summary.json
+          error-analysis.json
+
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = JSON.parse(fs.readFileSync('test-summary.json', 'utf8'));
+          const errorAnalysis = JSON.parse(fs.readFileSync('error-analysis.json', 'utf8'));
+          
+          let comment = `## 🧪 Test Report: ${summary.name}\n\n`;
+          comment += `| Status | Count | Percentage |\n`;
+          comment += `|--------|-------|------------|\n`;
+          comment += `| ✅ Passed | ${summary.passed} | ${summary.passRate}% |\n`;
+          comment += `| ❌ Failed | ${summary.failed} | ${summary.failRate}% |\n`;
+          comment += `| ⏭️ Skipped | ${summary.skipped} | ${summary.skipRate}% |\n`;
+          comment += `| **Total** | **${summary.total}** | **100%** |\n\n`;
+          
+          if (summary.failed > 0) {
+            comment += `### ❌ Failed Tests\n\n`;
+            errorAnalysis.failures.slice(0, 5).forEach(failure => {
+              comment += `<details>\n<summary><b>${failure.name}</b></summary>\n\n`;
+              comment += `**File:** \`${failure.file}\`\n`;
+              comment += `**Error:** ${failure.error}\n`;
+              if (failure.stackTrace) {
+                comment += `\n\`\`\`\n${failure.stackTrace.slice(0, 500)}...\n\`\`\`\n`;
+              }
+              comment += `</details>\n\n`;
+            });
+            
+            if (errorAnalysis.failures.length > 5) {
+              comment += `*... and ${errorAnalysis.failures.length - 5} more failures*\n\n`;
+            }
+            
+            // Add error patterns analysis
+            if (errorAnalysis.patterns && errorAnalysis.patterns.length > 0) {
+              comment += `### 📊 Error Patterns\n\n`;
+              errorAnalysis.patterns.forEach(pattern => {
+                comment += `- **${pattern.type}**: ${pattern.count} occurrences\n`;
+                comment += `  - ${pattern.description}\n`;
+              });
+            }
+          }
+          
+          // Find and update or create comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('🧪 Test Report:')
+          );
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: comment
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+          }
+
+    - name: Create issue for failures
+      if: inputs.create-issue-on-failure == 'true' && steps.analyze.outputs.failed > 0
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const errorAnalysis = JSON.parse(fs.readFileSync('error-analysis.json', 'utf8'));
+          
+          const title = `🚨 Test Failures in ${errorAnalysis.name} - ${errorAnalysis.failures.length} tests failed`;
+          
+          let body = `## Test Failure Report\n\n`;
+          body += `**Workflow:** ${context.workflow}\n`;
+          body += `**Run:** [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n`;
+          body += `**Commit:** ${context.sha}\n`;
+          body += `**Branch:** ${context.ref}\n\n`;
+          
+          body += `### Summary\n`;
+          body += `- Total Tests: ${errorAnalysis.total}\n`;
+          body += `- Failed: ${errorAnalysis.failed}\n`;
+          body += `- Pass Rate: ${errorAnalysis.passRate}%\n\n`;
+          
+          body += `### Failed Tests\n\n`;
+          errorAnalysis.failures.forEach((failure, index) => {
+            if (index < 10) {
+              body += `#### ${index + 1}. ${failure.name}\n`;
+              body += `- **File:** \`${failure.file}\`\n`;
+              body += `- **Error:** ${failure.error}\n`;
+              body += `- **Duration:** ${failure.duration}ms\n\n`;
+            }
+          });
+          
+          if (errorAnalysis.failures.length > 10) {
+            body += `*... and ${errorAnalysis.failures.length - 10} more failures*\n\n`;
+          }
+          
+          // Add labels
+          const labels = ['test-failure', 'automated'];
+          if (errorAnalysis.patterns) {
+            errorAnalysis.patterns.forEach(pattern => {
+              if (pattern.type === 'timeout') labels.push('performance');
+              if (pattern.type === 'assertion') labels.push('logic-error');
+              if (pattern.type === 'network') labels.push('infrastructure');
+            });
+          }
+          
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            body: body,
+            labels: labels,
+            assignees: ${{ inputs.assignees ? `'${inputs.assignees}'.split(',')` : '[]' }}
+          });
+
+    - name: Fail if tests failed
+      if: inputs.fail-on-error == 'true' && steps.analyze.outputs.failed > 0
+      run: |
+        echo "❌ ${FAILED_TESTS} tests failed!"
+        exit 1
+      shell: bash
+      env:
+        FAILED_TESTS: ${{ steps.analyze.outputs.failed }}

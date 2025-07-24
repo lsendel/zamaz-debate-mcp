@@ -1,0 +1,212 @@
+name: Optimized CI Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      force-all-tests:
+        description: 'Run all tests regardless of changes'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # Detect what tests need to run
+  detect-changes:
+    name: 🔍 Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      test-matrix: ${{ steps.detect.outputs.test-matrix }}
+      skip-tests: ${{ steps.detect.outputs.skip-tests }}
+      affected-services: ${{ steps.detect.outputs.affected-services }}
+    steps:
+      - name: Detect tests to run
+        id: detect
+        uses: ./.github/actions/incremental-test-detector
+        with:
+          base-ref: ${{ github.event.pull_request.base.sha || github.event.before }}
+          head-ref: ${{ github.sha }}
+          include-dependencies: true
+          min-test-threshold: '20'
+
+      - name: Override if force-all-tests
+        if: inputs.force-all-tests
+        run: |
+          echo "test-matrix={\"include\":[{\"service\":\"mcp-gateway\",\"suite\":\"unit\"},{\"service\":\"mcp-gateway\",\"suite\":\"integration\"},{\"service\":\"mcp-organization\",\"suite\":\"unit\"},{\"service\":\"mcp-organization\",\"suite\":\"integration\"},{\"service\":\"mcp-controller\",\"suite\":\"unit\"},{\"service\":\"mcp-controller\",\"suite\":\"integration\"},{\"service\":\"debate-ui\",\"suite\":\"unit\"},{\"service\":\"debate-ui\",\"suite\":\"integration\"}]}" >> $GITHUB_OUTPUT
+          echo "skip-tests=false" >> $GITHUB_OUTPUT
+
+  # Run tests in parallel with isolation
+  parallel-tests:
+    name: 🧪 Test ${{ matrix.service }} - ${{ matrix.suite }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.skip-tests != 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.test-matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run isolated tests
+        uses: ./.github/actions/isolated-test-runner
+        with:
+          service: ${{ matrix.service }}
+          test-suite: ${{ matrix.suite }}
+          isolation-level: container
+          parallel-jobs: '4'
+          database-isolation: true
+
+      - name: Generate test report
+        if: always()
+        uses: ./.github/actions/test-reporter
+        with:
+          name: ${{ matrix.service }} - ${{ matrix.suite }}
+          test-results: test-workspace/*/merged-results.xml
+          reporter: junit
+          create-issue-on-failure: ${{ github.ref == 'refs/heads/main' }}
+          assignees: ${{ matrix.service == 'debate-ui' && 'frontend-team' || 'backend-team' }}
+
+  # Security tests (only on certain conditions)
+  security-scan:
+    name: 🔒 Security Scan
+    needs: detect-changes
+    if: |
+      contains(needs.detect-changes.outputs.affected-services, 'mcp-') ||
+      github.event_name == 'push' ||
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run SAST scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+
+      - name: Run dependency check
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=8 \
+            -DskipTestScope=true
+
+      - name: Container scan
+        if: contains(needs.detect-changes.outputs.affected-services, 'mcp-')
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+  # Performance benchmarks (only on main branch)
+  performance-check:
+    name: ⚡ Performance Check
+    needs: [parallel-tests]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run performance benchmarks
+        run: |
+          npm install -g @mcp/performance-suite
+          mcp-perf-test \
+            --config .performance/benchmark-config.json \
+            --compare-with origin/main \
+            --threshold 10
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: performance-results.json
+
+  # Test result aggregation
+  test-summary:
+    name: 📊 Test Summary
+    needs: [parallel-tests, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: all-results/
+
+      - name: Generate consolidated report
+        run: |
+          cat > test-summary.md << EOF
+          # Test Execution Summary
+          
+          **Workflow:** ${{ github.workflow }}
+          **Run:** #${{ github.run_number }}
+          **Commit:** ${{ github.sha }}
+          
+          ## Results
+          - Parallel test jobs: ${{ needs.parallel-tests.outputs.total-jobs || '0' }}
+          - Security scan: ${{ needs.security-scan.result }}
+          - Total duration: ${{ needs.parallel-tests.outputs.duration || 'N/A' }}
+          - Parallel efficiency: ${{ needs.parallel-tests.outputs.efficiency || 'N/A' }}%
+          
+          ## Affected Services
+          ${{ needs.detect-changes.outputs.affected-services }}
+          EOF
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('test-summary.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summary
+            });
+
+  # Quality gates
+  quality-gate:
+    name: 🚦 Quality Gate
+    needs: [parallel-tests, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check quality criteria
+        run: |
+          echo "Checking quality gates..."
+          
+          # Check test results
+          if [[ "${{ needs.parallel-tests.result }}" != "success" ]]; then
+            echo "❌ Tests failed"
+            exit 1
+          fi
+          
+          # Check security scan
+          if [[ "${{ needs.security-scan.result }}" == "failure" ]]; then
+            echo "❌ Security scan failed"
+            exit 1
+          fi
+          
+          echo "✅ All quality gates passed"
+
+      - name: Auto-merge if approved
+        if: |
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false &&
+          contains(github.event.pull_request.labels.*.name, 'ready-to-merge')
+        uses: pascalgn/merge-action@v0.15.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_METHOD: squash
+          MERGE_COMMIT_MESSAGE: pull-request-title

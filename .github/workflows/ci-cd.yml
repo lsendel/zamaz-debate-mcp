@@ -89,12 +89,14 @@ jobs:
           fi
 
       - name: Generate test report
-        uses: dorny/test-reporter@v1
+        uses: ./.github/actions/test-reporter
         if: success() || failure()
         with:
           name: Maven Tests (${{ matrix.service }})
-          path: ${{ matrix.service }}/target/surefire-reports/*.xml
-          reporter: java-junit
+          test-results: ${{ matrix.service }}/target/surefire-reports/*.xml
+          reporter: junit
+          create-issue-on-failure: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          assignees: backend-team
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

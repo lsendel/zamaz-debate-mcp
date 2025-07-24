@@ -1,0 +1,115 @@
+name: 'Incremental Test Detector'
+description: 'Detect which tests need to run based on code changes'
+author: 'MCP Team'
+
+inputs:
+  base-ref:
+    description: 'Base reference (branch/commit) to compare against'
+    required: true
+  head-ref:
+    description: 'Head reference (branch/commit) with changes'
+    required: true
+  test-mapping:
+    description: 'Path to test mapping configuration'
+    required: false
+    default: '.github/test-mapping.yml'
+  include-dependencies:
+    description: 'Include tests for dependent modules'
+    required: false
+    default: 'true'
+  min-test-threshold:
+    description: 'Minimum percentage of tests to run (safety net)'
+    required: false
+    default: '10'
+
+outputs:
+  test-matrix:
+    description: 'JSON matrix of tests to run'
+    value: ${{ steps.detect.outputs.matrix }}
+  test-count:
+    description: 'Number of test suites to run'
+    value: ${{ steps.detect.outputs.count }}
+  skip-tests:
+    description: 'Whether to skip all tests (no relevant changes)'
+    value: ${{ steps.detect.outputs.skip }}
+  affected-services:
+    description: 'List of affected services'
+    value: ${{ steps.detect.outputs.services }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+      shell: bash
+
+    - name: Analyze changes
+      id: changes
+      shell: bash
+      run: |
+        echo "📍 Analyzing changes between ${{ inputs.base-ref }} and ${{ inputs.head-ref }}"
+        
+        # Get list of changed files
+        CHANGED_FILES=$(git diff --name-only ${{ inputs.base-ref }}...${{ inputs.head-ref }} | grep -v '^\.github/' || true)
+        
+        echo "Changed files:"
+        echo "$CHANGED_FILES" | head -20
+        
+        # Save to file for processing
+        echo "$CHANGED_FILES" > changed-files.txt
+        echo "file-count=$(echo "$CHANGED_FILES" | wc -l)" >> $GITHUB_OUTPUT
+
+    - name: Detect affected tests
+      id: detect
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/detect-tests.js \
+          --changed-files changed-files.txt \
+          --mapping "${{ inputs.test-mapping }}" \
+          --include-deps "${{ inputs.include-dependencies }}" \
+          --min-threshold "${{ inputs.min-test-threshold }}"
+
+    - name: Generate test matrix
+      shell: bash
+      run: |
+        # Read detection results
+        MATRIX=$(cat test-matrix.json)
+        SERVICES=$(cat affected-services.json | jq -r '.[]' | tr '\n' ',' | sed 's/,$//')
+        
+        echo "📋 Test Detection Results:"
+        echo "  Affected services: $SERVICES"
+        echo "  Test suites to run: $(cat test-matrix.json | jq '.include | length')"
+        
+        # Create summary
+        cat > test-detection-summary.md << EOF
+        # Incremental Test Detection Report
+        
+        **Base:** ${{ inputs.base-ref }}
+        **Head:** ${{ inputs.head-ref }}
+        **Changed Files:** ${{ steps.changes.outputs.file-count }}
+        
+        ## Affected Services
+        $SERVICES
+        
+        ## Test Matrix
+        \`\`\`json
+        $MATRIX
+        \`\`\`
+        
+        ## Detection Logic
+        - Direct test mapping: ✅
+        - Dependency analysis: ${{ inputs.include-dependencies == 'true' && '✅' || '❌' }}
+        - Minimum threshold: ${{ inputs.min-test-threshold }}%
+        EOF
+
+    - name: Upload detection report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-detection-report
+        path: |
+          test-detection-summary.md
+          test-matrix.json
+          affected-services.json
+          dependency-graph.json

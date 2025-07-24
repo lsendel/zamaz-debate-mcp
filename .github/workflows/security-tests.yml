@@ -1,0 +1,306 @@
+name: Security Testing Suite
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      target-env:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - development
+      test-scope:
+        description: 'Scope of security tests'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - quick
+          - owasp-top10
+          - api-only
+
+env:
+  SECURITY_REPORT_DIR: security-reports
+
+jobs:
+  # SAST - Static Application Security Testing
+  sast-scan:
+    name: 🔍 Static Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/jwt
+            p/sql-injection
+            p/xss
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: java, javascript
+          queries: security-extended
+
+      - name: SonarQube Security Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.security.hotspots.review.priority=true
+
+  # Dependency Security Scanning
+  dependency-scan:
+    name: 🔒 Dependency Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency Check
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DsuppressionsFile=.security/dependency-check-suppressions.xml \
+            -Dformats=HTML,JSON,JUNIT
+
+      - name: NPM Audit
+        working-directory: debate-ui
+        run: |
+          npm audit --production --audit-level=moderate
+          npm run audit:fix || true
+
+      - name: Trivy Dependency Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload dependency scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Container Security Scanning
+  container-scan:
+    name: 🐳 Container Security Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [mcp-gateway, mcp-organization, mcp-controller, debate-ui]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: |
+          docker build -t ${{ matrix.service }}:security-test ${{ matrix.service }}/
+
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ matrix.service }}:security-test'
+          format: 'json'
+          output: 'container-scan-${{ matrix.service }}.json'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Run Grype scan
+        uses: anchore/scan-action@v3
+        with:
+          image: '${{ matrix.service }}:security-test'
+          fail-build: true
+          severity-cutoff: high
+
+  # DAST - Dynamic Application Security Testing
+  dast-scan:
+    name: 🌐 Dynamic Security Testing
+    runs-on: ubuntu-latest
+    needs: [sast-scan, dependency-scan]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start test environment
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          ./scripts/wait-for-services.sh
+
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.security/zap-rules.tsv'
+          cmd_options: '-a -j -l WARN'
+
+      - name: Run Nuclei security scanner
+        run: |
+          docker run --rm -v $(pwd):/app projectdiscovery/nuclei:latest \
+            -u http://localhost:8080 \
+            -t cves,vulnerabilities,exposures \
+            -severity critical,high,medium \
+            -o /app/nuclei-report.json \
+            -json
+
+      - name: API Security Testing with OWASP API Security Top 10
+        run: |
+          npm install -g @stoplight/spectral-cli
+          spectral lint openapi.yaml --ruleset .security/api-security-rules.yaml
+
+  # Penetration Testing Suite
+  penetration-tests:
+    name: 🔨 Penetration Testing
+    runs-on: ubuntu-latest
+    needs: [dast-scan]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup penetration test environment
+        run: |
+          pip install -r .security/pentest-requirements.txt
+          npm install -g @mcp/security-test-suite
+
+      - name: SQL Injection Tests
+        run: |
+          python .security/tests/sql_injection_test.py \
+            --target http://localhost:8080 \
+            --report ${{ env.SECURITY_REPORT_DIR }}/sql-injection.json
+
+      - name: XSS Testing
+        run: |
+          python .security/tests/xss_test.py \
+            --target http://localhost:8080 \
+            --report ${{ env.SECURITY_REPORT_DIR }}/xss.json
+
+      - name: Authentication & Authorization Tests
+        run: |
+          node .security/tests/auth-tests.js \
+            --config .security/auth-test-config.json \
+            --report ${{ env.SECURITY_REPORT_DIR }}/auth.json
+
+      - name: API Security Tests
+        run: |
+          python .security/tests/api_security_test.py \
+            --openapi openapi.yaml \
+            --target http://localhost:8080 \
+            --report ${{ env.SECURITY_REPORT_DIR }}/api-security.json
+
+  # Security Compliance Checks
+  compliance-scan:
+    name: 📋 Security Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: CIS Benchmark Scan
+        run: |
+          docker run --rm -v $(pwd):/app \
+            cisecurity/cis-docker-benchmark:latest \
+            -b -l /app/cis-benchmark-report.json
+
+      - name: GDPR Compliance Check
+        run: |
+          python .security/compliance/gdpr_check.py \
+            --source . \
+            --report ${{ env.SECURITY_REPORT_DIR }}/gdpr-compliance.json
+
+      - name: OWASP ASVS Compliance
+        run: |
+          node .security/compliance/asvs-check.js \
+            --level 2 \
+            --report ${{ env.SECURITY_REPORT_DIR }}/asvs-compliance.json
+
+  # Security Report Generation
+  security-report:
+    name: 📊 Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [sast-scan, dependency-scan, container-scan, dast-scan, penetration-tests, compliance-scan]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ env.SECURITY_REPORT_DIR }}
+
+      - name: Generate consolidated report
+        run: |
+          python .security/scripts/generate-security-report.py \
+            --input-dir ${{ env.SECURITY_REPORT_DIR }} \
+            --output security-report.html \
+            --format html,json,markdown
+
+      - name: Calculate security score
+        id: security-score
+        run: |
+          SCORE=$(python .security/scripts/calculate-security-score.py \
+            --reports ${{ env.SECURITY_REPORT_DIR }})
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          
+          # Add badge to README
+          curl -s "https://img.shields.io/badge/security-${SCORE}%25-brightgreen" \
+            > badges/security-score.svg
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report-${{ github.run_number }}
+          path: |
+            security-report.html
+            security-report.json
+            security-report.md
+            ${{ env.SECURITY_REPORT_DIR }}/**
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security-report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: report
+            });
+
+      - name: Create security issues
+        if: steps.security-score.outputs.score < 80
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const report = require('./security-report.json');
+            
+            for (const vulnerability of report.criticalVulnerabilities) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔒 Security: ${vulnerability.title}`,
+                body: vulnerability.description,
+                labels: ['security', 'critical', vulnerability.type],
+                assignees: ['security-team']
+              });
+            }
