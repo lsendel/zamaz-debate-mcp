@@ -12,6 +12,7 @@ on:
 permissions:
   actions: read
   contents: read
+  issues: write
   security-events: write
 env:
   REGISTRY: ghcr.io
