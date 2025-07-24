@@ -71,7 +71,7 @@ jobs:
           fi
           
           # Create issue data for startup failure
-          ISSUE_DATA=$(cat <<EOF
+          ISSUE_DATA=$(cat <<"EOF"
           {
             "workflow": {
               "name": "$WORKFLOW_NAME",
@@ -116,7 +116,7 @@ jobs:
           
           # Generate issue content
           ISSUE_TITLE="$WORKFLOW_NAME workflow failed with startup error on $WORKFLOW_BRANCH"
-          ISSUE_BODY=$(cat <<EOF
+          ISSUE_BODY=$(cat <<"EOF"
           ## 🚨 Workflow Startup Failure Detected
 
           The **$WORKFLOW_NAME** workflow failed to start properly.
@@ -191,7 +191,7 @@ jobs:
             FAILURE_COUNT=$((FAILURE_COUNT + 2))  # +2 because we count the initial issue as #1
             
             # Add detailed comment about the new failure
-            COMMENT_BODY=$(cat <<EOF
+            COMMENT_BODY=$(cat <<"EOF"
             ## 🔄 Failure #$FAILURE_COUNT
 
             The **$WORKFLOW_NAME** workflow has failed again.
