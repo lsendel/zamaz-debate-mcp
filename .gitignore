@@ -52,7 +52,7 @@ buildNumber.properties
 
 # Node modules
 node_modules/
-package-lock.json
+# package-lock.json # Needed for GitHub Actions workflows
 
 # IDE files
 .idea/
