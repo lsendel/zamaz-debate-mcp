@@ -24,11 +24,12 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: package-lock.json
+        cache-dependency-path: debate-ui/package-lock.json
         
     - name: Install dependencies
+      working-directory: ./debate-ui
       run: |
-        npm install --workspace=debate-ui
+        npm ci
         
     - name: Validate React imports
       run: |
@@ -44,3 +45,23 @@ jobs:
       run: |
         cd debate-ui
         npm run type-check
+
+  # Automated Workflow Failure Handler
+  handle-react-validation-failure:
+    name: Handle React Validation Failure
+    if: always() && needs.validate-react-imports.result == 'failure'
+    needs: [validate-react-imports]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "React Import Validation"
+      severity: "medium"
+      assignees: "frontend-team,team-lead"
+      labels: "workflow-failure,frontend,react"
+      template: "frontend"
+      notify-slack: true
+      notify-email: false
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
