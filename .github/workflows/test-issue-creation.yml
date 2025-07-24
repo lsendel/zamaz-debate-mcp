@@ -1,0 +1,55 @@
+name: Test Issue Creation
+
+on:
+  workflow_dispatch:
+    inputs:
+      should-fail:
+        description: 'Should this workflow fail to test issue creation?'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-job:
+    name: Test Job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Intentional failure for testing
+        if: inputs.should-fail == 'true'
+        run: |
+          echo "🧪 Testing workflow failure and issue creation system..."
+          echo "This step will intentionally fail to test the issue creation mechanism."
+          echo "Expected outcome: A GitHub issue should be created automatically."
+          exit 1
+          
+      - name: Success step
+        if: inputs.should-fail == 'false'
+        run: |
+          echo "✅ Test workflow completed successfully"
+          echo "No issue should be created for successful workflows"
+
+  # Automated Workflow Failure Handler
+  handle-test-failure:
+    name: Handle Test Workflow Failure
+    if: always() && needs.test-job.result == 'failure'
+    needs: [test-job]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Test Issue Creation"
+      severity: "low"
+      assignees: "team-lead"
+      labels: "workflow-failure,test,issue-creation-test"
+      template: "test"
+      notify-slack: false
+      notify-email: false
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
