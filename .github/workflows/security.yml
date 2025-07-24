@@ -148,8 +148,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: debate-ui/package-lock.json
+          # cache: 'npm' # Disabled - cache issues
+          # cache-dependency-path: debate-ui/package-lock.json
 
       - name: Install dependencies
         working-directory: ./debate-ui

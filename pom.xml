@@ -85,7 +85,7 @@
         <module>mcp-common</module>
         <module>mcp-security</module>
         <module>mcp-auth-server</module>
-        <!-- <module>mcp-config-server</module> MISSING -->
+        <module>mcp-config-server</module>
         <module>mcp-organization</module>
         <module>mcp-debate-engine</module>
         <module>mcp-llm</module>
@@ -98,7 +98,7 @@
         <module>karate-api-tests</module>
         <module>load-tests</module>
         <module>mcp-sidecar</module>
-        <module>performance-tests/gatling</module>
+        <!-- <module>performance-tests/gatling</module> Does not exist -->
         <module>server</module>
         <module>workflow-editor</module>
         <!-- Legacy modules (to be phased out) -->

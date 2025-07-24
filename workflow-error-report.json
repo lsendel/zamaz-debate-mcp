@@ -1,0 +1,83 @@
+{
+  "timestamp": "2025-07-24T16:57:57.754Z",
+  "totalWorkflows": 36,
+  "failedWorkflows": [
+    "Continuous Integration",
+    "Enhanced Security Scanning",
+    "Example CI/CD Pipeline with Failure Handler",
+    "Optimized CI Pipeline",
+    "Incremental Linting",
+    "Intelligent CI/CD Pipeline",
+    "Qodana",
+    "Security Scanning",
+    "Shell Script Linting",
+    "Build Validation",
+    ".github/workflows/security-tests.yml"
+  ],
+  "errorPatterns": [
+    {
+      "workflow": "Continuous Integration",
+      "error": "Maven class # error",
+      "job": "🏗️ Java Build & Test"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "NPM cache error",
+      "job": "🎨 Frontend Build"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-debate-engine)"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-llm)"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-organization)"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-gateway)"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-common)"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-rag)"
+    },
+    {
+      "workflow": "Intelligent CI/CD Pipeline",
+      "error": "Maven class # error",
+      "job": "🔨 Intelligent Build (mcp-security)"
+    },
+    {
+      "workflow": "Security Scanning",
+      "error": "Maven class # error",
+      "job": "🔍 CodeQL Analysis (java)"
+    },
+    {
+      "workflow": "Security Scanning",
+      "error": "NPM cache error",
+      "job": "🌐 Frontend Security Scan"
+    },
+    {
+      "workflow": "Build Validation",
+      "error": "Maven class # error",
+      "job": "build-validation (21)"
+    }
+  ],
+  "recommendations": [
+    "Check Maven configuration and MAVEN_BATCH_MODE usage",
+    "Review npm cache configuration and package-lock.json paths"
+  ]
+}

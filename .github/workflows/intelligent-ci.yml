@@ -212,8 +212,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: debate-ui/package-lock.json
+          # cache: 'npm' # Disabled - causes issues with missing package-lock.json
+          # cache-dependency-path: debate-ui/package-lock.json
 
       - name: Advanced NPM Cache
         uses: actions/cache@v4
