@@ -15,10 +15,18 @@ INCLUDE_PATTERN=""
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
   key="$1"
-  case """$key""" in
+  case "$key" in
+    --commit-range=*)
+      COMMIT_RANGE="${key#*=}"
+      shift
+      ;;
     --commit-range)
       COMMIT_RANGE="$2"
       shift
+      shift
+      ;;
+    --cache-dir=*)
+      CACHE_DIR="${key#*=}"
       shift
       ;;
     --cache-dir)
@@ -38,6 +46,10 @@ while [[ "$#" -gt 0 ]]; do
       AUTO_FIX=true
       shift
       ;;
+    --include-pattern=*)
+      INCLUDE_PATTERN="${key#*=}"
+      shift
+      ;;
     --include-pattern)
       INCLUDE_PATTERN="$2"
       shift
@@ -51,11 +63,11 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Create cache directory if it doesn't exist
-mkdir -p """"$CACHE_DIR""""
+mkdir -p "$CACHE_DIR"
 
 # Function to log verbose messages
 log() {
-  if [ """"$VERBOSE"""" = true ]; then
+  if [ "$VERBOSE" = true ]; then
     echo "$@"
   fi
 }
@@ -65,13 +77,13 @@ get_changed_files() {
   local file_pattern=$1
   local commit_range=$2
 
-  if [ -z """"$commit_range"""" ]; then
+  if [ -z "$commit_range" ]; then
     # If no commit range is provided, use unstaged and staged changes
-    git diff --name-only --diff-filter=ACMRT HEAD -- """"$file_pattern""""
-    git diff --name-only --diff-filter=ACMRT --staged -- """"$file_pattern""""
+    git diff --name-only --diff-filter=ACMRT HEAD -- "$file_pattern"
+    git diff --name-only --diff-filter=ACMRT --staged -- "$file_pattern"
   else
     # If commit range is provided, use it
-    git diff --name-only --diff-filter=ACMRT """"$commit_range"""" -- """"$file_pattern""""
+    git diff --name-only --diff-filter=ACMRT "$commit_range" -- "$file_pattern"
   fi
 }
 
@@ -81,27 +93,27 @@ has_changed_since_last_lint() {
 
   # Use the cache manager if available
   if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; then
-    local result=$(node .linting/scripts/cache-manager.js check """"$file"""")
-    if [[ """"$result"""" == *"has changed: true"* ]]; then
+    local result=$(node .linting/scripts/cache-manager.js check "$file")
+    if [[ "$result" == *"has changed: true"* ]]; then
       return 0
     else
       return 1
     fi
   else
     # Fallback to simple hash-based caching
-    local cache_file=""""$CACHE_DIR"""/$(echo """"$file"""" | tr '/' '_').hash"
+    local cache_file="$CACHE_DIR/$(echo "$file" | tr '/' '_').hash"
 
     # Get current hash of the file
-    local current_hash=$(git hash-object """"$file"""" 2>/dev/null || echo "file_not_found")
+    local current_hash=$(git hash-object "$file" 2>/dev/null || echo "file_not_found")
 
     # If file doesn't exist, return false
-    if [ """"$current_hash"""" = "file_not_found" ]; then
+    if [ "$current_hash" = "file_not_found" ]; then
       return 1
     fi
 
     # If cache file doesn't exist or hash is different, file has changed
-    if [ ! -f """"$cache_file"""" ] || [ "$(cat """"$cache_file"""")" != """"$current_hash"""" ]; then
-      echo """"$current_hash"""" > """"$cache_file""""
+    if [ ! -f "$cache_file" ] || [ "$(cat "$cache_file")" != "$current_hash" ]; then
+      echo "$current_hash" > "$cache_file"
       return 0
     fi
 
@@ -115,7 +127,7 @@ update_cache() {
 
   # Use the cache manager if available
   if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; then
-    node .linting/scripts/cache-manager.js update """"$file""""
+    node .linting/scripts/cache-manager.js update "$file"
   fi
 }
 
@@ -147,11 +159,11 @@ run_java_linting() {
         <configuration>
           <includeResources>false</includeResources>
           <includeTestResources>false</includeTestResources>
-          <includes>" > """"$tmp_pom""""
+          <includes>" > "$tmp_pom"
 
   # Add each file to the includes
   for file in "${files[@]}"; do
-    echo "            <include>${file#*/}</include>" >> """"$tmp_pom""""
+    echo "            <include>${file#*/}</include>" >> "$tmp_pom"
   done
 
   echo "          </includes>
@@ -159,17 +171,17 @@ run_java_linting() {
       </plugin>
     </plugins>
   </build>
-</project>" >> """"$tmp_pom""""
+</project>" >> "$tmp_pom"
 
   # Run Maven with the temporary POM
-  mvn -f """"$tmp_pom"""" checkstyle:check spotbugs:check pmd:check
+  mvn -f "$tmp_pom" checkstyle:check spotbugs:check pmd:check
 
   # Clean up
-  rm """"$tmp_pom""""
+  rm "$tmp_pom"
 
   # Update cache for each file
   for file in "${files[@]}"; do
-    update_cache """"$file""""
+    update_cache "$file"
   done
 }
 
@@ -185,7 +197,7 @@ run_ts_linting() {
   log "Running TypeScript/React linting on ${#files[@]} files"
 
   # Run ESLint on the files
-  if [ """"$AUTO_FIX"""" = true ]; then
+  if [ "$AUTO_FIX" = true ]; then
     cd debate-ui && npx eslint --fix "${files[@]}" && npx prettier --write "${files[@]}"
   else
     cd debate-ui && npx eslint "${files[@]}" && npx prettier --check "${files[@]}"
@@ -193,7 +205,7 @@ run_ts_linting() {
 
   # Update cache for each file
   for file in "${files[@]}"; do
-    update_cache """"$file""""
+    update_cache "$file"
   done
 }
 
@@ -240,7 +252,7 @@ run_config_linting() {
   local json_files=($(echo "${files[@]}" | tr ' ' '\n' | grep -E '\.json$'))
   if [ "${#json_files[@]}" -gt 0 ]; then
     for file in "${json_files[@]}"; do
-      jsonlint -c .linting/config/json-schema.json """"$file""""
+      jsonlint -c .linting/config/json-schema.json "$file"
     done
   fi
 
@@ -248,13 +260,13 @@ run_config_linting() {
   local docker_files=($(echo "${files[@]}" | tr ' ' '\n' | grep -E 'Dockerfile'))
   if [ "${#docker_files[@]}" -gt 0 ]; then
     for file in "${docker_files[@]}"; do
-      hadolint -c .linting/config/dockerfile-rules.yml """"$file""""
+      hadolint -c .linting/config/dockerfile-rules.yml "$file"
     done
   fi
 
   # Update cache for each file
   for file in "${files[@]}"; do
-    update_cache """"$file""""
+    update_cache "$file"
   done
 }
 
@@ -277,7 +289,7 @@ run_md_linting() {
 
   # Update cache for each file
   for file in "${files[@]}"; do
-    update_cache """"$file""""
+    update_cache "$file"
   done
 }
 
@@ -287,56 +299,56 @@ if command -v node &> /dev/null && [ -f ".linting/scripts/cache-manager.js" ]; t
 fi
 
 # Main execution
-if [ """"$FORCE_ALL"""" = true ]; then
+if [ "$FORCE_ALL" = true ]; then
   log "Forcing full lint on all files"
   make lint-all
   exit $?
 fi
 
 # If include pattern is provided, use it
-if [ -n """"$INCLUDE_PATTERN"""" ]; then
-  log "Using include pattern: """$INCLUDE_PATTERN""""
-  files=$(find . -type f -path """"$INCLUDE_PATTERN"""" | sort -u)
+if [ -n "$INCLUDE_PATTERN" ]; then
+  log "Using include pattern: $INCLUDE_PATTERN"
+  files=$(find . -type f -path "$INCLUDE_PATTERN" | sort -u)
 
   # Filter files by type
-  java_files=$(echo """"$files"""" | grep -E '\.java$' || echo "")
-  ts_files=$(echo """"$files"""" | grep -E '\.(ts|tsx|js|jsx)$' || echo "")
-  config_files=$(echo """"$files"""" | grep -E '\.(yml|yaml|json)$|Dockerfile' || echo "")
-  md_files=$(echo """"$files"""" | grep -E '\.md$' || echo "")
+  java_files=$(echo "$files" | grep -E '\.java$' || echo "")
+  ts_files=$(echo "$files" | grep -E '\.(ts|tsx|js|jsx)$' || echo "")
+  config_files=$(echo "$files" | grep -E '\.(yml|yaml|json)$|Dockerfile' || echo "")
+  md_files=$(echo "$files" | grep -E '\.md$' || echo "")
 else
   # Get changed files by type
-  java_files=$(get_changed_files "*.java" """"$COMMIT_RANGE"""" | sort -u)
-  ts_files=$(get_changed_files "*.ts *.tsx *.js *.jsx" """"$COMMIT_RANGE"""" | grep -E '^debate-ui/' | sort -u)
-  config_files=$(get_changed_files "*.yml *.yaml *.json Dockerfile" """"$COMMIT_RANGE"""" | sort -u)
-  md_files=$(get_changed_files "*.md" """"$COMMIT_RANGE"""" | sort -u)
+  java_files=$(get_changed_files "*.java" "$COMMIT_RANGE" | sort -u)
+  ts_files=$(get_changed_files "*.ts *.tsx *.js *.jsx" "$COMMIT_RANGE" | grep -E '^debate-ui/' | sort -u)
+  config_files=$(get_changed_files "*.yml *.yaml *.json Dockerfile" "$COMMIT_RANGE" | sort -u)
+  md_files=$(get_changed_files "*.md" "$COMMIT_RANGE" | sort -u)
 fi
 
 # Filter files that have changed since last lint
 java_files_to_lint=()
-for file in """$java_files"""; do
-  if has_changed_since_last_lint """"$file""""; then
-    java_files_to_lint+=(""""$file"""")
+for file in $java_files; do
+  if has_changed_since_last_lint "$file"; then
+    java_files_to_lint+=("$file")
   fi
 done
 
 ts_files_to_lint=()
-for file in """$ts_files"""; do
-  if has_changed_since_last_lint """"$file""""; then
-    ts_files_to_lint+=(""""$file"""")
+for file in $ts_files; do
+  if has_changed_since_last_lint "$file"; then
+    ts_files_to_lint+=("$file")
   fi
 done
 
 config_files_to_lint=()
-for file in """$config_files"""; do
-  if has_changed_since_last_lint """"$file""""; then
-    config_files_to_lint+=(""""$file"""")
+for file in $config_files; do
+  if has_changed_since_last_lint "$file"; then
+    config_files_to_lint+=("$file")
   fi
 done
 
 md_files_to_lint=()
-for file in """$md_files"""; do
-  if has_changed_since_last_lint """"$file""""; then
-    md_files_to_lint+=(""""$file"""")
+for file in $md_files; do
+  if has_changed_since_last_lint "$file"; then
+    md_files_to_lint+=("$file")
   fi
 done
 

@@ -1,13 +1,13 @@
+#!/usr/bin/env node
 // TODO: Refactor to reduce cognitive complexity (SonarCloud S3776)
 // Consider breaking down complex functions into smaller, more focused functions
 
-#!/usr/bin/env node;
 /**
- * Linting Cache Manager;
- *;
- * This script manages the caching of linting results to improve performance;
- * of incremental linting. It stores file hashes and linting results to avoid;
- * re-linting files that haven't changed.;
+ * Linting Cache Manager
+ *
+ * This script manages the caching of linting results to improve performance
+ * of incremental linting. It stores file hashes and linting results to avoid
+ * re-linting files that haven't changed.
  */
 
 const fs = require('fs');
