@@ -108,8 +108,8 @@ jobs:
   # Automated Workflow Failure Handler
   handle-shell-linting-failure:
     name: Handle Shell Linting Failure
-    if: always() && needs.shell-lint.result == 'failure'
-    needs: [shell-lint]
+    if: always() && needs.shellcheck.result == 'failure'
+    needs: [shellcheck]
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "Shell Script Linting"
