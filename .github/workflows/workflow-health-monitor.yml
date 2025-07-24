@@ -191,23 +191,26 @@ jobs:
             FAILURE_COUNT=$((FAILURE_COUNT + 2))  # +2 because we count the initial issue as #1
             
             # Add detailed comment about the new failure
-            COMMENT_BODY="## 🔄 Failure #$FAILURE_COUNT
+            COMMENT_BODY=$(cat <<EOF
+            ## 🔄 Failure #$FAILURE_COUNT
 
-The **$WORKFLOW_NAME** workflow has failed again.
+            The **$WORKFLOW_NAME** workflow has failed again.
 
-### 📋 Failure Details
-- **Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)
-- **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-- **Branch**: $WORKFLOW_BRANCH
-- **Commit**: \`$WORKFLOW_SHA\`
-- **Triggered by**: @$WORKFLOW_ACTOR
-- **Conclusion**: $WORKFLOW_CONCLUSION
+            ### 📋 Failure Details
+            - **Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)
+            - **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+            - **Branch**: $WORKFLOW_BRANCH
+            - **Commit**: \`$WORKFLOW_SHA\`
+            - **Triggered by**: @$WORKFLOW_ACTOR
+            - **Conclusion**: $WORKFLOW_CONCLUSION
 
-### 📊 Failure Pattern
-This is occurrence **#$FAILURE_COUNT** of this issue. The workflow continues to fail with startup errors.
+            ### 📊 Failure Pattern
+            This is occurrence **#$FAILURE_COUNT** of this issue. The workflow continues to fail with startup errors.
 
----
-*Automated update by Workflow Health Monitor*"
+            ---
+            *Automated update by Workflow Health Monitor*
+            EOF
+            )
             
             gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY"
             echo "Added comment to issue #$LATEST_ISSUE"
