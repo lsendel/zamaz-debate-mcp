@@ -1,10 +1,11 @@
+---
 name: CI/CD Pipeline
 
-on:
+"on":
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -421,35 +422,35 @@ jobs:
         run: |
           # Create new deployment (green)
           kubectl apply -f k8s/production/
-          
+
           # Update green deployment with new images
           kubectl set image deployment/mcp-organization-green mcp-organization=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/mcp-organization:${{ github.sha }} -n production
           kubectl set image deployment/mcp-gateway-green mcp-gateway=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/mcp-gateway:${{ github.sha }} -n production
           kubectl set image deployment/mcp-debate-engine-green mcp-debate-engine=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/mcp-debate-engine:${{ github.sha }} -n production
           kubectl set image deployment/mcp-llm-green mcp-llm=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/mcp-llm:${{ github.sha }} -n production
           kubectl set image deployment/mcp-rag-green mcp-rag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/mcp-rag:${{ github.sha }} -n production
-          
+
           # Wait for green deployment to be ready
           kubectl rollout status deployment/mcp-organization-green -n production
           kubectl rollout status deployment/mcp-gateway-green -n production
           kubectl rollout status deployment/mcp-debate-engine-green -n production
           kubectl rollout status deployment/mcp-llm-green -n production
           kubectl rollout status deployment/mcp-rag-green -n production
-          
+
           # Run health checks on green deployment
           GREEN_URL=$(kubectl get service mcp-gateway-green -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           curl -f http://${GREEN_URL}/health || exit 1
-          
+
           # Switch traffic to green deployment
           kubectl patch service mcp-gateway -n production -p '{"spec":{"selector":{"version":"green"}}}'
           kubectl patch service mcp-organization -n production -p '{"spec":{"selector":{"version":"green"}}}'
           kubectl patch service mcp-debate-engine -n production -p '{"spec":{"selector":{"version":"green"}}}'
           kubectl patch service mcp-llm -n production -p '{"spec":{"selector":{"version":"green"}}}'
           kubectl patch service mcp-rag -n production -p '{"spec":{"selector":{"version":"green"}}}'
-          
+
           # Delete old blue deployment
           kubectl delete deployment mcp-organization-blue mcp-gateway-blue mcp-debate-engine-blue mcp-llm-blue mcp-rag-blue -n production --ignore-not-found=true
-          
+
           # Rename green to blue for next deployment
           kubectl label deployment mcp-organization-green mcp-gateway-green mcp-debate-engine-green mcp-llm-green mcp-rag-green version=blue --overwrite -n production
 
