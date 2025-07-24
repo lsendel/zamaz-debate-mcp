@@ -391,7 +391,8 @@ jobs:
         run: |
           echo "## 🏗️ CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Version:** ${{ needs.java-build-test.outputs.version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          BUILD_VERSION="${{ needs.java-build-test.outputs.version }}"
+          echo "**Build Version:** ${BUILD_VERSION:-N/A}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${GITHUB_REF#refs/heads/}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${GITHUB_SHA:0:8}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
@@ -503,7 +504,7 @@ jobs:
     
     outputs:
       services: ${{ steps.services.outputs.services }}
-      version: ${{ needs.java-build-test.outputs.version }}
+      version: ${{ needs.java-build-test.outputs.version || '1.0.0-unknown' }}
     
     steps:
       - name: Checkout code
