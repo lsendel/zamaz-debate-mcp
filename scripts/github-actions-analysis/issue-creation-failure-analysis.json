@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-07-24T03:10:47.524Z",
+  "findings": {
+    "missingLabels": [
+      "security",
+      "workflow-failure",
+      "automated",
+      "ci-cd",
+      "critical"
+    ],
+    "existingLabels": [],
+    "issueCount": 0,
+    "rootCause": "The workflow is trying to create issues with labels that do not exist in the repository",
+    "specificError": "could not add label: 'security' not found",
+    "solution": "Either create the missing labels or update the workflow to use only existing labels"
+  },
+  "recommendations": [
+    "Create missing labels: security, workflow-failure, automated, ci-cd, critical",
+    "Or update workflow to remove non-existent labels from issue creation",
+    "Use basic labels like \"bug\" or \"help wanted\" that likely exist",
+    "Consider using workflow_dispatch to manually test with different labels"
+  ]
+}
