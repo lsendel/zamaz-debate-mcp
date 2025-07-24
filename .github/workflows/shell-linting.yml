@@ -104,3 +104,23 @@ jobs:
         echo "- Use \`set -euo pipefail\` for safer scripts" >> $GITHUB_STEP_SUMMARY
         echo "- Validate user input before using it" >> $GITHUB_STEP_SUMMARY
         echo "- Use \`--\` to separate options from arguments" >> $GITHUB_STEP_SUMMARY
+
+  # Automated Workflow Failure Handler
+  handle-shell-linting-failure:
+    name: Handle Shell Linting Failure
+    if: always() && needs.shell-lint.result == 'failure'
+    needs: [shell-lint]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Shell Script Linting"
+      severity: "medium"
+      assignees: "devops-team,team-lead"
+      labels: "workflow-failure,shell,security"
+      template: "backend"
+      notify-slack: false
+      notify-email: false
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

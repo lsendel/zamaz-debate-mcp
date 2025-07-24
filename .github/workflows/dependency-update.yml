@@ -94,3 +94,23 @@ jobs:
             Please review the changes and merge if all tests pass.
           branch: dependencies/npm-updates
           delete-branch: true
+
+  # Automated Workflow Failure Handler
+  handle-dependency-update-failure:
+    name: Handle Dependency Update Failure
+    if: always() && (needs.update-maven-dependencies.result == 'failure' || needs.update-npm-dependencies.result == 'failure')
+    needs: [update-maven-dependencies, update-npm-dependencies]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Dependency Updates"
+      severity: "high"
+      assignees: "security-team,devops-team,team-lead"
+      labels: "workflow-failure,dependencies,security"
+      template: "security"
+      notify-slack: true
+      notify-email: true
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

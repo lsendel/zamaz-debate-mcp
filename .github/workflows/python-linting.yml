@@ -96,3 +96,23 @@ jobs:
             echo "⚠️ Security issues detected - see artifacts" >> $GITHUB_STEP_SUMMARY
           fi
         fi
+
+  # Automated Workflow Failure Handler
+  handle-python-linting-failure:
+    name: Handle Python Linting Failure
+    if: always() && needs.python-lint.result == 'failure'
+    needs: [python-lint]
+    uses: ./.github/workflows/workflow-failure-handler.yml
+    with:
+      workflow-name: "Python Linting"
+      severity: "medium"
+      assignees: "backend-team,team-lead"
+      labels: "workflow-failure,python,code-quality"
+      template: "backend"
+      notify-slack: false
+      notify-email: false
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
