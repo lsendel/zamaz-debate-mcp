@@ -17,7 +17,7 @@ DB_HOST=${DB_HOST:-"localhost"}
 DB_PORT=${DB_PORT:-5432}
 DB_NAME=${DB_NAME:-"debate_db"}
 DB_USER=${DB_USER:-"postgres"}
-DB_PASSWORD=${DB_PASSWORD:-"postgres"}
+DB_PASSWORD=${DB_PASSWORD:?"Database password must be provided"}
 
 REDIS_HOST=${REDIS_HOST:-"localhost"}
 REDIS_PORT=${REDIS_PORT:-6379}

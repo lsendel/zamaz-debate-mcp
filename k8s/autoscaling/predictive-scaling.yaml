@@ -311,7 +311,7 @@ kind: ServiceAccount
 metadata:
   name: mcp-predictive-scaler
   namespace: monitoring
-automountServiceAccountToken: false
+automountServiceAccountToken: true
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -334,7 +334,7 @@ rules:
   resources: ["pods", "namespaces"]
   verbs: ["get", "list"]
 - apiGroups: ["external.metrics.k8s.io"]
-  resources: ["*"]
+  resources: ["external-metrics"]
   verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

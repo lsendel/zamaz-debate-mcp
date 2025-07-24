@@ -187,9 +187,9 @@ export function mockApiResponse(url, response, options = {}) {
 
   const createDelayedResponse = () => {
     if (delay > 0) {
-      return new Promise((resolve) =>;
-        setTimeout(() => resolve(response), delay),
-      );
+      return new Promise((resolve) => {
+        setTimeout(() => resolve(response), delay);
+      });
     }
     return Promise.resolve(response);
   }
@@ -203,12 +203,12 @@ export function mockApiResponse(url, response, options = {}) {
     text: createTextResponse,
   });
 
-  global.fetch = jest;
-    .fn();
+  global.fetch = jest
+    .fn()
     .mockImplementation((requestUrl, requestOptions = {}) => {
-      if (;
-        requestUrl.includes(url) &&;
-        (requestOptions.method || "GET") === method;
+      if (
+        requestUrl.includes(url) &&
+        (requestOptions.method || "GET") === method
       ) {
         return Promise.resolve(createMockResponse());
       }
@@ -221,13 +221,13 @@ export function mockApiResponse(url, response, options = {}) {
  */
 export function mockApiEndpoints(endpoints) {
   global.fetch = jest.fn().mockImplementation((url, options = {}) => {
-    const method = options.method || "GET"
+    const method = options.method || "GET";
 
     for (const endpoint of endpoints) {
       if (url.includes(endpoint.url) && method === endpoint.method) {
-        const response =;
+        const response =
           typeof endpoint.response === "function"
-            ? endpoint.response(url, options);
+            ? endpoint.response(url, options)
             : endpoint.response;
 
         return Promise.resolve({

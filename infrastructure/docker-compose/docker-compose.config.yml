@@ -59,7 +59,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=debate_engine_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - SERVER_PORT=5020
@@ -130,7 +130,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=modulith_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - SERVER_PORT=5050
     ports:
       - "${MCP_MODULITH_PORT:-5050}:5050"
@@ -190,7 +190,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=debate_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - SERVER_PORT=5001
     ports:
       - "${MCP_DEBATE_LEGACY_PORT:-5001}:5001"

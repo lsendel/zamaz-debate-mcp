@@ -106,7 +106,7 @@ services:
     environment:
       PGHOST: postgres
       PGUSER: ${POSTGRES_USER:-postgres}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Database password must be provided}
     volumes:
       - ../../scripts/init-scripts:/scripts
     networks:
@@ -135,7 +135,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=organization_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - JWT_SECRET
@@ -216,7 +216,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=debate_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ORGANIZATION_SERVICE_URL=http://mcp-organization:5005
@@ -263,7 +263,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=rag_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - QDRANT_URL=http://qdrant:6333
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -308,7 +308,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=template_db
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       - SERVER_PORT=5006
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317

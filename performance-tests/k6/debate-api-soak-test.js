@@ -84,19 +84,19 @@ function createSoakTestDebate() {
         name: 'StabilityBot1',
         position: 'PRO',
         aiProvider: 'CLAUDE',
-        model: 'claude-3-opus-20240229';
+        model: 'claude-3-opus-20240229'
       },
       {
         name: 'StabilityBot2',
         position: 'CON',
         aiProvider: 'OPENAI',
-        model: 'gpt-4';
+        model: 'gpt-4'
       }
     ],
     config: {
       maxRounds: 2,
       responseTimeout: 10000,
-      maxResponseLength: 200;
+      maxResponseLength: 200
     }
   });
 

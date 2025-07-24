@@ -12,7 +12,7 @@ services:
       # Database Configuration
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/github_integration
       - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
       
       # Redis Configuration
       - SPRING_REDIS_HOST=redis
@@ -68,7 +68,7 @@ services:
     environment:
       - POSTGRES_DB=github_integration
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Database password must be provided}
     ports:
       - "5433:5432"
     volumes:
