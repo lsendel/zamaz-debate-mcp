@@ -121,7 +121,7 @@ jobs:
 
       - name: Run SpotBugs security checks
         run: |
-          mvn com.github.spotbugs:spotbugs-maven-plugin:spotbugs \
+          mvn com.github.spotbugs:spotbugs-maven-plugin:spotbugs ${{ env.MAVEN_BATCH_MODE }} \
             -Dspotbugs.effort=Max \
             -Dspotbugs.threshold=Low \
             -Dspotbugs.xmlOutput=true \
