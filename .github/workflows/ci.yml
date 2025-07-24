@@ -159,12 +159,6 @@ jobs:
             ${{ env.MAVEN_BATCH_MODE }} \
             -Pci
 
-      - name: Generate test reports
-        if: always() && !inputs.skip_tests
-        run: |
-          mvn jacoco:report-aggregate \
-            --batch-mode --no-transfer-progress
-
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always() && !inputs.skip_tests
@@ -397,7 +391,7 @@ jobs:
         run: |
           echo "## 🏗️ CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Version:** ${{ needs.java-build-test.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Version:** ${{ needs.java-build-test.outputs.version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${GITHUB_REF#refs/heads/}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${GITHUB_SHA:0:8}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
@@ -570,6 +564,11 @@ jobs:
     steps:
       - name: Create failure issue
         uses: actions/github-script@v7
+        env:
+          JAVA_BUILD_RESULT: ${{ needs.java-build-test.result }}
+          CODE_QUALITY_RESULT: ${{ needs.code-quality.result }}
+          FRONTEND_BUILD_RESULT: ${{ needs.frontend-build-test.result }}
+          SECURITY_SCAN_RESULT: ${{ needs.security-scan.result }}
         with:
           script: |
             const title = `CI Pipeline Failed - ${context.ref.replace('refs/heads/', '')} branch`;
@@ -582,10 +581,10 @@ jobs:
             **Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})
             
             ### Failed Jobs:
-            ${ needs.java-build-test.result === 'failure' ? '- ❌ Java Build & Test\n' : '' }
-            ${ needs.code-quality.result === 'failure' ? '- ❌ Code Quality\n' : '' }
-            ${ needs.frontend-build-test.result === 'failure' ? '- ❌ Frontend Build & Test\n' : '' }
-            ${ needs.security-scan.result === 'failure' ? '- ❌ Security Scan\n' : '' }
+            ${ process.env.JAVA_BUILD_RESULT === 'failure' ? '- ❌ Java Build & Test\n' : '' }
+            ${ process.env.CODE_QUALITY_RESULT === 'failure' ? '- ❌ Code Quality\n' : '' }
+            ${ process.env.FRONTEND_BUILD_RESULT === 'failure' ? '- ❌ Frontend Build & Test\n' : '' }
+            ${ process.env.SECURITY_SCAN_RESULT === 'failure' ? '- ❌ Security Scan\n' : '' }
             
             Please investigate and fix the issues.
             
