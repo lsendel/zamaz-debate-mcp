@@ -149,24 +149,49 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+      - name: Check if debate-ui directory exists
+        id: check-debate-ui
+        run: |
+          if [ -d "./debate-ui" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ debate-ui directory found"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ debate-ui directory not found, skipping frontend security scan"
+          fi
+
       - name: Install dependencies
+        if: steps.check-debate-ui.outputs.exists == 'true'
         working-directory: ./debate-ui
-        run: npm ci
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "Using npm ci (package-lock.json found)"
+            npm ci
+          else
+            echo "Using npm install (package-lock.json not found)"
+            npm install
+          fi
         continue-on-error: true
 
       - name: Run npm audit
+        if: steps.check-debate-ui.outputs.exists == 'true'
         working-directory: ./debate-ui
         run: |
           npm audit --production
         continue-on-error: true
 
       - name: Run Snyk security scan
+        if: steps.check-debate-ui.outputs.exists == 'true'
         uses: snyk/actions/node@master
         with:
           args: --severity-threshold=high --file=debate-ui/package.json
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
+
+      - name: Skip frontend security scan
+        if: steps.check-debate-ui.outputs.exists == 'false'
+        run: echo "Frontend security scan skipped - debate-ui directory not found"
 
   secrets-scan:
     name: 🔐 Secrets Detection
@@ -286,8 +311,6 @@ jobs:
       severity: high
       # Security team assignment
       assignees: "security-team,team-lead"
-      # Comprehensive security labels
-      labels: "workflow-failure,security,compliance"
       # Use security template
       template: "security"
       # Always notify for security issues
