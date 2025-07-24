@@ -121,7 +121,6 @@ jobs:
       template: ${{ inputs.failure-type == 'deployment' && 'deployment' || inputs.failure-type == 'security' && 'security' || inputs.failure-type == 'linting' && 'linting' || inputs.failure-type == 'build' && 'ci-cd' || 'default' }}
       dry-run: true  # Set to false to actually create issues
     secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   # Report test results
