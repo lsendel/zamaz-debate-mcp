@@ -30,13 +30,64 @@ jobs:
         with:
           node-version: '20'
           
+      - name: Install required tools
+        run: |
+          # Install jq for JSON processing
+          sudo apt-get update
+          sudo apt-get install -y jq
+          
+          # Install GitHub CLI
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y gh
+          
+          # Verify installations
+          jq --version
+          gh --version
+          
       - name: Install dependencies
         run: |
-          cd .github/actions/failure-detector
-          npm install
+          # Install global dependencies needed for YAML parsing
+          npm install -g js-yaml
           
-          cd ../../scripts
-          npm install
+          # Install npm dependencies for failure detector
+          if [ -d ".github/actions/failure-detector" ]; then
+            echo "Installing failure-detector dependencies..."
+            cd .github/actions/failure-detector
+            npm install
+            cd -
+          fi
+          
+          # Install npm dependencies for scripts
+          if [ -d ".github/scripts" ]; then
+            echo "Installing scripts dependencies..."
+            cd .github/scripts
+            npm install
+            cd -
+          fi
+          
+          # Verify js-yaml is available
+          node -e "console.log('js-yaml version:', require('js-yaml').VERSION || 'installed')" || echo "js-yaml not available, will use fallback"
+          
+      - name: Debug workflow context
+        run: |
+          echo "=== Workflow Debug Information ==="
+          echo "Workflow Name: ${{ github.event.workflow_run.name }}"
+          echo "Workflow ID: ${{ github.event.workflow_run.id }}"
+          echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Actor: ${{ github.event.workflow_run.actor.login }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "=== Environment Check ==="
+          which jq && jq --version
+          which gh && gh --version
+          which node && node --version
+          which npm && npm --version
+          echo "=== Directory Structure ==="
+          ls -la .github/
+          ls -la .github/config/ 2>/dev/null || echo "No config directory"
+          ls -la .github/scripts/ 2>/dev/null || echo "No scripts directory"
           
       - name: Create startup failure issue
         env:
@@ -49,6 +100,9 @@ jobs:
           WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
           WORKFLOW_ACTOR: ${{ github.event.workflow_run.actor.login }}
         run: |
+          set -e  # Exit on any error
+          echo "=== Starting issue creation process ==="
+          
           # Load configuration for the workflow
           CONFIG_FILE=".github/config/workflow-issue-config.yml"
           SEVERITY="critical"
@@ -56,18 +110,65 @@ jobs:
           LABELS="workflow-failure,startup-failure"
           
           if [ -f "$CONFIG_FILE" ]; then
-            # Extract configuration for this workflow
-            WORKFLOW_CONFIG=$(cd .github/scripts && node -e "
-              const yaml = require('js-yaml');
-              const fs = require('fs');
-              const config = yaml.load(fs.readFileSync('../../$CONFIG_FILE', 'utf8'));
-              const workflowConfig = config.workflows['$WORKFLOW_NAME'] || {};
-              console.log(JSON.stringify(workflowConfig));
-            ")
+            echo "Loading configuration from $CONFIG_FILE"
             
-            SEVERITY=$(echo "$WORKFLOW_CONFIG" | jq -r '.severity // "high"')
-            ASSIGNEES=$(echo "$WORKFLOW_CONFIG" | jq -r '.assignees // [] | join(",")')
-            LABELS=$(echo "$WORKFLOW_CONFIG" | jq -r '.labels // ["workflow-failure","startup-failure"] | join(",")')
+            # Extract configuration for this workflow
+            echo "Attempting to load workflow configuration..."
+            CONFIG_PATH="$(pwd)/$CONFIG_FILE"
+            echo "Full config path: $CONFIG_PATH"
+            
+            if WORKFLOW_CONFIG=$(node -e "
+              try {
+                const yaml = require('js-yaml');
+                const fs = require('fs');
+                const path = require('path');
+                const configPath = process.env.CONFIG_PATH || '$CONFIG_PATH';
+                console.error('Reading config from:', configPath);
+                
+                if (!fs.existsSync(configPath)) {
+                  console.error('Config file not found:', configPath);
+                  process.exit(1);
+                }
+                
+                const config = yaml.load(fs.readFileSync(configPath, 'utf8'));
+                const workflowName = process.env.WORKFLOW_NAME || '$WORKFLOW_NAME';
+                const workflowConfig = config.workflows[workflowName] || {};
+                console.log(JSON.stringify(workflowConfig));
+              } catch (error) {
+                console.error('Error loading config:', error.message);
+                console.error('Stack:', error.stack);
+                process.exit(1);
+              }
+            " 2>/dev/null); then
+              echo "Configuration loaded successfully: $WORKFLOW_CONFIG"
+              
+              SEVERITY=$(echo "$WORKFLOW_CONFIG" | jq -r '.severity // "high"' 2>/dev/null || echo "high")
+              ASSIGNEES=$(echo "$WORKFLOW_CONFIG" | jq -r '.assignees // [] | join(",")' 2>/dev/null || echo "")
+              LABELS=$(echo "$WORKFLOW_CONFIG" | jq -r '.labels // ["workflow-failure","startup-failure"] | join(",")' 2>/dev/null || echo "workflow-failure,startup-failure")
+              
+              echo "Parsed - Severity: $SEVERITY, Assignees: $ASSIGNEES, Labels: $LABELS"
+            else
+              echo "Failed to load configuration, using defaults"
+              echo "Error details:"
+              node -e "
+                try {
+                  const yaml = require('js-yaml');
+                  const fs = require('fs');
+                  const configPath = '$CONFIG_PATH';
+                  console.log('Config file exists:', fs.existsSync(configPath));
+                  if (fs.existsSync(configPath)) {
+                    const content = fs.readFileSync(configPath, 'utf8');
+                    console.log('Config file size:', content.length, 'bytes');
+                    const config = yaml.load(content);
+                    console.log('Available workflows:', Object.keys(config.workflows || {}));
+                  }
+                } catch (error) {
+                  console.log('Debug error:', error.message);
+                }
+              " 2>/dev/null || echo "Node.js debug failed"
+            fi
+          else
+            echo "Configuration file $CONFIG_FILE not found, using defaults"
           fi
           
           # Create issue data for startup failure
@@ -165,30 +266,61 @@ jobs:
           
           # Search for open issues with the workflow name in title
           SEARCH_QUERY="\"$WORKFLOW_NAME workflow failed\" in:title state:open"
-          EXISTING_ISSUES=$(gh issue list --search "$SEARCH_QUERY" --json number,title,createdAt,body --limit 10)
+          echo "Search query: $SEARCH_QUERY"
           
-          # Get the most recent open issue
-          LATEST_ISSUE=$(echo "$EXISTING_ISSUES" | jq -r 'sort_by(.createdAt) | reverse | .[0].number // empty')
+          # Try to get existing issues, with error handling
+          if EXISTING_ISSUES=$(gh issue list --search "$SEARCH_QUERY" --json number,title,createdAt,body --limit 10 2>&1); then
+            echo "Successfully retrieved issue list"
+            echo "Raw issues response: $EXISTING_ISSUES"
+            
+            # Get the most recent open issue
+            if LATEST_ISSUE=$(echo "$EXISTING_ISSUES" | jq -r 'sort_by(.createdAt) | reverse | .[0].number // empty' 2>/dev/null); then
+              echo "Latest issue number: $LATEST_ISSUE"
+            else
+              echo "Failed to parse issues with jq, will create new issue"
+              LATEST_ISSUE=""
+            fi
+          else
+            echo "Failed to retrieve existing issues: $EXISTING_ISSUES"
+            echo "Will proceed to create new issue"
+            LATEST_ISSUE=""
+          fi
           
           if [ -n "$LATEST_ISSUE" ]; then
             echo "Found existing open issue #$LATEST_ISSUE"
             
             # Check last comment time to avoid spam (minimum 5 minutes between updates)
-            LAST_COMMENT_TIME=$(gh issue view "$LATEST_ISSUE" --json comments --jq '.comments[-1].createdAt // empty')
-            if [ -n "$LAST_COMMENT_TIME" ]; then
-              LAST_COMMENT_EPOCH=$(date -d "$LAST_COMMENT_TIME" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LAST_COMMENT_TIME" +%s 2>/dev/null || echo 0)
-              CURRENT_EPOCH=$(date +%s)
-              TIME_DIFF=$((CURRENT_EPOCH - LAST_COMMENT_EPOCH))
-              
-              if [ "$TIME_DIFF" -lt 300 ]; then
-                echo "Last update was less than 5 minutes ago, skipping to avoid spam"
-                exit 0
+            echo "Checking last comment time for issue #$LATEST_ISSUE"
+            if LAST_COMMENT_TIME=$(gh issue view "$LATEST_ISSUE" --json comments --jq '.comments[-1].createdAt // empty' 2>&1); then
+              echo "Last comment time: $LAST_COMMENT_TIME"
+              if [ -n "$LAST_COMMENT_TIME" ] && [ "$LAST_COMMENT_TIME" != "null" ] && [ "$LAST_COMMENT_TIME" != "empty" ]; then
+                LAST_COMMENT_EPOCH=$(date -d "$LAST_COMMENT_TIME" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$LAST_COMMENT_TIME" +%s 2>/dev/null || echo 0)
+                CURRENT_EPOCH=$(date +%s)
+                TIME_DIFF=$((CURRENT_EPOCH - LAST_COMMENT_EPOCH))
+                
+                echo "Time since last comment: $TIME_DIFF seconds"
+                if [ "$TIME_DIFF" -lt 300 ]; then
+                  echo "Last update was less than 5 minutes ago, skipping to avoid spam"
+                  exit 0
+                fi
+              else
+                echo "No previous comments found or failed to parse timestamp"
               fi
+            else
+              echo "Failed to get comment information: $LAST_COMMENT_TIME"
+              echo "Proceeding with update anyway"
             fi
             
             # Count previous failures mentioned in the issue
-            FAILURE_COUNT=$(gh issue view "$LATEST_ISSUE" --json comments --jq '.comments | length')
-            FAILURE_COUNT=$((FAILURE_COUNT + 2))  # +2 because we count the initial issue as #1
+            echo "Counting previous failures for issue #$LATEST_ISSUE"
+            if FAILURE_COUNT=$(gh issue view "$LATEST_ISSUE" --json comments --jq '.comments | length' 2>&1); then
+              FAILURE_COUNT=$((FAILURE_COUNT + 2))  # +2 because we count the initial issue as #1
+              echo "Previous failure count: $FAILURE_COUNT"
+            else
+              echo "Failed to get failure count: $FAILURE_COUNT"
+              FAILURE_COUNT=2  # Default to 2 (first failure + this one)
+              echo "Using default failure count: $FAILURE_COUNT"
+            fi
             
             # Add detailed comment about the new failure
             COMMENT_BODY=$(cat <<"EOF"
@@ -212,32 +344,61 @@ jobs:
             EOF
             )
             
-            gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY"
-            echo "Added comment to issue #$LATEST_ISSUE"
+            echo "Adding comment to issue #$LATEST_ISSUE"
+            if gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY" 2>&1; then
+              echo "Successfully added comment to issue #$LATEST_ISSUE"
+            else
+              echo "Failed to add comment to issue #$LATEST_ISSUE"
+              echo "Comment content:"
+              echo "$COMMENT_BODY"
+            fi
             
             # Update issue title to reflect ongoing status
             UPDATED_TITLE="$WORKFLOW_NAME workflow failed - $FAILURE_COUNT occurrences [ACTIVE]"
-            gh issue edit "$LATEST_ISSUE" --title "$UPDATED_TITLE"
-            echo "Updated issue title to reflect $FAILURE_COUNT failures"
+            echo "Updating issue title to: $UPDATED_TITLE"
+            if gh issue edit "$LATEST_ISSUE" --title "$UPDATED_TITLE" 2>&1; then
+              echo "Successfully updated issue title to reflect $FAILURE_COUNT failures"
+            else
+              echo "Failed to update issue title"
+            fi
             
             # Also update the issue body to reflect current status
-            ORIGINAL_BODY=$(gh issue view "$LATEST_ISSUE" --json body --jq '.body')
-            FIRST_DETECTED=$(echo "$ORIGINAL_BODY" | grep -oP '(?<=First Detected\**: )[\dT:\-Z]+' || echo "Unknown")
-            
-            # Update the status section in the body
-            UPDATED_BODY=$(echo "$ORIGINAL_BODY" | sed -E "s/> \*\*Status\*\*: .*/> **Status**: 🔴 ACTIVE - $FAILURE_COUNT failures recorded/" | sed -E "s/> \*\*Last Updated\*\*: .*/> **Last Updated**: $(date -u +%Y-%m-%dT%H:%M:%SZ)/")
-            
-            # Update the issue body
-            gh issue edit "$LATEST_ISSUE" --body "$UPDATED_BODY"
+            echo "Updating issue body with current status"
+            if ORIGINAL_BODY=$(gh issue view "$LATEST_ISSUE" --json body --jq '.body' 2>&1); then
+              echo "Retrieved original issue body (${#ORIGINAL_BODY} characters)"
+              FIRST_DETECTED=$(echo "$ORIGINAL_BODY" | grep -oP '(?<=First Detected\**: )[\dT:\-Z]+' || echo "Unknown")
+              
+              # Update the status section in the body
+              UPDATED_BODY=$(echo "$ORIGINAL_BODY" | sed -E "s/> \*\*Status\*\*: .*/> **Status**: 🔴 ACTIVE - $FAILURE_COUNT failures recorded/" | sed -E "s/> \*\*Last Updated\*\*: .*/> **Last Updated**: $(date -u +%Y-%m-%dT%H:%M:%SZ)/")
+              
+              # Update the issue body
+              if gh issue edit "$LATEST_ISSUE" --body "$UPDATED_BODY" 2>&1; then
+                echo "Successfully updated issue body"
+              else
+                echo "Failed to update issue body"
+              fi
+            else
+              echo "Failed to retrieve original issue body: $ORIGINAL_BODY"
+            fi
             
             # Close any older duplicate issues
-            OTHER_ISSUES=$(echo "$EXISTING_ISSUES" | jq -r --arg latest "$LATEST_ISSUE" '.[] | select(.number != ($latest | tonumber)) | .number')
-            if [ -n "$OTHER_ISSUES" ]; then
-              echo "Found duplicate issues to close: $OTHER_ISSUES"
-              for issue in $OTHER_ISSUES; do
-                echo "Closing duplicate issue #$issue"
-                gh issue close "$issue" --comment "Consolidated into #$LATEST_ISSUE - This is a duplicate of the main tracking issue."
-              done
+            echo "Checking for duplicate issues to close"
+            if OTHER_ISSUES=$(echo "$EXISTING_ISSUES" | jq -r --arg latest "$LATEST_ISSUE" '.[] | select(.number != ($latest | tonumber)) | .number' 2>/dev/null); then
+              if [ -n "$OTHER_ISSUES" ]; then
+                echo "Found duplicate issues to close: $OTHER_ISSUES"
+                for issue in $OTHER_ISSUES; do
+                  echo "Attempting to close duplicate issue #$issue"
+                  if gh issue close "$issue" --comment "Consolidated into #$LATEST_ISSUE - This is a duplicate of the main tracking issue." 2>&1; then
+                    echo "Successfully closed duplicate issue #$issue"
+                  else
+                    echo "Failed to close duplicate issue #$issue"
+                  fi
+                done
+              else
+                echo "No duplicate issues found to close"
+              fi
+            else
+              echo "Failed to check for duplicate issues"
             fi
           else
             echo "Creating new issue..."
