@@ -147,16 +147,6 @@ workflows:
     template: "ci-cd"
     escalation_threshold: 5
 
-  "Security Scanning":
-    severity: high
-    assignees: ["security-team", "team-lead"]
-    labels: ["security", "workflow-failure"]
-    template: "security"
-    escalation_threshold: 1
-    notification_channels:
-      slack: "#security-alerts"
-      email: ["security@company.com"]
-
   "Build":
     severity: high
     assignees: ["backend-team"]
