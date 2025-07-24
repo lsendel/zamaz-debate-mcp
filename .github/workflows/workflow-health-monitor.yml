@@ -1,0 +1,205 @@
+name: Workflow Health Monitor
+
+on:
+  workflow_run:
+    workflows: 
+      - "Security Scanning"
+      - "CI/CD Pipeline"
+      - "Code Quality"
+      - "Docker Build"
+      - "Database Migration"
+    types:
+      - completed
+
+permissions:
+  issues: write
+  actions: read
+
+jobs:
+  check-workflow-health:
+    name: Check Workflow Health
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'startup_failure' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: |
+          cd .github/actions/failure-detector
+          npm ci
+          cd ../../scripts
+          npm ci
+          
+      - name: Create startup failure issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+          WORKFLOW_ACTOR: ${{ github.event.workflow_run.actor.login }}
+        run: |
+          # Load configuration for the workflow
+          CONFIG_FILE=".github/config/workflow-issue-config.yml"
+          SEVERITY="critical"
+          ASSIGNEES=""
+          LABELS="workflow-failure,startup-failure"
+          
+          if [ -f "$CONFIG_FILE" ]; then
+            # Extract configuration for this workflow
+            WORKFLOW_CONFIG=$(node -e "
+              const yaml = require('js-yaml');
+              const fs = require('fs');
+              const config = yaml.load(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+              const workflowConfig = config.workflows['$WORKFLOW_NAME'] || {};
+              console.log(JSON.stringify(workflowConfig));
+            ")
+            
+            SEVERITY=$(echo "$WORKFLOW_CONFIG" | jq -r '.severity // "high"')
+            ASSIGNEES=$(echo "$WORKFLOW_CONFIG" | jq -r '.assignees // [] | join(",")')
+            LABELS=$(echo "$WORKFLOW_CONFIG" | jq -r '.labels // ["workflow-failure","startup-failure"] | join(",")')
+          fi
+          
+          # Create issue data for startup failure
+          ISSUE_DATA=$(cat <<EOF
+          {
+            "workflow": {
+              "name": "$WORKFLOW_NAME",
+              "id": "$WORKFLOW_ID",
+              "runId": "$WORKFLOW_ID",
+              "url": "$WORKFLOW_URL",
+              "triggeredBy": "$WORKFLOW_ACTOR",
+              "branch": "$WORKFLOW_BRANCH",
+              "commit": {
+                "sha": "$WORKFLOW_SHA"
+              }
+            },
+            "failure": {
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "jobs": [],
+              "severity": "$SEVERITY",
+              "category": "startup-failure",
+              "errorPatterns": ["startup-failure"],
+              "analysis": {
+                "commonPatterns": {"startup-failure": 1},
+                "likelyRootCause": "startup-failure",
+                "suggestedActions": [
+                  "Check workflow YAML syntax for errors",
+                  "Verify all required secrets are configured",
+                  "Check if workflow uses valid action versions",
+                  "Ensure workflow has proper permissions",
+                  "Review recent changes to workflow file"
+                ]
+              }
+            },
+            "context": {
+              "environment": "production"
+            },
+            "labels": ["$LABELS"],
+            "assignees": ["$ASSIGNEES"]
+          }
+          EOF
+          )
+          
+          # Save issue data
+          echo "$ISSUE_DATA" > issue-data.json
+          
+          # Generate issue content
+          ISSUE_TITLE="$WORKFLOW_NAME workflow failed with startup error on $WORKFLOW_BRANCH"
+          ISSUE_BODY=$(cat <<EOF
+          ## 🚨 Workflow Startup Failure Detected
+
+          The **$WORKFLOW_NAME** workflow failed to start properly.
+
+          ### 📋 Workflow Information
+          - **Workflow**: $WORKFLOW_NAME
+          - **Run ID**: $WORKFLOW_ID
+          - **Branch**: $WORKFLOW_BRANCH
+          - **Triggered by**: @$WORKFLOW_ACTOR
+          - **Commit**: $WORKFLOW_SHA
+          - **Status**: $WORKFLOW_CONCLUSION
+          - **URL**: $WORKFLOW_URL
+
+          ### 🔍 Failure Analysis
+          This is a **startup failure**, which means the workflow failed before any jobs could run. This is typically caused by:
+
+          1. **Syntax errors** in the workflow YAML file
+          2. **Missing or misconfigured secrets**
+          3. **Invalid action references** or versions
+          4. **Permission issues** with the workflow
+          5. **Recent changes** that broke the workflow configuration
+
+          ### 🛠️ Suggested Actions
+          1. Check the workflow file for YAML syntax errors
+          2. Verify all required secrets are properly configured in repository settings
+          3. Ensure all action references use valid versions
+          4. Check if the workflow has the required permissions
+          5. Review recent commits that modified the workflow file
+
+          ### 📊 Severity
+          **Severity**: $SEVERITY
+
+          This is a critical issue as the workflow cannot run at all, potentially blocking important security scans or CI/CD processes.
+
+          ---
+          *This issue was automatically created by the Workflow Health Monitor*
+          EOF
+          )
+          
+          # Check for existing issues
+          EXISTING_ISSUES=$(gh issue list --label "workflow-failure" --label "startup-failure" --search "$WORKFLOW_NAME" --json number,title,state)
+          OPEN_ISSUE=$(echo "$EXISTING_ISSUES" | jq -r '.[] | select(.state == "OPEN") | .number' | head -1)
+          
+          if [ -n "$OPEN_ISSUE" ]; then
+            echo "Found existing open issue #$OPEN_ISSUE, adding comment..."
+            gh issue comment "$OPEN_ISSUE" --body "## 🔄 Workflow Failed Again
+
+          The workflow has failed again with a startup error.
+
+          - **New Run**: $WORKFLOW_URL
+          - **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          - **Triggered by**: @$WORKFLOW_ACTOR
+
+          This indicates a persistent issue that needs immediate attention."
+          else
+            echo "Creating new issue..."
+            ISSUE_URL=$(gh issue create \
+              --title "$ISSUE_TITLE" \
+              --body "$ISSUE_BODY" \
+              --label "$LABELS" \
+              --assignee "$ASSIGNEES")
+            echo "Created issue: $ISSUE_URL"
+          fi
+          
+      - name: Send notifications
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SECURITY_SLACK_WEBHOOK || secrets.SLACK_WEBHOOK }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -X POST "$SLACK_WEBHOOK" \
+              -H 'Content-Type: application/json' \
+              -d "{
+                \"text\": \"🚨 Workflow Startup Failure: $WORKFLOW_NAME\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*🚨 Workflow Startup Failure Detected*\\n\\nThe *$WORKFLOW_NAME* workflow failed to start.\\n\\n<$WORKFLOW_URL|View Workflow Run>\"
+                    }
+                  }
+                ]
+              }"
+          fi
