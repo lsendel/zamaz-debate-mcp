@@ -129,11 +129,6 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-jaeger</artifactId>
-            <version>1.32.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp</artifactId>
             <version>1.32.0</version>
         </dependency>
@@ -142,26 +137,13 @@
             <artifactId>opentelemetry-exporter-logging</artifactId>
             <version>1.32.0</version>
         </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-prometheus</artifactId>
-            <version>1.32.0-alpha</version>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-spring-webmvc-5.3</artifactId>
-            <version>1.32.0-alpha</version>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-spring-webflux-5.3</artifactId>
-            <version>1.32.0-alpha</version>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.semconv</groupId>
-            <artifactId>opentelemetry-semconv</artifactId>
-            <version>1.23.1-alpha</version>
-        </dependency>
+        <!-- Removed alpha/unstable dependencies to improve build stability -->
+        <!-- TODO: Re-add when stable versions are available:
+             - opentelemetry-exporter-prometheus
+             - opentelemetry-spring-webmvc-5.3
+             - opentelemetry-spring-webflux-5.3
+             - opentelemetry-semconv
+        -->
 
         <!-- Micrometer for Metrics -->
         <dependency>
