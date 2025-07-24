@@ -33,9 +33,17 @@ jobs:
       - name: Install dependencies
         run: |
           cd .github/actions/failure-detector
-          npm ci
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
           cd ../../scripts
-          npm ci
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
           
       - name: Create startup failure issue
         env:
