@@ -9,6 +9,7 @@ on:
       - "Code Quality"
       - "Docker Build"
       - "Database Migration"
+      - "Test Issue Creation"
     types:
       - completed
   
