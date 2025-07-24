@@ -74,7 +74,7 @@ check_environment() {
         log_info "Java version: ${java_version}"
         
         local java_major
-        java_major=$(java -version 2>&1 | head -n1 | cut -d'"' -f2 | cut -d'.' -f1)
+        java_major=$(java -version 2>&1 | head -n1 | grep -oE '[0-9]+' | head -1)
         if [[ "${java_major}" -ge 21 ]]; then
             log_success "Java version is compatible (${java_major})"
         else

@@ -85,7 +85,7 @@
         <module>mcp-common</module>
         <module>mcp-security</module>
         <module>mcp-auth-server</module>
-        <module>mcp-config-server</module>
+        <!-- <module>mcp-config-server</module> MISSING -->
         <module>mcp-organization</module>
         <module>mcp-debate-engine</module>
         <module>mcp-llm</module>

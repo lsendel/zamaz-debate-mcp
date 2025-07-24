@@ -118,9 +118,15 @@ validate_environment() {
         exit 1
     fi
     
-    # Check Maven
-    if ! command -v mvn &> /dev/null; then
-        log_error "Maven is not installed or not in PATH"
+    # Check Maven (prefer wrapper)
+    if [[ -x "./mvnw" ]]; then
+        export MVN_CMD="./mvnw"
+        log_info "Using Maven wrapper"
+    elif command -v mvn &> /dev/null; then
+        export MVN_CMD="mvn"
+        log_info "Using system Maven"
+    else
+        log_error "Neither Maven wrapper nor system Maven found"
         exit 1
     fi
     
@@ -136,7 +142,7 @@ fix_parent_pom_issues() {
     log_info "Fixing parent POM issues..."
     
     # Validate parent POM syntax
-    if ! mvn help:effective-pom -q > /dev/null 2>&1; then
+    if ! ${MVN_CMD} help:effective-pom -q > /dev/null 2>&1; then
         log_error "Parent POM has syntax errors. Please check pom.xml"
         exit 1
     fi
