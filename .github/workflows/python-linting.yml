@@ -14,6 +14,10 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/python-linting.yml'
 
+
+permissions:
+  actions: read
+  contents: read
 jobs:
   python-lint:
     runs-on: ubuntu-latest

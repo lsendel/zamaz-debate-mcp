@@ -9,6 +9,10 @@ on:
     # Run security scans daily at 3 AM UTC
     - cron: "0 3 * * *"
 
+
+permissions:
+  contents: read
+  security-events: write
 env:
   NODE_VERSION: "18"
   JAVA_VERSION: "21"

@@ -17,6 +17,9 @@ on:
       - '**/pom.xml'
       - 'package*.json'
 
+
+permissions:
+  contents: write
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '18'

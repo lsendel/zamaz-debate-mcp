@@ -13,6 +13,10 @@ on:
         default: false
         type: boolean
 
+
+permissions:
+  contents: read
+  security-events: write
 jobs:
   # Detect what tests need to run
   detect-changes:

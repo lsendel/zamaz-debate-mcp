@@ -11,6 +11,10 @@ on:
     paths:
       - 'debate-ui/**'
 
+
+permissions:
+  actions: read
+  contents: read
 jobs:
   validate-react-imports:
     runs-on: ubuntu-latest

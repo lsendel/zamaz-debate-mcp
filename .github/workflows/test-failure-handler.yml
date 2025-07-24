@@ -20,6 +20,10 @@ on:
           - linting
         default: 'test'
 
+
+permissions:
+  actions: read
+  contents: read
 jobs:
   simulate-workflow:
     runs-on: ubuntu-latest

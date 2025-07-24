@@ -25,6 +25,10 @@ on:
         required: false
         type: string
 
+
+permissions:
+  actions: read
+  contents: read
 jobs:
   database-migration:
     name: Run Database Migration

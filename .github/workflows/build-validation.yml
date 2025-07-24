@@ -9,6 +9,10 @@ on:
     # Run nightly to catch dependency issues
     - cron: '0 2 * * *'
 
+
+permissions:
+  actions: read
+  contents: read
 jobs:
   build-validation:
     runs-on: ubuntu-latest

@@ -4,6 +4,10 @@ on:
   issues:
     types: [assigned, labeled]
 
+
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
   convert-to-spec:
     runs-on: ubuntu-latest

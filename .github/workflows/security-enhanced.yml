@@ -49,6 +49,10 @@ on:
         default: 'http://localhost:8080'
         type: string
 
+
+permissions:
+  contents: read
+  security-events: write
 env:
   NODE_VERSION: "18"
   JAVA_VERSION: "21"

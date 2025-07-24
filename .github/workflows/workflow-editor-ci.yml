@@ -11,6 +11,10 @@ on:
     paths:
       - 'workflow-editor/**'
 
+
+permissions:
+  contents: read
+  packages: write
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/workflow-editor

@@ -1,0 +1,554 @@
+[
+  {
+    "file": "build-validation.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-build-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "ci-cd-pipeline.yml",
+    "workflow_permissions": {
+      "contents": "write",
+      "packages": "write",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "security-events: write",
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "ci-cd-with-failure-handler.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {
+      "build-images": {
+        "contents": "read",
+        "packages": "write"
+      }
+    },
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-workflow-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [
+      "security-events: write",
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "ci-cd.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "packages": "write",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-cicd-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [
+      "security-events: write",
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "ci.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "packages": "write",
+      "security-events": "write",
+      "actions": "read",
+      "checks": "write",
+      "pull-requests": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "docker-build",
+        "workflow": "./.github/workflows/docker-build.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "claude-code-review.yml",
+    "workflow_permissions": null,
+    "job_permissions": {
+      "claude-review": {
+        "contents": "read",
+        "pull-requests": "read",
+        "issues": "read",
+        "id-token": "write"
+      }
+    },
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "claude.yml",
+    "workflow_permissions": null,
+    "job_permissions": {
+      "claude": {
+        "contents": "read",
+        "pull-requests": "read",
+        "issues": "read",
+        "id-token": "write",
+        "actions": "read"
+      }
+    },
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "code-quality.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-quality-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [
+      "security-events: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "database-migration.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-migration-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "dependency-update.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "pull-requests": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-dependency-update-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [
+      "contents: write",
+      "pull-requests: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "docker-build.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {
+      "build-images": {
+        "contents": "read",
+        "packages": "write",
+        "security-events": "write"
+      }
+    },
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-docker-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [
+      "security-events: write",
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "example-with-failure-handler.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-workflow-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "github-integration-ci-cd.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {
+      "build": {
+        "contents": "read",
+        "packages": "write"
+      }
+    },
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "security-events: write",
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "incremental-lint.yml",
+    "workflow_permissions": null,
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "intelligent-ci.yml",
+    "workflow_permissions": null,
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "issue-to-spec.yml",
+    "workflow_permissions": {
+      "contents": "write",
+      "pull-requests": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "contents: write",
+      "pull-requests: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "optimized-ci.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "pr-linting.yml",
+    "workflow_permissions": {
+      "contents": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "python-linting.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-python-linting-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "qodana_code_quality.yml",
+    "workflow_permissions": null,
+    "job_permissions": {
+      "qodana": {
+        "contents": "write",
+        "pull-requests": "write",
+        "checks": "write"
+      }
+    },
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "react-validation.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-react-validation-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "release.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "packages": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-release-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "rollback.yml",
+    "workflow_permissions": null,
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "security-enhanced.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "security-events: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "security-old.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "security-events: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "security-tests.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "security-events": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "security-events: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "security.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "security-events": "write",
+      "issues": "read",
+      "pull-requests": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-security-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "shell-linting.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-shell-linting-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "sonarqube-report.yml",
+    "workflow_permissions": null,
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "test-failure-handler.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "test-failure-handler",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "test-issue-creation.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [
+      {
+        "job": "handle-test-failure",
+        "workflow": "./.github/workflows/workflow-failure-handler.yml"
+      }
+    ],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "workflow-editor-ci.yml",
+    "workflow_permissions": {
+      "contents": "read",
+      "packages": "write"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "packages: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "workflow-failure-handler.yml",
+    "workflow_permissions": {
+      "actions": "read",
+      "contents": "read",
+      "issues": "write"
+    },
+    "job_permissions": {
+      "handle-failure": {
+        "issues": "write",
+        "actions": "read"
+      }
+    },
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "workflow-failure-monitoring.yml",
+    "workflow_permissions": null,
+    "job_permissions": {
+      "generate-monitoring-report": {
+        "issues": "read",
+        "actions": "read",
+        "contents": "write"
+      }
+    },
+    "uses_reusable_workflows": [],
+    "needs_permissions": [],
+    "issues": []
+  },
+  {
+    "file": "workflow-health-monitor-debug.yml",
+    "workflow_permissions": {
+      "issues": "write",
+      "actions": "read",
+      "contents": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "issues: write"
+    ],
+    "issues": []
+  },
+  {
+    "file": "workflow-health-monitor.yml",
+    "workflow_permissions": {
+      "issues": "write",
+      "actions": "read"
+    },
+    "job_permissions": {},
+    "uses_reusable_workflows": [],
+    "needs_permissions": [
+      "issues: write"
+    ],
+    "issues": []
+  }
+]

@@ -8,6 +8,11 @@ on:
   release:
     types: [ published ]
 
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}

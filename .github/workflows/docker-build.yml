@@ -15,6 +15,10 @@ on:
       REGISTRY_PASSWORD:
         required: true
 
+
+permissions:
+  actions: read
+  contents: read
 env:
   REGISTRY: ghcr.io
   REGISTRY_BASE: ${{ github.repository_owner }}

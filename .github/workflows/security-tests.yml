@@ -25,6 +25,10 @@ on:
           - owasp-top10
           - api-only
 
+
+permissions:
+  contents: read
+  security-events: write
 env:
   SECURITY_REPORT_DIR: security-reports
 

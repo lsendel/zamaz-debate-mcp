@@ -12,6 +12,10 @@ on:
           - 'true'
           - 'false'
 
+
+permissions:
+  actions: read
+  contents: read
 jobs:
   test-job:
     name: Test Job
