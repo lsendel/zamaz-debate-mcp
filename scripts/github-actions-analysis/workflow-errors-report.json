@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-07-24T03:17:23.035Z",
+  "specificError": {
+    "file": ".github/workflows/shell-linting.yml",
+    "line": 112,
+    "col": 13,
+    "error": "Job 'handle-shell-linting-failure' depends on unknown job 'shell-lint'",
+    "fix": "The job dependency should be 'lint-shell' not 'shell-lint'"
+  },
+  "workflowsWithErrors": [],
+  "recommendations": [
+    "Fix shell-linting.yml: Change 'needs: [shell-lint]' to 'needs: [lint-shell]'",
+    "Check all workflow files for similar job dependency errors",
+    "Validate all workflow files locally before pushing"
+  ]
+}

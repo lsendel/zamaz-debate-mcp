@@ -249,46 +249,38 @@ jobs:
           CURRENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           
           # Build issue body with proper variable expansion
-          ISSUE_BODY="## 🚨 Workflow Startup Failure Detected
-
-The **$WORKFLOW_NAME** workflow failed to start properly.
-
-> **Status**: 🔴 ACTIVE - 1 failure recorded
-> **First Detected**: $CURRENT_TIME
-> **Last Updated**: $CURRENT_TIME
-
-### 📋 Workflow Information
-- **Workflow**: $WORKFLOW_NAME
-- **Run ID**: $WORKFLOW_ID
-- **Branch**: $WORKFLOW_BRANCH
-- **Triggered by**: @$WORKFLOW_ACTOR
-- **Commit**: $WORKFLOW_SHA
-- **Status**: $WORKFLOW_CONCLUSION
-- **URL**: $WORKFLOW_URL
-
-### 🔍 Failure Analysis
-This is a **startup failure**, which means the workflow failed before any jobs could run. This is typically caused by:
-
-1. **Syntax errors** in the workflow YAML file
-2. **Missing or misconfigured secrets**
-3. **Invalid action references** or versions
-4. **Permission issues** with the workflow
-5. **Recent changes** that broke the workflow configuration
-
-### 🛠️ Suggested Actions
-1. Check the workflow file for YAML syntax errors
-2. Verify all required secrets are properly configured in repository settings
-3. Ensure all action references use valid versions
-4. Check if the workflow has the required permissions
-5. Review recent commits that modified the workflow file
-
-### 📊 Severity
-**Severity**: $SEVERITY
-
-This is a critical issue as the workflow cannot run at all, potentially blocking important security scans or CI/CD processes.
-
----
-*This issue was automatically created by the Workflow Health Monitor*"
+          ISSUE_BODY=""
+          ISSUE_BODY+="## 🚨 Workflow Startup Failure Detected"$'\n\n'
+          ISSUE_BODY+="The **$WORKFLOW_NAME** workflow failed to start properly."$'\n\n'
+          ISSUE_BODY+="\> **Status**: 🔴 ACTIVE - 1 failure recorded"$'\n'
+          ISSUE_BODY+="\> **First Detected**: $CURRENT_TIME"$'\n'
+          ISSUE_BODY+="\> **Last Updated**: $CURRENT_TIME"$'\n\n'
+          ISSUE_BODY+="### 📋 Workflow Information"$'\n'
+          ISSUE_BODY+="- **Workflow**: $WORKFLOW_NAME"$'\n'
+          ISSUE_BODY+="- **Run ID**: $WORKFLOW_ID"$'\n'
+          ISSUE_BODY+="- **Branch**: $WORKFLOW_BRANCH"$'\n'
+          ISSUE_BODY+="- **Triggered by**: @$WORKFLOW_ACTOR"$'\n'
+          ISSUE_BODY+="- **Commit**: $WORKFLOW_SHA"$'\n'
+          ISSUE_BODY+="- **Status**: $WORKFLOW_CONCLUSION"$'\n'
+          ISSUE_BODY+="- **URL**: $WORKFLOW_URL"$'\n\n'
+          ISSUE_BODY+="### 🔍 Failure Analysis"$'\n'
+          ISSUE_BODY+="This is a **startup failure**, which means the workflow failed before any jobs could run. This is typically caused by:"$'\n\n'
+          ISSUE_BODY+="1. **Syntax errors** in the workflow YAML file"$'\n'
+          ISSUE_BODY+="2. **Missing or misconfigured secrets**"$'\n'
+          ISSUE_BODY+="3. **Invalid action references** or versions"$'\n'
+          ISSUE_BODY+="4. **Permission issues** with the workflow"$'\n'
+          ISSUE_BODY+="5. **Recent changes** that broke the workflow configuration"$'\n\n'
+          ISSUE_BODY+="### 🛠️ Suggested Actions"$'\n'
+          ISSUE_BODY+="1. Check the workflow file for YAML syntax errors"$'\n'
+          ISSUE_BODY+="2. Verify all required secrets are properly configured in repository settings"$'\n'
+          ISSUE_BODY+="3. Ensure all action references use valid versions"$'\n'
+          ISSUE_BODY+="4. Check if the workflow has the required permissions"$'\n'
+          ISSUE_BODY+="5. Review recent commits that modified the workflow file"$'\n\n'
+          ISSUE_BODY+="### 📊 Severity"$'\n'
+          ISSUE_BODY+="**Severity**: $SEVERITY"$'\n\n'
+          ISSUE_BODY+="This is a critical issue as the workflow cannot run at all, potentially blocking important security scans or CI/CD processes."$'\n\n'
+          ISSUE_BODY+="---"$'\n'
+          ISSUE_BODY+="*This issue was automatically created by the Workflow Health Monitor*"
           
           # Check for existing open issues for this workflow
           echo "Checking for existing issues for workflow: $WORKFLOW_NAME"
@@ -353,23 +345,20 @@ This is a critical issue as the workflow cannot run at all, potentially blocking
             
             # Add detailed comment about the new failure
             COMMENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            COMMENT_BODY="## 🔄 Failure #$FAILURE_COUNT
-
-The **$WORKFLOW_NAME** workflow has failed again.
-
-### 📋 Failure Details
-- **Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)
-- **Time**: $COMMENT_TIME
-- **Branch**: $WORKFLOW_BRANCH
-- **Commit**: \`$WORKFLOW_SHA\`
-- **Triggered by**: @$WORKFLOW_ACTOR
-- **Conclusion**: $WORKFLOW_CONCLUSION
-
-### 📊 Failure Pattern
-This is occurrence **#$FAILURE_COUNT** of this issue. The workflow continues to fail with startup errors.
-
----
-*Automated update by Workflow Health Monitor*"
+            COMMENT_BODY=""
+            COMMENT_BODY+="## 🔄 Failure #$FAILURE_COUNT"$'\n\n'
+            COMMENT_BODY+="The **$WORKFLOW_NAME** workflow has failed again."$'\n\n'
+            COMMENT_BODY+="### 📋 Failure Details"$'\n'
+            COMMENT_BODY+="- **Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)"$'\n'
+            COMMENT_BODY+="- **Time**: $COMMENT_TIME"$'\n'
+            COMMENT_BODY+="- **Branch**: $WORKFLOW_BRANCH"$'\n'
+            COMMENT_BODY+="- **Commit**: \`$WORKFLOW_SHA\`"$'\n'
+            COMMENT_BODY+="- **Triggered by**: @$WORKFLOW_ACTOR"$'\n'
+            COMMENT_BODY+="- **Conclusion**: $WORKFLOW_CONCLUSION"$'\n\n'
+            COMMENT_BODY+="### 📊 Failure Pattern"$'\n'
+            COMMENT_BODY+="This is occurrence **#$FAILURE_COUNT** of this issue. The workflow continues to fail with startup errors."$'\n\n'
+            COMMENT_BODY+="---"$'\n'
+            COMMENT_BODY+="*Automated update by Workflow Health Monitor*"
             
             echo "Adding comment to issue #$LATEST_ISSUE"
             if gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY" 2>&1; then
