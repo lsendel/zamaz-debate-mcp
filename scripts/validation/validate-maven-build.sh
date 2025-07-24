@@ -33,7 +33,7 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Maven modules to validate
+# Maven modules to validate (only existing ones)
 MAVEN_MODULES=(
     "mcp-common"
     "mcp-security"
@@ -48,6 +48,10 @@ MAVEN_MODULES=(
     "mcp-testing"
     "mcp-pattern-recognition"
     "github-integration"
+    "karate-api-tests"
+    "load-tests"
+    "mcp-sidecar"
+    "server"
     "workflow-editor"
     "mcp-context"
     "mcp-controller"
