@@ -1,0 +1,52 @@
+{
+  "timestamp": "2025-07-24T04:37:42.041Z",
+  "analyses": [
+    {
+      "runId": "16487845275",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/runs/16487845275",
+      "timestamp": "2025-07-24T04:37:33.880Z",
+      "workflowName": "Search code, repositories, users, issues, pull requests...",
+      "status": "failed",
+      "errors": [
+        {
+          "type": "syntax",
+          "detail": "Unrecognized function: failure"
+        }
+      ],
+      "failedJobs": [],
+      "logExcerpts": [],
+      "rootCauses": [
+        "Syntax errors in workflow or script files"
+      ],
+      "suggestedFixes": [
+        "Fix YAML/script syntax errors"
+      ]
+    }
+  ],
+  "plan": {
+    "summary": {
+      "totalRuns": 1,
+      "failedRuns": 1,
+      "errorTypes": {
+        "syntax": 1
+      },
+      "affectedWorkflows": {}
+    },
+    "commonIssues": [
+      {
+        "type": "syntax",
+        "count": 1,
+        "percentage": "100.0"
+      }
+    ],
+    "prioritizedFixes": [
+      {
+        "priority": 3,
+        "issue": "Syntax errors in workflows",
+        "action": "Fix YAML and script syntax errors",
+        "impact": "High - preventing workflow execution"
+      }
+    ],
+    "implementation": []
+  }
+}

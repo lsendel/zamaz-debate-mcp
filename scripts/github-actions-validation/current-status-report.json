@@ -1,13 +1,7 @@
 {
-  "timestamp": "2025-07-24T04:25:05.346Z",
+  "timestamp": "2025-07-24T04:37:58.377Z",
   "failingWorkflows": [],
   "errorMessages": [],
-  "recentRuns": [
-    {
-      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/runs/16487679926",
-      "errors": [],
-      "snippet": "\n    \n      \n\n\n\n    \n      Skip to content\n\n      \n    \n      \n      \n      \n\n\n\n\n\n\n  \n  {\"props\":{\"docsUrl\":\"https://docs.github.com/get-started/accessibility/keyboard-shortcuts\"}}\n  {\"resolvedServerColorMode\":\"day\"}\n\n\n\n\n\n      \n\n          \n\n              \n\n\n\n\n  Navigation Menu\n\n  \n    Toggle navigation\n  \n\n  \n    \n      \n          \n    \n            \n            \n  \n\n      \n\n      \n        \n    \n\n      \n\n      \n          \n            Sign in\n          \n              \n    \n        \n    \n\nAppearan"
-    }
-  ],
+  "recentRuns": [],
   "fixesNeeded": []
 }

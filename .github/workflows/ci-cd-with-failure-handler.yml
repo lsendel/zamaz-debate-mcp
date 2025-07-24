@@ -420,7 +420,7 @@ jobs:
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "CI/CD Pipeline"
-      severity: ${{ (failure() && needs.deploy-production.result == 'failure') && 'critical' || (failure() && needs.deploy-staging.result == 'failure') && 'high' || (failure() && needs.security-scan.result == 'failure') && 'high' || (failure() && needs.e2e-tests.result == 'failure') && 'high' || 'medium' }}
+      severity: ${{ needs.deploy-production.result == 'failure' && 'critical' || needs.deploy-staging.result == 'failure' && 'high' || needs.security-scan.result == 'failure' && 'high' || needs.e2e-tests.result == 'failure' && 'high' || 'medium' }}
       assignees: ${{ (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'devops-team,oncall,platform-lead' || (needs.security-scan.result == 'failure') && 'security-team,team-lead' || (needs.java-services.result == 'failure' || needs.frontend.result == 'failure') && 'dev-team,backend-lead' || (needs.e2e-tests.result == 'failure' || needs.contract-tests.result == 'failure') && 'qa-team,dev-team' || 'platform-team' }}
       labels: "workflow-failure,ci-cd"
       template: ${{ (needs.security-scan.result == 'failure') && 'security' || (needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure') && 'deployment' || 'ci-cd' }}

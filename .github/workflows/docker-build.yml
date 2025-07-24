@@ -16,22 +16,21 @@ on:
         required: true
 
 
-permissions:
-  actions: read
-  contents: read
-  issues: write
 env:
   REGISTRY: ghcr.io
   REGISTRY_BASE: ${{ github.repository_owner }}
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+  security-events: write
+  issues: write
 
 jobs:
   build-images:
     name: 🐳 Build & Push Docker Images
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      security-events: write
     
     strategy:
       matrix:

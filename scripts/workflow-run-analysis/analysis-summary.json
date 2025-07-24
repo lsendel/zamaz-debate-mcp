@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-07-24T04:37:42.041Z",
+  "totalAnalyzed": 1,
+  "failures": [
+    {
+      "runId": "16487845275",
+      "workflow": "Search code, repositories, users, issues, pull requests...",
+      "errors": [
+        "syntax"
+      ],
+      "fixes": [
+        "Fix YAML/script syntax errors"
+      ]
+    }
+  ],
+  "plan": [
+    {
+      "priority": 3,
+      "issue": "Syntax errors in workflows",
+      "action": "Fix YAML and script syntax errors",
+      "impact": "High - preventing workflow execution"
+    }
+  ]
+}
