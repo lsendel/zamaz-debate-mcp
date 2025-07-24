@@ -218,6 +218,7 @@ jobs:
           # Create or update dashboard file
           DASHBOARD_DIR="../../docs/monitoring"
           mkdir -p "$DASHBOARD_DIR"
+          mkdir -p "$DASHBOARD_DIR/archive"
           
           # Copy latest report
           cp monitoring-report.md "$DASHBOARD_DIR/latest-report.md"
