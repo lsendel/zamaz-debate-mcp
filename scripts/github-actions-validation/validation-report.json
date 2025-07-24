@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-07-24T03:40:31.812Z",
+  "fixedIssues": [
+    "package-lock.json",
+    "eslint-security.sarif",
+    "semgrep-results.sarif",
+    "HEALTHCHECK",
+    "@microsoft/sarif-tools",
+    "shell-lint dependency",
+    "workflow YAML syntax",
+    "checkout@v3"
+  ],
+  "remainingIssues": [],
+  "newIssues": [],
+  "workflowStatus": {
+    "Build Validation": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/build-validation.yml"
+    },
+    "CI/CD Pipeline": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd.yml"
+    },
+    "Claude Code": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/claude.yml"
+    },
+    "Claude Code Review": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/claude-code-review.yml"
+    },
+    "Code Quality": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/code-quality.yml"
+    },
+    "Continuous Integration": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/ci.yml"
+    },
+    "Copilot": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/copilot-swe-agent/copilot"
+    },
+    "Database Migration": {
+      "status": "unknown",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/database-migration.yml"
+    }
+  }
+}

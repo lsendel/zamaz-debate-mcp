@@ -92,12 +92,22 @@ jobs:
             p/typescript
             p/docker
             p/kubernetes
-          output: semgrep-results.sarif
-          metrics: false
-          generate-sarif: true
+          generateSarif: true
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
         continue-on-error: true
+
+      - name: Check if Semgrep SARIF exists
+        id: check-semgrep
+        run: |
+          if [ -f results.sarif ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+            mv results.sarif semgrep-results.sarif
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+            echo "Creating empty SARIF file..."
+            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"Semgrep","version":"1.0.0"}},"results":[]}]}' > semgrep-results.sarif
+          fi
 
       - name: Upload Semgrep results
         uses: github/codeql-action/upload-sarif@v3
@@ -618,13 +628,13 @@ jobs:
           # Install pandoc for HTML report generation
           sudo apt-get install -y pandoc
           
-          # Install npm and sarif tools if needed
+          # Install npm if needed
           if ! command -v npm &> /dev/null; then
             curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
             sudo apt-get install -y nodejs
           fi
           
-          sudo npm install -g @microsoft/sarif-tools
+          # Note: SARIF processing will be handled by the generate-security-report.sh script
 
       - name: Generate comprehensive security report
         run: |

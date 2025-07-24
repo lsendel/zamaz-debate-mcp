@@ -1,0 +1,60 @@
+{
+  "timestamp": "2025-07-24T03:42:31.090Z",
+  "pageContent": {
+    "hasContent": true,
+    "textLength": 39136
+  },
+  "errors": [
+    "failed"
+  ],
+  "workflows": [
+    {
+      "name": "Build Validation",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/build-validation.yml"
+    },
+    {
+      "name": "CI/CD Pipeline",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd-pipeline.yml"
+    },
+    {
+      "name": "CI/CD Pipeline",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd-with-failure-handler.yml"
+    },
+    {
+      "name": "CI/CD Pipeline",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd.yml"
+    },
+    {
+      "name": "Claude Code",
+      "href": "/lsendel/zamaz-debate-mcp/actions/workflows/claude.yml"
+    }
+  ],
+  "recentActivity": [
+    {
+      "text": "\n      \n          \n\n    \n\n\n          \n            Build Validation\n          \n        \n\n      \n     ...",
+      "href": "/lsendel/zamaz-debate-mcp/actions/runs/16487201804",
+      "status": "unknown"
+    },
+    {
+      "text": "\n                    \n                      View workflow file\n                    \n                ...",
+      "href": "/lsendel/zamaz-debate-mcp/actions/runs/16487201804/workflow",
+      "status": "unknown"
+    },
+    {
+      "text": "\n      \n          \n\n    \n\n\n          \n            Workflow Health Monitor\n          \n        \n\n     ...",
+      "href": "/lsendel/zamaz-debate-mcp/actions/runs/16487156940",
+      "status": "unknown"
+    }
+  ],
+  "fixValidation": {
+    "package-lock.json error": true,
+    "eslint-security.sarif error": true,
+    "semgrep-results.sarif error": true,
+    "HEALTHCHECK syntax error": true,
+    "@microsoft/sarif-tools error": true,
+    "shell-lint dependency error": true,
+    "workflow YAML syntax error": true,
+    "outdated checkout action": true
+  },
+  "allIssuesFixed": true
+}

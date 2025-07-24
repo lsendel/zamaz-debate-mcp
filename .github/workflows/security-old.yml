@@ -104,13 +104,12 @@ jobs:
           if [ -f .eslintrc.security.js ]; then
             npx eslint src \
               --ext .ts,.tsx,.js,.jsx \
-              --format json \
-              --output-file eslint-results.json \
+              --format @microsoft/eslint-formatter-sarif \
+              --output-file eslint-security.sarif \
               --config .eslintrc.security.js || true
-            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"ESLint"}},"results":[]}]}' > eslint-security.sarif
           else
-            echo "Security ESLint config not found, skipping..."
-            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"ESLint"}},"results":[]}]}' > eslint-security.sarif
+            echo "Security ESLint config not found, creating empty SARIF..."
+            echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"ESLint","version":"1.0.0"}},"results":[]}]}' > eslint-security.sarif
           fi
         continue-on-error: true
 
@@ -118,7 +117,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: ./debate-ui/eslint-security.sarif
+          sarif_file: ./eslint-security.sarif
           wait-for-processing: true
 
   secrets-scan:
