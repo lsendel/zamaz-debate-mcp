@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
     inputs:
       target-env:
-  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
         description: 'Environment to test'
         required: true
         default: 'staging'
@@ -26,11 +25,12 @@ on:
           - owasp-top10
           - api-only
 
-
 permissions:
   contents: read
   security-events: write
+
 env:
+  MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   SECURITY_REPORT_DIR: security-reports
 
 jobs:
