@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  # Test Database
+  postgres-test:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: debate_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test Redis
+  redis-test:
+    image: redis:7
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test Organization Service
+  mcp-organization-test:
+    image: ${REGISTRY}/${IMAGE_NAME}/mcp-organization:${GITHUB_SHA}
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/debate_test
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis-test
+      SPRING_REDIS_PORT: 6379
+      SERVER_PORT: 5005
+    ports:
+      - "5005:5005"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Test Gateway Service
+  mcp-gateway-test:
+    image: ${REGISTRY}/${IMAGE_NAME}/mcp-gateway:${GITHUB_SHA}
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/debate_test
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis-test
+      SPRING_REDIS_PORT: 6379
+      SERVER_PORT: 8080
+      ORGANIZATION_SERVICE_URL: http://mcp-organization-test:5005
+      DEBATE_SERVICE_URL: http://mcp-debate-engine-test:5013
+      LLM_SERVICE_URL: http://mcp-llm-test:5002
+      RAG_SERVICE_URL: http://mcp-rag-test:5004
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Test Debate Engine Service
+  mcp-debate-engine-test:
+    image: ${REGISTRY}/${IMAGE_NAME}/mcp-debate-engine:${GITHUB_SHA}
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/debate_test
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis-test
+      SPRING_REDIS_PORT: 6379
+      SERVER_PORT: 5013
+      LLM_SERVICE_URL: http://mcp-llm-test:5002
+      RAG_SERVICE_URL: http://mcp-rag-test:5004
+    ports:
+      - "5013:5013"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5013/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Test LLM Service
+  mcp-llm-test:
+    image: ${REGISTRY}/${IMAGE_NAME}/mcp-llm:${GITHUB_SHA}
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_REDIS_HOST: redis-test
+      SPRING_REDIS_PORT: 6379
+      SERVER_PORT: 5002
+      # Test API keys - should be replaced with test keys
+      OPENAI_API_KEY: ${TEST_OPENAI_API_KEY:-test-key}
+      ANTHROPIC_API_KEY: ${TEST_ANTHROPIC_API_KEY:-test-key}
+      GOOGLE_API_KEY: ${TEST_GOOGLE_API_KEY:-test-key}
+    ports:
+      - "5002:5002"
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Test RAG Service
+  mcp-rag-test:
+    image: ${REGISTRY}/${IMAGE_NAME}/mcp-rag:${GITHUB_SHA}
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/debate_test
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis-test
+      SPRING_REDIS_PORT: 6379
+      SERVER_PORT: 5004
+      QDRANT_HOST: qdrant-test
+      QDRANT_PORT: 6333
+    ports:
+      - "5004:5004"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      qdrant-test:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Test Qdrant
+  qdrant-test:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6334:6333"
+    volumes:
+      - qdrant-test-storage:/qdrant/storage
+
+volumes:
+  qdrant-test-storage:
+
+networks:
+  default:
+    name: test-network

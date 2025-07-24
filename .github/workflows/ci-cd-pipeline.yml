@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
   NODE_VERSION: '18'
 
 jobs:
@@ -19,6 +19,8 @@ jobs:
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,7 +44,7 @@ jobs:
       - name: Run SpotBugs
         run: |
           if [ -f pom.xml ]; then
-            mvn spotbugs:check -Dspotbugs.skip=true
+            ./mvnw spotbugs:check -Dspotbugs.skip=false || echo "SpotBugs check failed, continuing..."
           else
             echo "No pom.xml found in root, skipping SpotBugs"
           fi
@@ -50,7 +52,7 @@ jobs:
       - name: Run Checkstyle
         run: |
           if [ -f pom.xml ]; then
-            mvn checkstyle:check -Dcheckstyle.skip=true
+            ./mvnw checkstyle:check -Dcheckstyle.skip=false || echo "Checkstyle check failed, continuing..."
           else
             echo "No pom.xml found in root, skipping Checkstyle"
           fi
@@ -58,7 +60,7 @@ jobs:
       - name: Run PMD
         run: |
           if [ -f pom.xml ]; then
-            mvn pmd:check -Dpmd.skip=true
+            ./mvnw pmd:check -Dpmd.skip=false || echo "PMD check failed, continuing..."
           else
             echo "No pom.xml found in root, skipping PMD"
           fi
@@ -69,7 +71,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           if [ -f pom.xml ]; then
-            mvn clean verify sonar:sonar \
+            ./mvnw clean verify sonar:sonar \
               -Dsonar.projectKey=lsendel_zamaz-debate-mcp \
               -Dsonar.organization=lsendel \
               -Dsonar.host.url=https://sonarcloud.io || echo "SonarCloud analysis failed, continuing..."
@@ -127,6 +129,8 @@ jobs:
     name: Build and Test Backend
     runs-on: ubuntu-latest
     needs: [code-quality, security-scan]
+    env:
+      MAVEN_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
     strategy:
       matrix:
         service: [mcp-organization, mcp-gateway, mcp-debate-engine, mcp-llm, mcp-rag, mcp-security]
@@ -151,16 +155,16 @@ jobs:
 
       - name: Build service
         working-directory: ${{ matrix.service }}
-        run: mvn clean compile
+        run: ../mvnw clean compile
 
       - name: Run unit tests
         working-directory: ${{ matrix.service }}
-        run: mvn test
+        run: ../mvnw test
 
       - name: Generate test report
         if: always()
         working-directory: ${{ matrix.service }}
-        run: mvn surefire-report:report
+        run: ../mvnw surefire-report:report
 
       - name: Upload test results
         if: always()
@@ -200,11 +204,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: debate-ui/package-lock.json
+          cache-dependency-path: debate-ui/package.json
 
       - name: Install dependencies
         working-directory: debate-ui
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Run ESLint
         working-directory: debate-ui
@@ -229,6 +238,8 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
+    env:
+      MAVEN_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
     services:
       postgres:
         image: postgres:15
@@ -279,7 +290,7 @@ jobs:
           sleep 30  # Wait for services to be ready
 
       - name: Run integration tests
-        run: mvn verify -Pintegration-tests
+        run: ./mvnw verify -Pintegration-tests
 
       - name: Collect Docker logs on failure
         if: failure()
