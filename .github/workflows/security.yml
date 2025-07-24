@@ -148,6 +148,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: debate-ui/package-lock.json
 
       - name: Install dependencies
         working-directory: ./debate-ui

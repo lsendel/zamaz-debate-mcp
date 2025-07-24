@@ -111,8 +111,8 @@ jobs:
 
       - name: Validate Maven configuration
         run: |
-          mvn validate
-          mvn help:effective-pom -q
+          mvn validate ${{ env.MAVEN_BATCH_MODE }}
+          mvn help:effective-pom -q ${{ env.MAVEN_BATCH_MODE }}
 
       - name: Compile all modules
         run: |
