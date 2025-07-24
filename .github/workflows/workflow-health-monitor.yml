@@ -48,8 +48,9 @@ jobs:
           
       - name: Install dependencies
         run: |
-          # Install global dependencies needed for YAML parsing
-          npm install -g js-yaml
+          # Create a local node_modules in current directory for js-yaml
+          npm init -y
+          npm install js-yaml @actions/core @actions/github
           
           # Install npm dependencies for failure detector
           if [ -d ".github/actions/failure-detector" ]; then
@@ -67,8 +68,8 @@ jobs:
             cd -
           fi
           
-          # Verify js-yaml is available
-          node -e "console.log('js-yaml version:', require('js-yaml').VERSION || 'installed')" || echo "js-yaml not available, will use fallback"
+          # Verify js-yaml is available locally
+          node -e "console.log('js-yaml available:', require('js-yaml').VERSION || 'installed')"
           
       - name: Debug workflow context
         run: |
@@ -117,7 +118,35 @@ jobs:
             CONFIG_PATH="$(pwd)/$CONFIG_FILE"
             echo "Full config path: $CONFIG_PATH"
             
-            if WORKFLOW_CONFIG=$(node -e "
+            # Use a simpler approach without js-yaml for now
+            echo "Attempting simple config parsing for workflow: $WORKFLOW_NAME"
+            if [ "$WORKFLOW_NAME" = "Security Scanning" ]; then
+              SEVERITY="high"
+              ASSIGNEES="security-team,team-lead"
+              LABELS="security,compliance,workflow-failure"
+              echo "Using hardcoded Security Scanning config"
+            elif [ "$WORKFLOW_NAME" = "CI/CD Pipeline" ]; then
+              SEVERITY="critical"
+              ASSIGNEES="backend-team,devops-team,platform-lead"
+              LABELS="ci-cd,critical,workflow-failure"
+              echo "Using hardcoded CI/CD Pipeline config"
+            elif [ "$WORKFLOW_NAME" = "Code Quality" ]; then
+              SEVERITY="medium"
+              ASSIGNEES="code-quality-team,dev-team"
+              LABELS="code-quality,workflow-failure,technical-debt"
+              echo "Using hardcoded Code Quality config"
+            else
+              echo "Using default config for workflow: $WORKFLOW_NAME"
+              SEVERITY="high"
+              ASSIGNEES=""
+              LABELS="workflow-failure,startup-failure"
+            fi
+            
+            echo "Final config - Severity: $SEVERITY, Assignees: $ASSIGNEES, Labels: $LABELS"
+            
+            # Try YAML parsing as fallback (but don't fail if it doesn't work)
+            if false; then  # Disabled for now
+            WORKFLOW_CONFIG=$(node -e "
               try {
                 const yaml = require('js-yaml');
                 const fs = require('fs');
@@ -217,49 +246,49 @@ jobs:
           
           # Generate issue content
           ISSUE_TITLE="$WORKFLOW_NAME workflow failed with startup error on $WORKFLOW_BRANCH"
-          ISSUE_BODY=$(cat <<"EOF"
-          ## 🚨 Workflow Startup Failure Detected
+          CURRENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          # Build issue body with proper variable expansion
+          ISSUE_BODY="## 🚨 Workflow Startup Failure Detected
 
-          The **$WORKFLOW_NAME** workflow failed to start properly.
+The **$WORKFLOW_NAME** workflow failed to start properly.
 
-          > **Status**: 🔴 ACTIVE - 1 failure recorded
-          > **First Detected**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          > **Last Updated**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+> **Status**: 🔴 ACTIVE - 1 failure recorded
+> **First Detected**: $CURRENT_TIME
+> **Last Updated**: $CURRENT_TIME
 
-          ### 📋 Workflow Information
-          - **Workflow**: $WORKFLOW_NAME
-          - **Run ID**: $WORKFLOW_ID
-          - **Branch**: $WORKFLOW_BRANCH
-          - **Triggered by**: @$WORKFLOW_ACTOR
-          - **Commit**: $WORKFLOW_SHA
-          - **Status**: $WORKFLOW_CONCLUSION
-          - **URL**: $WORKFLOW_URL
+### 📋 Workflow Information
+- **Workflow**: $WORKFLOW_NAME
+- **Run ID**: $WORKFLOW_ID
+- **Branch**: $WORKFLOW_BRANCH
+- **Triggered by**: @$WORKFLOW_ACTOR
+- **Commit**: $WORKFLOW_SHA
+- **Status**: $WORKFLOW_CONCLUSION
+- **URL**: $WORKFLOW_URL
 
-          ### 🔍 Failure Analysis
-          This is a **startup failure**, which means the workflow failed before any jobs could run. This is typically caused by:
+### 🔍 Failure Analysis
+This is a **startup failure**, which means the workflow failed before any jobs could run. This is typically caused by:
 
-          1. **Syntax errors** in the workflow YAML file
-          2. **Missing or misconfigured secrets**
-          3. **Invalid action references** or versions
-          4. **Permission issues** with the workflow
-          5. **Recent changes** that broke the workflow configuration
+1. **Syntax errors** in the workflow YAML file
+2. **Missing or misconfigured secrets**
+3. **Invalid action references** or versions
+4. **Permission issues** with the workflow
+5. **Recent changes** that broke the workflow configuration
 
-          ### 🛠️ Suggested Actions
-          1. Check the workflow file for YAML syntax errors
-          2. Verify all required secrets are properly configured in repository settings
-          3. Ensure all action references use valid versions
-          4. Check if the workflow has the required permissions
-          5. Review recent commits that modified the workflow file
+### 🛠️ Suggested Actions
+1. Check the workflow file for YAML syntax errors
+2. Verify all required secrets are properly configured in repository settings
+3. Ensure all action references use valid versions
+4. Check if the workflow has the required permissions
+5. Review recent commits that modified the workflow file
 
-          ### 📊 Severity
-          **Severity**: $SEVERITY
+### 📊 Severity
+**Severity**: $SEVERITY
 
-          This is a critical issue as the workflow cannot run at all, potentially blocking important security scans or CI/CD processes.
+This is a critical issue as the workflow cannot run at all, potentially blocking important security scans or CI/CD processes.
 
-          ---
-          *This issue was automatically created by the Workflow Health Monitor*
-          EOF
-          )
+---
+*This issue was automatically created by the Workflow Health Monitor*"
           
           # Check for existing open issues for this workflow
           echo "Checking for existing issues for workflow: $WORKFLOW_NAME"
@@ -323,26 +352,24 @@ jobs:
             fi
             
             # Add detailed comment about the new failure
-            COMMENT_BODY=$(cat <<"EOF"
-            ## 🔄 Failure #$FAILURE_COUNT
+            COMMENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            COMMENT_BODY="## 🔄 Failure #$FAILURE_COUNT
 
-            The **$WORKFLOW_NAME** workflow has failed again.
+The **$WORKFLOW_NAME** workflow has failed again.
 
-            ### 📋 Failure Details
-            - **Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)
-            - **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-            - **Branch**: $WORKFLOW_BRANCH
-            - **Commit**: \`$WORKFLOW_SHA\`
-            - **Triggered by**: @$WORKFLOW_ACTOR
-            - **Conclusion**: $WORKFLOW_CONCLUSION
+### 📋 Failure Details
+- **Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)
+- **Time**: $COMMENT_TIME
+- **Branch**: $WORKFLOW_BRANCH
+- **Commit**: \`$WORKFLOW_SHA\`
+- **Triggered by**: @$WORKFLOW_ACTOR
+- **Conclusion**: $WORKFLOW_CONCLUSION
 
-            ### 📊 Failure Pattern
-            This is occurrence **#$FAILURE_COUNT** of this issue. The workflow continues to fail with startup errors.
+### 📊 Failure Pattern
+This is occurrence **#$FAILURE_COUNT** of this issue. The workflow continues to fail with startup errors.
 
-            ---
-            *Automated update by Workflow Health Monitor*
-            EOF
-            )
+---
+*Automated update by Workflow Health Monitor*"
             
             echo "Adding comment to issue #$LATEST_ISSUE"
             if gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY" 2>&1; then
