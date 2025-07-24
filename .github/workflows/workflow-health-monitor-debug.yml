@@ -1,0 +1,325 @@
+name: Workflow Health Monitor Debug
+
+on:
+  # Primary trigger - workflow_run
+  workflow_run:
+    workflows: 
+      - "Security Scanning"
+      - "CI/CD Pipeline"
+      - "Code Quality"
+      - "Docker Build"
+      - "Database Migration"
+    types:
+      - completed
+  
+  # Backup trigger - schedule every 15 minutes to check for failed workflows
+  schedule:
+    - cron: '*/15 * * * *'
+  
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Run in test mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  issues: write
+  actions: read
+  contents: read
+
+jobs:
+  debug-trigger:
+    name: Debug Workflow Trigger
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug workflow_run trigger
+        if: github.event_name == 'workflow_run'
+        run: |
+          echo "=== WORKFLOW_RUN TRIGGER DEBUG ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Workflow name: ${{ github.event.workflow_run.name }}"
+          echo "Workflow ID: ${{ github.event.workflow_run.id }}"
+          echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Actor: ${{ github.event.workflow_run.actor.login }}"
+          echo "URL: ${{ github.event.workflow_run.html_url }}"
+          echo "Status: ${{ github.event.workflow_run.status }}"
+          
+      - name: Debug schedule trigger
+        if: github.event_name == 'schedule'
+        run: |
+          echo "=== SCHEDULE TRIGGER DEBUG ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Triggered by schedule at: $(date)"
+          
+      - name: Debug manual trigger
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "=== MANUAL TRIGGER DEBUG ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Test mode: ${{ github.event.inputs.test_mode }}"
+          echo "Triggered manually at: $(date)"
+
+  check-workflow-health:
+    name: Check Workflow Health
+    runs-on: ubuntu-latest
+    # Trigger on failure OR in test mode OR on schedule
+    if: |
+      (github.event_name == 'workflow_run' && 
+       (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'startup_failure')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.test_mode == 'true') ||
+      github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install required tools
+        run: |
+          # Install jq for JSON processing
+          sudo apt-get update
+          sudo apt-get install -y jq
+          
+          # Install GitHub CLI
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y gh
+          
+          # Verify installations
+          jq --version
+          gh --version
+          
+      - name: Install dependencies
+        run: |
+          # Create a local node_modules in current directory for js-yaml
+          npm init -y
+          npm install js-yaml @actions/core @actions/github
+          
+          # Verify js-yaml is available locally
+          node -e "console.log('js-yaml available:', require('js-yaml').VERSION || 'installed')"
+          
+      - name: Debug current trigger
+        run: |
+          echo "=== CURRENT TRIGGER DEBUG ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "=== WORKFLOW_RUN DETAILS ==="
+            echo "Workflow name: ${{ github.event.workflow_run.name }}"
+            echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+            echo "Status: ${{ github.event.workflow_run.status }}"
+            echo "URL: ${{ github.event.workflow_run.html_url }}"
+          fi
+          
+      - name: Check for recent workflow failures
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          echo "=== CHECKING FOR RECENT WORKFLOW FAILURES ==="
+          
+          # Get recent workflow runs for key workflows
+          WORKFLOWS=("Security Scanning" "CI/CD Pipeline" "Code Quality" "Docker Build" "Database Migration")
+          
+          for workflow in "${WORKFLOWS[@]}"; do
+            echo "Checking workflow: $workflow"
+            
+            # Get recent runs for this workflow
+            if RECENT_RUNS=$(gh api repos/${{ github.repository }}/actions/workflows -q ".workflows[] | select(.name == \"$workflow\") | .id" 2>/dev/null); then
+              if [ -n "$RECENT_RUNS" ]; then
+                echo "Found workflow ID: $RECENT_RUNS"
+                
+                # Get latest runs for this workflow
+                if LATEST_RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$RECENT_RUNS/runs?per_page=5" 2>/dev/null); then
+                  echo "Latest runs for $workflow:"
+                  echo "$LATEST_RUNS" | jq -r '.workflow_runs[] | "  - Run #\(.run_number): \(.conclusion // "in_progress") (\(.created_at))"'
+                  
+                  # Check for recent failures
+                  FAILED_RUNS=$(echo "$LATEST_RUNS" | jq -r '.workflow_runs[] | select(.conclusion == "failure" or .conclusion == "startup_failure") | .id')
+                  if [ -n "$FAILED_RUNS" ]; then
+                    echo "  ⚠️  Found failed runs: $FAILED_RUNS"
+                  fi
+                else
+                  echo "Could not get runs for workflow: $workflow"
+                fi
+              else
+                echo "Could not find workflow: $workflow"
+              fi
+            else
+              echo "Error accessing workflow: $workflow"
+            fi
+            echo ""
+          done
+          
+      - name: Create test issue if manual trigger or schedule
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          echo "=== CREATING TEST ISSUE ==="
+          
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TRIGGER_TYPE="Manual Test"
+            TRIGGER_DETAILS="Test mode: ${{ github.event.inputs.test_mode }}"
+          else
+            TRIGGER_TYPE="Scheduled Check"
+            TRIGGER_DETAILS="Automated health check at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          fi
+          
+          # Generate test issue content
+          ISSUE_TITLE="🧪 Workflow Health Monitor Test - $TRIGGER_TYPE"
+          ISSUE_BODY="## 🧪 Workflow Health Monitor Test
+          
+**Trigger Type**: $TRIGGER_TYPE  
+**Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)  
+**Details**: $TRIGGER_DETAILS
+
+### Test Status
+This is a test issue created to verify the workflow health monitor is working correctly.
+
+### System Information
+- **Event**: ${{ github.event_name }}
+- **Repository**: ${{ github.repository }}
+- **Branch**: ${{ github.ref_name }}
+- **Commit**: ${{ github.sha }}
+- **Actor**: ${{ github.actor }}
+
+### Next Steps
+If you see this issue, the workflow health monitor basic functionality is working. 
+The system should also create issues for actual workflow failures.
+
+---
+*This test issue was created by the Workflow Health Monitor Debug system*"
+
+          # Create the test issue
+          echo "Creating test issue..."
+          if ISSUE_URL=$(gh issue create \
+            --title "$ISSUE_TITLE" \
+            --body "$ISSUE_BODY" \
+            --label "workflow-health-test,automated" 2>&1); then
+            echo "✅ Test issue created: $ISSUE_URL"
+          else
+            echo "❌ Failed to create test issue: $ISSUE_URL"
+            exit 1
+          fi
+          
+      - name: Handle actual workflow failure
+        if: github.event_name == 'workflow_run'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+          WORKFLOW_ACTOR: ${{ github.event.workflow_run.actor.login }}
+        run: |
+          echo "=== HANDLING WORKFLOW FAILURE ==="
+          echo "Processing failure for: $WORKFLOW_NAME"
+          
+          # Use simplified configuration
+          SEVERITY="high"
+          ASSIGNEES=""
+          LABELS="workflow-failure,automated"
+          
+          if [ "$WORKFLOW_NAME" = "Security Scanning" ]; then
+            SEVERITY="critical"
+            LABELS="security,workflow-failure,automated"
+          elif [ "$WORKFLOW_NAME" = "CI/CD Pipeline" ]; then
+            SEVERITY="critical"
+            LABELS="ci-cd,workflow-failure,automated"
+          fi
+          
+          echo "Configuration - Severity: $SEVERITY, Labels: $LABELS"
+          
+          # Generate issue content
+          ISSUE_TITLE="🚨 $WORKFLOW_NAME workflow failed on $WORKFLOW_BRANCH"
+          CURRENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          ISSUE_BODY="## 🚨 Workflow Failure Detected
+
+**Workflow**: $WORKFLOW_NAME  
+**Status**: 🔴 FAILED  
+**Time**: $CURRENT_TIME
+
+### 📋 Failure Details
+- **Run ID**: $WORKFLOW_ID
+- **Branch**: $WORKFLOW_BRANCH  
+- **Commit**: $WORKFLOW_SHA
+- **Triggered by**: @$WORKFLOW_ACTOR
+- **Conclusion**: $WORKFLOW_CONCLUSION
+- **URL**: $WORKFLOW_URL
+
+### 🔍 Analysis
+This workflow failed and requires investigation.
+
+### 📊 Severity
+**Priority**: $SEVERITY
+
+---
+*This issue was automatically created by the Workflow Health Monitor*"
+
+          # Check for existing issues
+          echo "Checking for existing issues..."
+          SEARCH_QUERY="\"$WORKFLOW_NAME workflow failed\" in:title state:open"
+          
+          if EXISTING_ISSUES=$(gh issue list --search "$SEARCH_QUERY" --json number,title --limit 5 2>&1); then
+            LATEST_ISSUE=$(echo "$EXISTING_ISSUES" | jq -r '.[0].number // empty' 2>/dev/null)
+            
+            if [ -n "$LATEST_ISSUE" ] && [ "$LATEST_ISSUE" != "null" ]; then
+              echo "Found existing issue #$LATEST_ISSUE, adding comment"
+              
+              COMMENT_BODY="## 🔄 New Failure Detected
+
+**Time**: $CURRENT_TIME  
+**Run**: [#$WORKFLOW_ID]($WORKFLOW_URL)  
+**Commit**: \`$WORKFLOW_SHA\`
+
+The workflow has failed again and requires attention.
+
+---
+*Automated update by Workflow Health Monitor*"
+
+              if gh issue comment "$LATEST_ISSUE" --body "$COMMENT_BODY"; then
+                echo "✅ Updated existing issue #$LATEST_ISSUE"
+              else
+                echo "❌ Failed to update existing issue"
+              fi
+            else
+              echo "No existing issues found, creating new one"
+              if ISSUE_URL=$(gh issue create \
+                --title "$ISSUE_TITLE" \
+                --body "$ISSUE_BODY" \
+                --label "$LABELS"); then
+                echo "✅ Created new issue: $ISSUE_URL"
+              else
+                echo "❌ Failed to create new issue"
+              fi
+            fi
+          else
+            echo "Failed to search for existing issues, creating new one anyway"
+            if ISSUE_URL=$(gh issue create \
+              --title "$ISSUE_TITLE" \
+              --body "$ISSUE_BODY" \
+              --label "$LABELS"); then
+              echo "✅ Created new issue: $ISSUE_URL"
+            else
+              echo "❌ Failed to create new issue"
+            fi
+          fi
