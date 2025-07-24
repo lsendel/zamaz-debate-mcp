@@ -34,7 +34,12 @@ jobs:
       - name: Install linting dependencies
         run: |
           npm install -g jsonlint markdownlint-cli markdown-link-check
-          pip install yamllint hadolint
+          pip install yamllint
+          
+      - name: Install Hadolint
+        run: |
+          sudo wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+          sudo chmod +x /usr/local/bin/hadolint
 
       - name: Determine changed files
         id: changes
