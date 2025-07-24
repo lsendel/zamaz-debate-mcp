@@ -1,0 +1,16 @@
+{
+  "name": "github-actions-analyzer",
+  "version": "1.0.0",
+  "description": "Playwright script to analyze GitHub Actions workflow failures",
+  "main": "analyze-github-actions-failures.js",
+  "scripts": {
+    "analyze": "node analyze-github-actions-failures.js",
+    "install-playwright": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "keywords": ["github", "actions", "workflow", "analysis", "playwright"],
+  "author": "zamaz-debate-mcp",
+  "license": "MIT"
+}

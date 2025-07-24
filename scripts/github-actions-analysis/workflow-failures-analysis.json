@@ -1,0 +1,719 @@
+{
+  "timestamp": "2025-07-24T02:43:18.215Z",
+  "repoUrl": "https://github.com/lsendel/zamaz-debate-mcp",
+  "workflowRuns": [
+    {
+      "index": 0,
+      "name": "\n          Code\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 1,
+      "name": "\n          Issues\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 2,
+      "name": "\n          Pull requests\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 3,
+      "name": "\n          Actions\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 4,
+      "name": "\n          Projects\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 5,
+      "name": "\n          Security\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 6,
+      "name": "\n          Insights\n",
+      "status": "",
+      "url": "",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "analysis-error",
+          "message": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": []
+    },
+    {
+      "index": 7,
+      "name": "\n                        All workflows\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-7-1753325222071.png"
+      ]
+    },
+    {
+      "index": 8,
+      "name": "\n          \n  .github/workflows/workflow-health-monitor.yml\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/workflow-health-monitor.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Remove npm cache dependency to prevent Node.js setup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and depe…"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-8-1753325225131.png"
+      ]
+    },
+    {
+      "index": 9,
+      "name": "\n          \n  Build Validation\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/build-validation.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-9-1753325228207.png"
+      ]
+    },
+    {
+      "index": 10,
+      "name": "\n          \n  CI/CD Pipeline\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd-pipeline.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-10-1753325231313.png"
+      ]
+    },
+    {
+      "index": 11,
+      "name": "\n          \n  CI/CD Pipeline\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd-with-failure-handler.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-11-1753325234312.png"
+      ]
+    },
+    {
+      "index": 12,
+      "name": "\n          \n  CI/CD Pipeline\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/ci-cd.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-12-1753325237333.png"
+      ]
+    },
+    {
+      "index": 13,
+      "name": "\n          \n  Claude Code\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/claude.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "CI/CD Pipeline workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "CI/CD Pipeline workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "CI/CD Pipeline workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "CI/CD Pipeline workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": "Security Scanning workflow failed with startup error on main"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-13-1753325240388.png"
+      ]
+    },
+    {
+      "index": 14,
+      "name": "\n          \n  Claude Code Review\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/claude-code-review.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix React validation workflow dependency caching failure"
+        },
+        {
+          "type": "summary",
+          "message": "Fix React validation workflow dependency caching failure"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-14-1753325243783.png"
+      ]
+    },
+    {
+      "index": 15,
+      "name": "\n          \n  Code Quality\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/code-quality.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-15-1753325246950.png"
+      ]
+    },
+    {
+      "index": 16,
+      "name": "\n          \n  Continuous Integration\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/ci.yml",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": "feat: Add automated failure handlers to critical workflows"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix YAML syntax issues causing CI/CD Pipeline workflow startup failures"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failure - YAML syntax and dependency issues"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failure by updating deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": "Fix Security Scanning workflow startup failures by adding permissions and simplifying validation"
+        },
+        {
+          "type": "summary",
+          "message": "Fix CI/CD Pipeline startup failures caused by deprecated GitHub Actions"
+        },
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-16-1753325250058.png"
+      ]
+    },
+    {
+      "index": 17,
+      "name": "\n          \n  Copilot\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/workflows/copilot-swe-agent/copilot",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-17-1753325252841.png"
+      ]
+    },
+    {
+      "index": 18,
+      "name": "\n                        Show more workflows...\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-18-1753325254386.png"
+      ]
+    },
+    {
+      "index": 19,
+      "name": "\n                        Caches\n\n",
+      "status": "",
+      "url": "https://github.com/lsendel/zamaz-debate-mcp/actions/caches",
+      "timestamp": "",
+      "duration": "",
+      "errors": [
+        {
+          "type": "summary",
+          "message": ""
+        }
+      ],
+      "isHealthMonitor": false,
+      "issueCreationInfo": null,
+      "screenshots": [
+        "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/workflow-run-19-1753325257100.png"
+      ]
+    }
+  ],
+  "healthMonitorRuns": [],
+  "issueCreationAttempts": [],
+  "errorPatterns": {},
+  "summary": {
+    "totalWorkflowsAnalyzed": 20,
+    "failingWorkflows": 0,
+    "healthMonitorRuns": 0,
+    "successfulIssueCreations": 0,
+    "failedIssueCreations": 0,
+    "commonErrors": []
+  },
+  "issuesTabData": {
+    "url": "https://github.com/lsendel/zamaz-debate-mcp/issues",
+    "totalIssues": 0,
+    "workflowHealthIssues": [],
+    "screenshots": [
+      "/Users/lsendel/IdeaProjects/zamaz-debate-mcp/scripts/github-actions-analysis/issues-page-1753325259171.png"
+    ]
+  }
+}
