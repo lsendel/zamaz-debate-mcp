@@ -146,7 +146,7 @@ jobs:
             
             # Try YAML parsing as fallback (but don't fail if it doesn't work)
             if false; then  # Disabled for now
-            WORKFLOW_CONFIG=$(node -e "
+              WORKFLOW_CONFIG=$(node -e "
               try {
                 const yaml = require('js-yaml');
                 const fs = require('fs');
@@ -168,7 +168,9 @@ jobs:
                 console.error('Stack:', error.stack);
                 process.exit(1);
               }
-            " 2>/dev/null); then
+            " 2>/dev/null)
+              
+              if [ $? -eq 0 ] && [ -n "$WORKFLOW_CONFIG" ]; then
               echo "Configuration loaded successfully: $WORKFLOW_CONFIG"
               
               SEVERITY=$(echo "$WORKFLOW_CONFIG" | jq -r '.severity // "high"' 2>/dev/null || echo "high")
@@ -195,6 +197,7 @@ jobs:
                   console.log('Debug error:', error.message);
                 }
               " 2>/dev/null || echo "Node.js debug failed"
+              fi
             fi
           else
             echo "Configuration file $CONFIG_FILE not found, using defaults"
