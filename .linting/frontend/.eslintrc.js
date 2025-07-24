@@ -24,7 +24,7 @@ module.exports = {
     ecmaFeatures: {
       jsx: true,
     },
-    project: ['./tsconfig.json'],
+    project: ['../../debate-ui/tsconfig.json'],
     tsconfigRootDir: __dirname,
   },
   plugins: [
