@@ -173,11 +173,42 @@ jobs:
           This indicates a persistent issue that needs immediate attention."
           else
             echo "Creating new issue..."
-            ISSUE_URL=$(gh issue create \
-              --title "$ISSUE_TITLE" \
-              --body "$ISSUE_BODY" \
-              --label "$LABELS" \
-              --assignee "$ASSIGNEES")
+            # Create issue, handling missing assignees and labels gracefully
+            CREATE_ARGS="--title \"$ISSUE_TITLE\" --body \"$ISSUE_BODY\""
+            
+            # Try with both labels and assignees first
+            if [ -n "$LABELS" ] && [ -n "$ASSIGNEES" ]; then
+              ISSUE_URL=$(gh issue create \
+                --title "$ISSUE_TITLE" \
+                --body "$ISSUE_BODY" \
+                --label "$LABELS" \
+                --assignee "$ASSIGNEES" 2>&1) || {
+                echo "Failed with labels and assignees, trying without assignees..."
+                ISSUE_URL=$(gh issue create \
+                  --title "$ISSUE_TITLE" \
+                  --body "$ISSUE_BODY" \
+                  --label "$LABELS" 2>&1) || {
+                  echo "Failed with labels, trying without any..."
+                  ISSUE_URL=$(gh issue create \
+                    --title "$ISSUE_TITLE" \
+                    --body "$ISSUE_BODY")
+                }
+              }
+            elif [ -n "$LABELS" ]; then
+              ISSUE_URL=$(gh issue create \
+                --title "$ISSUE_TITLE" \
+                --body "$ISSUE_BODY" \
+                --label "$LABELS" 2>&1) || {
+                echo "Failed with labels, creating without..."
+                ISSUE_URL=$(gh issue create \
+                  --title "$ISSUE_TITLE" \
+                  --body "$ISSUE_BODY")
+              }
+            else
+              ISSUE_URL=$(gh issue create \
+                --title "$ISSUE_TITLE" \
+                --body "$ISSUE_BODY")
+            fi
             echo "Created issue: $ISSUE_URL"
           fi
           
