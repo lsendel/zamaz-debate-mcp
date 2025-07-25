@@ -13,6 +13,7 @@ permissions:
   contents: read
   issues: write
   security-events: write
+
 env:
   MAVEN_BATCH_MODE: '--batch-mode --no-transfer-progress --show-version'
   JAVA_VERSION: '21'
