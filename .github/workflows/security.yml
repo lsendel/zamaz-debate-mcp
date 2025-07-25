@@ -280,7 +280,7 @@ jobs:
     name: Handle Security Scan Failure
     if: |
       always() && contains(needs.*.result, 'failure')
-    needs: [java-security]
+    needs: [security-summary]
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "Security Scanning"
