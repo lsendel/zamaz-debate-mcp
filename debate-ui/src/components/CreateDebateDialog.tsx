@@ -1,26 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../store';
-import {
-  closeCreateDebateDialog,
-  addNotification,
-} from '../store/slices/uiSlice';
+import { closeCreateDebateDialog, addNotification } from '../store/slices/uiSlice';
 import { createDebate } from '../store/slices/debateSlice';
-import { Modal, Button, Input, Select, Card, Form, Slider, InputNumber, Typography, Space, Row, Col } from 'antd';
+import {
+  Modal,
+  Button,
+  Input,
+  Select,
+  Card,
+  Form,
+  Slider,
+  InputNumber,
+  Typography,
+  Space,
+  Row,
+  Col,
+} from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
 // Custom FormField component
-const FormField: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ 
-  label, 
-  required, 
-  children 
+const FormField: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({
+  label,
+  required,
+  children,
 }) => (
-  <Form.Item 
-    label={label} 
-    required={required}
-    style={{ marginBottom: '16px' }}
-  >
+  <Form.Item label={label} required={required} style={{ marginBottom: '16px' }}>
     {children}
   </Form.Item>
 );
@@ -36,7 +42,7 @@ interface Participant {
 
 const CreateDebateDialog: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { createDebateDialogOpen } = useAppSelector((state) => state.ui);
+  const { createDebateDialogOpen } = useAppSelector(state => state.ui);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -49,8 +55,7 @@ const CreateDebateDialog: React.FC = () => {
       name: 'Participant 1',
       llmProvider: '',
       model: '',
-      systemPrompt:
-        'You are a thoughtful debater who provides well-reasoned arguments.',
+      systemPrompt: 'You are a thoughtful debater who provides well-reasoned arguments.',
       temperature: 0.7,
       maxTokens: 1000,
     },
@@ -109,8 +114,7 @@ const CreateDebateDialog: React.FC = () => {
         name: 'Participant 1',
         llmProvider: '',
         model: '',
-        systemPrompt:
-          'You are a thoughtful debater who provides well-reasoned arguments.',
+        systemPrompt: 'You are a thoughtful debater who provides well-reasoned arguments.',
         temperature: 0.7,
         maxTokens: 1000,
       },
@@ -132,7 +136,7 @@ const CreateDebateDialog: React.FC = () => {
         addNotification({
           type: 'error',
           message: 'Please provide a topic and at least 2 participants',
-        })
+        }),
       );
       return;
     }
@@ -145,7 +149,7 @@ const CreateDebateDialog: React.FC = () => {
           description,
           maxRounds,
           turnTimeLimit,
-          participants: participants.map((p) => ({
+          participants: participants.map(p => ({
             name: p.name,
             llmConfig: {
               provider: p.llmProvider,
@@ -155,7 +159,7 @@ const CreateDebateDialog: React.FC = () => {
               systemPrompt: p.systemPrompt,
             },
           })),
-        })
+        }),
       );
 
       if (createDebate.fulfilled.match(resultAction)) {
@@ -164,7 +168,7 @@ const CreateDebateDialog: React.FC = () => {
           addNotification({
             type: 'success',
             message: 'Debate created successfully!',
-          })
+          }),
         );
       }
     } catch (error) {
@@ -172,12 +176,12 @@ const CreateDebateDialog: React.FC = () => {
       console.error('[CreateDebateDialog] Error:', error);
       // Rethrow if critical
       if (error.critical) throw error;
-        console.error("Error:", error);
+      console.error('Error:', error);
       dispatch(
         addNotification({
           type: 'error',
           message: 'Failed to create debate',
-        })
+        }),
       );
     } finally {
       setLoading(false);
@@ -187,7 +191,7 @@ const CreateDebateDialog: React.FC = () => {
   const addParticipant = () => {
     const defaultProvider = providers[0];
     const defaultModel = defaultProvider?.models[0];
-    
+
     setParticipants([
       ...participants,
       {
@@ -206,13 +210,11 @@ const CreateDebateDialog: React.FC = () => {
   };
 
   const updateParticipant = (index: number, updates: Partial<Participant>) => {
-    setParticipants(
-      participants.map((p, i) => (i === index ? { ...p, ...updates } : p))
-    );
+    setParticipants(participants.map((p, i) => (i === index ? { ...p, ...updates } : p)));
   };
 
   const getModelsForProvider = (providerId: string) => {
-    const provider = providers.find((p) => p.id === providerId);
+    const provider = providers.find(p => p.id === providerId);
     return provider?.models || [];
   };
 
@@ -221,19 +223,21 @@ const CreateDebateDialog: React.FC = () => {
       open={createDebateDialogOpen}
       onCancel={handleClose}
       width={900}
-      title={(
+      title={
         <div>
-          <Title level={4} style={{ margin: 0 }}>Create New Debate</Title>
-          <Text type="secondary">Set up a new AI debate with multiple participants</Text>
+          <Title level={4} style={{ margin: 0 }}>
+            Create New Debate
+          </Title>
+          <Text type='secondary'>Set up a new AI debate with multiple participants</Text>
         </div>
-      )}
+      }
       footer={[
-        <Button key="cancel" onClick={handleClose}>
+        <Button key='cancel' onClick={handleClose}>
           Cancel
         </Button>,
         <Button
-          key="submit"
-          type="primary"
+          key='submit'
+          type='primary'
           onClick={handleSubmit}
           loading={loading}
           disabled={loading || !topic || participants.length < 2}
@@ -244,31 +248,30 @@ const CreateDebateDialog: React.FC = () => {
       style={{ top: 20 }}
       bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
     >
-
-      <Form layout="vertical">
-        <FormField label="Topic" required>
+      <Form layout='vertical'>
+        <FormField label='Topic' required>
           <Input
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="Enter the debate topic"
+            onChange={e => setTopic(e.target.value)}
+            placeholder='Enter the debate topic'
           />
         </FormField>
 
-        <FormField label="Description">
+        <FormField label='Description'>
           <TextArea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Provide additional context for the debate"
+            onChange={e => setDescription(e.target.value)}
+            placeholder='Provide additional context for the debate'
             rows={3}
           />
         </FormField>
 
         <Row gutter={16}>
           <Col span={12}>
-            <FormField label="Max Rounds">
+            <FormField label='Max Rounds'>
               <InputNumber
                 value={maxRounds}
-                onChange={(value) => setMaxRounds(value || 5)}
+                onChange={value => setMaxRounds(value || 5)}
                 min={1}
                 max={20}
                 style={{ width: '100%' }}
@@ -276,10 +279,10 @@ const CreateDebateDialog: React.FC = () => {
             </FormField>
           </Col>
           <Col span={12}>
-            <FormField label="Turn Time Limit (seconds)">
+            <FormField label='Turn Time Limit (seconds)'>
               <InputNumber
                 value={turnTimeLimit}
-                onChange={(value) => setTurnTimeLimit(value || 60)}
+                onChange={value => setTurnTimeLimit(value || 60)}
                 min={10}
                 max={300}
                 style={{ width: '100%' }}
@@ -289,37 +292,46 @@ const CreateDebateDialog: React.FC = () => {
         </Row>
 
         <div style={{ marginTop: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <Title level={5} style={{ margin: 0 }}>Participants</Title>
-            <Button
-              onClick={addParticipant}
-              icon={<PlusOutlined />}
-              size="small"
-            >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+            }}
+          >
+            <Title level={5} style={{ margin: 0 }}>
+              Participants
+            </Title>
+            <Button onClick={addParticipant} icon={<PlusOutlined />} size='small'>
               Add Participant
             </Button>
           </div>
 
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Space direction='vertical' size='large' style={{ width: '100%' }}>
             {participants.map((participant, index) => (
-              <Card 
+              <Card
                 key={index}
                 title={
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <Input
                       value={participant.name}
-                      onChange={(e) =>
-                        updateParticipant(index, { name: e.target.value })
-                      }
+                      onChange={e => updateParticipant(index, { name: e.target.value })}
                       style={{ fontWeight: 600, border: 'none', paddingLeft: 0 }}
                     />
                     {participants.length > 2 && (
                       <Button
                         danger
-                        type="text"
+                        type='text'
                         icon={<DeleteOutlined />}
                         onClick={() => removeParticipant(index)}
-                        size="small"
+                        size='small'
                       />
                     )}
                   </div>
@@ -327,16 +339,14 @@ const CreateDebateDialog: React.FC = () => {
               >
                 <Row gutter={16}>
                   <Col span={12}>
-                    <FormField label="Provider">
+                    <FormField label='Provider'>
                       <Select
                         value={participant.llmProvider}
-                        onChange={(value) =>
-                          updateParticipant(index, { llmProvider: value })
-                        }
-                        placeholder="Select provider"
+                        onChange={value => updateParticipant(index, { llmProvider: value })}
+                        placeholder='Select provider'
                         style={{ width: '100%' }}
                       >
-                        {providers.map((provider) => (
+                        {providers.map(provider => (
                           <Select.Option key={provider.id} value={provider.id}>
                             {provider.name}
                           </Select.Option>
@@ -345,31 +355,27 @@ const CreateDebateDialog: React.FC = () => {
                     </FormField>
                   </Col>
                   <Col span={12}>
-                    <FormField label="Model">
+                    <FormField label='Model'>
                       <Select
                         value={participant.model}
-                        onChange={(value) =>
-                          updateParticipant(index, { model: value })
-                        }
-                        placeholder="Select model"
+                        onChange={value => updateParticipant(index, { model: value })}
+                        placeholder='Select model'
                         style={{ width: '100%' }}
                       >
-                        {getModelsForProvider(participant.llmProvider).map(
-                          (model) => (
-                            <Select.Option key={model.id} value={model.id}>
-                              {model.name}
-                            </Select.Option>
-                          )
-                        )}
+                        {getModelsForProvider(participant.llmProvider).map(model => (
+                          <Select.Option key={model.id} value={model.id}>
+                            {model.name}
+                          </Select.Option>
+                        ))}
                       </Select>
                     </FormField>
                   </Col>
                 </Row>
 
-                <FormField label="System Prompt">
+                <FormField label='System Prompt'>
                   <TextArea
                     value={participant.systemPrompt}
-                    onChange={(e) =>
+                    onChange={e =>
                       updateParticipant(index, {
                         systemPrompt: e.target.value,
                       })
@@ -386,7 +392,7 @@ const CreateDebateDialog: React.FC = () => {
                         max={2}
                         step={0.1}
                         value={participant.temperature}
-                        onChange={(value) =>
+                        onChange={value =>
                           updateParticipant(index, {
                             temperature: value,
                           })
@@ -395,10 +401,10 @@ const CreateDebateDialog: React.FC = () => {
                     </FormField>
                   </Col>
                   <Col span={12}>
-                    <FormField label="Max Tokens">
+                    <FormField label='Max Tokens'>
                       <InputNumber
                         value={participant.maxTokens}
-                        onChange={(value) =>
+                        onChange={value =>
                           updateParticipant(index, {
                             maxTokens: value || 1000,
                           })
@@ -415,7 +421,6 @@ const CreateDebateDialog: React.FC = () => {
           </Space>
         </div>
       </Form>
-
     </Modal>
   );
 };

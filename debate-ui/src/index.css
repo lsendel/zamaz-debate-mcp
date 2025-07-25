@@ -8,11 +8,11 @@
     --background: 0 0% 100%;
     --foreground: 224 5% 15%;
   }
-  
+
   body {
     @apply bg-white text-gray-900 antialiased;
-    font-feature-settings: "cv11", "ss01";
-    font-variation-settings: "opsz" 32;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
   }
 }
 
@@ -36,6 +36,10 @@
 
 /* Animation for loading spinner */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

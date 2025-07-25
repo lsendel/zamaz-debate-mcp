@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import organizationClient, { Organization } from "../../api/organizationClient";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import organizationClient, { Organization } from '../../api/organizationClient';
 
 interface OrganizationState {
   organizations: Organization[];
@@ -15,53 +15,46 @@ const initialState: OrganizationState = {
   error: null,
 };
 
-export const fetchOrganizations = createAsyncThunk(
-  "organization/fetchAll",
-  async () => {
-    const organizations = await organizationClient.listOrganizations();
-    return organizations;
-  },
-);
+export const fetchOrganizations = createAsyncThunk('organization/fetchAll', async () => {
+  const organizations = await organizationClient.listOrganizations();
+  return organizations;
+});
 
 export const switchOrganization = createAsyncThunk(
-  "organization/switch",
+  'organization/switch',
   async (organizationId: string) => {
     await organizationClient.switchOrganization(organizationId);
-    localStorage.setItem("currentOrgId", organizationId);
-    const organization =
-      await organizationClient.getOrganization(organizationId);
+    localStorage.setItem('currentOrgId', organizationId);
+    const organization = await organizationClient.getOrganization(organizationId);
     return organization;
   },
 );
 
 export const createOrganization = createAsyncThunk(
-  "organization/create",
+  'organization/create',
   async (data: { name: string; description?: string }) => {
     const organization = await organizationClient.createOrganization(data);
     return organization;
   },
 );
 
-export const generateApiKey = createAsyncThunk(
-  "organization/generateApiKey",
-  async () => {
-    const result = await organizationClient.generateApiKey();
-    return result.apiKey;
-  },
-);
+export const generateApiKey = createAsyncThunk('organization/generateApiKey', async () => {
+  const result = await organizationClient.generateApiKey();
+  return result.apiKey;
+});
 
 const organizationSlice = createSlice({
-  name: "organization",
+  name: 'organization',
   initialState,
   reducers: {
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     // Fetch organizations
     builder
-      .addCase(fetchOrganizations.pending, (state) => {
+      .addCase(fetchOrganizations.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -70,20 +63,18 @@ const organizationSlice = createSlice({
         state.organizations = action.payload;
 
         // Set current organization if not set
-        const currentOrgId = localStorage.getItem("currentOrgId");
+        const currentOrgId = localStorage.getItem('currentOrgId');
         if (currentOrgId && action.payload.length > 0) {
-          const currentOrg = action.payload.find(
-            (org) => org.id === currentOrgId,
-          );
+          const currentOrg = action.payload.find(org => org.id === currentOrgId);
           state.currentOrganization = currentOrg || action.payload[0];
         } else if (action.payload.length > 0) {
           state.currentOrganization = action.payload[0];
-          localStorage.setItem("currentOrgId", action.payload[0].id);
+          localStorage.setItem('currentOrgId', action.payload[0].id);
         }
       })
       .addCase(fetchOrganizations.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to fetch organizations";
+        state.error = action.error.message || 'Failed to fetch organizations';
       });
 
     // Switch organization
@@ -95,7 +86,7 @@ const organizationSlice = createSlice({
     builder.addCase(createOrganization.fulfilled, (state, action) => {
       state.organizations.push(action.payload);
       state.currentOrganization = action.payload;
-      localStorage.setItem("currentOrgId", action.payload.id);
+      localStorage.setItem('currentOrgId', action.payload.id);
     });
 
     // Generate API key

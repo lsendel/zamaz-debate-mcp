@@ -158,7 +158,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
     try {
       // Use default providers for now
       setProviders(defaultProviders);
-      
+
       // Load existing presets if they exist
       // This would typically come from the backend
       const samplePresets: LLMPreset[] = [
@@ -173,7 +173,8 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
             maxTokens: 2048,
             topP: 0.9,
           },
-          systemPrompt: 'You are a skilled debater participating in a structured debate. Present clear, logical arguments while being respectful to opposing viewpoints.',
+          systemPrompt:
+            'You are a skilled debater participating in a structured debate. Present clear, logical arguments while being respectful to opposing viewpoints.',
           isActive: true,
         },
         {
@@ -188,7 +189,8 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
             topP: 0.8,
             frequencyPenalty: 0.1,
           },
-          systemPrompt: 'You are a conservative debater who values logical consistency and factual accuracy above all else.',
+          systemPrompt:
+            'You are a conservative debater who values logical consistency and factual accuracy above all else.',
           isActive: true,
         },
         {
@@ -203,11 +205,12 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
             topP: 0.95,
             topK: 40,
           },
-          systemPrompt: 'You are a creative debater who brings innovative perspectives and challenges conventional thinking.',
+          systemPrompt:
+            'You are a creative debater who brings innovative perspectives and challenges conventional thinking.',
           isActive: true,
         },
       ];
-      
+
       setPresets(samplePresets);
     } catch (error) {
       console.error('Failed to load initial data:', error);
@@ -223,7 +226,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
   const handleProviderChange = (providerId: string) => {
     setSelectedProvider(providerId);
     setSelectedModel('');
-    
+
     const provider = providers.find(p => p.id === providerId);
     if (provider) {
       // Set default parameters for the provider
@@ -244,7 +247,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
     setCurrentPreset(preset);
     setSelectedProvider(preset.provider);
     setSelectedModel(preset.model);
-    
+
     form.setFieldsValue({
       name: preset.name,
       description: preset.description,
@@ -254,7 +257,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
       isActive: preset.isActive,
       ...preset.parameters,
     });
-    
+
     onLoad?.(preset);
   };
 
@@ -262,7 +265,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
     try {
       setSaving(true);
       const values = await form.validateFields();
-      
+
       const preset: LLMPreset = {
         id: currentPreset?.id,
         name: values.name,
@@ -285,9 +288,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
       // Save the preset (this would typically go to the backend)
       if (currentPreset?.id) {
         // Update existing preset
-        const updatedPresets = presets.map(p => 
-          p.id === currentPreset.id ? preset : p
-        );
+        const updatedPresets = presets.map(p => (p.id === currentPreset.id ? preset : p));
         setPresets(updatedPresets);
       } else {
         // Create new preset
@@ -316,12 +317,12 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
   const handleDeletePreset = (presetId: string) => {
     const updatedPresets = presets.filter(p => p.id !== presetId);
     setPresets(updatedPresets);
-    
+
     if (currentPreset?.id === presetId) {
       setCurrentPreset(null);
       form.resetFields();
     }
-    
+
     notification.success({
       message: 'Preset deleted successfully',
       duration: 2,
@@ -333,39 +334,40 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
   return (
     <div style={{ display: 'flex', gap: '16px', flexDirection: 'column' }}>
       {/* Preset Selection */}
-      <Card 
+      <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ThunderboltOutlined />
             LLM Presets
           </div>
         }
-        size="small"
+        size='small'
       >
         <Row gutter={[8, 8]}>
           {presets.map(preset => (
             <Col key={preset.id} span={8}>
               <Card
-                size="small"
+                size='small'
                 hoverable
                 onClick={() => handlePresetLoad(preset)}
                 style={{
                   cursor: 'pointer',
-                  border: currentPreset?.id === preset.id ? '2px solid #1677ff' : '1px solid #d9d9d9',
+                  border:
+                    currentPreset?.id === preset.id ? '2px solid #1677ff' : '1px solid #d9d9d9',
                 }}
                 bodyStyle={{ padding: '12px' }}
                 actions={[
-                  <CopyOutlined 
-                    key="copy" 
-                    onClick={(e) => {
+                  <CopyOutlined
+                    key='copy'
+                    onClick={e => {
                       e.stopPropagation();
                       const newPreset = { ...preset, id: undefined, name: `${preset.name} (Copy)` };
                       handlePresetLoad(newPreset);
                     }}
                   />,
-                  <DeleteOutlined 
-                    key="delete" 
-                    onClick={(e) => {
+                  <DeleteOutlined
+                    key='delete'
+                    onClick={e => {
                       e.stopPropagation();
                       handleDeletePreset(preset.id!);
                     }}
@@ -374,13 +376,15 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
                 ]}
               >
                 <div>
-                  <Text strong style={{ fontSize: '12px' }}>{preset.name}</Text>
+                  <Text strong style={{ fontSize: '12px' }}>
+                    {preset.name}
+                  </Text>
                   <br />
-                  <Text type="secondary" style={{ fontSize: '11px' }}>
+                  <Text type='secondary' style={{ fontSize: '11px' }}>
                     {preset.provider} - {preset.model}
                   </Text>
                   <br />
-                  <Tag size="small" color={preset.isActive ? 'green' : 'red'}>
+                  <Tag size='small' color={preset.isActive ? 'green' : 'red'}>
                     {preset.isActive ? 'Active' : 'Inactive'}
                   </Tag>
                 </div>
@@ -389,7 +393,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
           ))}
           <Col span={8}>
             <Card
-              size="small"
+              size='small'
               hoverable
               style={{
                 cursor: 'pointer',
@@ -399,10 +403,10 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
                 justifyContent: 'center',
                 minHeight: '100px',
               }}
-              bodyStyle={{ 
-                padding: '12px', 
-                display: 'flex', 
-                flexDirection: 'column', 
+              bodyStyle={{
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -412,7 +416,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
               }}
             >
               <PlusOutlined style={{ fontSize: '20px', color: '#999' }} />
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
+              <Text type='secondary' style={{ fontSize: '12px', marginTop: '4px' }}>
                 New Preset
               </Text>
             </Card>
@@ -431,31 +435,26 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
         extra={
           <Space>
             <Button onClick={() => form.resetFields()}>Reset</Button>
-            <Button 
-              type="primary" 
-              icon={<SaveOutlined />}
-              onClick={handleSave}
-              loading={saving}
-            >
+            <Button type='primary' icon={<SaveOutlined />} onClick={handleSave} loading={saving}>
               Save Preset
             </Button>
           </Space>
         }
       >
-        <Form form={form} layout="vertical">
+        <Form form={form} layout='vertical'>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="name"
-                label="Preset Name"
+                name='name'
+                label='Preset Name'
                 rules={[{ required: true, message: 'Please enter a preset name' }]}
               >
-                <Input placeholder="Enter preset name" />
+                <Input placeholder='Enter preset name' />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="description" label="Description">
-                <Input placeholder="Enter description (optional)" />
+              <Form.Item name='description' label='Description'>
+                <Input placeholder='Enter description (optional)' />
               </Form.Item>
             </Col>
           </Row>
@@ -463,12 +462,12 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="provider"
-                label="Provider"
+                name='provider'
+                label='Provider'
                 rules={[{ required: true, message: 'Please select a provider' }]}
               >
                 <Select
-                  placeholder="Select LLM provider"
+                  placeholder='Select LLM provider'
                   onChange={handleProviderChange}
                   value={selectedProvider}
                 >
@@ -485,12 +484,12 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
             </Col>
             <Col span={12}>
               <Form.Item
-                name="model"
-                label="Model"
+                name='model'
+                label='Model'
                 rules={[{ required: true, message: 'Please select a model' }]}
               >
                 <Select
-                  placeholder="Select model"
+                  placeholder='Select model'
                   onChange={handleModelChange}
                   value={selectedModel}
                   disabled={!selectedProvider}
@@ -506,7 +505,7 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
           </Row>
 
           <Form.Item
-            name="systemPrompt"
+            name='systemPrompt'
             label={
               <span>
                 System Prompt
@@ -524,15 +523,15 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
           </Form.Item>
 
           <Collapse>
-            <Panel header="Advanced Parameters" key="parameters">
+            <Panel header='Advanced Parameters' key='parameters'>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    name="temperature"
+                    name='temperature'
                     label={
                       <span>
                         Temperature
-                        <Tooltip title="Controls randomness. Lower = more focused, Higher = more creative">
+                        <Tooltip title='Controls randomness. Lower = more focused, Higher = more creative'>
                           <InfoCircleOutlined style={{ marginLeft: 4, color: '#8c8c8c' }} />
                         </Tooltip>
                       </span>
@@ -547,15 +546,12 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item
-                    name="maxTokens"
-                    label="Max Tokens"
-                  >
+                  <Form.Item name='maxTokens' label='Max Tokens'>
                     <InputNumber
                       min={1}
                       max={8192}
                       style={{ width: '100%' }}
-                      placeholder="Maximum response length"
+                      placeholder='Maximum response length'
                     />
                   </Form.Item>
                 </Col>
@@ -564,12 +560,12 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
               {selectedProvider === 'OPENAI' && (
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="frequencyPenalty" label="Frequency Penalty">
+                    <Form.Item name='frequencyPenalty' label='Frequency Penalty'>
                       <Slider min={-2} max={2} step={0.1} marks={{ 0: '0', 1: '1' }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item name="presencePenalty" label="Presence Penalty">
+                    <Form.Item name='presencePenalty' label='Presence Penalty'>
                       <Slider min={-2} max={2} step={0.1} marks={{ 0: '0', 1: '1' }} />
                     </Form.Item>
                   </Col>
@@ -579,23 +575,23 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
               {(selectedProvider === 'GEMINI' || selectedProvider === 'COHERE') && (
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="topP" label="Top P">
+                    <Form.Item name='topP' label='Top P'>
                       <Slider min={0} max={1} step={0.05} marks={{ 0: '0', 0.5: '0.5', 1: '1' }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item name="topK" label="Top K">
+                    <Form.Item name='topK' label='Top K'>
                       <InputNumber min={0} max={100} style={{ width: '100%' }} />
                     </Form.Item>
                   </Col>
                 </Row>
               )}
 
-              <Form.Item name="stopSequences" label="Stop Sequences (one per line)">
-                <TextArea rows={3} placeholder="Enter stop sequences, one per line" />
+              <Form.Item name='stopSequences' label='Stop Sequences (one per line)'>
+                <TextArea rows={3} placeholder='Enter stop sequences, one per line' />
               </Form.Item>
 
-              <Form.Item name="isActive" label="Active" valuePropName="checked">
+              <Form.Item name='isActive' label='Active' valuePropName='checked'>
                 <Switch />
               </Form.Item>
             </Panel>
@@ -605,9 +601,9 @@ const LLMPresetConfig: React.FC<LLMPresetConfigProps> = ({
 
       {currentPreset && (
         <Alert
-          message="Preset Loaded"
+          message='Preset Loaded'
           description={`Using preset: ${currentPreset.name} (${currentPreset.provider} - ${currentPreset.model})`}
-          type="info"
+          type='info'
           showIcon
           closable
         />

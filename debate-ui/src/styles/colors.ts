@@ -17,7 +17,7 @@ export const colors = {
     800: '#0c3d8c',
     900: '#082c66',
   },
-  
+
   // Neutral/Gray scale with improved contrast
   gray: {
     50: '#fafafa',
@@ -31,26 +31,26 @@ export const colors = {
     800: '#262626',
     900: '#1f1f1f',
   },
-  
+
   // Semantic colors
   semantic: {
     success: '#52c41a',
     successBg: '#f6ffed',
     successBorder: '#b7eb8f',
-    
+
     warning: '#faad14',
     warningBg: '#fffbe6',
     warningBorder: '#ffe58f',
-    
+
     error: '#f5222d',
     errorBg: '#fff1f0',
     errorBorder: '#ffccc7',
-    
+
     info: '#1677ff',
     infoBg: '#e6f4ff',
     infoBorder: '#91caff',
   },
-  
+
   // Background colors
   background: {
     primary: '#ffffff',
@@ -59,18 +59,18 @@ export const colors = {
     elevated: '#ffffff',
     overlay: 'rgba(0, 0, 0, 0.45)',
   },
-  
+
   // Text colors with WCAG compliance
   text: {
-    primary: '#262626',    // High contrast for main text
-    secondary: '#595959',  // Still readable for secondary text
-    tertiary: '#8c8c8c',   // For less important text
-    disabled: '#bfbfbf',   // For disabled state
-    inverse: '#ffffff',    // For text on dark backgrounds
+    primary: '#262626', // High contrast for main text
+    secondary: '#595959', // Still readable for secondary text
+    tertiary: '#8c8c8c', // For less important text
+    disabled: '#bfbfbf', // For disabled state
+    inverse: '#ffffff', // For text on dark backgrounds
     link: '#1677ff',
     linkHover: '#1360d9',
   },
-  
+
   // Border colors
   border: {
     default: '#d9d9d9',
@@ -119,10 +119,11 @@ export const shadows = {
   md: '0 4px 8px 0 rgba(0, 0, 0, 0.08)',
   lg: '0 8px 16px 0 rgba(0, 0, 0, 0.10)',
   xl: '0 12px 24px 0 rgba(0, 0, 0, 0.12)',
-  
+
   card: '0 2px 8px rgba(0, 0, 0, 0.08)',
   cardHover: '0 4px 12px rgba(0, 0, 0, 0.12)',
-  
+
   modal: '0 4px 12px rgba(0, 0, 0, 0.15)',
-  dropdown: '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+  dropdown:
+    '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
 };

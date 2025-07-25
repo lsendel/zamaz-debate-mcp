@@ -1,4 +1,4 @@
-import BaseApiClient from "./baseClient";
+import BaseApiClient from './baseClient';
 
 export interface Participant {
   id: string;
@@ -22,7 +22,7 @@ export interface Response {
 export interface Round {
   roundNumber: number;
   responses: Response[];
-  status: "pending" | "in_progress" | "completed";
+  status: 'pending' | 'in_progress' | 'completed';
 }
 
 export interface Debate {
@@ -30,7 +30,7 @@ export interface Debate {
   title?: string;
   topic: string;
   description?: string;
-  status: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  status: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   format?: string;
   participants: string[] | Participant[]; // Can be either strings or objects
   rounds?: Round[];
@@ -63,11 +63,11 @@ export interface CreateDebateRequest {
 
 export interface DebateEvent {
   type:
-    | "debate_started"
-    | "round_started"
-    | "response_received"
-    | "round_completed"
-    | "debate_completed";
+    | 'debate_started'
+    | 'round_started'
+    | 'response_received'
+    | 'round_completed'
+    | 'debate_completed';
   debateId: string;
   data: any;
   timestamp: string;
@@ -75,24 +75,23 @@ export interface DebateEvent {
 
 class DebateClient extends BaseApiClient {
   private ws: WebSocket | null = null;
-  private readonly eventHandlers: Map<string, Set<(event: DebateEvent) => void>> =
-    new Map();
+  private readonly eventHandlers: Map<string, Set<(event: DebateEvent) => void>> = new Map();
 
   constructor() {
-    const baseURL = import.meta.env.VITE_DEBATE_API_URL || "http://localhost:5013";
+    const baseURL = import.meta.env.VITE_DEBATE_API_URL || 'http://localhost:5013';
     super(`${baseURL}/api/v1`);
   }
 
   // Debate management
   async createDebate(data: CreateDebateRequest): Promise<Debate> {
-    const response = await this.client.post("/debates", {
+    const response = await this.client.post('/debates', {
       title: data.topic, // Use topic as title for now
       topic: data.topic,
       description: data.description,
-      format: "OXFORD", // Default format
+      format: 'OXFORD', // Default format
       participants: data.participants.map(p => p.name), // Simplified for now
       maxRounds: data.maxRounds,
-      turnTimeLimit: data.turnTimeLimit
+      turnTimeLimit: data.turnTimeLimit,
     });
     return response.data;
   }
@@ -107,7 +106,7 @@ class DebateClient extends BaseApiClient {
     limit?: number;
     offset?: number;
   }): Promise<Debate[]> {
-    const response = await this.client.get("/debates", { params });
+    const response = await this.client.get('/debates', { params });
     return response.data;
   }
 
@@ -137,16 +136,13 @@ class DebateClient extends BaseApiClient {
   // Participant management
   async addParticipant(
     debateId: string,
-    participant: Omit<Participant, "id">,
+    participant: Omit<Participant, 'id'>,
   ): Promise<Participant> {
     const response = await this.client.post(`/debates/${debateId}/participants`, participant);
     return response.data;
   }
 
-  async removeParticipant(
-    debateId: string,
-    participantId: string,
-  ): Promise<void> {
+  async removeParticipant(debateId: string, participantId: string): Promise<void> {
     const response = await this.client.delete(`/debates/${debateId}/participants/${participantId}`);
     return response.data;
   }
@@ -164,12 +160,8 @@ class DebateClient extends BaseApiClient {
   }
 
   // Response management
-  async getResponses(
-    debateId: string,
-    roundNumber?: number,
-  ): Promise<Response[]> {
-    const params =
-      roundNumber !== undefined ? { round: roundNumber } : undefined;
+  async getResponses(debateId: string, roundNumber?: number): Promise<Response[]> {
+    const params = roundNumber !== undefined ? { round: roundNumber } : undefined;
     const response = await this.client.get(`/debates/${debateId}/responses`, {
       params,
     });
@@ -183,7 +175,7 @@ class DebateClient extends BaseApiClient {
   ): Promise<Response> {
     const response = await this.client.post(`/debates/${debateId}/responses`, {
       participantId,
-      content
+      content,
     });
     return response.data;
   }
@@ -195,29 +187,29 @@ class DebateClient extends BaseApiClient {
     }
 
     // Use environment variable or fall back to default
-    const wsBase = import.meta.env.VITE_WS_URL || "ws://localhost:5013";
+    const wsBase = import.meta.env.VITE_WS_URL || 'ws://localhost:5013';
     const wsUrl = `${wsBase}/ws/debates/${debateId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log("WebSocket connected for debate:", debateId);
+      console.log('WebSocket connected for debate:', debateId);
     };
 
-    this.ws.onmessage = (event) => {
+    this.ws.onmessage = event => {
       try {
         const debateEvent: DebateEvent = JSON.parse(event.data);
         this.emitEvent(debateEvent.type, debateEvent);
       } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
+        console.error('Failed to parse WebSocket message:', error);
       }
     };
 
-    this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+    this.ws.onerror = error => {
+      console.error('WebSocket error:', error);
     };
 
     this.ws.onclose = () => {
-      console.log("WebSocket disconnected");
+      console.log('WebSocket disconnected');
       this.ws = null;
     };
   }
@@ -247,7 +239,7 @@ class DebateClient extends BaseApiClient {
   private emitEvent(eventType: string, event: DebateEvent): void {
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
-      handlers.forEach((handler) => handler(event));
+      handlers.forEach(handler => handler(event));
     }
   }
 
@@ -259,11 +251,11 @@ class DebateClient extends BaseApiClient {
 
   async exportDebate(
     debateId: string,
-    format: "json" | "pdf" | "markdown" = "json",
+    format: 'json' | 'pdf' | 'markdown' = 'json',
   ): Promise<Blob> {
     const response = await this.client.get(`/debates/${debateId}/export`, {
       params: { format },
-      responseType: "blob",
+      responseType: 'blob',
     });
     return response.data;
   }
@@ -277,11 +269,11 @@ class DebateClient extends BaseApiClient {
   async configureParticipantAgenticFlow(
     debateId: string,
     participantId: string,
-    configuration: any
+    configuration: any,
   ): Promise<any> {
     const response = await this.client.post(
       `/debates/${debateId}/participants/${participantId}/agentic-flow`,
-      configuration
+      configuration,
     );
     return response.data;
   }
@@ -293,7 +285,7 @@ class DebateClient extends BaseApiClient {
 
   async getParticipantAgenticFlow(debateId: string, participantId: string): Promise<any> {
     const response = await this.client.get(
-      `/debates/${debateId}/participants/${participantId}/agentic-flow`
+      `/debates/${debateId}/participants/${participantId}/agentic-flow`,
     );
     return response.data;
   }
@@ -307,10 +299,10 @@ class DebateClient extends BaseApiClient {
   async getFlowTypeStatistics(
     organizationId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<any[]> {
     const response = await this.client.get('/analytics/agentic-flows/statistics', {
-      params: { organizationId, startDate, endDate }
+      params: { organizationId, startDate, endDate },
     });
     return response.data;
   }
@@ -318,17 +310,17 @@ class DebateClient extends BaseApiClient {
   async getFlowExecutionTimeSeries(
     organizationId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<any[]> {
     const response = await this.client.get('/analytics/agentic-flows/time-series', {
-      params: { organizationId, startDate, endDate }
+      params: { organizationId, startDate, endDate },
     });
     return response.data;
   }
 
   async getTrendingFlowTypes(organizationId: string, limit: number = 10): Promise<any[]> {
     const response = await this.client.get('/analytics/agentic-flows/trending', {
-      params: { organizationId, limit }
+      params: { organizationId, limit },
     });
     return response.data;
   }
@@ -337,13 +329,13 @@ class DebateClient extends BaseApiClient {
     organizationId: string,
     flowTypes: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<any> {
     const response = await this.client.post('/analytics/agentic-flows/compare', {
       organizationId,
       flowTypes,
       startDate,
-      endDate
+      endDate,
     });
     return response.data;
   }

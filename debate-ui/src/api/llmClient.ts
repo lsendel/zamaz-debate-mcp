@@ -1,4 +1,4 @@
-import BaseApiClient from "./baseClient";
+import BaseApiClient from './baseClient';
 
 export interface LLMProvider {
   id: string;
@@ -23,7 +23,7 @@ export interface CompletionRequest {
   provider: string;
   model: string;
   messages: Array<{
-    role: "system" | "user" | "assistant";
+    role: 'system' | 'user' | 'assistant';
     content: string;
   }>;
   temperature?: number;
@@ -45,15 +45,14 @@ export interface CompletionResponse {
   cached?: boolean;
 }
 
-
 class LLMClient extends BaseApiClient {
   constructor() {
-    super("/api/v1");
+    super('/api/v1');
   }
 
   // Provider management
   async listProviders(): Promise<LLMProvider[]> {
-    const response = await this.client.get("/providers");
+    const response = await this.client.get('/providers');
     return response.data;
   }
 
@@ -64,24 +63,24 @@ class LLMClient extends BaseApiClient {
 
   // Completion
   async complete(request: CompletionRequest): Promise<CompletionResponse> {
-    const response = await this.client.post("/chat/completions", {
+    const response = await this.client.post('/chat/completions', {
       model: request.model,
       messages: request.messages,
       max_tokens: request.maxTokens,
       temperature: request.temperature,
       top_p: request.topP,
-      stop: request.stopSequences
+      stop: request.stopSequences,
     });
-    
+
     return {
       content: response.data.choices[0].message.content,
       model: response.data.model,
       usage: {
         promptTokens: response.data.usage.prompt_tokens,
         completionTokens: response.data.usage.completion_tokens,
-        totalTokens: response.data.usage.total_tokens
+        totalTokens: response.data.usage.total_tokens,
       },
-      finishReason: response.data.choices[0].finish_reason
+      finishReason: response.data.choices[0].finish_reason,
     };
   }
 
@@ -95,11 +94,9 @@ class LLMClient extends BaseApiClient {
     await this.processStream(reader, onChunk, onComplete);
   }
 
-  private async makeStreamRequest(
-    request: CompletionRequest,
-  ): Promise<Response> {
-    const response = await fetch("/api/v1/chat/completions", {
-      method: "POST",
+  private async makeStreamRequest(request: CompletionRequest): Promise<Response> {
+    const response = await fetch('/api/v1/chat/completions', {
+      method: 'POST',
       headers: this.getStreamHeaders(),
       body: JSON.stringify({ ...request, stream: true }),
     });
@@ -113,18 +110,16 @@ class LLMClient extends BaseApiClient {
 
   private getStreamHeaders(): HeadersInit {
     return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-      "X-Organization-Id": localStorage.getItem("currentOrgId") || "",
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+      'X-Organization-Id': localStorage.getItem('currentOrgId') || '',
     };
   }
 
-  private getResponseReader(
-    response: Response,
-  ): ReadableStreamDefaultReader<Uint8Array> {
+  private getResponseReader(response: Response): ReadableStreamDefaultReader<Uint8Array> {
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error("No response body");
+      throw new Error('No response body');
     }
     return reader;
   }
@@ -135,7 +130,7 @@ class LLMClient extends BaseApiClient {
     onComplete?: (response: CompletionResponse) => void,
   ): Promise<void> {
     const decoder = new TextDecoder();
-    let buffer = "";
+    let buffer = '';
 
     try {
       while (true) {
@@ -161,8 +156,8 @@ class LLMClient extends BaseApiClient {
     onComplete?: (response: CompletionResponse) => void,
   ): string {
     const buffer = currentBuffer + decodedValue;
-    const lines = buffer.split("\n");
-    const remainingBuffer = lines.pop() || "";
+    const lines = buffer.split('\n');
+    const remainingBuffer = lines.pop() || '';
 
     this.processCompletedLines(lines, onChunk, onComplete);
     return remainingBuffer;
@@ -173,7 +168,7 @@ class LLMClient extends BaseApiClient {
     onChunk: (chunk: string) => void,
     onComplete?: (response: CompletionResponse) => void,
   ): void {
-    lines.forEach((line) => this.processSingleLine(line, onChunk, onComplete));
+    lines.forEach(line => this.processSingleLine(line, onChunk, onComplete));
   }
 
   private processSingleLine(
@@ -193,7 +188,7 @@ class LLMClient extends BaseApiClient {
   }
 
   private isValidSSELine(line: string): boolean {
-    return line.startsWith("data: ");
+    return line.startsWith('data: ');
   }
 
   private extractSSEData(line: string): string {
@@ -201,14 +196,14 @@ class LLMClient extends BaseApiClient {
   }
 
   private isEndMarker(data: string): boolean {
-    return data === "[DONE]";
+    return data === '[DONE]';
   }
 
   private parseChunkData(data: string): any | null {
     try {
       return JSON.parse(data);
     } catch (e) {
-      console.error("Failed to parse SSE chunk:", e);
+      console.error('Failed to parse SSE chunk:', e);
       return null;
     }
   }
@@ -232,7 +227,7 @@ class LLMClient extends BaseApiClient {
       const response = await this.client.get(`/providers/${provider}/models`);
       return response.data;
     } else {
-      const response = await this.client.get("/models");
+      const response = await this.client.get('/models');
       return response.data;
     }
   }
@@ -250,7 +245,7 @@ class LLMClient extends BaseApiClient {
 
   // Rate limit information
   async getRateLimits(): Promise<any> {
-    const response = await this.client.get("/rate-limits");
+    const response = await this.client.get('/rate-limits');
     return response.data;
   }
 
@@ -261,7 +256,7 @@ class LLMClient extends BaseApiClient {
   }> {
     const providers = await this.listProviders();
     const providerStatus: Record<string, string> = {};
-    
+
     for (const provider of providers) {
       try {
         const response = await this.client.get(`/providers/${provider.id}/health`);
@@ -271,15 +266,15 @@ class LLMClient extends BaseApiClient {
         console.error('[llmClient] Error:', error);
         // Rethrow if critical
         if (error.critical) throw error;
-          console.error("Error:", error);
+        console.error('Error:', error);
         providerStatus[provider.id] = 'unavailable';
-        console.error("Error:", error);
+        console.error('Error:', error);
       }
     }
-    
+
     return {
       status: 'UP',
-      providers: providerStatus
+      providers: providerStatus,
     };
   }
 }

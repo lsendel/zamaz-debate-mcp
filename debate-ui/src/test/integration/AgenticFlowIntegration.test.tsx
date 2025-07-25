@@ -94,7 +94,7 @@ const mockFlows = [
 ];
 
 const mockFlowResults = {
-  'm1': {
+  m1: {
     flowId: 'flow-1',
     flowType: 'TREE_OF_THOUGHTS',
     finalAnswer: 'AI safety is paramount...',
@@ -109,7 +109,7 @@ const mockFlowResults = {
     confidence: 88.0,
     executionTime: 3500,
   },
-  'm2': {
+  m2: {
     flowId: 'flow-2',
     flowType: 'TOOL_CALLING_VERIFICATION',
     finalAnswer: 'I agree, but we must also consider...',
@@ -154,10 +154,8 @@ function renderWithProviders(component: React.ReactElement, store = createTestSt
   return {
     ...render(
       <Provider store={store}>
-        <BrowserRouter>
-          {component}
-        </BrowserRouter>
-      </Provider>
+        <BrowserRouter>{component}</BrowserRouter>
+      </Provider>,
     ),
     store,
   };
@@ -169,7 +167,10 @@ describe('Agentic Flow Integration Tests', () => {
     (debateClient.getDebate as any).mockResolvedValue(mockDebate);
     (debateClient.listAgenticFlows as any).mockResolvedValue(mockFlows);
     (debateClient.getFlowResults as any).mockResolvedValue(mockFlowResults);
-    (organizationClient.getOrganization as any).mockResolvedValue({ id: 'org-1', name: 'Test Org' });
+    (organizationClient.getOrganization as any).mockResolvedValue({
+      id: 'org-1',
+      name: 'Test Org',
+    });
   });
 
   afterEach(() => {
@@ -293,7 +294,7 @@ describe('Agentic Flow Integration Tests', () => {
 
     (debateClient.getFlowResults as any).mockResolvedValue({
       ...mockFlowResults,
-      'm3': mockNewFlowResult,
+      m3: mockNewFlowResult,
     });
 
     // Trigger refresh
@@ -316,7 +317,7 @@ describe('Agentic Flow Integration Tests', () => {
 
     (debateClient.getFlowResults as any).mockResolvedValue({
       ...mockFlowResults,
-      'm3': completedFlowResult,
+      m3: completedFlowResult,
     });
 
     // Should update to show completed result
@@ -336,7 +337,7 @@ describe('Agentic Flow Integration Tests', () => {
     };
 
     (debateClient.getFlowResults as any).mockResolvedValue({
-      'm1': errorFlowResult,
+      m1: errorFlowResult,
     });
 
     renderWithProviders(<DebateDetailPage />);
@@ -410,7 +411,7 @@ describe('Agentic Flow Integration Tests', () => {
         'flow-1',
         expect.objectContaining({
           participantIds: ['p1', 'p2'],
-        })
+        }),
       );
     });
   });
@@ -456,7 +457,7 @@ describe('Agentic Flow Integration Tests', () => {
       expect(debateClient.createAgenticFlow).toHaveBeenCalledWith(
         expect.objectContaining({
           flowType: 'MULTI_AGENT_RED_TEAM',
-        })
+        }),
       );
     });
   });

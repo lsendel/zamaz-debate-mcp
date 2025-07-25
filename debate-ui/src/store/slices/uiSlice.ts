@@ -1,12 +1,12 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UIState {
   sidebarOpen: boolean;
   createDebateDialogOpen: boolean;
-  selectedTab: "debates" | "analytics" | "settings";
+  selectedTab: 'debates' | 'analytics' | 'settings';
   notifications: Array<{
     id: string;
-    type: "success" | "error" | "info" | "warning";
+    type: 'success' | 'error' | 'info' | 'warning';
     message: string;
     timestamp: number;
   }>;
@@ -15,36 +15,33 @@ interface UIState {
 const initialState: UIState = {
   sidebarOpen: true,
   createDebateDialogOpen: false,
-  selectedTab: "debates",
+  selectedTab: 'debates',
   notifications: [],
 };
 
 const uiSlice = createSlice({
-  name: "ui",
+  name: 'ui',
   initialState,
   reducers: {
-    toggleSidebar: (state) => {
+    toggleSidebar: state => {
       state.sidebarOpen = !state.sidebarOpen;
     },
     setSidebarOpen: (state, action: PayloadAction<boolean>) => {
       state.sidebarOpen = action.payload;
     },
-    openCreateDebateDialog: (state) => {
+    openCreateDebateDialog: state => {
       state.createDebateDialogOpen = true;
     },
-    closeCreateDebateDialog: (state) => {
+    closeCreateDebateDialog: state => {
       state.createDebateDialogOpen = false;
     },
-    setSelectedTab: (
-      state,
-      action: PayloadAction<"debates" | "analytics" | "settings">,
-    ) => {
+    setSelectedTab: (state, action: PayloadAction<'debates' | 'analytics' | 'settings'>) => {
       state.selectedTab = action.payload;
     },
     addNotification: (
       state,
       action: PayloadAction<{
-        type: "success" | "error" | "info" | "warning";
+        type: 'success' | 'error' | 'info' | 'warning';
         message: string;
       }>,
     ) => {
@@ -55,11 +52,9 @@ const uiSlice = createSlice({
       });
     },
     removeNotification: (state, action: PayloadAction<string>) => {
-      state.notifications = state.notifications.filter(
-        (n) => n.id !== action.payload,
-      );
+      state.notifications = state.notifications.filter(n => n.id !== action.payload);
     },
-    clearNotifications: (state) => {
+    clearNotifications: state => {
       state.notifications = [];
     },
   },

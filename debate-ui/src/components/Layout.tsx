@@ -15,7 +15,16 @@ import {
   SafetyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Layout as AntLayout, Menu, Typography, Button, Space, Badge, Avatar, Dropdown } from 'antd';
+import {
+  Layout as AntLayout,
+  Menu,
+  Typography,
+  Button,
+  Space,
+  Badge,
+  Avatar,
+  Dropdown,
+} from 'antd';
 import { colors, spacing, componentSpacing } from '../styles';
 
 const { Header, Sider, Content } = AntLayout;
@@ -25,8 +34,8 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const location = useLocation();
-  const { sidebarOpen } = useAppSelector((state) => state.ui);
-  const { user } = useAppSelector((state) => state.auth);
+  const { sidebarOpen } = useAppSelector(state => state.ui);
+  const { user } = useAppSelector(state => state.auth);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -108,11 +117,11 @@ const Layout: React.FC = () => {
           <OrganizationSwitcher />
         </div>
         <Menu
-          mode="inline"
+          mode='inline'
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ 
+          style={{
             borderRight: 0,
             fontSize: 15,
             fontWeight: 500,
@@ -133,8 +142,8 @@ const Layout: React.FC = () => {
           }}
         >
           <MenuOutlined
-            style={{ 
-              fontSize: 24, 
+            style={{
+              fontSize: 24,
               cursor: 'pointer',
               color: colors.text.primary,
               padding: spacing[2],
@@ -142,18 +151,17 @@ const Layout: React.FC = () => {
             }}
             onClick={() => dispatch(toggleSidebar())}
           />
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <Avatar
-              style={{ cursor: 'pointer' }}
-              icon={<UserOutlined />}
-            />
+          <Dropdown menu={{ items: userMenuItems }} placement='bottomRight'>
+            <Avatar style={{ cursor: 'pointer' }} icon={<UserOutlined />} />
           </Dropdown>
         </Header>
-        <Content style={{ 
-          padding: componentSpacing.pageMargin, 
-          background: colors.background.secondary,
-          minHeight: `calc(100vh - ${componentSpacing.headerHeight}px)`,
-        }}>
+        <Content
+          style={{
+            padding: componentSpacing.pageMargin,
+            background: colors.background.secondary,
+            minHeight: `calc(100vh - ${componentSpacing.headerHeight}px)`,
+          }}
+        >
           <Outlet />
         </Content>
       </AntLayout>

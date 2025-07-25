@@ -35,7 +35,7 @@ export const antdTheme = {
     lineHeightHeading1: typography.lineHeight.tight,
     lineHeightHeading2: typography.lineHeight.snug,
     fontWeightStrong: typography.fontWeight.semibold,
-    
+
     // Colors
     colorPrimary: colors.primary[500],
     colorSuccess: colors.semantic.success,
@@ -54,7 +54,7 @@ export const antdTheme = {
     colorBgTextHover: colors.background.tertiary,
     colorLink: colors.text.link,
     colorLinkHover: colors.text.linkHover,
-    
+
     // Spacing
     marginXXS: spacing[1],
     marginXS: spacing[2],
@@ -70,22 +70,22 @@ export const antdTheme = {
     paddingLG: spacing[5],
     paddingXL: spacing[6],
     paddingXXL: spacing[8],
-    
+
     // Border Radius
     borderRadius: borderRadius.md,
     borderRadiusSM: borderRadius.sm,
     borderRadiusLG: borderRadius.lg,
-    
+
     // Control sizes
     controlHeight: 40,
     controlHeightSM: 32,
     controlHeightLG: 48,
-    
+
     // Shadows
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
     boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 0.12)',
   },
-  
+
   components: {
     Button: {
       fontSize: parseInt(typography.fontSize.base),

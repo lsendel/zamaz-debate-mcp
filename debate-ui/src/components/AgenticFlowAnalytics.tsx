@@ -124,8 +124,16 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
         processDebateAnalytics(debateAnalytics);
       } else if (organizationId) {
         const [stats, timeSeries, trending] = await Promise.all([
-          debateClient.getFlowTypeStatistics(organizationId, dateRange[0].toISOString(), dateRange[1].toISOString()),
-          debateClient.getFlowExecutionTimeSeries(organizationId, dateRange[0].toISOString(), dateRange[1].toISOString()),
+          debateClient.getFlowTypeStatistics(
+            organizationId,
+            dateRange[0].toISOString(),
+            dateRange[1].toISOString(),
+          ),
+          debateClient.getFlowExecutionTimeSeries(
+            organizationId,
+            dateRange[0].toISOString(),
+            dateRange[1].toISOString(),
+          ),
           debateClient.getTrendingFlowTypes(organizationId, 10),
         ]);
         setFlowTypeStats(stats);
@@ -141,31 +149,39 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
 
   const processDebateAnalytics = (analytics: any) => {
     // Transform debate-specific analytics to component state
-    const stats = Object.entries(analytics.flowTypeSummaries).map(([flowType, summary]: [string, any]) => ({
-      flowType,
-      executionCount: summary.executionCount,
-      averageConfidence: summary.averageConfidence,
-      successRate: summary.successRate,
-      averageExecutionTime: summary.averageExecutionTime,
-    }));
+    const stats = Object.entries(analytics.flowTypeSummaries).map(
+      ([flowType, summary]: [string, any]) => ({
+        flowType,
+        executionCount: summary.executionCount,
+        averageConfidence: summary.averageConfidence,
+        successRate: summary.successRate,
+        averageExecutionTime: summary.averageExecutionTime,
+      }),
+    );
     setFlowTypeStats(stats);
   };
 
   const renderOverviewMetrics = () => {
     const totalExecutions = flowTypeStats.reduce((sum, stat) => sum + stat.executionCount, 0);
-    const avgConfidence = flowTypeStats.length > 0
-      ? flowTypeStats.reduce((sum, stat) => sum + stat.averageConfidence * stat.executionCount, 0) / totalExecutions
-      : 0;
-    const avgSuccessRate = flowTypeStats.length > 0
-      ? flowTypeStats.reduce((sum, stat) => sum + stat.successRate * stat.executionCount, 0) / totalExecutions
-      : 0;
+    const avgConfidence =
+      flowTypeStats.length > 0
+        ? flowTypeStats.reduce(
+            (sum, stat) => sum + stat.averageConfidence * stat.executionCount,
+            0,
+          ) / totalExecutions
+        : 0;
+    const avgSuccessRate =
+      flowTypeStats.length > 0
+        ? flowTypeStats.reduce((sum, stat) => sum + stat.successRate * stat.executionCount, 0) /
+          totalExecutions
+        : 0;
 
     return (
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Total Executions"
+              title='Total Executions'
               value={totalExecutions}
               prefix={<ThunderboltOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -175,10 +191,10 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Average Confidence"
+              title='Average Confidence'
               value={avgConfidence}
               precision={1}
-              suffix="%"
+              suffix='%'
               prefix={<AimOutlined />}
               valueStyle={{ color: avgConfidence >= 80 ? '#52c41a' : '#faad14' }}
             />
@@ -187,10 +203,10 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="Success Rate"
+              title='Success Rate'
               value={avgSuccessRate * 100}
               precision={1}
-              suffix="%"
+              suffix='%'
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: avgSuccessRate >= 0.8 ? '#52c41a' : '#faad14' }}
             />
@@ -208,18 +224,18 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
     }));
 
     return (
-      <Card title="Flow Type Distribution">
-        <ResponsiveContainer width="100%" height={height}>
+      <Card title='Flow Type Distribution'>
+        <ResponsiveContainer width='100%' height={height}>
           <PieChart>
             <Pie
               data={data}
-              cx="50%"
-              cy="50%"
+              cx='50%'
+              cy='50%'
               labelLine={false}
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
+              fill='#8884d8'
+              dataKey='value'
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={FLOW_TYPE_COLORS[entry.flowType] || '#8884d8'} />
@@ -237,19 +253,31 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
       flowType: getFlowTypeLabel(stat.flowType),
       confidence: stat.averageConfidence,
       successRate: stat.successRate * 100,
-      speed: Math.max(0, 100 - (stat.averageExecutionTime / 1000)), // Convert to speed score
+      speed: Math.max(0, 100 - stat.averageExecutionTime / 1000), // Convert to speed score
     }));
 
     return (
-      <Card title="Performance Comparison">
-        <ResponsiveContainer width="100%" height={height}>
+      <Card title='Performance Comparison'>
+        <ResponsiveContainer width='100%' height={height}>
           <RadarChart data={data}>
             <PolarGrid />
-            <PolarAngleAxis dataKey="flowType" />
+            <PolarAngleAxis dataKey='flowType' />
             <PolarRadiusAxis angle={90} domain={[0, 100]} />
-            <Radar name="Confidence" dataKey="confidence" stroke="#1890ff" fill="#1890ff" fillOpacity={0.6} />
-            <Radar name="Success Rate" dataKey="successRate" stroke="#52c41a" fill="#52c41a" fillOpacity={0.6} />
-            <Radar name="Speed" dataKey="speed" stroke="#fa8c16" fill="#fa8c16" fillOpacity={0.6} />
+            <Radar
+              name='Confidence'
+              dataKey='confidence'
+              stroke='#1890ff'
+              fill='#1890ff'
+              fillOpacity={0.6}
+            />
+            <Radar
+              name='Success Rate'
+              dataKey='successRate'
+              stroke='#52c41a'
+              fill='#52c41a'
+              fillOpacity={0.6}
+            />
+            <Radar name='Speed' dataKey='speed' stroke='#fa8c16' fill='#fa8c16' fillOpacity={0.6} />
             <Legend />
           </RadarChart>
         </ResponsiveContainer>
@@ -260,35 +288,35 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
   const renderTimeSeriesChart = () => {
     if (timeSeriesData.length === 0) {
       return (
-        <Card title="Execution Trends">
-          <Empty description="No time series data available" />
+        <Card title='Execution Trends'>
+          <Empty description='No time series data available' />
         </Card>
       );
     }
 
     return (
-      <Card title="Execution Trends">
-        <ResponsiveContainer width="100%" height={height}>
+      <Card title='Execution Trends'>
+        <ResponsiveContainer width='100%' height={height}>
           <LineChart data={timeSeriesData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis yAxisId="left" />
-            <YAxis yAxisId="right" orientation="right" />
+            <CartesianGrid strokeDasharray='3 3' />
+            <XAxis dataKey='date' />
+            <YAxis yAxisId='left' />
+            <YAxis yAxisId='right' orientation='right' />
             <Tooltip />
             <Legend />
             <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="executions"
-              stroke="#1890ff"
-              name="Executions"
+              yAxisId='left'
+              type='monotone'
+              dataKey='executions'
+              stroke='#1890ff'
+              name='Executions'
             />
             <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="averageConfidence"
-              stroke="#52c41a"
-              name="Avg Confidence %"
+              yAxisId='right'
+              type='monotone'
+              dataKey='averageConfidence'
+              stroke='#52c41a'
+              name='Avg Confidence %'
             />
           </LineChart>
         </ResponsiveContainer>
@@ -304,9 +332,7 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
         key: 'flowType',
         render: (flowType: string) => (
           <Space>
-            <Tag color={FLOW_TYPE_COLORS[flowType] || 'default'}>
-              {getFlowTypeLabel(flowType)}
-            </Tag>
+            <Tag color={FLOW_TYPE_COLORS[flowType] || 'default'}>{getFlowTypeLabel(flowType)}</Tag>
           </Space>
         ),
       },
@@ -337,9 +363,9 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
         render: (confidence: number) => (
           <Progress
             percent={confidence}
-            size="small"
+            size='small'
             strokeColor={confidence >= 80 ? '#52c41a' : '#faad14'}
-            format={(percent) => `${percent}%`}
+            format={percent => `${percent}%`}
           />
         ),
       },
@@ -363,9 +389,9 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
         <Table
           columns={columns}
           dataSource={trendingFlows}
-          rowKey="flowType"
+          rowKey='flowType'
           pagination={false}
-          size="small"
+          size='small'
         />
       </Card>
     );
@@ -375,7 +401,7 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
+          <Spin size='large' />
           <div style={{ marginTop: '16px' }}>Loading analytics...</div>
         </div>
       </Card>
@@ -385,15 +411,22 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '24px',
+          }}
+        >
           <Title level={4} style={{ margin: 0 }}>
             <BulbOutlined style={{ marginRight: 8 }} />
             Agentic Flow Analytics
           </Title>
           <Space>
             <Select
-              mode="multiple"
-              placeholder="Filter by flow types"
+              mode='multiple'
+              placeholder='Filter by flow types'
               style={{ minWidth: 200 }}
               value={selectedFlowTypes}
               onChange={setSelectedFlowTypes}
@@ -407,15 +440,15 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
             </Select>
             <RangePicker
               value={dateRange}
-              onChange={(dates) => dates && setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
-              format="YYYY-MM-DD"
+              onChange={dates => dates && setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
+              format='YYYY-MM-DD'
             />
           </Space>
         </div>
 
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Overview" key="overview">
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <TabPane tab='Overview' key='overview'>
+            <Space direction='vertical' size='large' style={{ width: '100%' }}>
               {renderOverviewMetrics()}
               <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>
@@ -428,24 +461,28 @@ const AgenticFlowAnalytics: React.FC<AgenticFlowAnalyticsProps> = ({
             </Space>
           </TabPane>
 
-          <TabPane tab="Trends" key="trends">
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <TabPane tab='Trends' key='trends'>
+            <Space direction='vertical' size='large' style={{ width: '100%' }}>
               {renderTimeSeriesChart()}
               {renderTrendingFlows()}
             </Space>
           </TabPane>
 
-          <TabPane tab="Performance" key="performance">
+          <TabPane tab='Performance' key='performance'>
             <Row gutter={[16, 16]}>
               <Col span={24}>
-                <Card title="Execution Time Analysis">
-                  <ResponsiveContainer width="100%" height={height}>
+                <Card title='Execution Time Analysis'>
+                  <ResponsiveContainer width='100%' height={height}>
                     <BarChart data={flowTypeStats}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="flowType" tickFormatter={getFlowTypeLabel} />
+                      <CartesianGrid strokeDasharray='3 3' />
+                      <XAxis dataKey='flowType' tickFormatter={getFlowTypeLabel} />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="averageExecutionTime" fill="#1890ff" name="Avg Execution Time (ms)" />
+                      <Bar
+                        dataKey='averageExecutionTime'
+                        fill='#1890ff'
+                        name='Avg Execution Time (ms)'
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </Card>
