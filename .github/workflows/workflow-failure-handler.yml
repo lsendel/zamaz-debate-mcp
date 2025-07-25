@@ -65,6 +65,7 @@ permissions:
   actions: read
   contents: read
   issues: write
+
 jobs:
   handle-failure:
     runs-on: ubuntu-latest
