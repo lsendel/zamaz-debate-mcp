@@ -7,7 +7,8 @@ describe('AgenticFlowResult Component', () => {
     INTERNAL_MONOLOGUE: {
       flowType: 'INTERNAL_MONOLOGUE',
       finalAnswer: 'The capital of France is Paris.',
-      reasoning: 'Step 1: Recall geography knowledge\nStep 2: France is a country in Europe\nStep 3: Its capital city is Paris',
+      reasoning:
+        'Step 1: Recall geography knowledge\nStep 2: France is a country in Europe\nStep 3: Its capital city is Paris',
       confidence: 95.0,
       executionTime: 1250,
       timestamp: new Date().toISOString(),
@@ -19,7 +20,7 @@ describe('AgenticFlowResult Component', () => {
         {
           iteration: 1,
           response: 'Climate change is caused by various factors.',
-          critique: 'This response is too vague and doesn\'t address the primary cause.',
+          critique: "This response is too vague and doesn't address the primary cause.",
           revision: 'Climate change is primarily caused by greenhouse gas emissions.',
         },
         {
@@ -313,7 +314,7 @@ describe('AgenticFlowResult Component', () => {
 
     // Verify clipboard was called
     expect(mockClipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining('The capital of France is Paris.')
+      expect.stringContaining('The capital of France is Paris.'),
     );
 
     // Should show success message

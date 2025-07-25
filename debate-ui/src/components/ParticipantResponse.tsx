@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Card,
-  Avatar,
-  Space,
-  Typography,
-  Button,
-  Collapse,
-  Tag,
-  Tooltip,
-} from 'antd';
+import { Card, Avatar, Space, Typography, Button, Collapse, Tag, Tooltip } from 'antd';
 import {
   ExpandOutlined,
   CompressOutlined,
@@ -56,7 +47,7 @@ const ParticipantResponse: React.FC<ParticipantResponseProps> = ({
   showAgenticFlow = true,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  
+
   // Handle both string and object participants
   const isString = typeof participant === 'string';
   const participantName = isString ? participant : participant.name;
@@ -64,21 +55,25 @@ const ParticipantResponse: React.FC<ParticipantResponseProps> = ({
   const hasAgenticFlow = showAgenticFlow && response.agenticFlowResult;
 
   return (
-    <Card 
+    <Card
       style={{ marginBottom: '12px' }}
-      actions={hasAgenticFlow ? [
-        <Button
-          type="text"
-          icon={expanded ? <CompressOutlined /> : <ExpandOutlined />}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? 'Hide' : 'Show'} Agentic Flow Details
-        </Button>
-      ] : undefined}
+      actions={
+        hasAgenticFlow
+          ? [
+              <Button
+                type='text'
+                icon={expanded ? <CompressOutlined /> : <ExpandOutlined />}
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? 'Hide' : 'Show'} Agentic Flow Details
+              </Button>,
+            ]
+          : undefined
+      }
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
         <Avatar
-          size="default"
+          size='default'
           style={{
             backgroundColor: getParticipantColor(participantIndex),
             marginRight: '12px',
@@ -87,28 +82,26 @@ const ParticipantResponse: React.FC<ParticipantResponseProps> = ({
         >
           {participantName.charAt(0).toUpperCase()}
         </Avatar>
-        
+
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
             <Text strong style={{ marginRight: '8px' }}>
               {participantName}
             </Text>
             {hasAgenticFlow && (
-              <Tooltip title="Response generated with Agentic Flow">
-                <Tag icon={<BranchesOutlined />} color="blue">
+              <Tooltip title='Response generated with Agentic Flow'>
+                <Tag icon={<BranchesOutlined />} color='blue'>
                   {response.agenticFlowResult?.flowType}
                 </Tag>
               </Tooltip>
             )}
           </div>
-          
-          <Space size="small" style={{ fontSize: '12px', color: '#8c8c8c' }}>
+
+          <Space size='small' style={{ fontSize: '12px', color: '#8c8c8c' }}>
             <span>
               <ClockCircleOutlined /> {new Date(response.timestamp).toLocaleTimeString()}
             </span>
-            {response.tokenCount && (
-              <span>{response.tokenCount} tokens</span>
-            )}
+            {response.tokenCount && <span>{response.tokenCount} tokens</span>}
             {hasAgenticFlow && response.agenticFlowResult?.confidence !== undefined && (
               <Tag color={getConfidenceColor(response.agenticFlowResult.confidence)}>
                 {response.agenticFlowResult.confidence}% confidence
@@ -117,18 +110,15 @@ const ParticipantResponse: React.FC<ParticipantResponseProps> = ({
           </Space>
         </div>
       </div>
-      
+
       <Paragraph style={{ marginBottom: hasAgenticFlow ? '16px' : 0 }}>
         {response.content}
       </Paragraph>
-      
+
       {hasAgenticFlow && expanded && response.agenticFlowResult && (
         <Collapse ghost activeKey={['flow-details']}>
-          <Panel header="Agentic Flow Details" key="flow-details">
-            <AgenticFlowResult 
-              result={response.agenticFlowResult}
-              showMetadata={false}
-            />
+          <Panel header='Agentic Flow Details' key='flow-details'>
+            <AgenticFlowResult result={response.agenticFlowResult} showMetadata={false} />
           </Panel>
         </Collapse>
       )}

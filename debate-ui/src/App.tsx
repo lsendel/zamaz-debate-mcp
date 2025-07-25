@@ -1,10 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConfigProvider } from 'antd';
@@ -39,7 +34,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const dispatch = useAppDispatch();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated } = useAppSelector(state => state.auth);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -50,21 +45,15 @@ function AppContent() {
   return (
     <>
       <Routes>
-        <Route
-          path="/login"
-          element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/"
-          element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}
-        >
+        <Route path='/login' element={!isAuthenticated ? <LoginPage /> : <Navigate to='/' />} />
+        <Route path='/' element={isAuthenticated ? <Layout /> : <Navigate to='/login' />}>
           <Route index element={<DebatesPage />} />
-          <Route path="debates" element={<DebatesPage />} />
-          <Route path="debates/:id" element={<DebateDetailPage />} />
-          <Route path="workflow-editor" element={<WorkflowEditorPage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="organization-management" element={<OrganizationManagementPage />} />
+          <Route path='debates' element={<DebatesPage />} />
+          <Route path='debates/:id' element={<DebateDetailPage />} />
+          <Route path='workflow-editor' element={<WorkflowEditorPage />} />
+          <Route path='analytics' element={<AnalyticsPage />} />
+          <Route path='settings' element={<SettingsPage />} />
+          <Route path='organization-management' element={<OrganizationManagementPage />} />
         </Route>
       </Routes>
       <NotificationSnackbar />

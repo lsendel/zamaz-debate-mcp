@@ -1,45 +1,35 @@
-import React, { useState } from "react";
-import {
-  Card,
-  Input,
-  Button,
-  Divider,
-  Alert,
-  Badge,
-  Modal,
-  Select,
-  Form,
-} from "antd";
+import React, { useState } from 'react';
+import { Card, Input, Button, Divider, Alert, Badge, Modal, Select, Form } from 'antd';
 import {
   DeleteOutlined,
   PlusOutlined,
   CopyOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
-} from "@ant-design/icons";
+} from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Option } = Select;
-import { useAppSelector, useAppDispatch } from "../store";
-import { generateApiKey } from "../store/slices/organizationSlice";
-import { addNotification } from "../store/slices/uiSlice";
-import organizationClient from "../api/organizationClient";
+import { useAppSelector, useAppDispatch } from '../store';
+import { generateApiKey } from '../store/slices/organizationSlice';
+import { addNotification } from '../store/slices/uiSlice';
+import organizationClient from '../api/organizationClient';
 
 const SettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { currentOrganization } = useAppSelector((state) => state.organization);
-  const { user } = useAppSelector((state) => state.auth);
+  const { currentOrganization } = useAppSelector(state => state.organization);
+  const { user } = useAppSelector(state => state.auth);
 
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({
-    username: "",
-    email: "",
-    password: "",
-    role: "member",
+    username: '',
+    email: '',
+    password: '',
+    role: 'member',
   });
   const [orgSettings, setOrgSettings] = useState({
-    name: currentOrganization?.name || "",
-    description: currentOrganization?.description || "",
+    name: currentOrganization?.name || '',
+    description: currentOrganization?.description || '',
   });
 
   React.useEffect(() => {
@@ -49,7 +39,7 @@ const SettingsPage: React.FC = () => {
           const userList = await organizationClient.listUsers();
           setUsers(userList);
         } catch (error) {
-          console.error("Failed to load users:", error);
+          console.error('Failed to load users:', error);
         }
       }
     };
@@ -61,8 +51,8 @@ const SettingsPage: React.FC = () => {
       await dispatch(generateApiKey()).unwrap();
       dispatch(
         addNotification({
-          type: "success",
-          message: "API key generated successfully",
+          type: 'success',
+          message: 'API key generated successfully',
         }),
       );
     } catch (error) {
@@ -70,11 +60,11 @@ const SettingsPage: React.FC = () => {
       console.error('[SettingsPage] Error:', error);
       // Rethrow if critical
       if (error.critical) throw error;
-        console.error("Error:", error);
+      console.error('Error:', error);
       dispatch(
         addNotification({
-          type: "error",
-          message: "Failed to generate API key",
+          type: 'error',
+          message: 'Failed to generate API key',
         }),
       );
     }
@@ -85,8 +75,8 @@ const SettingsPage: React.FC = () => {
       navigator.clipboard.writeText(currentOrganization.apiKey);
       dispatch(
         addNotification({
-          type: "success",
-          message: "API key copied to clipboard",
+          type: 'success',
+          message: 'API key copied to clipboard',
         }),
       );
     }
@@ -97,19 +87,19 @@ const SettingsPage: React.FC = () => {
       const user = await organizationClient.addUser(newUser);
       setUsers([...users, user]);
       setAddUserModalOpen(false);
-      setNewUser({ username: "", email: "", password: "", role: "member" });
+      setNewUser({ username: '', email: '', password: '', role: 'member' });
       dispatch(
         addNotification({
-          type: "success",
-          message: "User added successfully",
+          type: 'success',
+          message: 'User added successfully',
         }),
       );
     } catch (error) {
-        console.error("Error:", error);
+      console.error('Error:', error);
       dispatch(
         addNotification({
-          type: "error",
-          message: "Failed to add user",
+          type: 'error',
+          message: 'Failed to add user',
         }),
       );
     }
@@ -118,19 +108,19 @@ const SettingsPage: React.FC = () => {
   const handleRemoveUser = async (userId: string) => {
     try {
       await organizationClient.removeUser(userId);
-      setUsers(users.filter((u) => u.id !== userId));
+      setUsers(users.filter(u => u.id !== userId));
       dispatch(
         addNotification({
-          type: "success",
-          message: "User removed successfully",
+          type: 'success',
+          message: 'User removed successfully',
         }),
       );
     } catch (error) {
-        console.error("Error:", error);
+      console.error('Error:', error);
       dispatch(
         addNotification({
-          type: "error",
-          message: "Failed to remove user",
+          type: 'error',
+          message: 'Failed to remove user',
         }),
       );
     }
@@ -140,22 +130,19 @@ const SettingsPage: React.FC = () => {
     if (!currentOrganization) return;
 
     try {
-      await organizationClient.updateOrganization(
-        currentOrganization.id,
-        orgSettings,
-      );
+      await organizationClient.updateOrganization(currentOrganization.id, orgSettings);
       dispatch(
         addNotification({
-          type: "success",
-          message: "Organization settings updated",
+          type: 'success',
+          message: 'Organization settings updated',
         }),
       );
     } catch (error) {
-        console.error("Error:", error);
+      console.error('Error:', error);
       dispatch(
         addNotification({
-          type: "error",
-          message: "Failed to update organization settings",
+          type: 'error',
+          message: 'Failed to update organization settings',
         }),
       );
     }
@@ -165,7 +152,7 @@ const SettingsPage: React.FC = () => {
     return (
       <div>
         <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '16px' }}>Settings</h1>
-        <Alert message="No organization selected" type="warning" />
+        <Alert message='No organization selected' type='warning' />
       </div>
     );
   }
@@ -174,67 +161,57 @@ const SettingsPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <h1 style={{ fontSize: '30px', fontWeight: 'bold', margin: 0 }}>Settings</h1>
 
-      <Card title="Organization Settings">
-        <Form layout="vertical">
-          <Form.Item label="Organization Name">
+      <Card title='Organization Settings'>
+        <Form layout='vertical'>
+          <Form.Item label='Organization Name'>
             <Input
               value={orgSettings.name}
-              onChange={(e) =>
-                setOrgSettings({ ...orgSettings, name: e.target.value })
-              }
+              onChange={e => setOrgSettings({ ...orgSettings, name: e.target.value })}
             />
           </Form.Item>
-          <Form.Item label="Description">
+          <Form.Item label='Description'>
             <TextArea
               value={orgSettings.description}
-              onChange={(e) =>
-                setOrgSettings({ ...orgSettings, description: e.target.value })
-              }
+              onChange={e => setOrgSettings({ ...orgSettings, description: e.target.value })}
               rows={3}
             />
           </Form.Item>
-          <Button
-            type="primary"
-            onClick={handleUpdateOrganization}
-          >
+          <Button type='primary' onClick={handleUpdateOrganization}>
             Update Settings
           </Button>
         </Form>
       </Card>
 
-      <Card title="API Configuration">
+      <Card title='API Configuration'>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Input.Password
-            value={currentOrganization.apiKey || "No API key generated"}
+            value={currentOrganization.apiKey || 'No API key generated'}
             readOnly
             style={{ flex: 1 }}
-            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+            iconRender={visible => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
           />
           {currentOrganization.apiKey && (
-            <Button
-              icon={<CopyOutlined />}
-              onClick={handleCopyApiKey}
-            />
+            <Button icon={<CopyOutlined />} onClick={handleCopyApiKey} />
           )}
-          <Button type="default" onClick={handleGenerateApiKey}>
-            {currentOrganization.apiKey ? "Regenerate" : "Generate"}
+          <Button type='default' onClick={handleGenerateApiKey}>
+            {currentOrganization.apiKey ? 'Regenerate' : 'Generate'}
           </Button>
         </div>
         {currentOrganization.apiKey && (
           <Alert
             message="Keep your API key secure. It provides full access to your organization's resources."
-            type="warning"
+            type='warning'
             style={{ marginTop: '16px' }}
           />
         )}
       </Card>
 
       <Card
-        title="Users"
+        title='Users'
         extra={
           <Button
-            type="default"
-            size="small"
+            type='default'
+            size='small'
             onClick={() => setAddUserModalOpen(true)}
             icon={<PlusOutlined />}
           >
@@ -244,18 +221,26 @@ const SettingsPage: React.FC = () => {
       >
         <Divider style={{ margin: '0 0 16px 0' }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {users.map((u) => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+          {users.map(u => (
+            <div
+              key={u.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 0',
+              }}
+            >
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 500, margin: 0 }}>{u.username}</p>
                 <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>{u.email}</p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Badge color={u.role === "admin" ? "blue" : "default"} text={u.role} />
+                <Badge color={u.role === 'admin' ? 'blue' : 'default'} text={u.role} />
                 {u.id !== user?.id && (
                   <Button
-                    type="text"
-                    size="small"
+                    type='text'
+                    size='small'
                     danger
                     onClick={() => handleRemoveUser(u.id)}
                     icon={<DeleteOutlined />}
@@ -268,48 +253,42 @@ const SettingsPage: React.FC = () => {
       </Card>
 
       <Modal
-        title="Add User"
+        title='Add User'
         open={addUserModalOpen}
         onCancel={() => setAddUserModalOpen(false)}
         onOk={handleAddUser}
-        okText="Add User"
+        okText='Add User'
         okButtonProps={{ disabled: !newUser.username || !newUser.email || !newUser.password }}
       >
-        <p style={{ marginBottom: '16px' }}>
-          Add a new user to your organization
-        </p>
-        <Form layout="vertical">
-          <Form.Item label="Username" required>
+        <p style={{ marginBottom: '16px' }}>Add a new user to your organization</p>
+        <Form layout='vertical'>
+          <Form.Item label='Username' required>
             <Input
               value={newUser.username}
-              onChange={(e) =>
-                setNewUser({ ...newUser, username: e.target.value })
-              }
+              onChange={e => setNewUser({ ...newUser, username: e.target.value })}
             />
           </Form.Item>
-          <Form.Item label="Email" required>
+          <Form.Item label='Email' required>
             <Input
-              type="email"
+              type='email'
               value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              onChange={e => setNewUser({ ...newUser, email: e.target.value })}
             />
           </Form.Item>
-          <Form.Item label="Password" required>
+          <Form.Item label='Password' required>
             <Input.Password
               value={newUser.password}
-              onChange={(e) =>
-                setNewUser({ ...newUser, password: e.target.value })
-              }
+              onChange={e => setNewUser({ ...newUser, password: e.target.value })}
             />
           </Form.Item>
-          <Form.Item label="Role">
+          <Form.Item label='Role'>
             <Select
               value={newUser.role}
-              onChange={(value) => setNewUser({ ...newUser, role: value })}
+              onChange={value => setNewUser({ ...newUser, role: value })}
               style={{ width: '100%' }}
             >
-              <Option value="member">Member</Option>
-              <Option value="admin">Admin</Option>
+              <Option value='member'>Member</Option>
+              <Option value='admin'>Admin</Option>
             </Select>
           </Form.Item>
         </Form>

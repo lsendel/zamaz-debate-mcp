@@ -1,8 +1,5 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import organizationClient, {
-  User,
-  AuthRequest,
-} from "../../api/organizationClient";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import organizationClient, { User, AuthRequest } from '../../api/organizationClient';
 
 interface AuthState {
   user: User | null;
@@ -14,52 +11,49 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: (() => {
-    const testUser = localStorage.getItem("testUser");
+    const testUser = localStorage.getItem('testUser');
     return testUser ? JSON.parse(testUser) : null;
   })(),
-  token: localStorage.getItem("authToken"),
-  isAuthenticated: !!localStorage.getItem("authToken"),
+  token: localStorage.getItem('authToken'),
+  isAuthenticated: !!localStorage.getItem('authToken'),
   loading: false,
   error: null,
 };
 
-export const login = createAsyncThunk(
-  "auth/login",
-  async (credentials: AuthRequest) => {
-    const response = await organizationClient.login(credentials);
-    localStorage.setItem("authToken", response.token);
-    localStorage.setItem("currentOrgId", response.organization.id);
-    return response;
-  },
-);
+export const login = createAsyncThunk('auth/login', async (credentials: AuthRequest) => {
+  const response = await organizationClient.login(credentials);
+  localStorage.setItem('authToken', response.token);
+  localStorage.setItem('currentOrgId', response.organization.id);
+  return response;
+});
 
 export const register = createAsyncThunk(
-  "auth/register",
+  'auth/register',
   async (data: AuthRequest & { email: string; organizationName: string }) => {
     const response = await organizationClient.register(data);
-    localStorage.setItem("authToken", response.token);
-    localStorage.setItem("currentOrgId", response.organization.id);
+    localStorage.setItem('authToken', response.token);
+    localStorage.setItem('currentOrgId', response.organization.id);
     return response;
   },
 );
 
-export const logout = createAsyncThunk("auth/logout", async () => {
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("currentOrgId");
+export const logout = createAsyncThunk('auth/logout', async () => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('currentOrgId');
 });
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     // Login
     builder
-      .addCase(login.pending, (state) => {
+      .addCase(login.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -71,12 +65,12 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Login failed";
+        state.error = action.error.message || 'Login failed';
       });
 
     // Register
     builder
-      .addCase(register.pending, (state) => {
+      .addCase(register.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -88,11 +82,11 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Registration failed";
+        state.error = action.error.message || 'Registration failed';
       });
 
     // Logout
-    builder.addCase(logout.fulfilled, (state) => {
+    builder.addCase(logout.fulfilled, state => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;

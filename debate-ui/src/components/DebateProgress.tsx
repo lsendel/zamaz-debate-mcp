@@ -1,10 +1,6 @@
 import React from 'react';
 import { Progress, Card, Badge, Alert, Spin, Typography } from 'antd';
-import {
-  CheckCircleOutlined,
-  BorderOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { CheckCircleOutlined, BorderOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Debate } from '../api/debateClient';
 
 const { Title, Text } = Typography;
@@ -41,26 +37,31 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
     return (completedRounds / debate.maxRounds) * 100;
   };
 
-  const isGenerating = debate.status === 'IN_PROGRESS' && debate.rounds?.some(r => r.status === 'in_progress');
+  const isGenerating =
+    debate.status === 'IN_PROGRESS' && debate.rounds?.some(r => r.status === 'in_progress');
 
   return (
     <div style={{ marginBottom: '24px' }}>
       {/* Status Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '16px' }}>
-        <Title level={4} style={{ margin: 0 }}>Debate Progress</Title>
+        <Title level={4} style={{ margin: 0 }}>
+          Debate Progress
+        </Title>
         {isPolling && (
-          <Badge 
-            count="Live" 
-            style={{ 
+          <Badge
+            count='Live'
+            style={{
               backgroundColor: '#52c41a',
-              animation: 'pulse 2s infinite'
+              animation: 'pulse 2s infinite',
             }}
           >
-            <Spin indicator={<LoadingOutlined style={{ fontSize: 14, marginRight: '4px' }} spin />} />
+            <Spin
+              indicator={<LoadingOutlined style={{ fontSize: 14, marginRight: '4px' }} spin />}
+            />
           </Badge>
         )}
         {isGenerating && (
-          <Text type="secondary" style={{ fontSize: '14px' }}>
+          <Text type='secondary' style={{ fontSize: '14px' }}>
             Generating responses...
           </Text>
         )}
@@ -70,11 +71,7 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
       <Card style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ flex: 1, marginRight: '8px' }}>
-            <Progress 
-              percent={getProgressPercentage()} 
-              strokeColor="#1890ff"
-              size="default"
-            />
+            <Progress percent={getProgressPercentage()} strokeColor='#1890ff' size='default' />
           </div>
           <div style={{ minWidth: '45px' }}>
             <Text strong style={{ fontSize: '14px', color: '#595959' }}>
@@ -82,38 +79,39 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
             </Text>
           </div>
         </div>
-        <Text type="secondary" style={{ fontSize: '14px' }}>
-          {debate.rounds?.filter(r => r.status === 'completed').length || 0} of {debate.maxRounds || 0} rounds completed
+        <Text type='secondary' style={{ fontSize: '14px' }}>
+          {debate.rounds?.filter(r => r.status === 'completed').length || 0} of{' '}
+          {debate.maxRounds || 0} rounds completed
         </Text>
       </Card>
 
       {/* Round Steps */}
       <Card bordered>
         <div style={{ padding: '24px' }}>
-          <div className="space-y-6">
-            {Array.from({ length: debate.maxRounds || 3 }, (_, i) => i + 1).map((roundNumber) => {
+          <div className='space-y-6'>
+            {Array.from({ length: debate.maxRounds || 3 }, (_, i) => i + 1).map(roundNumber => {
               const round = debate.rounds?.find(r => r.roundNumber === roundNumber);
               const status = getRoundStatus(roundNumber);
               const isActive = debate.currentRound === roundNumber;
-              
+
               return (
-                <div key={roundNumber} className="relative">
+                <div key={roundNumber} className='relative'>
                   {/* Connector Line */}
                   {roundNumber < (debate.maxRounds || 3) && (
-                    <div 
+                    <div
                       style={{
                         position: 'absolute',
                         top: '40px',
                         left: '20px',
                         bottom: 0,
                         width: '2px',
-                        backgroundColor: status === 'completed' ? '#1890ff' : '#f0f0f0'
-                      }} 
+                        backgroundColor: status === 'completed' ? '#1890ff' : '#f0f0f0',
+                      }}
                     />
                   )}
-                  
+
                   {/* Step */}
-                  <div className="relative z-10 flex">
+                  <div className='relative z-10 flex'>
                     {/* Step Icon */}
                     <div
                       style={{
@@ -126,11 +124,12 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
                         fontWeight: 500,
                         transition: 'all 0.3s',
                         // TODO: Refactor nested ternary for better readability
-                        backgroundColor: status === 'completed' ? '#1890ff' : isActive ? '#e6f7ff' : '#fafafa',
+                        backgroundColor:
+                          status === 'completed' ? '#1890ff' : isActive ? '#e6f7ff' : '#fafafa',
                         // TODO: Refactor nested ternary for better readability
                         color: status === 'completed' ? '#fff' : isActive ? '#096dd9' : '#bfbfbf',
                         // TODO: Refactor nested ternary for better readability
-                        border: `2px solid ${status === 'completed' ? '#1890ff' : isActive ? '#1890ff' : '#f0f0f0'}`
+                        border: `2px solid ${status === 'completed' ? '#1890ff' : isActive ? '#1890ff' : '#f0f0f0'}`,
                       }}
                     >
                       {getStepIcon(roundNumber)}
@@ -142,27 +141,38 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
                         Round {roundNumber}
                       </Text>
                       {status === 'in_progress' && (
-                        <Text style={{ fontSize: '14px', color: '#1890ff', display: 'block', marginTop: '4px' }}>
+                        <Text
+                          style={{
+                            fontSize: '14px',
+                            color: '#1890ff',
+                            display: 'block',
+                            marginTop: '4px',
+                          }}
+                        >
                           Generating responses...
                         </Text>
                       )}
                       {round && round.responses && round.responses.length > 0 && (
-                        <div className="ml-2 mt-2">
-                          <Text type="secondary" style={{ fontSize: '14px' }}>
-                            {round.responses.length} response{round.responses.length !== 1 ? 's' : ''} generated
+                        <div className='ml-2 mt-2'>
+                          <Text type='secondary' style={{ fontSize: '14px' }}>
+                            {round.responses.length} response
+                            {round.responses.length !== 1 ? 's' : ''} generated
                           </Text>
                         </div>
                       )}
                       {status === 'in_progress' && (
-                        <Alert 
-                          message="AI participants are formulating their responses..."
-                          type="info"
+                        <Alert
+                          message='AI participants are formulating their responses...'
+                          type='info'
                           showIcon
                           style={{ marginTop: '8px' }}
                         />
                       )}
                       {status === 'pending' && debate.status === 'IN_PROGRESS' && (
-                        <Text type="secondary" style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>
+                        <Text
+                          type='secondary'
+                          style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}
+                        >
                           Waiting to start...
                         </Text>
                       )}
@@ -177,27 +187,27 @@ const DebateProgress: React.FC<DebateProgressProps> = ({ debate, isPolling }) =>
 
       {/* Status Messages */}
       {debate.status === 'CREATED' && (
-        <Alert 
+        <Alert
           message='Click "Start" to begin the debate. AI participants will generate responses for each round.'
-          type="info"
+          type='info'
           showIcon
           style={{ marginTop: '16px' }}
         />
       )}
-      
+
       {debate.status === 'COMPLETED' && (
-        <Alert 
-          message="Debate completed! All rounds have been generated."
-          type="success"
+        <Alert
+          message='Debate completed! All rounds have been generated.'
+          type='success'
           showIcon
           style={{ marginTop: '16px' }}
         />
       )}
-      
+
       {debate.status === 'CANCELLED' && (
-        <Alert 
-          message="This debate was cancelled."
-          type="warning"
+        <Alert
+          message='This debate was cancelled.'
+          type='warning'
           showIcon
           style={{ marginTop: '16px' }}
         />

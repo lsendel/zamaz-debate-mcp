@@ -14,11 +14,11 @@ const ServiceStatus: React.FC<ServiceStatusProps> = ({ serviceName, serviceUrl, 
   const checkService = async () => {
     setStatus('checking');
     setError(null);
-    
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
+
       // Try health endpoint first, then fall back to checking the actual API
       let response;
       try {
@@ -30,16 +30,16 @@ const ServiceStatus: React.FC<ServiceStatusProps> = ({ serviceName, serviceUrl, 
         console.error('[ServiceStatus] Error:', healthError);
         // Rethrow if critical
         if (healthError.critical) throw healthError;
-          console.error("Error:", e);
+        console.error('Error:', e);
         // If health endpoint fails, try the actual API endpoint
         response = await fetch(`${serviceUrl}/api/v1/debates`, {
           signal: controller.signal,
         });
-        console.error("Error:", error);
+        console.error('Error:', error);
       }
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         setStatus('online');
       } else if (response.status === 404) {
@@ -92,9 +92,9 @@ const ServiceStatus: React.FC<ServiceStatusProps> = ({ serviceName, serviceUrl, 
             <p>{error || 'The service is not responding'}</p>
             <p>Please ensure the backend service is running on {serviceUrl}</p>
             <Space style={{ marginTop: '8px' }}>
-              <Button 
-                size="small" 
-                icon={<ReloadOutlined />} 
+              <Button
+                size='small'
+                icon={<ReloadOutlined />}
                 onClick={() => {
                   checkService();
                   if (onRetry) onRetry();
@@ -105,7 +105,7 @@ const ServiceStatus: React.FC<ServiceStatusProps> = ({ serviceName, serviceUrl, 
             </Space>
           </div>
         }
-        type="error"
+        type='error'
         showIcon
         icon={<CloseCircleOutlined />}
         style={{ marginBottom: '16px' }}

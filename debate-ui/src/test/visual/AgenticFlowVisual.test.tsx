@@ -50,10 +50,10 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={result} />);
-      
+
       // Wait for any animations
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'internal-monologue-result',
         failureThreshold: 0.01,
@@ -84,9 +84,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={result} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'self-critique-loop-result',
         failureThreshold: 0.01,
@@ -120,9 +120,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={result} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'multi-agent-result',
         failureThreshold: 0.01,
@@ -153,9 +153,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={result} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'tool-calling-result',
         failureThreshold: 0.01,
@@ -171,7 +171,7 @@ describe('Agentic Flow Visual Regression Tests', () => {
           { id: 'doc2', title: 'Document 2', relevance: 0.88, selected: true },
           { id: 'doc3', title: 'Document 3', relevance: 0.65, selected: false },
           { id: 'doc4', title: 'Document 4', relevance: 0.45, selected: false },
-          { id: 'doc5', title: 'Document 5', relevance: 0.30, selected: false },
+          { id: 'doc5', title: 'Document 5', relevance: 0.3, selected: false },
         ],
         confidence: 82.0,
         executionTime: 3200,
@@ -179,9 +179,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={result} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'rag-reranking-result',
         failureThreshold: 0.01,
@@ -219,9 +219,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={result} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'tree-of-thoughts-result',
         failureThreshold: 0.01,
@@ -263,14 +263,11 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(
-        <AgenticFlowAnalytics
-          debateId="test-debate"
-          analyticsData={analyticsData}
-        />
+        <AgenticFlowAnalytics debateId='test-debate' analyticsData={analyticsData} />,
       );
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'analytics-dashboard',
         failureThreshold: 0.01,
@@ -303,14 +300,14 @@ describe('Agentic Flow Visual Regression Tests', () => {
 
       const { container } = render(
         <AgenticFlowAnalytics
-          debateId="test-debate"
+          debateId='test-debate'
           comparisonData={comparisonData}
-          view="comparison"
-        />
+          view='comparison'
+        />,
       );
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'flow-comparison-chart',
         failureThreshold: 0.01,
@@ -329,7 +326,7 @@ describe('Agentic Flow Visual Regression Tests', () => {
 
       const { container } = render(<AgenticFlowResult result={result} />);
       const confidenceElement = container.querySelector('.confidence-indicator');
-      
+
       expect(confidenceElement).toMatchImageSnapshot({
         customSnapshotIdentifier: 'high-confidence-indicator',
         failureThreshold: 0.01,
@@ -346,7 +343,7 @@ describe('Agentic Flow Visual Regression Tests', () => {
 
       const { container } = render(<AgenticFlowResult result={result} />);
       const confidenceElement = container.querySelector('.confidence-indicator');
-      
+
       expect(confidenceElement).toMatchImageSnapshot({
         customSnapshotIdentifier: 'medium-confidence-indicator',
         failureThreshold: 0.01,
@@ -363,7 +360,7 @@ describe('Agentic Flow Visual Regression Tests', () => {
 
       const { container } = render(<AgenticFlowResult result={result} />);
       const confidenceElement = container.querySelector('.confidence-indicator');
-      
+
       expect(confidenceElement).toMatchImageSnapshot({
         customSnapshotIdentifier: 'low-confidence-indicator',
         failureThreshold: 0.01,
@@ -382,9 +379,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={errorResult} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'error-state-result',
         failureThreshold: 0.01,
@@ -400,9 +397,9 @@ describe('Agentic Flow Visual Regression Tests', () => {
       };
 
       const { container } = render(<AgenticFlowResult result={processingResult} />);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       expect(container.firstChild).toMatchImageSnapshot({
         customSnapshotIdentifier: 'processing-state-result',
         failureThreshold: 0.01,

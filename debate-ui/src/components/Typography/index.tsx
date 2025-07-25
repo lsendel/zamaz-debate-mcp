@@ -12,8 +12,8 @@ interface TypographyProps {
 
 // Page Title Component (H1)
 export const PageTitle: React.FC<TypographyProps> = ({ children, className, style }) => (
-  <Title 
-    level={1} 
+  <Title
+    level={1}
     className={className}
     style={{
       ...typographyPresets.pageTitle,
@@ -27,8 +27,8 @@ export const PageTitle: React.FC<TypographyProps> = ({ children, className, styl
 
 // Section Title Component (H2)
 export const SectionTitle: React.FC<TypographyProps> = ({ children, className, style }) => (
-  <Title 
-    level={2} 
+  <Title
+    level={2}
     className={className}
     style={{
       ...typographyPresets.sectionTitle,
@@ -42,8 +42,8 @@ export const SectionTitle: React.FC<TypographyProps> = ({ children, className, s
 
 // Card Title Component (H3)
 export const CardTitle: React.FC<TypographyProps> = ({ children, className, style }) => (
-  <Title 
-    level={3} 
+  <Title
+    level={3}
     className={className}
     style={{
       ...typographyPresets.cardTitle,
@@ -57,8 +57,8 @@ export const CardTitle: React.FC<TypographyProps> = ({ children, className, styl
 
 // Subsection Title Component (H4)
 export const SubsectionTitle: React.FC<TypographyProps> = ({ children, className, style }) => (
-  <Title 
-    level={4} 
+  <Title
+    level={4}
     className={className}
     style={{
       fontSize: typographyPresets.body.fontSize,
@@ -80,21 +80,26 @@ interface BodyTextProps extends TypographyProps {
   size?: 'small' | 'default' | 'large';
 }
 
-export const BodyText: React.FC<BodyTextProps> = ({ 
-  children, 
-  secondary, 
+export const BodyText: React.FC<BodyTextProps> = ({
+  children,
+  secondary,
   tertiary,
   size = 'default',
-  className, 
-  style 
+  className,
+  style,
 }) => {
-  const preset = size === 'small' ? typographyPresets.bodySmall : 
-                 size === 'large' ? typographyPresets.bodyLarge : 
-                 typographyPresets.body;
-  
-  const textColor = tertiary ? colors.text.tertiary : 
-                    secondary ? colors.text.secondary : 
-                    colors.text.primary;
+  const preset =
+    size === 'small'
+      ? typographyPresets.bodySmall
+      : size === 'large'
+        ? typographyPresets.bodyLarge
+        : typographyPresets.body;
+
+  const textColor = tertiary
+    ? colors.text.tertiary
+    : secondary
+      ? colors.text.secondary
+      : colors.text.primary;
 
   return (
     <Text
@@ -111,21 +116,26 @@ export const BodyText: React.FC<BodyTextProps> = ({
 };
 
 // Body Paragraph Component
-export const BodyParagraph: React.FC<BodyTextProps> = ({ 
-  children, 
-  secondary, 
+export const BodyParagraph: React.FC<BodyTextProps> = ({
+  children,
+  secondary,
   tertiary,
   size = 'default',
-  className, 
-  style 
+  className,
+  style,
 }) => {
-  const preset = size === 'small' ? typographyPresets.bodySmall : 
-                 size === 'large' ? typographyPresets.bodyLarge : 
-                 typographyPresets.body;
-  
-  const textColor = tertiary ? colors.text.tertiary : 
-                    secondary ? colors.text.secondary : 
-                    colors.text.primary;
+  const preset =
+    size === 'small'
+      ? typographyPresets.bodySmall
+      : size === 'large'
+        ? typographyPresets.bodyLarge
+        : typographyPresets.body;
+
+  const textColor = tertiary
+    ? colors.text.tertiary
+    : secondary
+      ? colors.text.secondary
+      : colors.text.primary;
 
   return (
     <Paragraph

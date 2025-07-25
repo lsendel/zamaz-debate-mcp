@@ -5,11 +5,11 @@
 
 export const typography = {
   fontSize: {
-    xs: '12px',    // 0.75rem - Captions, labels
-    sm: '14px',    // 0.875rem - Body small
-    base: '16px',  // 1rem - Body default
-    lg: '18px',    // 1.125rem - Body large
-    xl: '20px',    // 1.25rem - Heading 4
+    xs: '12px', // 0.75rem - Captions, labels
+    sm: '14px', // 0.875rem - Body small
+    base: '16px', // 1rem - Body default
+    lg: '18px', // 1.125rem - Body large
+    xl: '20px', // 1.25rem - Heading 4
     '2xl': '24px', // 1.5rem - Heading 3
     '3xl': '30px', // 1.875rem - Heading 2
     '4xl': '36px', // 2.25rem - Heading 1
