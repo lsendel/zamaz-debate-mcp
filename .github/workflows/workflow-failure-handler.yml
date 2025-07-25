@@ -100,7 +100,6 @@ jobs:
           severity: ${{ inputs.severity }}
           assignees: ${{ inputs.assignees }}
           labels: ${{ inputs.labels }}
-          github-token: ${{ github.token }}
           
       - name: Load workflow configuration
         id: load-config

@@ -100,17 +100,46 @@ jobs:
       run: |
         echo "::group::Generating Java Reports"
         mkdir -p .linting/reports/java
+        
+        # Generate reports
         if [ -f pom.xml ]; then
+          echo "Running report generation from root pom.xml"
           mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q ${{ env.MAVEN_BATCH_MODE }} || true
+          
+          # Copy reports to the expected location
+          find . -name "checkstyle-result.xml" -path "*/target/*" -exec cp {} .linting/reports/java/ \; 2>/dev/null || true
+          find . -name "spotbugsXml.xml" -path "*/target/spotbugs/*" -exec cp {} .linting/reports/java/ \; 2>/dev/null || true
+          find . -name "pmd.xml" -path "*/target/pmd/*" -exec cp {} .linting/reports/java/ \; 2>/dev/null || true
+          find . -name "pmd.xml" -path "*/target/*" -not -path "*/target/pmd/*" -exec cp {} .linting/reports/java/ \; 2>/dev/null || true
+          
+          # Also copy HTML reports if they exist
+          [ -f target/site/checkstyle.html ] && cp target/site/checkstyle.html .linting/reports/java/ || true
+          [ -f target/site/spotbugs.html ] && cp target/site/spotbugs.html .linting/reports/java/ || true
+          [ -f target/site/pmd.html ] && cp target/site/pmd.html .linting/reports/java/ || true
         else
           echo "No root pom.xml, generating reports for individual services"
           for dir in mcp-*; do
             if [ -d "$dir" ] && [ -f "$dir/pom.xml" ]; then
               echo "Generating reports for $dir"
               (cd "$dir" && mvn checkstyle:checkstyle spotbugs:spotbugs pmd:pmd -q ${{ env.MAVEN_BATCH_MODE }}) || true
+              
+              # Copy reports from each module
+              [ -f "$dir/target/checkstyle-result.xml" ] && cp "$dir/target/checkstyle-result.xml" ".linting/reports/java/${dir}-checkstyle-result.xml" || true
+              [ -f "$dir/target/spotbugs/spotbugsXml.xml" ] && cp "$dir/target/spotbugs/spotbugsXml.xml" ".linting/reports/java/${dir}-spotbugsXml.xml" || true
+              [ -f "$dir/target/pmd/pmd.xml" ] && cp "$dir/target/pmd/pmd.xml" ".linting/reports/java/${dir}-pmd.xml" || true
+              [ -f "$dir/target/pmd.xml" ] && cp "$dir/target/pmd.xml" ".linting/reports/java/${dir}-pmd.xml" || true
+              
+              # Copy HTML reports if they exist
+              [ -f "$dir/target/site/checkstyle.html" ] && cp "$dir/target/site/checkstyle.html" ".linting/reports/java/${dir}-checkstyle.html" || true
+              [ -f "$dir/target/site/spotbugs.html" ] && cp "$dir/target/site/spotbugs.html" ".linting/reports/java/${dir}-spotbugs.html" || true
+              [ -f "$dir/target/site/pmd.html" ] && cp "$dir/target/site/pmd.html" ".linting/reports/java/${dir}-pmd.html" || true
             fi
           done
         fi
+        
+        # List generated reports for debugging
+        echo "Generated reports:"
+        ls -la .linting/reports/java/ || echo "No reports directory found"
         echo "::endgroup::"
 
     - name: Upload Java linting reports
@@ -119,11 +148,13 @@ jobs:
       with:
         name: java-linting-reports
         path: |
+          .linting/reports/java/
           target/site/checkstyle.html
           target/site/spotbugs.html
           target/site/pmd.html
           **/target/checkstyle-result.xml
-          **/target/spotbugsXml.xml
+          **/target/spotbugs/spotbugsXml.xml
+          **/target/pmd/pmd.xml
           **/target/pmd.xml
         retention-days: 30
 
@@ -175,8 +206,17 @@ jobs:
       run: |
         echo "::group::Generating ESLint Report"
         mkdir -p ../.linting/reports/frontend
-        npm run lint -- --format json --output-file ../.linting/reports/frontend/eslint-report.json || true
-        npm run lint -- --format html --output-file ../.linting/reports/frontend/eslint-report.html || true
+        
+        # Run ESLint directly to generate reports
+        npx eslint src --ext .ts,.tsx,.js,.jsx --config ../.linting/frontend/.eslintrc.js --format json > ../.linting/reports/frontend/eslint-report.json || true
+        npx eslint src --ext .ts,.tsx,.js,.jsx --config ../.linting/frontend/.eslintrc.js --format html > ../.linting/reports/frontend/eslint-report.html || true
+        
+        # Also generate a summary report
+        npx eslint src --ext .ts,.tsx,.js,.jsx --config ../.linting/frontend/.eslintrc.js --format compact > ../.linting/reports/frontend/eslint-summary.txt || true
+        
+        # List generated reports for debugging
+        echo "Generated frontend reports:"
+        ls -la ../.linting/reports/frontend/ || echo "No frontend reports directory found"
         echo "::endgroup::"
 
     - name: Upload frontend linting reports
