@@ -348,7 +348,7 @@
                         <threadCount>4</threadCount>
                         <forkCount>1</forkCount>
                         <reuseForks>true</reuseForks>
-                        <argLine>-Xmx1024m -XX:MaxMetaspaceSize=256m</argLine>
+                        <argLine>@{argLine} -Xmx1024m -XX:MaxMetaspaceSize=256m</argLine>
                         <includes>
                             <include>**/*Test.java</include>
                             <include>**/*Tests.java</include>
@@ -375,7 +375,7 @@
                             <include>**/*IT.java</include>
                             <include>**/*IntegrationTest.java</include>
                         </includes>
-                        <argLine>-Xmx2048m -XX:MaxMetaspaceSize=512m</argLine>
+                        <argLine>@{argLine} -Xmx2048m -XX:MaxMetaspaceSize=512m</argLine>
                         <systemPropertyVariables>
                             <spring.profiles.active>test</spring.profiles.active>
                         </systemPropertyVariables>
@@ -554,6 +554,43 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        
+        <plugins>
+            <!-- Default JaCoCo configuration for all modules -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-prepare-agent-integration</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report-integration</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>report-integration</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
@@ -616,6 +653,34 @@
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>prepare-agent-integration</id>
+                                <goals>
+                                    <goal>prepare-agent-integration</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report-integration</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>report-integration</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -625,7 +690,7 @@
                             <threadCount>6</threadCount>
                             <forkCount>2</forkCount>
                             <reuseForks>true</reuseForks>
-                            <argLine>-Xmx1536m -XX:MaxMetaspaceSize=384m -XX:+UseG1GC</argLine>
+                            <argLine>@{argLine} -Xmx1536m -XX:MaxMetaspaceSize=384m -XX:+UseG1GC</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
