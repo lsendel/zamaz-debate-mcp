@@ -65,8 +65,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
-          persist-credentials: false
 
       - name: Detect changes
         uses: dorny/paths-filter@v3
@@ -214,7 +212,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -286,8 +283,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -342,7 +337,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -527,8 +521,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Identify services to build
         id: services
