@@ -280,7 +280,7 @@ jobs:
     name: Handle Security Scan Failure
     if: |
       always() && contains(needs.*.result, 'failure')
-    needs: [validate-workflow, semgrep, java-security, frontend-security, secrets-scan, codeql-analysis, owasp-dependency-check, security-summary]
+    needs: [java-security]
     uses: ./.github/workflows/workflow-failure-handler.yml
     with:
       workflow-name: "Security Scanning"
