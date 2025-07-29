@@ -1,0 +1,25 @@
+To clone the repositories, please run these commands in your terminal:
+
+1. Open a new terminal window
+
+2. Navigate to the IdeaProjects directory:
+   cd /Users/lsendel/IdeaProjects
+
+3. Clone the repositories:
+   git clone https://github.com/lsendel/zamaz-mcp-gateway.git
+   git clone https://github.com/lsendel/zamaz-mcp-security.git
+   git clone https://github.com/lsendel/zamaz-mcp-organization.git
+   git clone https://github.com/lsendel/zamaz-mcp-llm.git
+
+Or run all at once:
+   cd /Users/lsendel/IdeaProjects && \
+   git clone https://github.com/lsendel/zamaz-mcp-gateway.git && \
+   git clone https://github.com/lsendel/zamaz-mcp-security.git && \
+   git clone https://github.com/lsendel/zamaz-mcp-organization.git && \
+   git clone https://github.com/lsendel/zamaz-mcp-llm.git
+
+This will create:
+- /Users/lsendel/IdeaProjects/zamaz-mcp-gateway
+- /Users/lsendel/IdeaProjects/zamaz-mcp-security
+- /Users/lsendel/IdeaProjects/zamaz-mcp-organization
+- /Users/lsendel/IdeaProjects/zamaz-mcp-llm
