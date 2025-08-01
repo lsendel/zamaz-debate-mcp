@@ -1,49 +1,90 @@
 {
+  "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint/v0.29.0/schema/markdownlint-config-schema.json",
+  "extends": "markdownlint/style/prettier",
   "default": true,
-  "line-length": {
-    "line_length": 100,
+  "MD003": {
+    "style": "atx"
+  },
+  "MD007": {
+    "indent": 2
+  },
+  "MD013": {
+    "line_length": 120,
     "code_blocks": false,
-    "tables": false
+    "tables": false,
+    "headings": false
   },
-  "no-trailing-spaces": true,
-  "no-hard-tabs": true,
-  "no-duplicate-heading": {
-    "siblings_only": true
+  "MD024": {
+    "allow_different_nesting": true
   },
-  "no-trailing-punctuation": {
-    "punctuation": ".,;:!"
+  "MD033": {
+    "allowed_elements": ["img", "br", "sub", "sup", "kbd", "details", "summary"]
   },
-  "no-blanks-blockquote": false,
-  "ol-prefix": {
-    "style": "ordered"
-  },
-  "no-inline-html": {
-    "allowed_elements": ["br", "details", "summary", "kbd", "sup", "sub"]
-  },
-  "hr-style": {
-    "style": "---"
-  },
-  "no-emphasis-as-heading": false,
-  "first-line-heading": false,
-  "code-block-style": {
+  "MD034": false,
+  "MD041": false,
+  "MD046": {
     "style": "fenced"
+  },
+  "MD049": {
+    "style": "underscore"
+  },
+  "MD050": {
+    "style": "asterisk"
   },
   "proper-names": {
     "names": [
       "JavaScript",
       "TypeScript",
+      "Node.js",
       "React",
+      "Vue.js",
+      "Angular",
       "Docker",
       "Kubernetes",
+      "GitHub",
+      "GitLab",
+      "PostgreSQL",
+      "MongoDB",
+      "Redis",
+      "API",
+      "REST",
+      "GraphQL",
+      "JSON",
+      "YAML",
+      "XML",
+      "HTML",
+      "CSS",
+      "Sass",
+      "SCSS",
+      "npm",
+      "Yarn",
       "Maven",
-      "Checkstyle",
-      "SpotBugs",
-      "PMD",
+      "Gradle",
+      "Spring Boot",
+      "Spring Framework",
+      "Hibernate",
+      "JPA",
+      "OAuth",
+      "JWT",
+      "SSL",
+      "TLS",
+      "HTTPS",
+      "HTTP",
+      "TCP",
+      "UDP",
+      "DNS",
+      "CDN",
+      "AWS",
+      "Azure",
+      "GCP",
+      "CI/CD",
+      "DevOps",
+      "SonarQube",
       "ESLint",
       "Prettier",
-      "GitHub",
-      "Zamaz",
-      "MCP"
+      "Webpack",
+      "Vite",
+      "Babel"
     ],
     "code_blocks": false
   }

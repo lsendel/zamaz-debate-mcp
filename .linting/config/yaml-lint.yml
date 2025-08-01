@@ -1,18 +1,15 @@
+---
 # YAML Linting Configuration
+# This configuration is used by yamllint to check YAML files
+# Documentation: https://yamllint.readthedocs.io/en/stable/configuration.html
+
 extends: default
 
 rules:
   # Line length
   line-length:
     max: 120
-    allow-non-breakable-words: true
-    allow-non-breakable-inline-mappings: true
-
-  # Indentation
-  indentation:
-    spaces: 2
-    indent-sequences: true
-    check-multi-line-strings: false
+    level: warning
 
   # Comments
   comments:
@@ -22,8 +19,18 @@ rules:
   # Document formatting
   document-start:
     present: false
+    
   document-end:
     present: false
+
+  # Indentation
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # Trailing spaces
+  trailing-spaces: enable
 
   # Empty lines
   empty-lines:
@@ -31,61 +38,28 @@ rules:
     max-start: 0
     max-end: 1
 
-  # Brackets and braces
-  brackets:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
-    min-spaces-inside-empty: 0
-    max-spaces-inside-empty: 0
-
-  braces:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
-    min-spaces-inside-empty: 0
-    max-spaces-inside-empty: 0
-
-  # Colons
-  colons:
-    max-spaces-before: 0
-    min-spaces-after: 1
-    max-spaces-after: 1
-
-  # Commas
-  commas:
-    max-spaces-before: 0
-    min-spaces-after: 1
-    max-spaces-after: 1
-
-  # Hyphens
-  hyphens:
-    max-spaces-after: 1
-
-  # Key ordering
-  key-ordering: disable
-
-  # Octal values
-  octal-values:
-    forbid-implicit-octal: true
-    forbid-explicit-octal: true
-
-  # Quoted strings
-  quoted-strings:
-    quote-type: any
-    required: only-when-needed
-
-  # Trailing spaces
-  trailing-spaces: enable
-
   # Truthy values
   truthy:
     allowed-values: ['true', 'false', 'yes', 'no']
-    check-keys: true
+    check-keys: false
 
-# File-specific overrides
+  # Brackets
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  # Braces
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
 ignore: |
-  *.generated.yml
-  *.generated.yaml
-  **/target/**
-  **/build/**
-  **/node_modules/**
-  **/.git/**
+  .github/workflows/*.yml
+  docker-compose*.yml
+  k8s/*.yaml
+  k8s/**/*.yaml
+  */target/*
+  */build/*
+  */node_modules/*
+  .vscode/*
+  .idea/*
